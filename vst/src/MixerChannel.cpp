@@ -28,6 +28,7 @@ void MixerChannel::cleanup()
 	pitchKnob.onValueChange = nullptr;
 	fineKnob.onValueChange = nullptr;
 	panKnob.onValueChange = nullptr;
+	speedKnob.onValueChange = nullptr;
 
 	playButton.onClick = nullptr;
 	stopButton.onClick = nullptr;
@@ -41,6 +42,7 @@ void MixerChannel::cleanup()
 	pitchKnob.onMidiLearn = nullptr;
 	fineKnob.onMidiLearn = nullptr;
 	panKnob.onMidiLearn = nullptr;
+	speedKnob.onMidiLearn = nullptr;
 
 	playButton.onMidiRemove = nullptr;
 	muteButton.onMidiRemove = nullptr;
@@ -49,6 +51,7 @@ void MixerChannel::cleanup()
 	pitchKnob.onMidiRemove = nullptr;
 	fineKnob.onMidiRemove = nullptr;
 	panKnob.onMidiRemove = nullptr;
+	speedKnob.onMidiRemove = nullptr;
 
 	stopTimer();
 
@@ -64,6 +67,7 @@ void MixerChannel::cleanup()
 			removeListener("Pitch");
 			removeListener("Fine");
 			removeListener("Pan");
+			removeListener("Speed");
 		}
 		else
 		{
@@ -250,6 +254,14 @@ void MixerChannel::updateUIFromParameter(const juce::String& paramName,
 		bool isSolo = newValue > 0.5f;
 		soloButton.setToggleState(isSolo, juce::dontSendNotification);
 	}
+	else if (paramName == slotPrefix + " Speed")
+	{
+		if (!speedKnob.isMouseButtonDown())
+		{
+			float denormalizedSpeed = newValue * 1.5f + 0.5f;
+			speedKnob.setValue(denormalizedSpeed, juce::dontSendNotification);
+		}
+	}
 	else if (paramName == slotPrefix + " Play")
 	{
 		if (newValue < 0.5 && !track->isCurrentlyPlaying.load())
@@ -320,6 +332,10 @@ void MixerChannel::setSliderParameter(juce::String name, juce::Slider& slider)
 				else if (name == "Fine")
 				{
 					value = (value + 50.0f) / 100.0f;
+				}
+				else if (name == "Speed")
+				{
+					value = (value - 0.5f) / 1.5f;
 				}
 				param->setValueNotifyingHost(value);
 			}
@@ -473,6 +489,12 @@ void MixerChannel::addEventListeners()
 			}
 			setButtonParameter("Solo", soloButton);
 		};
+	speedKnob.onValueChange = [this]()
+		{
+			setSliderParameter("Speed", speedKnob);
+		};
+
+	speedKnob.setDoubleClickReturnValue(true, 1.0);
 	pitchKnob.setDoubleClickReturnValue(true, 0.0);
 	fineKnob.setDoubleClickReturnValue(true, 0.0);
 	panKnob.setDoubleClickReturnValue(true, 0.0);
@@ -486,6 +508,7 @@ void MixerChannel::addEventListeners()
 	addListener("Pitch");
 	addListener("Fine");
 	addListener("Pan");
+	addListener("Speed");
 }
 
 void MixerChannel::stopTrackImmediatly()
@@ -564,6 +587,13 @@ void MixerChannel::updateFromTrackData()
 		float normalizedPan = panParam->getValue();
 		float denormalizedPan = normalizedPan * 2.0f - 1.0f;
 		panKnob.setValue(denormalizedPan, juce::dontSendNotification);
+	}
+
+	if (auto* currentSpeedParam = params.getParameter(slotPrefix + "Speed"))
+	{
+		float normalizedSpeed = currentSpeedParam->getValue();
+		float denormalizedSpeed = normalizedSpeed * 1.5f + 0.5f;
+		speedKnob.setValue(denormalizedSpeed, juce::dontSendNotification);
 	}
 
 	muteButton.setToggleState(track->isMuted.load(), juce::dontSendNotification);
@@ -685,12 +715,16 @@ void MixerChannel::resized()
 
 	area.removeFromTop(5);
 
-	auto volumeArea = area.removeFromTop(220);
+	auto volumeArea = area.removeFromTop(160);
 	volumeSlider.setBounds(volumeArea.reduced(width / 4, 0));
 
 	area.removeFromTop(5);
 
-	auto knobsArea = area.removeFromTop(170);
+	auto knobsArea = area.removeFromTop(220);
+
+	auto speedArea = knobsArea.removeFromTop(50);
+	speedLabel.setBounds(speedArea.removeFromTop(12));
+	speedKnob.setBounds(speedArea.reduced(2));
 
 	auto pitchArea = knobsArea.removeFromTop(50);
 	pitchLabel.setBounds(pitchArea.removeFromTop(12));
@@ -863,13 +897,28 @@ void MixerChannel::setupUI()
 	panLabel.setJustificationType(juce::Justification::centred);
 	panLabel.setFont(juce::FontOptions(9.0f));
 
+	addAndMakeVisible(speedKnob);
+	speedKnob.setRange(0.5, 2.0, 0.01);
+	speedKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+	speedKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+	speedKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+	speedKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	speedKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	speedKnob.setTooltip("Speed adjustment (0.5x to 2x without pitch change) - Disabled when PITCH/FINE is used");
+
+	addAndMakeVisible(speedLabel);
+	speedLabel.setText("SPEED", juce::dontSendNotification);
+	speedLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	speedLabel.setJustificationType(juce::Justification::centred);
+	speedLabel.setFont(juce::FontOptions(9.0f));
+
 	playButton.setTooltip("Arm/disarm track for playback");
 	stopButton.setTooltip("Stop track playback");
 	muteButton.setTooltip("Mute this track");
 	soloButton.setTooltip("Solo this track");
 	volumeSlider.setTooltip("Track volume level");
-	pitchKnob.setTooltip("Pitch adjustment (-12 to +12 semitones)");
-	fineKnob.setTooltip("Fine pitch adjustment (-50 to +50 cents)");
+	pitchKnob.setTooltip("Pitch adjustment (-12 to +12 semitones) - Disables SPEED when used");
+	fineKnob.setTooltip("Fine pitch adjustment (-50 to +50 cents) - Disables SPEED when used");
 	panKnob.setTooltip("Pan position (left/right balance)");
 }
 
@@ -1009,5 +1058,15 @@ void MixerChannel::setupMidiLearn()
 	panKnob.onMidiRemove = [this]()
 		{
 			removeMidiMapping("Pan");
+		};
+
+	speedKnob.onMidiLearn = [this]()
+		{
+			learn("Speed");
+		};
+
+	speedKnob.onMidiRemove = [this]()
+		{
+			removeMidiMapping("Speed");
 		};
 }

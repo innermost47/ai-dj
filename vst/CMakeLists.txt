@@ -83,10 +83,15 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     ${soundtouch_SOURCE_DIR}/include 
 )
 
-target_compile_definitions(ObsidianNeuralVST PRIVATE
-    JucePlugin_VSTNumMidiInputs=16
-    OBSIDIAN_HAS_STABLE_AUDIO=1
-    
+target_compile_definitions(ObsidianNeuralVST 
+    PRIVATE
+        JucePlugin_IsSynth=1
+        JucePlugin_WantsMidiInput=1
+        JucePlugin_ProducesMidiOutput=1
+        JucePlugin_IsMidiEffect=0
+        JucePlugin_VSTNumMidiInputs=16
+        OBSIDIAN_HAS_STABLE_AUDIO=1
+        
     PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=1

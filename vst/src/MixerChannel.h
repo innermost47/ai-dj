@@ -13,7 +13,7 @@
 class MixerChannel : public juce::Component, public juce::Timer, public juce::AudioProcessorParameter::Listener
 {
 public:
-	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData);
+	MixerChannel(const juce::String& trackId, DjIaVstProcessor& processor, TrackData* trackData);
 	~MixerChannel() override;
 	juce::String getTrackId() const { return trackId; }
 	juce::Label trackNameLabel;
@@ -23,18 +23,19 @@ public:
 	void setSelected(bool selected);
 	void updateFromTrackData();
 	void updateVUMeters();
-	void setTrackData(TrackData *trackData);
+	void setTrackData(TrackData* trackData);
 	void updateButtonColors();
 	void cleanup();
 
 private:
-	DjIaVstProcessor &audioProcessor;
-	std::atomic<bool> isDestroyed{false};
+	DjIaVstProcessor& audioProcessor;
+	std::atomic<bool> isDestroyed{ false };
 	juce::String trackId;
-	TrackData *track;
+	TrackData* track;
 	bool isSelected = false;
 	int bypassMidiFrames = 0;
-	std::atomic<bool> isUpdatingButtons{false};
+	std::atomic<bool> isUpdatingButtons{ false };
+	std::atomic<float>* speedParam = nullptr;
 
 	float currentAudioLevel = 0.0f;
 	float peakHold = 0.0f;
@@ -59,9 +60,12 @@ private:
 	MidiLearnableSlider panKnob;
 	juce::Label panLabel;
 
-	void paint(juce::Graphics &g) override;
-	void drawVUMeter(juce::Graphics &g, juce::Rectangle<int> bounds);
-	void fillMeters(juce::Rectangle<float> &vuArea, int i, float segmentHeight, int numSegments, float currentLevel, juce::Graphics &g);
+	MidiLearnableSlider speedKnob;
+	juce::Label speedLabel;
+
+	void paint(juce::Graphics& g) override;
+	void drawVUMeter(juce::Graphics& g, juce::Rectangle<int> bounds);
+	void fillMeters(juce::Rectangle<float>& vuArea, int i, float segmentHeight, int numSegments, float currentLevel, juce::Graphics& g);
 	void resized() override;
 	void updateVUMeter();
 	float calculateInstantLevel();
@@ -75,12 +79,12 @@ private:
 	void learn(juce::String param, std::function<void(float)> uiCallback = nullptr);
 	void removeListener(juce::String name);
 	void addListener(juce::String name);
-	void setSliderParameter(juce::String name, juce::Slider &slider);
-	void setButtonParameter(juce::String name, juce::Button &button);
-	void updateUIFromParameter(const juce::String &paramName,
-							   const juce::String &slotPrefix,
-							   float newValue);
-	void removeMidiMapping(const juce::String &param);
+	void setSliderParameter(juce::String name, juce::Slider& slider);
+	void setButtonParameter(juce::String name, juce::Button& button);
+	void updateUIFromParameter(const juce::String& paramName,
+		const juce::String& slotPrefix,
+		float newValue);
+	void removeMidiMapping(const juce::String& param);
 	void stopTrackImmediatly();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerChannel);

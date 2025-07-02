@@ -134,6 +134,22 @@ void TrackComponent::calculateHostBasedDisplay()
 	{
 		waveformDisplay->setOriginalBpm(track->originalBpm);
 		waveformDisplay->setSampleBpm(effectiveBpm);
+
+		bool hasPitchChange = std::abs(track->fineOffset) > 0.001f || std::abs(track->bpmOffset) > 0.001f;
+
+		float displayRatio;
+
+		if (hasPitchChange)
+		{
+			displayRatio = static_cast<float>(track->cachedPlaybackRatio.load());
+		}
+		else
+		{
+			displayRatio = track->speed.load();
+		}
+
+		waveformDisplay->setSpeedRatio(displayRatio);
+
 		if (!track->audioFilePath.isEmpty())
 		{
 			juce::File audioFile(track->audioFilePath);

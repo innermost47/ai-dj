@@ -1,4 +1,4 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+﻿/* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
@@ -103,6 +103,7 @@ public:
 		}
 		return ids;
 	}
+
 	void renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 		std::vector<juce::AudioBuffer<float>>& individualOutputs,
 		double hostBpm)
@@ -219,6 +220,7 @@ public:
 			trackState.setProperty("selectedPrompt", track->selectedPrompt, nullptr);
 			trackState.setProperty("useOriginalFile", track->useOriginalFile.load(), nullptr);
 			trackState.setProperty("hasOriginalVersion", track->hasOriginalVersion.load(), nullptr);
+			trackState.setProperty("speed", track->speed.load(), nullptr);
 			juce::String stemsString;
 			for (int i = 0; i < track->preferredStems.size(); ++i)
 			{
@@ -310,6 +312,7 @@ public:
 			track->useOriginalFile = trackState.getProperty("useOriginalFile", false);
 			track->hasOriginalVersion = trackState.getProperty("hasOriginalVersion", false);
 			juce::String stemsString = trackState.getProperty("preferredStems", "drums,bass");
+			track->speed = trackState.getProperty("speed", 1.0f);
 			track->lastPpqPosition = -1.0;
 			track->customStepCounter = 0;
 			track->sequencerData.stepAccumulator = 0.0;
@@ -485,7 +488,8 @@ private:
 	void renderSingleTrack(TrackData& track,
 		juce::AudioBuffer<float>& mixOutput,
 		juce::AudioBuffer<float>& individualOutput,
-		int numSamples, int /*trackIndex*/, double hostBpm) const
+		int numSamples, int /*trackIndex*/,
+		double /*hostBpm*/) const
 	{
 		if (parameterUpdateCallback)
 		{
@@ -495,124 +499,107 @@ private:
 				parameterUpdateCallback(slot, &track);
 			}
 		}
+
 		if (track.numSamples == 0 || !track.isPlaying.load())
 			return;
 
 		const float volume = juce::jlimit(0.0f, 1.0f, track.volume.load());
 		const float pan = juce::jlimit(-1.0f, 1.0f, track.pan.load());
-		double currentPosition = track.readPosition.load();
-		double playbackRatio = 1.0;
 
-		switch (track.timeStretchMode)
+		individualOutput.clear();
+
+		// ✅ Détecter si on utilise pitch OU fine pitch
+		bool hasPitchChange = std::abs(track.fineOffset) > 0.001f || std::abs(track.bpmOffset) > 0.001f;
+
+		if (hasPitchChange)
 		{
-		case 1:
-			playbackRatio = 1.0;
-			break;
+			double currentPosition = track.readPosition.load();
+			double playbackRatio = track.cachedPlaybackRatio.load();
 
-		case 2:
-			if (track.originalBpm > 0.0f)
+			double startSample = track.loopStart * track.sampleRate;
+			double endSample = track.loopEnd * track.sampleRate;
+			startSample = juce::jlimit(0.0, (double)track.numSamples - 1, startSample);
+			endSample = juce::jlimit(startSample + 1, (double)track.numSamples, endSample);
+			double sectionLength = endSample - startSample;
+
+			if (sectionLength < 100)
 			{
-				float totalBpmAdjust = static_cast<float>(track.bpmOffset) + track.fineOffset;
-				float adjustedBpm = track.originalBpm + totalBpmAdjust;
-				adjustedBpm = juce::jlimit(1.0f, 1000.0f, adjustedBpm);
-				playbackRatio = adjustedBpm / track.originalBpm;
-			}
-			break;
-
-		case 3:
-			if (track.originalBpm > 0.0f && hostBpm > 0.0)
-			{
-				playbackRatio = hostBpm / track.originalBpm;
-			}
-			break;
-
-		case 4:
-			if (track.originalBpm > 0.0f && hostBpm > 0.0)
-			{
-				float totalManualAdjust = static_cast<float>(track.bpmOffset) + track.fineOffset;
-				float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
-				effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
-				playbackRatio = effectiveHostBpm / track.originalBpm;
-			}
-			break;
-		}
-
-		double startSample = track.loopStart * track.sampleRate;
-		double endSample = track.loopEnd * track.sampleRate;
-
-		startSample = juce::jlimit(0.0, (double)track.numSamples - 1, startSample);
-		endSample = juce::jlimit(startSample + 1, (double)track.numSamples, endSample);
-
-		double sectionLength = endSample - startSample;
-
-		if (sectionLength < 100)
-		{
-			startSample = 0.0;
-			endSample = track.numSamples;
-			sectionLength = track.numSamples;
-		}
-
-		for (int i = 0; i < numSamples; ++i)
-		{
-			double absolutePosition = startSample + currentPosition;
-			float leftGain = 1.0f;
-			float rightGain = 1.0f;
-
-			if (pan < 0.0f)
-			{
-				rightGain = 1.0f + pan;
-			}
-			else if (pan > 0.0f)
-			{
-				leftGain = 1.0f - pan;
-			}
-			if (absolutePosition >= endSample)
-			{
-				currentPosition = 0.0;
-				absolutePosition = startSample;
-				track.isPlaying = false;
-				return;
+				startSample = 0.0;
+				endSample = track.numSamples;
+				sectionLength = track.numSamples;
 			}
 
-			if (absolutePosition >= track.numSamples)
+			for (int i = 0; i < numSamples; ++i)
 			{
-				currentPosition = 0.0;
-				absolutePosition = startSample;
-			}
+				double absolutePosition = startSample + currentPosition;
 
-			for (int ch = 0; ch < std::min(2, track.audioBuffer.getNumChannels()); ++ch)
-			{
-				int sampleIndex = static_cast<int>(absolutePosition);
-				if (sampleIndex >= track.audioBuffer.getNumSamples())
+				if (absolutePosition >= endSample)
 				{
+					currentPosition = 0.0;
+					absolutePosition = startSample;
 					track.isPlaying = false;
-					break;
+					return;
 				}
 
-				float sample = track.audioBuffer.getSample(ch, sampleIndex);
-				sample *= volume;
-				if (ch == 0)
+				if (absolutePosition >= track.numSamples)
 				{
-					sample *= leftGain;
+					currentPosition = 0.0;
+					absolutePosition = startSample;
 				}
-				else
+
+				for (int ch = 0; ch < std::min(2, track.audioBuffer.getNumChannels()); ++ch)
 				{
-					sample *= rightGain;
+					int sampleIndex = static_cast<int>(absolutePosition);
+					if (sampleIndex >= track.audioBuffer.getNumSamples())
+					{
+						track.isPlaying = false;
+						break;
+					}
+
+					float sample = track.audioBuffer.getSample(ch, sampleIndex);
+
+					if (absolutePosition > (endSample - 64))
+					{
+						float fadeGain = (static_cast<float>(endSample) - static_cast<float>(absolutePosition)) / 64.0f;
+						fadeGain = juce::jlimit(0.0f, 1.0f, fadeGain);
+						sample *= fadeGain;
+					}
+
+					individualOutput.setSample(ch, i, sample);
 				}
-				if (absolutePosition > (endSample - 64))
-				{
-					float fadeGain = (static_cast<float>(endSample) - static_cast<float>(absolutePosition)) / 64.0f;
-					fadeGain = juce::jlimit(0.0f, 1.0f, fadeGain);
-					sample *= fadeGain;
-				}
-				mixOutput.addSample(ch, i, sample);
-				individualOutput.setSample(ch, i, sample);
-				mixOutput.addSample(ch, i, sample);
-				individualOutput.setSample(ch, i, sample);
+
+				currentPosition += playbackRatio;
 			}
-			currentPosition += playbackRatio;
+
+			track.readPosition = currentPosition;
 		}
-		track.readPosition = currentPosition;
+		else
+		{
+			track.processAndFillBufferWithSpeedChange(individualOutput, numSamples);
+		}
+
+		float leftGain = volume;
+		float rightGain = volume;
+
+		if (pan < 0.0f)
+		{
+			rightGain *= (1.0f + pan);
+		}
+		else if (pan > 0.0f)
+		{
+			leftGain *= (1.0f - pan);
+		}
+
+		for (int ch = 0; ch < std::min(2, individualOutput.getNumChannels()); ++ch)
+		{
+			float gain = (ch == 0) ? leftGain : rightGain;
+
+			for (int i = 0; i < numSamples; ++i)
+			{
+				float sample = individualOutput.getSample(ch, i) * gain;
+				mixOutput.addSample(ch, i, sample);
+			}
+		}
 	}
 
 	float interpolateLinear(const float* buffer, double position, int bufferSize)

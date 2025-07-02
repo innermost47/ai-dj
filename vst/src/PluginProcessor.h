@@ -79,7 +79,7 @@ public:
 	bool hasEditor() const override { return true; }
 	const juce::String getName() const override { return "OBSIDIAN-Neural"; }
 	bool acceptsMidi() const override { return true; }
-	bool producesMidi() const override { return false; }
+	bool producesMidi() const override { return true; }
 	bool isMidiEffect() const override { return false; }
 	double getTailLengthSeconds() const override { return 0.0; }
 	int getNumPrograms() override { return 1; }
@@ -317,14 +317,14 @@ private:
 
 	juce::StringArray floatParamIds = {
 		"bpm", "masterVolume", "masterPan", "masterHigh", "masterMid", "masterLow",
-		"slot1Volume", "slot1Pan", "slot1Pitch", "slot1Fine", "slot1BpmOffset",
-		"slot2Volume", "slot2Pan", "slot2Pitch", "slot2Fine", "slot2BpmOffset",
-		"slot3Volume", "slot3Pan", "slot3Pitch", "slot3Fine", "slot3BpmOffset",
-		"slot4Volume", "slot4Pan", "slot4Pitch", "slot4Fine", "slot4BpmOffset",
-		"slot5Volume", "slot5Pan", "slot5Pitch", "slot5Fine", "slot5BpmOffset",
-		"slot6Volume", "slot6Pan", "slot6Pitch", "slot6Fine", "slot6BpmOffset",
-		"slot7Volume", "slot7Pan", "slot7Pitch", "slot7Fine", "slot7BpmOffset",
-		"slot8Volume", "slot8Pan", "slot8Pitch", "slot8Fine", "slot8BpmOffset" };
+		"slot1Volume", "slot1Pan", "slot1Pitch", "slot1Fine", "slot1BpmOffset", "slot1Speed",
+		"slot2Volume", "slot2Pan", "slot2Pitch", "slot2Fine", "slot2BpmOffset", "slot2Speed",
+		"slot3Volume", "slot3Pan", "slot3Pitch", "slot3Fine", "slot3BpmOffset", "slot3Speed",
+		"slot4Volume", "slot4Pan", "slot4Pitch", "slot4Fine", "slot4BpmOffset", "slot4Speed",
+		"slot5Volume", "slot5Pan", "slot5Pitch", "slot5Fine", "slot5BpmOffset", "slot5Speed",
+		"slot6Volume", "slot6Pan", "slot6Pitch", "slot6Fine", "slot6BpmOffset", "slot6Speed",
+		"slot7Volume", "slot7Pan", "slot7Pitch", "slot7Fine", "slot7BpmOffset", "slot7Speed",
+		"slot8Volume", "slot8Pan", "slot8Pitch", "slot8Fine", "slot8BpmOffset", "slot8Speed" };
 
 	juce::CriticalSection filesToDeleteLock;
 
@@ -369,6 +369,7 @@ private:
 	std::atomic<float>* slotPitchParams[8] = { nullptr };
 	std::atomic<float>* slotFineParams[8] = { nullptr };
 	std::atomic<float>* slotBpmOffsetParams[8] = { nullptr };
+	std::atomic<float>* slotSpeedParams[8];
 
 	static juce::File getGlobalConfigFile()
 	{
