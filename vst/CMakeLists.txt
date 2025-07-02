@@ -91,6 +91,7 @@ target_compile_definitions(ObsidianNeuralVST
         JucePlugin_IsMidiEffect=0
         JucePlugin_VSTNumMidiInputs=16
         OBSIDIAN_HAS_STABLE_AUDIO=1
+        SOUNDTOUCH_PREVENT_CLICK_AT_RATE_CROSSOVER=1 
         
     PUBLIC
         JUCE_WEB_BROWSER=0

@@ -128,12 +128,11 @@ struct TrackData
 		soundTouchProcessor->setChannels(2);
 		soundTouchProcessor->setSampleRate(44100);
 		soundTouchProcessor->setPitch(1.0);
-
-		soundTouchProcessor->setSetting(SETTING_USE_QUICKSEEK, 1);
+		soundTouchProcessor->setSetting(SETTING_USE_QUICKSEEK, 0);
 		soundTouchProcessor->setSetting(SETTING_USE_AA_FILTER, 1);
-		soundTouchProcessor->setSetting(SETTING_SEQUENCE_MS, 40);
-		soundTouchProcessor->setSetting(SETTING_SEEKWINDOW_MS, 15);
-		soundTouchProcessor->setSetting(SETTING_OVERLAP_MS, 8);
+		soundTouchProcessor->setSetting(SETTING_SEQUENCE_MS, 60);
+		soundTouchProcessor->setSetting(SETTING_SEEKWINDOW_MS, 20);
+		soundTouchProcessor->setSetting(SETTING_OVERLAP_MS, 12);
 
 		soundTouchProcessor->setTempo(1.0f);
 	}
@@ -237,6 +236,11 @@ struct TrackData
 		}
 
 		fillOutputWithTimeStretch(outputBuffer, currentNumSamples, numChannels);
+		double realTimeAdvancement = currentNumSamples * currentSpeed;
+		readPosition.store(readPosition.load() + realTimeAdvancement);
+		if (readPosition >= this->numSamples) {
+			readPosition = fmod(readPosition.load(), this->numSamples);
+		}
 	}
 
 	void copyDirectAudio(juce::AudioBuffer<float>& outputBuffer, int currentNumSamples, int numChannels)
@@ -271,6 +275,9 @@ struct TrackData
 	void fillOutputWithTimeStretch(juce::AudioBuffer<float>& outputBuffer, int currentNumSamples, int numChannels)
 	{
 		int outputPos = 0;
+		if (speedProcessedBuffer.getNumSamples() - speedBufferReadPos < currentNumSamples / 2) {
+			produceMoreSamples(numChannels);
+		}
 
 		while (outputPos < currentNumSamples)
 		{
@@ -280,30 +287,29 @@ struct TrackData
 			{
 				produceMoreSamples(numChannels);
 				samplesAvailable = speedProcessedBuffer.getNumSamples() - speedBufferReadPos;
+
+				if (samplesAvailable == 0) {
+					int remainingSamples = currentNumSamples - outputPos;
+					for (int ch = 0; ch < numChannels; ++ch) {
+						outputBuffer.clear(ch, outputPos, remainingSamples);
+					}
+					break;
+				}
 			}
 
 			int samplesToCopy = std::min(currentNumSamples - outputPos, samplesAvailable);
-			if (samplesToCopy > 0)
-			{
-				for (int ch = 0; ch < numChannels; ++ch) {
-					outputBuffer.copyFrom(ch, outputPos, speedProcessedBuffer, ch, speedBufferReadPos, samplesToCopy);
-				}
-				outputPos += samplesToCopy;
-				speedBufferReadPos += samplesToCopy;
+
+			for (int ch = 0; ch < numChannels; ++ch) {
+				outputBuffer.copyFrom(ch, outputPos, speedProcessedBuffer, ch, speedBufferReadPos, samplesToCopy);
 			}
+
+			outputPos += samplesToCopy;
+			speedBufferReadPos += samplesToCopy;
 
 			if (speedBufferReadPos >= speedProcessedBuffer.getNumSamples()) {
 				speedProcessedBuffer.setSize(numChannels, 0);
 				speedBufferReadPos = 0;
 			}
-
-			if (samplesToCopy == 0 && samplesAvailable == 0) {
-				break;
-			}
-		}
-
-		if (outputPos < currentNumSamples) {
-			outputBuffer.clear(outputPos, currentNumSamples - outputPos);
 		}
 	}
 
@@ -311,33 +317,20 @@ struct TrackData
 	void configureSpeedChange(float currentSpeed)
 	{
 		if (currentSpeed <= 0.0f || !std::isfinite(currentSpeed)) {
-			DBG("ERROR: Invalid speed detected: " << currentSpeed << ", resetting to 1.0");
 			currentSpeed = 1.0f;
 			speed = 1.0f;
 		}
 
 		currentSpeed = juce::jlimit(0.5f, 2.0f, currentSpeed);
 
-		if (std::abs(currentSpeed - lastProcessedSpeed) > 0.1f) {
+		if (std::abs(currentSpeed - lastProcessedSpeed) > 0.01f) {
 			soundTouchProcessor->clear();
 			speedProcessedBuffer.setSize(speedProcessedBuffer.getNumChannels(), 0);
 			speedBufferReadPos = 0;
 		}
 
-		int sequenceMs = std::max(20, std::min(80, (int)(40 / std::sqrt(currentSpeed))));
-		soundTouchProcessor->setSetting(SETTING_SEQUENCE_MS, sequenceMs);
-
-		if (currentSpeed < 1.0f) {
-			soundTouchProcessor->setSetting(SETTING_OVERLAP_MS, 12);
-		}
-		else {
-			soundTouchProcessor->setSetting(SETTING_OVERLAP_MS, 8);
-		}
-
 		soundTouchProcessor->setTempo(currentSpeed);
-
 		lastProcessedSpeed = currentSpeed;
-
 	}
 
 
@@ -363,15 +356,12 @@ struct TrackData
 
 	void collectAllProcessedSamples(int numChannels)
 	{
-		const int maxReceive = 4096;
+		const int maxReceive = 2048;
 		std::vector<float> receivedBuffer(maxReceive * 2);
 
-		int totalReceived = 0;
-		int numReceived = 0;
-		int maxIterations = 10;
+		int maxIterations = 200;
 		int iterations = 0;
-
-		float currentSpeed = speed.load();
+		int numReceived = 0;
 
 		do {
 			numReceived = soundTouchProcessor->receiveSamples(receivedBuffer.data(), maxReceive);
@@ -379,10 +369,8 @@ struct TrackData
 			{
 				int oldSize = speedProcessedBuffer.getNumSamples();
 
-				if (currentSpeed < 1.0f && oldSize > 8192) {
-					speedProcessedBuffer.setSize(numChannels, 0);
-					oldSize = 0;
-					speedBufferReadPos = 0;
+				if (oldSize > 8192) {
+					break;
 				}
 
 				speedProcessedBuffer.setSize(numChannels, oldSize + numReceived, true);
@@ -394,15 +382,10 @@ struct TrackData
 						speedProcessedBuffer.setSample(1, oldSize + i, receivedBuffer[i * 2 + 1]);
 					}
 				}
-				totalReceived += numReceived;
 			}
 
 			++iterations;
-			if (iterations >= maxIterations) {
-				break;
-			}
-
-		} while (numReceived > 0);
+		} while (numReceived > 0 && iterations < maxIterations);
 	}
 
 	void debugSoundTouchState() const
@@ -420,50 +403,25 @@ struct TrackData
 	void produceMoreSamples(int numChannels)
 	{
 		float currentSpeed = speed.load();
-		speedBufferReadPos = 0;
+		int baseSamples = 1024;
+		int dynamicChunkSize = (int)(baseSamples / currentSpeed);
 
-		int sourceChunkSize;
-		if (currentSpeed > 1.0f)
-		{
-			sourceChunkSize = std::max(1024, std::min(4096, (int)(1024 * currentSpeed)));
-		}
-		else
-		{
-			sourceChunkSize = 2048;
-		}
-		int numPasses = 1;
-		if (currentSpeed < 1.0f)
-		{
-			numPasses = std::max(1, std::min(4, (int)(1.0f / currentSpeed)));
-		}
+		int startPos = static_cast<int>(readPosition.load());
+		int samplesToEndOfLoop = this->numSamples - startPos;
+		int samplesToRead = std::min(dynamicChunkSize, samplesToEndOfLoop);
 
-		for (int pass = 0; pass < numPasses; ++pass)
+		if (samplesToRead > 0)
 		{
-			int startPos = static_cast<int>(readPosition.load());
-			int samplesToEndOfLoop = this->numSamples - startPos;
-			int samplesToRead = std::min(sourceChunkSize, samplesToEndOfLoop);
+			processChunkWithSoundTouch(startPos, samplesToRead, numChannels);
+			readPosition.store(readPosition.load() + samplesToRead);
 
-			if (samplesToRead > 0)
-			{
-				processChunkWithSoundTouch(startPos, samplesToRead, numChannels);
-				readPosition.store(readPosition.load() + samplesToRead);
-				if (readPosition >= this->numSamples)
-					readPosition = 0.0;
-			}
-			else
-			{
-				break;
+			if (readPosition >= this->numSamples) {
+				readPosition = 0.0;
 			}
 		}
-
-		if (numPasses == 1 && readPosition >= this->numSamples)
-		{
-			soundTouchProcessor->flush();
-			readPosition = 0.0;
-		}
-
 		collectAllProcessedSamples(numChannels);
 	}
+
 
 	void processChunkWithSoundTouch(int startPos, int samplesToRead, int numChannels)
 	{

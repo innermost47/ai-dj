@@ -508,7 +508,6 @@ private:
 
 		individualOutput.clear();
 
-		// ✅ Détecter si on utilise pitch OU fine pitch
 		bool hasPitchChange = std::abs(track.fineOffset) > 0.001f || std::abs(track.bpmOffset) > 0.001f;
 
 		if (hasPitchChange)
