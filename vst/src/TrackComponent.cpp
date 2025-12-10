@@ -1,11 +1,4 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
-#include "TrackComponent.h"
+﻿#include "TrackComponent.h"
 #include "WaveformDisplay.h"
 #include "PluginProcessor.h"
 #include "SequencerComponent.h"
@@ -21,7 +14,8 @@ TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& pr
 
 TrackComponent::~TrackComponent()
 {
-	if (track && track->slotIndex != -1) {
+	if (track && track->slotIndex != -1)
+	{
 		removeListener("Generate");
 		removeListener("RandomRetrigger");
 		removeListener("RetriggerInterval");
@@ -41,8 +35,14 @@ void TrackComponent::addEventListeners()
 void TrackComponent::setTrackData(TrackData* trackData)
 {
 	track = trackData;
+	if (track && !track->usePages.load())
+	{
+		track->migrateToPages();
+		pagesMode = true;
+	}
 	updateFromTrackData();
-	if (track && track->slotIndex != -1) {
+	if (track && track->slotIndex != -1)
+	{
 		addEventListeners();
 	}
 	setupMidiLearn();
@@ -76,18 +76,11 @@ void TrackComponent::updateUIFromParameter(const juce::String& paramName,
 	{
 		bool isEnabled = newValue > 0.5f;
 
-		if (isEnabled) {
-			randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-		}
-		else {
-			randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDark);
-		}
-		randomRetriggerButton.repaint();
-
-		if (track) {
+		if (track)
+		{
 			track->randomRetriggerEnabled = isEnabled;
+			updateRandomRetriggerButtonColor();
 		}
-
 	}
 	else if (paramName == slotPrefix + " Retrigger Interval")
 	{
@@ -97,10 +90,10 @@ void TrackComponent::updateUIFromParameter(const juce::String& paramName,
 
 		intervalLabel.setText(getIntervalName((int)denormalizedValue), juce::dontSendNotification);
 
-		if (track) {
+		if (track)
+		{
 			track->randomRetriggerInterval = (int)denormalizedValue;
 		}
-
 	}
 }
 
@@ -197,13 +190,15 @@ void TrackComponent::toggleWaveformDisplay()
 				{
 					if (track)
 					{
-						if (track->usePages.load()) {
+						if (track->usePages.load())
+						{
 							auto& currentPage = track->getCurrentPage();
 							currentPage.loopStart = start;
 							currentPage.loopEnd = end;
 							track->syncLegacyProperties();
 						}
-						else {
+						else
+						{
 							track->loopStart = start;
 							track->loopEnd = end;
 						}
@@ -290,19 +285,23 @@ void TrackComponent::updateFromTrackData()
 	if (!track)
 		return;
 
-	if (track->usePages.load()) {
+	if (track->usePages.load())
+	{
 		pagesMode = true;
 		togglePagesButton.setVisible(false);
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i < 4; ++i)
+		{
 			pageButtons[i].setVisible(true);
 		}
 		pageButtons[track->currentPageIndex].setToggleState(true, juce::dontSendNotification);
 		updatePagesDisplay();
 	}
-	else {
+	else
+	{
 		pagesMode = false;
 		togglePagesButton.setVisible(true);
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i < 4; ++i)
+		{
 			pageButtons[i].setVisible(false);
 		}
 	}
@@ -310,29 +309,36 @@ void TrackComponent::updateFromTrackData()
 	showWaveformButton.setToggleState(track->showWaveform, juce::dontSendNotification);
 	sequencerToggleButton.setToggleState(track->showSequencer, juce::dontSendNotification);
 	randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(), juce::dontSendNotification);
+	drawButton.setEnabled(!audioProcessor.getUseLocalModel());
 
-	if (track->usePages.load()) {
+	if (track->usePages.load())
+	{
 		const auto& currentPage = track->getCurrentPage();
-		if (currentPage.hasOriginalVersion.load()) {
+		if (currentPage.hasOriginalVersion.load())
+		{
 			bool useOriginal = currentPage.useOriginalFile.load();
 			originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
 			originalSyncButton.setButtonText(useOriginal ? juce::String::fromUTF8("\xE2\x97\x8F") : juce::String::fromUTF8("\xE2\x97\x8B"));
 			originalSyncButton.setEnabled(true);
 		}
-		else {
+		else
+		{
 			originalSyncButton.setToggleState(false, juce::dontSendNotification);
 			originalSyncButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x8B"));
 			originalSyncButton.setEnabled(false);
 		}
 	}
-	else {
-		if (track->hasOriginalVersion.load()) {
+	else
+	{
+		if (track->hasOriginalVersion.load())
+		{
 			bool useOriginal = track->useOriginalFile.load();
 			originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
 			originalSyncButton.setButtonText(useOriginal ? juce::String::fromUTF8("\xE2\x97\x8F") : juce::String::fromUTF8("\xE2\x97\x8B"));
 			originalSyncButton.setEnabled(true);
 		}
-		else {
+		else
+		{
 			track->useOriginalFile = false;
 			originalSyncButton.setToggleState(false, juce::dontSendNotification);
 			originalSyncButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x8B"));
@@ -341,11 +347,14 @@ void TrackComponent::updateFromTrackData()
 	}
 
 	trackNameLabel.setText(track->trackName, juce::dontSendNotification);
+
 	juce::String noteName = juce::MidiMessage::getMidiNoteName(track->midiNote, true, true, 3);
-	trackNumberLabel.setText(noteName, juce::dontSendNotification);
+	trackNumberButton.setButtonText(noteName);
+	trackNumberButton.setColour(juce::TextButton::buttonColourId,
+		ColourPalette::getTrackColour(track->slotIndex));
 
 	bpmOffsetSlider.setValue(track->bpmOffset, juce::dontSendNotification);
-	trackNumberLabel.setColour(juce::Label::backgroundColourId, ColourPalette::getTrackColour(track->slotIndex));
+
 	if (!track->selectedPrompt.isEmpty())
 	{
 		for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
@@ -370,18 +379,13 @@ void TrackComponent::updateFromTrackData()
 		}
 	}
 
-	if (!randomRetriggerButton.isMouseButtonDown())
+	if (track->isPlaying.load() && !isPreviewPlaying)
 	{
-		bool isEnabled = track->randomRetriggerEnabled.load();
-		if (isEnabled)
-		{
-			randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-		}
-		else
-		{
-			randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDark);
-		}
-		randomRetriggerButton.repaint();
+		previewButton.setEnabled(false);
+	}
+	else
+	{
+		previewButton.setEnabled(true);
 	}
 
 	if (!intervalKnob.isMouseButtonDown())
@@ -391,6 +395,8 @@ void TrackComponent::updateFromTrackData()
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
 
+	updateRandomRetriggerButtonColor();
+	updateRandomDurationButtonColor();
 	updateTrackInfo();
 }
 
@@ -452,9 +458,14 @@ void TrackComponent::paint(juce::Graphics& g)
 	{
 		bgColour = ColourPalette::buttonSuccess.withAlpha(0.4f);
 	}
+	else if (hasSamplePending && !isGenerating)
+	{
+		bgColour = ColourPalette::samplePending.withAlpha(0.6f);
+	}
 	else if (isGenerating && blinkState)
 	{
-		bgColour = ColourPalette::playArmed.withAlpha(0.3f);
+		bgColour = blinkState ? ColourPalette::buttonDangerLight.withAlpha(0.3f)
+			: ColourPalette::buttonDangerDark.withAlpha(0.3f);
 	}
 	else if (isSelected)
 	{
@@ -468,11 +479,27 @@ void TrackComponent::paint(juce::Graphics& g)
 	g.setColour(bgColour);
 	g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
 
-	juce::Colour borderColour = isGenerating ? ColourPalette::playArmed : (isSelected ? ColourPalette::trackSelected : ColourPalette::backgroundLight);
+	juce::Colour borderColour;
+	if (hasSamplePending && !isGenerating)
+	{
+		borderColour = ColourPalette::buttonWarning;
+	}
+	else if (isGenerating)
+	{
+		borderColour = blinkState ? ColourPalette::buttonDangerLight : ColourPalette::buttonDangerDark;
+	}
+	else if (isSelected)
+	{
+		borderColour = ColourPalette::trackSelected;
+	}
+	else
+	{
+		borderColour = ColourPalette::backgroundLight;
+	}
 
 	g.setColour(borderColour);
 	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 6.0f,
-		isGenerating ? 3.0f : (isSelected ? 2.0f : 1.0f));
+		hasSamplePending && !isGenerating ? 2.0f : (isGenerating ? 3.0f : (isSelected ? 2.0f : 1.0f)));
 
 	if (isSelected)
 	{
@@ -481,34 +508,42 @@ void TrackComponent::paint(juce::Graphics& g)
 	}
 }
 
+void TrackComponent::setSamplePending(bool pending)
+{
+	hasSamplePending = pending;
+	repaint();
+}
+
 void TrackComponent::resized()
 {
 	auto area = getLocalBounds().reduced(6);
 	auto trackNumberArea = area.removeFromLeft(40);
-	trackNumberLabel.setBounds(trackNumberArea);
+	trackNumberButton.setBounds(trackNumberArea);
 	area.removeFromLeft(5);
 	auto headerArea = area.removeFromTop(30);
-	selectButton.setBounds(headerArea.removeFromLeft(35));
-	headerArea.removeFromLeft(5);
 
-	if (pagesMode) {
+	if (pagesMode)
+	{
 		auto pagesArea = headerArea.removeFromLeft(40);
 		layoutPagesButtons(pagesArea);
 		headerArea.removeFromLeft(3);
 	}
-	else {
+	else
+	{
 		togglePagesButton.setBounds(headerArea.removeFromLeft(25));
 		headerArea.removeFromLeft(3);
 	}
 
 	trackNameLabel.setBounds(headerArea.removeFromLeft(65));
-	int promptWidth = pagesMode ? 160 : 200;
+	int promptWidth = 175;
 	promptPresetSelector.setBounds(headerArea.removeFromLeft(promptWidth).reduced(2));
 	headerArea.removeFromLeft(5);
 
 	deleteButton.setBounds(headerArea.removeFromRight(35));
 	headerArea.removeFromRight(5);
 	generateButton.setBounds(headerArea.removeFromRight(35));
+	headerArea.removeFromRight(5);
+	drawButton.setBounds(headerArea.removeFromRight(35));
 	headerArea.removeFromRight(5);
 	originalSyncButton.setBounds(headerArea.removeFromRight(35));
 	headerArea.removeFromRight(5);
@@ -557,6 +592,98 @@ void TrackComponent::resized()
 	}
 }
 
+void TrackComponent::openDrawingCanvas()
+{
+	if (drawingWindowPtr != nullptr)
+	{
+		drawingWindowPtr->toFront(true);
+		return;
+	}
+
+	auto* canvas = new DrawingCanvas(audioProcessor);
+
+	auto* window = new DrawingWindow("Draw Image - " + trackNameLabel.getText(), canvas);
+	drawingWindowPtr = window;
+	window->setVisible(true);
+
+	if (track && track->usePages.load())
+	{
+		const auto& currentPage = track->getCurrentPage();
+		if (!currentPage.canvasState.isEmpty())
+		{
+			auto state = DrawingCanvas::CanvasState::fromXml(currentPage.canvasState);
+			canvas->setState(state);
+		}
+		else if (!currentPage.canvasData.isEmpty())
+		{
+			canvas->loadFromBase64(currentPage.canvasData);
+		}
+	}
+	else if (track && !track->canvasState.isEmpty())
+	{
+		auto state = DrawingCanvas::CanvasState::fromXml(track->canvasState);
+		canvas->setState(state);
+	}
+	else if (track && !track->canvasData.isEmpty())
+	{
+		canvas->loadFromBase64(track->canvasData);
+	}
+
+	canvas->setGenerating(canvasIsGenerating);
+
+	canvas->onGenerate = [this, canvas](const juce::String& base64Image)
+		{
+			if (track)
+			{
+				auto canvasState = canvas->getState();
+				juce::String stateXml = canvasState.toXml();
+				if (track->usePages.load())
+				{
+					auto& currentPage = track->getCurrentPage();
+					currentPage.canvasState = stateXml;
+					currentPage.canvasData = base64Image;
+					currentPage.selectedKeywords = canvasState.selectedKeywords;
+					track->syncLegacyProperties();
+				}
+				else
+				{
+					track->canvasState = stateXml;
+					track->canvasData = base64Image;
+					track->selectedKeywords = canvasState.selectedKeywords;
+				}
+			}
+			if (onGenerateWithImage)
+			{
+				auto keywords = canvas->getState().selectedKeywords;
+				onGenerateWithImage(trackId, base64Image, keywords);
+			}
+		};
+
+	window->onBeforeClose = [this, canvas]()
+		{
+			if (track)
+			{
+				auto canvasState = canvas->getState();
+				juce::String stateXml = canvasState.toXml();
+				if (track->usePages.load())
+				{
+					auto& currentPage = track->getCurrentPage();
+					currentPage.canvasState = stateXml;
+					currentPage.canvasData = canvasState.imageBase64;
+					currentPage.selectedKeywords = canvasState.selectedKeywords;
+					track->syncLegacyProperties();
+				}
+				else
+				{
+					track->canvasState = stateXml;
+					track->canvasData = canvasState.imageBase64;
+					track->selectedKeywords = canvasState.selectedKeywords;
+				}
+			}
+			drawingWindowPtr = nullptr;
+		};
+}
+
 void TrackComponent::layoutPagesButtons(juce::Rectangle<int> area)
 {
 	int buttonSize = PAGE_BUTTON_SIZE;
@@ -579,41 +706,81 @@ void TrackComponent::setupPagesUI()
 {
 	const char* pageLabels[4] = { "A", "B", "C", "D" };
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; ++i)
+	{
 		addChildComponent(pageButtons[i]);
 		pageButtons[i].setButtonText(pageLabels[i]);
 		pageButtons[i].setClickingTogglesState(true);
 
 		int groupId = 1000;
-		if (track) {
+		if (track)
+		{
 			groupId += track->slotIndex;
 		}
 		pageButtons[i].setRadioGroupId(groupId);
 
-		pageButtons[i].onClick = [this, i]() { onPageSelected(i); };
+		pageButtons[i].onClick = [this, i]()
+			{ onPageSelected(i); };
+
 		pageButtons[i].setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDark);
-		pageButtons[i].setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonSuccess);
+		pageButtons[i].setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonDangerLight);
+		pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+		pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
+
+		pageButtons[i].onMidiLearn = [this, i]()
+			{
+				if (track && track->slotIndex != -1)
+				{
+					const char* pageNames[4] = { "PageA", "PageB", "PageC", "PageD" };
+					char pageLetter = 'A' + static_cast<char>(i);
+					juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + pageNames[i];
+					juce::String description = "Slot " + juce::String(track->slotIndex + 1) + " Page " + juce::String::charToString(pageLetter);
+
+					statusCallback("Learning MIDI for " + description + "...");
+
+					audioProcessor.getMidiLearnManager().startLearning(paramName, &audioProcessor, nullptr, description, &pageButtons[i]);
+				}
+			};
+
+		pageButtons[i].onMidiRemove = [this, i]()
+			{
+				if (track && track->slotIndex != -1)
+				{
+					const char* pageNames[4] = { "PageA", "PageB", "PageC", "PageD" };
+					juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + pageNames[i];
+
+					char pageLetter = 'A' + static_cast<char>(i);
+					statusCallback("MIDI mapping removed for Page " + juce::String::charToString(pageLetter));
+
+					audioProcessor.getMidiLearnManager().removeMappingForParameter(paramName);
+				}
+			};
 	}
+
 
 	addAndMakeVisible(togglePagesButton);
 	togglePagesButton.setButtonText(juce::String::fromUTF8("\xE2\x97\xA8"));
 	togglePagesButton.setTooltip("Enable multi-page mode (A/B/C/D)");
-	togglePagesButton.onClick = [this]() { onTogglePagesMode(); };
+	togglePagesButton.onClick = [this]()
+		{ onTogglePagesMode(); };
 }
-
 
 void TrackComponent::onTogglePagesMode()
 {
-	if (!track) return;
+	if (!track)
+		return;
 
 	pagesMode = !pagesMode;
 
-	if (pagesMode) {
-		if (!track->usePages.load()) {
+	if (pagesMode)
+	{
+		if (!track->usePages.load())
+		{
 			track->migrateToPages();
 		}
 
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i < 4; ++i)
+		{
 			pageButtons[i].setVisible(true);
 		}
 		togglePagesButton.setVisible(false);
@@ -623,8 +790,10 @@ void TrackComponent::onTogglePagesMode()
 
 		statusCallback("Pages mode enabled - " + juce::String(4) + " slots available");
 	}
-	else {
-		for (int i = 0; i < 4; ++i) {
+	else
+	{
+		for (int i = 0; i < 4; ++i)
+		{
 			pageButtons[i].setVisible(false);
 		}
 		togglePagesButton.setVisible(true);
@@ -638,8 +807,41 @@ void TrackComponent::onTogglePagesMode()
 
 void TrackComponent::onPageSelected(int pageIndex)
 {
-	if (!track || !pagesMode || pageIndex < 0 || pageIndex >= 4) return;
-	if (track->currentPageIndex == pageIndex) return;
+	if (!track || !pagesMode || pageIndex < 0 || pageIndex >= 4)
+		return;
+
+	if (track->currentPageIndex == pageIndex && !track->pageChangePending.load())
+	{
+		return;
+	}
+
+	if (track->pageChangePending.load() && track->pendingPageIndex.load() == pageIndex)
+	{
+		track->pageChangePending = false;
+		track->pendingPageIndex = -1;
+		stopTimer();
+		updatePagesDisplay();
+		statusCallback("Page change cancelled");
+		return;
+	}
+
+	if (track->slotIndex != -1)
+	{
+		const char* pageNames[4] = { "PageA", "PageB", "PageC", "PageD" };
+		juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + pageNames[pageIndex];
+
+		auto* param = audioProcessor.getParameterTreeState().getParameter(paramName);
+		if (param)
+		{
+			param->setValueNotifyingHost(1.0f);
+		}
+	}
+}
+
+void TrackComponent::performPageChange(int pageIndex)
+{
+	if (!track || pageIndex < 0 || pageIndex >= 4)
+		return;
 
 	DBG("Switching to page " << (char)('A' + pageIndex) << " for track " << track->trackName);
 
@@ -647,7 +849,6 @@ void TrackComponent::onPageSelected(int pageIndex)
 	bool wasArmed = track->isArmed.load();
 	bool wasArmedToStop = track->isArmedToStop.load();
 	bool wasCurrentlyPlaying = track->isCurrentlyPlaying.load();
-	double currentReadPosition = track->readPosition.load();
 
 	track->setCurrentPage(pageIndex);
 
@@ -655,30 +856,42 @@ void TrackComponent::onPageSelected(int pageIndex)
 	track->isArmed = wasArmed;
 	track->isArmedToStop = wasArmedToStop;
 	track->isCurrentlyPlaying = wasCurrentlyPlaying;
-	track->readPosition = currentReadPosition;
+	track->readPosition = 0.0;
 
 	const auto& newPage = track->getCurrentPage();
 
-	if (newPage.numSamples == 0 && wasPlaying) {
+	if (newPage.numSamples == 0 && wasPlaying)
+	{
 		track->isPlaying = false;
 		track->isCurrentlyPlaying = false;
 		track->readPosition = 0.0;
-		if (track->onPlayStateChanged) {
+		if (track->onPlayStateChanged)
+		{
 			track->onPlayStateChanged(false);
 		}
-		DBG("Stopped playback: switched to empty page");
+	}
+
+	track->pageChangePending = false;
+	track->pendingPageIndex = -1;
+
+	if (!isGenerating && !track->pageChangePending.load())
+	{
+		stopTimer();
 	}
 
 	updatePagesDisplay();
 	updateFromTrackData();
 
-	if (waveformDisplay && showWaveformButton.getToggleState()) {
-		if (newPage.numSamples > 0 && newPage.isLoaded.load()) {
+	if (waveformDisplay && showWaveformButton.getToggleState())
+	{
+		if (newPage.numSamples > 0 && newPage.isLoaded.load())
+		{
 			waveformDisplay->setAudioData(newPage.audioBuffer, newPage.sampleRate);
 			waveformDisplay->setLoopPoints(newPage.loopStart, newPage.loopEnd);
 			calculateHostBasedDisplay();
 		}
-		else {
+		else
+		{
 			juce::AudioBuffer<float> emptyBuffer;
 			emptyBuffer.setSize(2, 0);
 			waveformDisplay->setAudioData(emptyBuffer, 48000.0);
@@ -686,74 +899,75 @@ void TrackComponent::onPageSelected(int pageIndex)
 		}
 	}
 
-	if (!newPage.isLoaded.load() && !newPage.audioFilePath.isEmpty()) {
+	if (!newPage.isLoaded.load() && !newPage.audioFilePath.isEmpty())
+	{
 		loadPageIfNeeded(pageIndex);
 	}
 
 	char pageName = 'A' + static_cast<char>(pageIndex);
-	if (newPage.numSamples > 0) {
-		juce::String promptText = newPage.selectedPrompt;
-		if (promptText.isEmpty()) promptText = newPage.prompt;
-		if (promptText.isEmpty()) promptText = "Generated sample";
-
-		juce::String playState = "";
-		if (track->isPlaying.load()) {
-			playState = " [PLAYING @" + juce::String(currentReadPosition, 1) + "s]";
-		}
-		else if (track->isArmed.load()) {
-			playState = " [ARMED]";
-		}
-
-		statusCallback("Switched to page " + juce::String(pageName) + " - " +
-			promptText.substring(0, 20) + "..." + playState);
-	}
-	else {
-		juce::String playState = "";
-		if (track->isArmed.load()) playState = " [ARMED - waiting for sample]";
-
-		statusCallback("Switched to page " + juce::String(pageName) + " - Empty" + playState);
-	}
+	statusCallback("Switched to page " + juce::String(pageName));
 }
 
 void TrackComponent::updatePagesDisplay()
 {
-	if (!track || !pagesMode) return;
+	if (!track || !pagesMode)
+		return;
 
-	for (int i = 0; i < 4; ++i) {
+	int pendingPage = track->pageChangePending.load() ? track->pendingPageIndex.load() : -1;
+
+	for (int i = 0; i < 4; ++i)
+	{
 		pageButtons[i].setToggleState(i == track->currentPageIndex, juce::dontSendNotification);
 
-		if (track->pages[i].numSamples > 0) {
-			pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textSuccess);
+		if (i == pendingPage)
+		{
+			continue;
+		}
+
+		if (track->pages[i].numSamples > 0)
+		{
+			pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+			pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 			pageButtons[i].setColour(juce::TextButton::buttonColourId,
-				i == track->currentPageIndex ? ColourPalette::buttonSuccess : ColourPalette::backgroundLight);
+				i == track->currentPageIndex ? ColourPalette::buttonDangerLight : ColourPalette::backgroundLight);
+			pageButtons[i].setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonDangerLight.withAlpha(0.4f));
 		}
-		else if (track->pages[i].isLoading.load()) {
-			pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::amber);
+		else if (track->pages[i].isLoading.load())
+		{
+			pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+			pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 			pageButtons[i].setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDark);
+			pageButtons[i].setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonDangerLight);
 		}
-		else {
+		else
+		{
 			pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
+			pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 			pageButtons[i].setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDark);
+			pageButtons[i].setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonDangerLight);
 		}
 	}
 }
 
 void TrackComponent::loadPageIfNeeded(int pageIndex)
 {
-	if (!track || pageIndex < 0 || pageIndex >= 4) return;
+	if (!track || pageIndex < 0 || pageIndex >= 4)
+		return;
 
 	auto& page = track->pages[pageIndex];
-	if (page.isLoaded.load() || page.isLoading.load()) return;
+	if (page.isLoaded.load() || page.isLoading.load())
+		return;
 
 	page.isLoading = true;
 	updatePagesDisplay();
 
-	if (!page.audioFilePath.isEmpty()) {
+	if (!page.audioFilePath.isEmpty())
+	{
 		juce::File audioFile(page.audioFilePath);
-		if (audioFile.existsAsFile()) {
-			juce::Thread::launch([this, pageIndex, audioFile]() {
-				loadPageAudioFile(pageIndex, audioFile);
-				});
+		if (audioFile.existsAsFile())
+		{
+			juce::Thread::launch([this, pageIndex, audioFile]()
+				{ loadPageAudioFile(pageIndex, audioFile); });
 			return;
 		}
 	}
@@ -764,16 +978,19 @@ void TrackComponent::loadPageIfNeeded(int pageIndex)
 
 void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File& audioFile)
 {
-	if (!track || pageIndex < 0 || pageIndex >= 4) return;
+	if (!track || pageIndex < 0 || pageIndex >= 4)
+		return;
 
 	auto& page = track->pages[pageIndex];
 
-	try {
+	try
+	{
 		juce::AudioFormatManager formatManager;
 		formatManager.registerBasicFormats();
 
 		std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
-		if (!reader) {
+		if (!reader)
+		{
 			page.isLoading = false;
 			return;
 		}
@@ -784,7 +1001,8 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File& audioFil
 		page.audioBuffer.setSize(2, numSamples);
 		reader->read(&page.audioBuffer, 0, numSamples, 0, true, true);
 
-		if (numChannels == 1) {
+		if (numChannels == 1)
+		{
 			page.audioBuffer.copyFrom(1, 0, page.audioBuffer, 0, 0, numSamples);
 		}
 
@@ -793,68 +1011,80 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File& audioFil
 		page.isLoaded = true;
 		page.isLoading = false;
 
-		juce::MessageManager::callAsync([this, pageIndex]() {
-			if (track && track->currentPageIndex == pageIndex) {
-				track->syncLegacyProperties();
-				updateFromTrackData();
-				if (waveformDisplay && showWaveformButton.getToggleState()) {
-					refreshWaveformDisplay();
+		juce::MessageManager::callAsync([this, pageIndex]()
+			{
+				if (track && track->currentPageIndex == pageIndex) {
+					track->syncLegacyProperties();
+					updateFromTrackData();
+					if (waveformDisplay && showWaveformButton.getToggleState()) {
+						refreshWaveformDisplay();
+					}
 				}
-			}
-			updatePagesDisplay();
-			});
+				updatePagesDisplay(); });
 
 		DBG("Page " << (char)('A' + pageIndex) << " loaded successfully: " << numSamples << " samples");
-
 	}
-	catch (const std::exception& e) {
-		DBG("Failed to load page " << pageIndex << ": " << e.what());
+	catch (const std::exception& /*e*/)
+	{
 		page.isLoading = false;
 
-		juce::MessageManager::callAsync([this]() {
-			updatePagesDisplay();
-			});
+		juce::MessageManager::callAsync([this]()
+			{ updatePagesDisplay(); });
 	}
 }
-
 
 void TrackComponent::startGeneratingAnimation()
 {
 	isGenerating = true;
 
-	if (pagesMode) {
-		for (int i = 0; i < 4; ++i) {
+	if (pagesMode)
+	{
+		for (int i = 0; i < 4; ++i)
+		{
 			pageButtons[i].setEnabled(false);
 		}
 	}
 	togglePagesButton.setEnabled(false);
 
-	startTimer(200);
+	if (!isTimerRunning())
+	{
+		startTimer(200);
+	}
 }
 
 void TrackComponent::stopGeneratingAnimation()
 {
 	isGenerating = false;
 
-	if (pagesMode) {
-		for (int i = 0; i < 4; ++i) {
+	if (pagesMode)
+	{
+		for (int i = 0; i < 4; ++i)
+		{
 			pageButtons[i].setEnabled(true);
 		}
 	}
 	togglePagesButton.setEnabled(true);
 
-	stopTimer();
+	if (!track || !track->pageChangePending.load())
+	{
+		stopTimer();
+	}
 
-	if (waveformDisplay && showWaveformButton.getToggleState() && track) {
-		if (track->usePages.load()) {
+	if (waveformDisplay && showWaveformButton.getToggleState() && track)
+	{
+		if (track->usePages.load())
+		{
 			const auto& currentPage = track->getCurrentPage();
-			if (currentPage.numSamples > 0) {
+			if (currentPage.numSamples > 0)
+			{
 				waveformDisplay->setAudioData(currentPage.audioBuffer, currentPage.sampleRate);
 				waveformDisplay->setLoopPoints(currentPage.loopStart, currentPage.loopEnd);
 			}
 		}
-		else {
-			if (track->numSamples > 0) {
+		else
+		{
+			if (track->numSamples > 0)
+			{
 				waveformDisplay->setAudioData(track->audioBuffer, track->sampleRate);
 				waveformDisplay->setLoopPoints(track->loopStart, track->loopEnd);
 			}
@@ -871,38 +1101,65 @@ void TrackComponent::timerCallback()
 		blinkState = !blinkState;
 		repaint();
 	}
+
+	if (track && track->pageChangePending.load())
+	{
+		pageBlinkState = !pageBlinkState;
+		int pendingPage = track->pendingPageIndex.load();
+		if (pendingPage >= 0 && pendingPage < 4)
+		{
+			pageButtons[pendingPage].setColour(
+				juce::TextButton::buttonColourId,
+				pageBlinkState ? ColourPalette::buttonDanger : ColourPalette::backgroundDeep
+			);
+			pageButtons[pendingPage].repaint();
+		}
+	}
+
+	if (!isGenerating && (!track || !track->pageChangePending.load()))
+	{
+		stopTimer();
+	}
 }
 
 void TrackComponent::refreshWaveformDisplay()
 {
-	if (!waveformDisplay || !track) return;
+	if (!waveformDisplay || !track)
+		return;
 
-	if (track->usePages.load()) {
+	if (track->usePages.load())
+	{
 		const auto& currentPage = track->getCurrentPage();
 
-		if (currentPage.numSamples > 0 && currentPage.isLoaded.load()) {
+		if (currentPage.numSamples > 0 && currentPage.isLoaded.load())
+		{
 			waveformDisplay->setAudioData(currentPage.audioBuffer, currentPage.sampleRate);
 			waveformDisplay->setLoopPoints(currentPage.loopStart, currentPage.loopEnd);
 
-			if (!currentPage.audioFilePath.isEmpty()) {
+			if (!currentPage.audioFilePath.isEmpty())
+			{
 				juce::File audioFile(currentPage.audioFilePath);
 				waveformDisplay->setAudioFile(audioFile);
 			}
 			calculateHostBasedDisplay();
 		}
-		else {
+		else
+		{
 			juce::AudioBuffer<float> emptyBuffer;
 			emptyBuffer.setSize(2, 0);
 			waveformDisplay->setAudioData(emptyBuffer, 48000.0);
 			waveformDisplay->setLoopPoints(0.0, 0.0);
 		}
 	}
-	else {
-		if (track->numSamples > 0) {
+	else
+	{
+		if (track->numSamples > 0)
+		{
 			waveformDisplay->setAudioData(track->audioBuffer, track->sampleRate);
 			waveformDisplay->setLoopPoints(track->loopStart, track->loopEnd);
 
-			if (!track->audioFilePath.isEmpty()) {
+			if (!track->audioFilePath.isEmpty())
+			{
 				juce::File audioFile(track->audioFilePath);
 				waveformDisplay->setAudioFile(audioFile);
 			}
@@ -952,15 +1209,6 @@ void TrackComponent::addListener(juce::String name)
 
 void TrackComponent::setupUI()
 {
-	addAndMakeVisible(selectButton);
-	selectButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x89"));
-	selectButton.setTooltip("Select this track");
-	selectButton.onClick = [this]()
-		{
-			if (onSelectTrack)
-				onSelectTrack(trackId);
-		};
-
 	addAndMakeVisible(deleteButton);
 	deleteButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x95"));
 	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
@@ -968,8 +1216,16 @@ void TrackComponent::setupUI()
 	deleteButton.onClick = [this]()
 		{
 			if (onDeleteTrack)
+			{
 				onDeleteTrack(trackId);
+			}
 		};
+
+	addAndMakeVisible(drawButton);
+	drawButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x8E"));
+	drawButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
+	drawButton.setTooltip("Draw an image for AI generation (unavailable with local TFLite models)");
+	drawButton.onClick = [this]() { openDrawingCanvas(); };
 
 	addAndMakeVisible(generateButton);
 	generateButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x93"));
@@ -981,47 +1237,22 @@ void TrackComponent::setupUI()
 			{
 				if (track)
 				{
-					if (track->usePages.load()) {
+					if (track->usePages.load())
+					{
 						auto& currentPage = track->getCurrentPage();
 						currentPage.selectedPrompt = promptPresetSelector.getText();
 						currentPage.generationBpm = audioProcessor.getGlobalBpm();
 						currentPage.generationKey = audioProcessor.getGlobalKey();
 						currentPage.generationDuration = audioProcessor.getGlobalDuration();
 
-						currentPage.preferredStems.clear();
-						if (audioProcessor.isGlobalStemEnabled("drums"))
-							currentPage.preferredStems.push_back("drums");
-						if (audioProcessor.isGlobalStemEnabled("bass"))
-							currentPage.preferredStems.push_back("bass");
-						if (audioProcessor.isGlobalStemEnabled("other"))
-							currentPage.preferredStems.push_back("other");
-						if (audioProcessor.isGlobalStemEnabled("vocals"))
-							currentPage.preferredStems.push_back("vocals");
-						if (audioProcessor.isGlobalStemEnabled("guitar"))
-							currentPage.preferredStems.push_back("guitar");
-						if (audioProcessor.isGlobalStemEnabled("piano"))
-							currentPage.preferredStems.push_back("piano");
-
 						track->syncLegacyProperties();
 					}
-					else {
+					else
+					{
 						track->selectedPrompt = promptPresetSelector.getText();
 						track->generationBpm = audioProcessor.getGlobalBpm();
 						track->generationKey = audioProcessor.getGlobalKey();
 						track->generationDuration = audioProcessor.getGlobalDuration();
-
-						if (audioProcessor.isGlobalStemEnabled("drums"))
-							track->preferredStems.push_back("drums");
-						if (audioProcessor.isGlobalStemEnabled("bass"))
-							track->preferredStems.push_back("bass");
-						if (audioProcessor.isGlobalStemEnabled("other"))
-							track->preferredStems.push_back("other");
-						if (audioProcessor.isGlobalStemEnabled("vocals"))
-							track->preferredStems.push_back("vocals");
-						if (audioProcessor.isGlobalStemEnabled("guitar"))
-							track->preferredStems.push_back("guitar");
-						if (audioProcessor.isGlobalStemEnabled("piano"))
-							track->preferredStems.push_back("piano");
 					}
 				}
 				onGenerateForTrack(trackId);
@@ -1095,19 +1326,33 @@ void TrackComponent::setupUI()
 		};
 	trackNameLabel.toFront(false);
 
-	addAndMakeVisible(trackNumberLabel);
-	trackNumberLabel.setJustificationType(juce::Justification::centred);
-	trackNumberLabel.setFont(juce::FontOptions(16.0f, juce::Font::bold));
-	trackNumberLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+	addAndMakeVisible(trackNumberButton);
+	trackNumberButton.setButtonText("--");
+	trackNumberButton.setTooltip("Select this track");
+	trackNumberButton.onClick = [this]()
+		{
+			if (onSelectTrack)
+				onSelectTrack(trackId);
+		};
 
 	addAndMakeVisible(previewButton);
 	previewButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-	previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
+	previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 	previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
 	previewButton.onClick = [this]()
 		{
 			if (track && onPreviewTrack)
-				onPreviewTrack(trackId);
+			{
+				if (isPreviewPlaying)
+				{
+					if (onStopPreview)
+						onStopPreview(trackId);
+				}
+				else
+				{
+					onPreviewTrack(trackId);
+				}
+			}
 		};
 
 	addAndMakeVisible(promptPresetSelector);
@@ -1117,20 +1362,21 @@ void TrackComponent::setupUI()
 			onTrackPresetSelected();
 		};
 
-
 	randomRetriggerButton.setButtonText(juce::String::fromUTF8("\xE2\x86\xBB"));
 	randomRetriggerButton.setTooltip("Beat Repeat - Loop current section while held");
-	randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDark);
-	randomRetriggerButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundDark);
-	randomRetriggerButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
+	randomRetriggerButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonPrimary);
+	randomRetriggerButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 	randomRetriggerButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 
 	addAndMakeVisible(randomRetriggerButton);
-	randomRetriggerButton.onClick = [this]() { onRandomRetriggerToggled(); };
+	randomRetriggerButton.onClick = [this]()
+		{ onRandomRetriggerToggled(); };
 
 	addAndMakeVisible(intervalKnob);
 	intervalKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	intervalKnob.setRange(1, 10, 1);
+	intervalKnob.setSize(40, 40);
 	intervalKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	intervalKnob.setTooltip("Beat repeat duration: 4 Beats, 2 Beats, 1 Beat, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128");
 	intervalKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -1147,31 +1393,73 @@ void TrackComponent::setupUI()
 	addAndMakeVisible(randomDurationToggle);
 	randomDurationToggle.setButtonText("R");
 	randomDurationToggle.setTooltip("Auto-randomize beat repeat duration");
-	randomDurationToggle.setColour(juce::ToggleButton::textColourId, ColourPalette::textSecondary);
-	randomDurationToggle.onClick = [this]() {
-		if (track) {
-			track->randomRetriggerDurationEnabled = randomDurationToggle.getToggleState();
-			statusCallback("Auto-random duration: " + juce::String(track->randomRetriggerDurationEnabled.load() ? "ON" : "OFF"));
-		}
+	randomDurationToggle.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
+	randomDurationToggle.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonPrimary);
+	randomDurationToggle.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
+	randomDurationToggle.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
+	randomDurationToggle.setClickingTogglesState(true);
+	randomDurationToggle.onClick = [this]()
+		{
+			if (track)
+			{
+				track->randomRetriggerDurationEnabled = randomDurationToggle.getToggleState();
+				updateRandomDurationButtonColor();
+				statusCallback("Auto-random duration: " + juce::String(track->randomRetriggerDurationEnabled.load() ? "ON" : "OFF"));
+			}
 		};
 
+	togglePagesButton.setVisible(false);
+	for (int i = 0; i < 4; ++i)
+	{
+		pageButtons[i].setVisible(true);
+	}
 	setupPagesUI();
+}
+
+void TrackComponent::updateRandomRetriggerButtonColor()
+{
+	if (!track) return;
+
+	bool isEnabled = track->randomRetriggerEnabled.load();
+
+	randomRetriggerButton.setColour(juce::TextButton::buttonColourId,
+		isEnabled ? ColourPalette::buttonPrimary : ColourPalette::backgroundLight);
+
+	randomRetriggerButton.repaint();
+}
+
+void TrackComponent::updateRandomDurationButtonColor()
+{
+	if (!track) return;
+
+	bool isEnabled = randomDurationToggle.getToggleState();
+
+	randomDurationToggle.setColour(juce::TextButton::buttonColourId,
+		isEnabled ? ColourPalette::buttonPrimary : ColourPalette::backgroundLight);
+	randomDurationToggle.setColour(juce::TextButton::buttonOnColourId,
+		ColourPalette::buttonPrimary);
+
+	randomDurationToggle.repaint();
 }
 
 void TrackComponent::onRandomRetriggerToggled()
 {
-	if (!track) return;
+	if (!track)
+		return;
 
 	bool isEnabled = !track->randomRetriggerEnabled.load();
 	track->randomRetriggerEnabled = isEnabled;
 
-	if (isEnabled) {
+	if (isEnabled)
+	{
 		track->beatRepeatPending.store(true);
 	}
-	else {
+	else
+	{
 		track->beatRepeatStopPending.store(true);
 	}
 
+	updateRandomRetriggerButtonColor();
 	statusCallback("Beat Repeat " + juce::String(isEnabled ? "ON" : "OFF"));
 	setButtonParameter("RandomRetrigger");
 }
@@ -1216,17 +1504,28 @@ juce::String TrackComponent::getIntervalName(int value)
 {
 	switch (value)
 	{
-	case 1: return "4 Beats";
-	case 2: return "2 Beats";
-	case 3: return "1 Beat";
-	case 4: return "1/2 Beat";
-	case 5: return "1/4 Beat";
-	case 6: return "1/8 Beat";
-	case 7: return "1/16 Beat";
-	case 8: return "1/32 Beat";
-	case 9: return "1/64 Beat";
-	case 10: return "1/128 Beat";
-	default: return "1 Beat";
+	case 1:
+		return "4 Beats";
+	case 2:
+		return "2 Beats";
+	case 3:
+		return "1 Beat";
+	case 4:
+		return "1/2 Beat";
+	case 5:
+		return "1/4 Beat";
+	case 6:
+		return "1/8 Beat";
+	case 7:
+		return "1/16 Beat";
+	case 8:
+		return "1/32 Beat";
+	case 9:
+		return "1/64 Beat";
+	case 10:
+		return "1/128 Beat";
+	default:
+		return "1 Beat";
 	}
 }
 
@@ -1343,11 +1642,13 @@ void TrackComponent::toggleOriginalSync()
 	DBG("=== toggleOriginalSync START ===");
 	DBG("useOriginal: " << (useOriginal ? "YES" : "NO"));
 
-	if (track->usePages.load()) {
+	if (track->usePages.load())
+	{
 		auto& currentPage = track->getCurrentPage();
 		DBG("Page hasOriginalVersion BEFORE: " << (currentPage.hasOriginalVersion.load() ? "YES" : "NO"));
 
-		if (!currentPage.hasOriginalVersion.load()) {
+		if (!currentPage.hasOriginalVersion.load())
+		{
 			DBG("ERROR: No original version - reverting button");
 			originalSyncButton.setToggleState(!useOriginal, juce::dontSendNotification);
 			originalSyncButton.setEnabled(false);
@@ -1358,8 +1659,10 @@ void TrackComponent::toggleOriginalSync()
 
 		DBG("Page hasOriginalVersion AFTER syncLegacyProperties: " << (currentPage.hasOriginalVersion.load() ? "YES" : "NO"));
 	}
-	else {
-		if (!track->hasOriginalVersion.load()) {
+	else
+	{
+		if (!track->hasOriginalVersion.load())
+		{
 			originalSyncButton.setToggleState(false, juce::dontSendNotification);
 			originalSyncButton.setEnabled(false);
 			DBG("No original version available for track");
@@ -1372,19 +1675,19 @@ void TrackComponent::toggleOriginalSync()
 	originalSyncButton.setEnabled(false);
 	DBG("About to call reloadTrackWithVersion...");
 	audioProcessor.reloadTrackWithVersion(trackId, useOriginal);
-	juce::Timer::callAfterDelay(500, [this]() {
-		if (track && track->usePages.load()) {
-			const auto& currentPage = track->getCurrentPage();
-			if (currentPage.hasOriginalVersion.load()) {
-				originalSyncButton.setEnabled(true);
-				DBG("Button re-enabled after reload");
-			}
-			else {
-				DBG("Button stays disabled - no original version");
-			}
-		}
-		});
-	DBG("=== toggleOriginalSync END ===");
+	juce::Timer::callAfterDelay(500, [this]()
+		{
+			if (track && track->usePages.load()) {
+				const auto& currentPage = track->getCurrentPage();
+				if (currentPage.hasOriginalVersion.load()) {
+					originalSyncButton.setEnabled(true);
+					DBG("Button re-enabled after reload");
+				}
+				else {
+					DBG("Button stays disabled - no original version");
+				}
+			} });
+			DBG("=== toggleOriginalSync END ===");
 }
 
 void TrackComponent::onTrackPresetSelected()
@@ -1392,16 +1695,19 @@ void TrackComponent::onTrackPresetSelected()
 	if (track)
 	{
 		juce::String newPrompt = promptPresetSelector.getText();
-		if (track->usePages.load()) {
+		if (track->usePages.load())
+		{
 			auto& currentPage = track->getCurrentPage();
 			currentPage.selectedPrompt = newPrompt;
 			track->syncLegacyProperties();
 		}
-		else {
+		else
+		{
 			track->selectedPrompt = newPrompt;
 		}
 
-		if (onTrackPromptChanged) {
+		if (onTrackPromptChanged)
+		{
 			onTrackPromptChanged(trackId, newPrompt);
 		}
 	}
@@ -1565,7 +1871,7 @@ void TrackComponent::updatePromptSelection(const juce::String& promptText)
 	repaint();
 }
 
-void TrackComponent::learn(juce::String param, std::function<void(float)> uiCallback)
+void TrackComponent::learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback)
 {
 	if (audioProcessor.getActiveEditor() && track && track->slotIndex != -1)
 	{
@@ -1576,9 +1882,10 @@ void TrackComponent::learn(juce::String param, std::function<void(float)> uiCall
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
 				{
 					editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
-				} });
-				audioProcessor.getMidiLearnManager()
-					.startLearning(parameterName, &audioProcessor, uiCallback, description);
+				}
+			});
+		audioProcessor.getMidiLearnManager()
+			.startLearning(parameterName, &audioProcessor, uiCallback, description, component);
 	}
 }
 
@@ -1597,19 +1904,34 @@ void TrackComponent::setupMidiLearn()
 		return;
 
 	generateButton.onMidiLearn = [this]()
-		{ learn("Generate"); };
+		{
+			learn("Generate", &generateButton);
+		};
 	generateButton.onMidiRemove = [this]()
-		{ removeMidiMapping("Generate"); };
+		{
+			removeMidiMapping("Generate");
+		};
 
 	randomRetriggerButton.onMidiLearn = [this]()
-		{ learn("RandomRetrigger"); };
+		{
+			learn("RandomRetrigger", &randomRetriggerButton);
+		};
+
 	randomRetriggerButton.onMidiRemove = [this]()
-		{ removeMidiMapping("RandomRetrigger"); };
+		{
+			removeMidiMapping("RandomRetrigger");
+			updateRandomRetriggerButtonColor();
+		};
 
 	intervalKnob.onMidiLearn = [this]()
-		{ learn("RetriggerInterval"); };
+		{
+			learn("RetriggerInterval", &intervalKnob);
+		};
 	intervalKnob.onMidiRemove = [this]()
-		{ removeMidiMapping("RetriggerInterval"); };
+		{
+			removeMidiMapping("RetriggerInterval");
+		};
+
 
 	juce::String paramName = "promptSelector_slot" + juce::String(track->slotIndex + 1);
 	auto promptCallback = [this](float value)
@@ -1625,12 +1947,19 @@ void TrackComponent::setupMidiLearn()
 		};
 
 	audioProcessor.getMidiLearnManager().registerUICallback(paramName, promptCallback);
+
 	promptPresetSelector.onMidiLearn = [this, paramName, promptCallback]()
 		{
 			if (audioProcessor.getActiveEditor() && track && track->slotIndex != -1)
 			{
 				juce::String description = "Slot " + juce::String(track->slotIndex + 1) + " Prompt Selector";
-				audioProcessor.getMidiLearnManager().startLearning(paramName, &audioProcessor, promptCallback, description);
+				audioProcessor.getMidiLearnManager().startLearning(
+					paramName,
+					&audioProcessor,
+					promptCallback,
+					description,
+					&promptPresetSelector
+				);
 			}
 		};
 
@@ -1696,4 +2025,27 @@ void TrackComponent::itemDropped(const SourceDetails& dragSourceDetails)
 	}
 
 	repaint();
+}
+
+void TrackComponent::setPreviewPlaying(bool playing)
+{
+	isPreviewPlaying = playing;
+	updatePreviewButton();
+	repaint();
+}
+
+void TrackComponent::updatePreviewButton()
+{
+	if (isPreviewPlaying)
+	{
+		previewButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xA0"));
+		previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+		previewButton.setTooltip("Stop preview");
+	}
+	else
+	{
+		previewButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
+		previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
+		previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
+	}
 }

@@ -1,9 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# Copyright (C) 2025 Anthony Charretier
-
 import os
 import time
 from fastapi import HTTPException
@@ -47,9 +41,13 @@ class APIRequestHandler:
         return llm_decision
 
     def generate_simple(self, request: GenerateRequest, llm_decision: dict):
-        sample_details = llm_decision.get("parameters", {}).get("sample_details", {})
-
-        musicgen_prompt = sample_details.get("musicgen_prompt", request.prompt)
+        if isinstance(llm_decision, str):
+            musicgen_prompt = llm_decision
+        else:
+            sample_details = llm_decision.get("parameters", {}).get(
+                "sample_details", {}
+            )
+            musicgen_prompt = sample_details.get("musicgen_prompt", request.prompt)
 
         self.dj_system.music_gen.init_model()
         audio, sample_info = self.dj_system.music_gen.generate_sample(
@@ -79,36 +77,7 @@ class APIRequestHandler:
         if not processed_path:
             raise HTTPException(status_code=500, detail="Loop preparation failure")
 
-        used_stems = None
-        if request.preferred_stems:
-            print(f"🎚️  Extraction stems: {', '.join(request.preferred_stems)}")
-
-            spectral_profile, separated_path = (
-                self.dj_system.stems_manager._analyze_sample_with_demucs(
-                    processed_path, os.path.join(self.dj_system.output_dir_base, "temp")
-                )
-            )
-
-            if spectral_profile and separated_path:
-                final_path, used_stems = (
-                    self.dj_system.stems_manager._extract_multiple_stems(
-                        spectral_profile,
-                        separated_path,
-                        f"simple_loop_{request_id}",
-                        request.preferred_stems,
-                        sample_rate=int(request.sample_rate),
-                    )
-                )
-                if final_path:
-                    abs_processed_path = os.path.abspath(processed_path)
-                    if os.path.exists(abs_processed_path):
-                        os.remove(abs_processed_path)
-                        print(
-                            f"🗑️  Removed original processed file: {abs_processed_path}"
-                        )
-                    processed_path = final_path
-
         if os.path.exists(temp_path) and temp_path != processed_path:
             os.remove(temp_path)
 
-        return processed_path, used_stems
+        return processed_path

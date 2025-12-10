@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #include "MixerPanel.h"
 #include "ColourPalette.h"
 #include "MixerChannel.h"
@@ -124,9 +117,11 @@ void MixerPanel::refreshMixerChannels()
 			static_cast<TrackData*>(trackData));
 		positionMixer(mixerChannel, xPos, channelWidth, channelSpacing);
 	}
-	for (auto& channel : mixerChannels) {
+	for (auto& channel : mixerChannels)
+	{
 		juce::String trackId = channel->getTrackId();
-		if (audioProcessor.getGeneratingTrackId() == trackId && audioProcessor.getIsGenerating()) {
+		if (audioProcessor.getGeneratingTrackId() == trackId && audioProcessor.getIsGenerating())
+		{
 			channel->startGeneratingAnimation();
 		}
 	}
@@ -179,16 +174,18 @@ void MixerPanel::paint(juce::Graphics& g)
 void MixerPanel::resized()
 {
 	auto area = getLocalBounds();
-
 	auto masterArea = area.removeFromRight(100);
-	masterChannel->setBounds(masterArea.reduced(5));
 
 	area.removeFromRight(10);
-
 	channelsViewport.setBounds(area);
 
 	int containerHeight = channelsViewport.getHeight() - 20;
 	channelsContainer.setSize(channelsContainer.getWidth(), containerHeight);
+
+	masterChannel->setBounds(masterArea.getX() + 5,
+		masterArea.getY(),
+		masterArea.getWidth() - 10,
+		channelsViewport.getHeight() - 10);
 
 	int xPos = 5;
 	const int channelWidth = 90;

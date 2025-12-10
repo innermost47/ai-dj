@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #pragma once
 #include "JuceHeader.h"
 #include <vector>
@@ -30,7 +23,8 @@ struct SampleBankEntry
 	int numSamples;
 
 	SampleBankEntry() : duration(0.0f), bpm(126.0f), sampleRate(48000.0),
-		numChannels(2), numSamples(0) {
+		numChannels(2), numSamples(0)
+	{
 	}
 };
 
@@ -43,8 +37,7 @@ public:
 	juce::String addSample(const juce::String& prompt,
 		const juce::File& audioFile,
 		float bpm = 126.0f,
-		const juce::String& key = "",
-		const std::vector<juce::String>& stems = {});
+		const juce::String& key = "");
 
 	bool removeSample(const juce::String& sampleId);
 	SampleBankEntry* getSample(const juce::String& sampleId);

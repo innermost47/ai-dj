@@ -1,17 +1,107 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# Copyright (C) 2025 Anthony Charretier
-
 import argparse
 import os
+import sqlite3
+import secrets
+import string
+from pathlib import Path
 from fastapi import FastAPI, Request, Depends
 import uvicorn
 from dotenv import load_dotenv
 from core.dj_system import DJSystem
+from core.secure_storage import SecureStorage
+from core.paths import get_config_db_path
 
 load_dotenv()
+
+
+def generate_first_api_key():
+    alphabet = string.ascii_letters + string.digits
+    api_key = "".join(secrets.choice(alphabet) for _ in range(32))
+
+    config_dir = get_config_db_path()
+    db_path = config_dir / "config.db"
+    secure_storage = SecureStorage(db_path)
+
+    encrypted_key = secure_storage.encrypt(api_key)
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """INSERT INTO api_keys 
+        (key_value_encrypted, name, is_limited, total_credits, credits_used) 
+        VALUES (?, ?, ?, ?, ?)""",
+        (encrypted_key, "First API Key", 0, 0, 0),
+    )
+
+    conn.commit()
+    conn.close()
+
+    return api_key
+
+
+def ensure_database_exists():
+
+    config_dir = get_config_db_path()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    db_path = config_dir / "config.db"
+
+    if not db_path.exists():
+        print(f"⚠️  Database not found, creating at: {db_path}")
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS api_keys (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key_value_encrypted TEXT UNIQUE NOT NULL,
+                name TEXT,
+                is_limited INTEGER DEFAULT 1,
+                is_expired INTEGER DEFAULT 0,
+                total_credits INTEGER DEFAULT 50,
+                credits_used INTEGER DEFAULT 0,
+                date_of_expiration TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_used TIMESTAMP
+            )
+        """
+        )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS config (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                is_encrypted INTEGER DEFAULT 0
+            )
+        """
+        )
+
+        conn.commit()
+        conn.close()
+
+        print("✅ Database created successfully")
+        return True
+
+    return False
+
+
+def is_database_empty():
+    config_dir = get_config_db_path()
+    db_path = config_dir / "config.db"
+
+    if not db_path.exists():
+        return True
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM api_keys")
+    count = cursor.fetchone()[0]
+    conn.close()
+
+    return count == 0
 
 
 def get_dj_system(request: Request):
@@ -64,9 +154,6 @@ def create_api_app():
 
 def load_encrypted_api_keys():
     try:
-        from core.secure_storage import SecureStorage
-        from pathlib import Path
-        import sqlite3
 
         db_path = Path.home() / ".obsidian_neural" / "config.db"
         if not db_path.exists():
@@ -115,6 +202,11 @@ def main():
         action="store_true",
         help="Bypass models generations for faster testing",
     )
+    parser.add_argument(
+        "--bypass-llm",
+        action="store_true",
+        help="Bypass LLM for direct stable audio generation",
+    )
 
     args = parser.parse_args()
 
@@ -126,13 +218,33 @@ def main():
         "AUDIO_MODEL", "stabilityai/stable-audio-open-1.0"
     )
 
+    db_was_created = ensure_database_exists()
+    db_is_empty = is_database_empty()
     api_keys = []
 
     if environment == "prod":
         api_keys = load_encrypted_api_keys()
+        if not api_keys and (db_was_created or db_is_empty):
+            print("\n" + "=" * 60)
+            print("No API keys found - Generating first API key...")
+            first_key = generate_first_api_key()
+            api_keys = [first_key]
+            print("\nYour first API key (SAVE THIS - won't be shown again):")
+            print(f"\n{first_key}\n")
+            print("=" * 60 + "\n")
+
         print(f"Production mode: loaded {len(api_keys)} API keys from database")
     elif args.use_stored_keys:
         api_keys = load_encrypted_api_keys()
+        if not api_keys and (db_was_created or db_is_empty):
+            print("\n" + "=" * 60)
+            print("No API keys found - Generating first API key...")
+            first_key = generate_first_api_key()
+            api_keys = [first_key]
+            print("\nYour first API key (SAVE THIS):")
+            print(f"\n{first_key}\n")
+            print("=" * 60 + "\n")
+
         print(f"Development mode: loaded {len(api_keys)} API keys from database")
     else:
         print("Development mode: no API keys loaded (dev bypass active)")
@@ -142,6 +254,7 @@ def main():
     print(f"   Environment: {environment}")
     print(f"   Model: {model_path}")
     print(f"   Audio Model: {audio_model}")
+    print(f"   Use LLM: {not args.bypass_llm}")
     print(
         f"   API Authentication: {len(api_keys)} keys"
         if api_keys
@@ -156,6 +269,7 @@ def main():
         audio_model=audio_model,
         use_stored_keys=args.use_stored_keys,
         is_test=args.is_test,
+        bypass_llm=args.bypass_llm,
     )
 
     init_config_from_args(config_args)

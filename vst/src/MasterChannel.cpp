@@ -1,11 +1,4 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
-#pragma once
+﻿#pragma once
 #include "MasterChannel.h"
 #include "PluginEditor.h"
 #include "ColourPalette.h"
@@ -306,7 +299,7 @@ void MasterChannel::resized()
 	lowLabel.setBounds(width - spacing - 25, bottomRow.getY(), 50, 12);
 	lowKnob.setBounds(width - spacing - knobSize / 2, bottomRow.getY() + 15, knobSize, knobSize);
 
-	auto volumeArea = area.removeFromTop(270);
+	auto volumeArea = area.removeFromTop(372);
 	int faderWidth = width / 3;
 	int centerX = (width - faderWidth) / 2;
 	masterVolumeSlider.setBounds(centerX, volumeArea.getY() + 5, faderWidth, volumeArea.getHeight() - 10);
@@ -324,7 +317,7 @@ void MasterChannel::drawMasterVUMeter(juce::Graphics& g, juce::Rectangle<int> bo
 {
 	float width = static_cast<float>(bounds.getWidth());
 	float height = static_cast<float>(bounds.getHeight());
-	auto vuArea = juce::Rectangle<float>(width - 15.0f, 40.0f, 10.0f, height - 80.0f);
+	auto vuArea = juce::Rectangle<float>(width - 12.0f, 40.0f, 6.0f, height - 80.0f);
 	g.setColour(ColourPalette::backgroundDeep);
 	g.fillRoundedRectangle(vuArea, 2.0f);
 	g.setColour(ColourPalette::playArmed);
@@ -451,7 +444,8 @@ void MasterChannel::updateMasterLevels()
 		{ repaint(); });
 }
 
-void MasterChannel::learn(juce::String param, juce::String description, std::function<void(float)> uiCallback)
+
+void MasterChannel::learn(juce::String param, juce::String description, MidiLearnableBase* component, std::function<void(float)> uiCallback)
 {
 	if (audioProcessor.getActiveEditor())
 	{
@@ -462,7 +456,7 @@ void MasterChannel::learn(juce::String param, juce::String description, std::fun
 					editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
 				} });
 				audioProcessor.getMidiLearnManager()
-					.startLearning(param, &audioProcessor, uiCallback, description);
+					.startLearning(param, &audioProcessor, uiCallback, description, component);
 	}
 }
 
@@ -476,23 +470,23 @@ void MasterChannel::setupMidiLearn()
 {
 	masterVolumeSlider.onMidiLearn = [this]()
 		{
-			learn("masterVolume", "Master Volume");
+			learn("masterVolume", "Master Volume", &masterVolumeSlider);
 		};
 	masterPanKnob.onMidiLearn = [this]()
 		{
-			learn("masterPan", "Master Pan");
+			learn("masterPan", "Master Pan", &masterPanKnob);
 		};
 	highKnob.onMidiLearn = [this]()
 		{
-			learn("masterHigh", "Master High EQ");
+			learn("masterHigh", "Master High EQ", &highKnob);
 		};
 	midKnob.onMidiLearn = [this]()
 		{
-			learn("masterMid", "Master Mid EQ");
+			learn("masterMid", "Master Mid EQ", &midKnob);
 		};
 	lowKnob.onMidiLearn = [this]()
 		{
-			learn("masterLow", "Master Low EQ");
+			learn("masterLow", "Master Low EQ", &lowKnob);
 		};
 
 	masterVolumeSlider.onMidiRemove = [this]()

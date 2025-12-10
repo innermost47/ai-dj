@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #include "JuceHeader.h"
 #include "MixerChannel.h"
 #include <string>
@@ -603,7 +596,7 @@ void MixerChannel::paint(juce::Graphics& g)
 	}
 	else if (isSelected)
 	{
-		bgColour = ColourPalette::backgroundMid;
+		bgColour = ColourPalette::trackSelected.withAlpha(0.1f);
 	}
 	else
 	{
@@ -726,8 +719,8 @@ void MixerChannel::resized()
 	area.removeFromTop(5);
 
 	auto transportArea = area.removeFromTop(60);
-	auto topRow = transportArea.removeFromTop(28);
-	auto bottomRow = transportArea;
+	auto topRow = transportArea.removeFromTop(30);
+	auto bottomRow = transportArea.removeFromTop(30);
 
 	playButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
 	stopButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
@@ -736,7 +729,7 @@ void MixerChannel::resized()
 
 	area.removeFromTop(5);
 
-	auto volumeArea = area.removeFromTop(220);
+	auto volumeArea = area.removeFromTop(320);
 	volumeSlider.setBounds(volumeArea.reduced(width / 4, 0));
 
 	area.removeFromTop(5);
@@ -926,7 +919,6 @@ void MixerChannel::setupUI()
 
 void MixerChannel::updateButtonColors()
 {
-
 	if (!track)
 	{
 		return;
@@ -956,7 +948,7 @@ void MixerChannel::updateButtonColors()
 	}
 
 	muteButton.setToggleState(isMuted, juce::dontSendNotification);
-	muteButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::red);
+	muteButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::muteActive);
 	muteButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 	muteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
 	muteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
@@ -995,7 +987,7 @@ void MixerChannel::stopGeneratingAnimation()
 	repaint();
 }
 
-void MixerChannel::learn(juce::String param, std::function<void(float)> uiCallback)
+void MixerChannel::learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback)
 {
 	if (audioProcessor.getActiveEditor() && track && track->slotIndex != -1)
 	{
@@ -1008,7 +1000,7 @@ void MixerChannel::learn(juce::String param, std::function<void(float)> uiCallba
 					editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
 				} });
 				audioProcessor.getMidiLearnManager()
-					.startLearning(parameterName, &audioProcessor, uiCallback, description);
+					.startLearning(parameterName, &audioProcessor, uiCallback, description, component);
 	}
 }
 
@@ -1025,31 +1017,31 @@ void MixerChannel::setupMidiLearn()
 {
 	playButton.onMidiLearn = [this]()
 		{
-			learn("Play");
+			learn("Play", &playButton);
 		};
 	muteButton.onMidiLearn = [this]()
 		{
-			learn("Mute");
+			learn("Mute", &muteButton);
 		};
 	soloButton.onMidiLearn = [this]()
 		{
-			learn("Solo");
+			learn("Solo", &soloButton);
 		};
 	volumeSlider.onMidiLearn = [this]()
 		{
-			learn("Volume");
+			learn("Volume", &volumeSlider);
 		};
 	pitchKnob.onMidiLearn = [this]()
 		{
-			learn("Pitch");
+			learn("Pitch", &pitchKnob);
 		};
 	fineKnob.onMidiLearn = [this]()
 		{
-			learn("Fine");
+			learn("Fine", &fineKnob);
 		};
 	panKnob.onMidiLearn = [this]()
 		{
-			learn("Pan");
+			learn("Pan", &panKnob);
 		};
 	playButton.onMidiRemove = [this]()
 		{

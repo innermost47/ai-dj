@@ -1,9 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# Copyright (C) 2025 Anthony Charretier
-
 from typing import Dict, Any
 import sqlite3
 from datetime import datetime
@@ -60,9 +54,6 @@ def get_api_key_info(api_key: str) -> Dict[str, Any]:
 
 
 def check_api_key_status(api_key: str) -> tuple[bool, str, Dict[str, Any]]:
-    """
-    Retourne (is_valid, error_code, key_info)
-    """
     if ENVIRONMENT == "dev":
         return True, None, {"unlimited": True}
 

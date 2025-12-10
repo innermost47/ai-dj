@@ -1,14 +1,7 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# Copyright (C) 2025 Anthony Charretier
-
 import os
 from core.llm_interface import DJAILL
 from core.music_generator import MusicGenerator
 from core.layer_manager import LayerManager
-from core.stems_manager import StemsManager
 
 BEATS_PER_BAR = 4
 
@@ -31,9 +24,6 @@ class DJSystem:
             return
         self.model_path = args.model_path
         self.output_dir_base = "./output"
-
-        print("🚀 Initializing OBSIDIAN-Neural system...")
-        self.stems_manager = StemsManager()
 
         initial_llm_state = {
             "current_tempo": 126,

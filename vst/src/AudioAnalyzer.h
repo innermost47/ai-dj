@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #pragma once
 #include "JuceHeader.h"
 #include "SoundTouch.h"
@@ -13,7 +6,7 @@
 class AudioAnalyzer
 {
 public:
-	static float detectBPM(const juce::AudioBuffer<float> &buffer, double sampleRate)
+	static float detectBPM(const juce::AudioBuffer<float>& buffer, double sampleRate)
 	{
 		if (buffer.getNumSamples() == 0)
 			return 0.0f;
@@ -22,44 +15,48 @@ public:
 		{
 			soundtouch::BPMDetect bpmDetect(1, (int)sampleRate);
 
+			int maxSamplesToAnalyze = (int)(sampleRate * 10.0);
+			int samplesToAnalyze = std::min(buffer.getNumSamples(), maxSamplesToAnalyze);
+
 			std::vector<float> monoData;
-			monoData.reserve(buffer.getNumSamples());
+			monoData.reserve(samplesToAnalyze);
 
 			bool retFlag;
-			float retVal = normalizeAudio(buffer, monoData, retFlag);
+			float retVal = normalizeAudio(buffer, monoData, retFlag, samplesToAnalyze);
 			if (retFlag)
 				return retVal;
 
 			chunkAnalysis(monoData, bpmDetect);
 
 			float detectedBPM = bpmDetect.getBpm();
-			return returnDetectedBPMorFallback(detectedBPM, buffer, sampleRate);
+
+			if (detectedBPM >= 30.0f && detectedBPM <= 300.0f)
+			{
+				DBG("BPM detected: " << detectedBPM);
+				return detectedBPM;
+			}
+
+			DBG("BPM detection failed, returning 0");
+			return 0.0f;
 		}
-		catch (const std::exception & /*e*/)
+		catch (const std::exception& e)
 		{
+			DBG("BPM detection error: " << e.what());
 			return 0.0f;
 		}
 	}
-
-	static float returnDetectedBPMorFallback(float detectedBPM, const juce::AudioSampleBuffer &buffer, double sampleRate)
+	static float returnDetectedBPMorFallback(float detectedBPM,
+		const juce::AudioSampleBuffer& /*buffer*/,
+		double /*sampleRate*/)
 	{
 		if (detectedBPM >= 30.0f && detectedBPM <= 300.0f)
 		{
 			return detectedBPM;
 		}
-		else
-		{
-			float fallbackBPM = detectBPMByOnsets(buffer, sampleRate);
-			if (fallbackBPM >= 30.0f && fallbackBPM <= 300.0f)
-			{
-				return fallbackBPM;
-			}
-
-			return 0.0f;
-		}
+		return 0.0f;
 	}
 
-	static void chunkAnalysis(std::vector<float> &monoData, soundtouch::BPMDetect &bpmDetect)
+	static void chunkAnalysis(std::vector<float>& monoData, soundtouch::BPMDetect& bpmDetect)
 	{
 		const int chunkSize = 4096;
 
@@ -70,11 +67,18 @@ public:
 		}
 	}
 
-	static float normalizeAudio(const juce::AudioSampleBuffer &buffer, std::vector<float> &monoData, bool &retFlag)
+	static float normalizeAudio(const juce::AudioSampleBuffer& buffer,
+		std::vector<float>& monoData,
+		bool& retFlag,
+		int maxSamples = -1)
 	{
 		retFlag = true;
+
+		int samplesToProcess = (maxSamples > 0) ? std::min(maxSamples, buffer.getNumSamples())
+			: buffer.getNumSamples();
+
 		float maxLevel = 0.0f;
-		for (int i = 0; i < buffer.getNumSamples(); ++i)
+		for (int i = 0; i < samplesToProcess; ++i)
 		{
 			float mono = buffer.getSample(0, i);
 			if (buffer.getNumChannels() > 1)
@@ -85,96 +89,42 @@ public:
 			maxLevel = std::max(maxLevel, std::abs(mono));
 			monoData.push_back(mono);
 		}
+
 		if (maxLevel < 0.001f)
 		{
 			return 0.0f;
 		}
+
 		float normalizeGain = 0.5f / maxLevel;
-		for (auto &sample : monoData)
+		for (auto& sample : monoData)
 		{
 			sample *= normalizeGain;
 		}
+
 		retFlag = false;
-		return {};
+		return 0.0f;
 	}
 
-	static float detectBPMByOnsets(const juce::AudioBuffer<float> &buffer, double sampleRate)
+	static void timeStretchBufferFast(juce::AudioBuffer<float>& buffer,
+		double ratio,
+		double sampleRate)
 	{
-		if (buffer.getNumSamples() < sampleRate)
-			return 0.0f;
-
-		try
-		{
-			const int hopSize = 512;
-			const int windowSize = 1024;
-			std::vector<float> onsetStrength;
-
-			for (int i = 0; i < buffer.getNumSamples() - windowSize; i += hopSize)
-			{
-				float energy = 0.0f;
-				for (int j = 0; j < windowSize; ++j)
-				{
-					float sample = buffer.getSample(0, i + j);
-					if (buffer.getNumChannels() > 1)
-					{
-						sample = (sample + buffer.getSample(1, i + j)) * 0.5f;
-					}
-					energy += sample * sample;
-				}
-				onsetStrength.push_back(std::sqrt(energy / windowSize));
-			}
-			std::vector<int> onsets;
-			float threshold = 0.1f;
-
-			for (int i = 1; i < onsetStrength.size() - 1; ++i)
-			{
-				if (onsetStrength[i] > threshold &&
-					onsetStrength[i] > onsetStrength[i - 1] &&
-					onsetStrength[i] > onsetStrength[i + 1])
-				{
-					onsets.push_back(i);
-				}
-			}
-
-			if (onsets.size() < 4)
-			{
-				return 0.0f;
-			}
-			std::vector<float> intervals;
-			for (int i = 1; i < onsets.size(); ++i)
-			{
-				float intervalSeconds = (onsets[i] - onsets[i - 1]) * hopSize / (float)sampleRate;
-				if (intervalSeconds > 0.2f && intervalSeconds < 2.0f)
-				{
-					intervals.push_back(60.0f / intervalSeconds);
-				}
-			}
-
-			if (intervals.empty())
-			{
-				return 0.0f;
-			}
-
-			std::sort(intervals.begin(), intervals.end());
-			float medianBPM = intervals[intervals.size() / 2];
-
-			if (medianBPM >= 30.0f && medianBPM <= 300.0f)
-			{
-				return medianBPM;
-			}
-
-			return 0.0f;
-		}
-		catch (const std::exception & /*e*/)
-		{
-			return 0.0f;
-		}
+		timeStretchBuffer(buffer, ratio, sampleRate, false);
 	}
 
-	static void timeStretchBuffer(juce::AudioBuffer<float> &buffer,
-								  double ratio, double sampleRate)
+	static void timeStretchBufferHQ(juce::AudioBuffer<float>& buffer,
+		double ratio,
+		double sampleRate)
 	{
-		if (ratio == 1.0 || buffer.getNumSamples() == 0)
+		timeStretchBuffer(buffer, ratio, sampleRate, true);
+	}
+
+	static void timeStretchBuffer(juce::AudioBuffer<float>& buffer,
+		double ratio,
+		double sampleRate,
+		bool highQuality = false)
+	{
+		if (std::abs(ratio - 1.0) < 0.001 || buffer.getNumSamples() == 0)
 			return;
 
 		try
@@ -182,7 +132,33 @@ public:
 			soundtouch::SoundTouch soundTouch;
 			soundTouch.setSampleRate((int)sampleRate);
 			soundTouch.setChannels(buffer.getNumChannels());
-			soundTouch.setTempoChange((ratio - 1.0) * 100.0);
+
+			if (highQuality)
+			{
+				soundTouch.setSetting(SETTING_USE_QUICKSEEK, 0);
+				soundTouch.setSetting(SETTING_USE_AA_FILTER, 1);
+				soundTouch.setSetting(SETTING_AA_FILTER_LENGTH, 64);
+				soundTouch.setSetting(SETTING_SEQUENCE_MS, 82);
+				soundTouch.setSetting(SETTING_SEEKWINDOW_MS, 28);
+				soundTouch.setSetting(SETTING_OVERLAP_MS, 12);
+			}
+			else
+			{
+				soundTouch.setSetting(SETTING_USE_QUICKSEEK, 1);
+				soundTouch.setSetting(SETTING_USE_AA_FILTER, 1);
+				soundTouch.setSetting(SETTING_AA_FILTER_LENGTH, 32);
+				soundTouch.setSetting(SETTING_SEQUENCE_MS, 40);
+				soundTouch.setSetting(SETTING_SEEKWINDOW_MS, 15);
+				soundTouch.setSetting(SETTING_OVERLAP_MS, 8);
+			}
+
+			double clampedRatio = juce::jlimit(0.5, 2.0, ratio);
+			if (clampedRatio != ratio)
+			{
+				DBG("Warning: Ratio clamped from " << ratio << " to " << clampedRatio);
+			}
+
+			soundTouch.setTempoChange((clampedRatio - 1.0) * 100.0);
 
 			if (buffer.getNumChannels() == 1)
 			{
@@ -224,11 +200,14 @@ public:
 						buffer.setSample(1, i, interleavedOutput[i * 2 + 1]);
 					}
 				}
+
+				DBG("Time stretch completed: " << clampedRatio << "x ("
+					<< buffer.getNumSamples() << " -> " << outputSamples << " samples)");
 			}
 		}
-		catch (const std::exception &e)
+		catch (const std::exception& e)
 		{
-			std::cout << "Error: " << e.what() << std::endl;
+			DBG("Time stretch error: " << e.what());
 		}
 	}
 };

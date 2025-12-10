@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #pragma once
 #include "JuceHeader.h"
 #include "TrackData.h"
@@ -186,7 +179,6 @@ public:
 			trackState.setProperty("slotIndex", track->slotIndex, nullptr);
 			trackState.setProperty("prompt", track->prompt, nullptr);
 			trackState.setProperty("style", track->style, nullptr);
-			trackState.setProperty("stems", track->stems, nullptr);
 			trackState.setProperty("bpm", track->bpm, nullptr);
 			trackState.setProperty("originalBpm", track->originalBpm, nullptr);
 			trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
@@ -228,7 +220,12 @@ public:
 			trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(), nullptr);
 			trackState.setProperty("usePages", track->usePages.load(), nullptr);
 			trackState.setProperty("currentPageIndex", track->currentPageIndex, nullptr);
-			for (int pageIndex = 0; pageIndex < 4; ++pageIndex) {
+			trackState.setProperty("canvasData", track->canvasData, nullptr);
+			trackState.setProperty("canvasState", track->canvasState, nullptr);
+			trackState.setProperty("selectedKeywords", track->selectedKeywords.joinIntoString("|"), nullptr);
+
+			for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
+			{
 				auto pageState = juce::ValueTree("Page");
 				const auto& page = track->pages[pageIndex];
 
@@ -243,31 +240,18 @@ public:
 				pageState.setProperty("generationBpm", page.generationBpm, nullptr);
 				pageState.setProperty("generationKey", page.generationKey, nullptr);
 				pageState.setProperty("generationDuration", page.generationDuration, nullptr);
-				pageState.setProperty("stems", page.stems, nullptr);
 				pageState.setProperty("loopStart", page.loopStart, nullptr);
 				pageState.setProperty("loopEnd", page.loopEnd, nullptr);
 				pageState.setProperty("useOriginalFile", page.useOriginalFile.load(), nullptr);
 				pageState.setProperty("hasOriginalVersion", page.hasOriginalVersion.load(), nullptr);
 				pageState.setProperty("isLoaded", page.isLoaded.load(), nullptr);
-
-				juce::String stemsString;
-				for (int i = 0; i < page.preferredStems.size(); ++i) {
-					if (i > 0) stemsString += ",";
-					stemsString += page.preferredStems[i];
-				}
-				pageState.setProperty("preferredStems", stemsString, nullptr);
+				pageState.setProperty("canvasData", page.canvasData, nullptr);
+				pageState.setProperty("canvasState", page.canvasState, nullptr);
+				pageState.setProperty("selectedKeywords", page.selectedKeywords.joinIntoString("|"), nullptr);
 
 				trackState.appendChild(pageState, nullptr);
 			}
 
-			juce::String stemsString;
-			for (int i = 0; i < track->preferredStems.size(); ++i)
-			{
-				if (i > 0)
-					stemsString += ",";
-				stemsString += track->preferredStems[i];
-			}
-			trackState.setProperty("preferredStems", stemsString, nullptr);
 			if (track->numSamples > 0 && !track->audioFilePath.isEmpty())
 			{
 				trackState.setProperty("audioFilePath", track->audioFilePath, nullptr);
@@ -320,7 +304,6 @@ public:
 			track->prompt = trackState.getProperty("prompt", "");
 			track->slotIndex = trackState.getProperty("slotIndex", -1);
 			track->style = trackState.getProperty("style", "");
-			track->stems = trackState.getProperty("stems", "");
 			track->bpm = trackState.getProperty("bpm", 126.0f);
 			track->originalBpm = trackState.getProperty("originalBpm", 126.0f);
 			track->timeStretchMode = 4;
@@ -360,28 +343,41 @@ public:
 			track->beatRepeatEndPosition = trackState.getProperty("beatRepeatEndPosition", 0.0);
 			track->beatRepeatActive = trackState.getProperty("beatRepeatActive", false);
 			track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
-
+			track->canvasData = trackState.getProperty("canvasData", "");
+			track->canvasState = trackState.getProperty("canvasState", "");
 			track->usePages = trackState.getProperty("usePages", false);
 			track->currentPageIndex = trackState.getProperty("currentPageIndex", 0);
 
-			if (track->usePages.load()) {
+			juce::String keywordsStr = trackState.getProperty("selectedKeywords", "");
+			if (keywordsStr.isNotEmpty())
+			{
+				track->selectedKeywords.addTokens(keywordsStr, "|", "");
+			}
+
+			if (track->usePages.load())
+			{
 				DBG("Loading track " << track->trackName << " with pages system");
 
-				for (int pageIndex = 0; pageIndex < 4; ++pageIndex) {
+				for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
+				{
 					juce::ValueTree pageState;
 
-					for (int childIndex = 0; childIndex < trackState.getNumChildren(); ++childIndex) {
+					for (int childIndex = 0; childIndex < trackState.getNumChildren(); ++childIndex)
+					{
 						auto child = trackState.getChild(childIndex);
-						if (child.hasType("Page")) {
+						if (child.hasType("Page"))
+						{
 							int storedPageIndex = child.getProperty("index", -1);
-							if (storedPageIndex == pageIndex) {
+							if (storedPageIndex == pageIndex)
+							{
 								pageState = child;
 								break;
 							}
 						}
 					}
 
-					if (pageState.isValid()) {
+					if (pageState.isValid())
+					{
 						auto& page = track->pages[pageIndex];
 						page.audioFilePath = pageState.getProperty("audioFilePath", "").toString();
 						page.numSamples = pageState.getProperty("numSamples", 0);
@@ -393,37 +389,80 @@ public:
 						page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 						page.generationKey = pageState.getProperty("generationKey", "").toString();
 						page.generationDuration = pageState.getProperty("generationDuration", 6);
-						page.stems = pageState.getProperty("stems", "").toString();
 						page.loopStart = pageState.getProperty("loopStart", 0.0);
 						page.loopEnd = pageState.getProperty("loopEnd", 4.0);
 						page.useOriginalFile = pageState.getProperty("useOriginalFile", false);
 						page.hasOriginalVersion = pageState.getProperty("hasOriginalVersion", false);
-						page.isLoaded = false;
+						page.canvasData = pageState.getProperty("canvasData", "").toString();
+						page.canvasState = pageState.getProperty("canvasState", "").toString();
 
-						juce::String stemsString = pageState.getProperty("preferredStems", "").toString();
-						page.preferredStems.clear();
-						if (stemsString.isNotEmpty()) {
-							juce::StringArray stemsArray = juce::StringArray::fromTokens(stemsString, ",", "");
-							for (const auto& stem : stemsArray) {
-								page.preferredStems.push_back(stem.trim().toStdString());
-							}
+						juce::String pageKeywordsStr = pageState.getProperty("selectedKeywords", "");
+						if (pageKeywordsStr.isNotEmpty())
+						{
+							page.selectedKeywords.addTokens(pageKeywordsStr, "|", "");
 						}
 
-						if (!page.audioFilePath.isEmpty()) {
+						page.isLoaded = false;
+
+						if (!page.audioFilePath.isEmpty())
+						{
 							juce::File audioFile(page.audioFilePath);
-							if (audioFile.existsAsFile()) {
-								DBG("Loading page " << (char)('A' + pageIndex) << " from: " << audioFile.getFullPathName());
-								loadAudioFileForPage(track.get(), pageIndex, audioFile);
+							if (audioFile.existsAsFile())
+							{
+								juce::File fileToLoad = audioFile;
+
+								if (page.useOriginalFile.load() && page.hasOriginalVersion.load())
+								{
+									char pageName = static_cast<char>('A' + pageIndex);
+									juce::String fileName = audioFile.getFileNameWithoutExtension();
+									juce::String legacySuffix = "_" + juce::String(65 + pageIndex);
+									juce::String newSuffix = "_" + juce::String::charToString(pageName);
+
+									juce::String baseTrackId;
+									juce::String actualSuffix;
+
+									if (fileName.endsWith(newSuffix))
+									{
+										baseTrackId = fileName.dropLastCharacters(newSuffix.length());
+										actualSuffix = newSuffix;
+									}
+									else if (fileName.endsWith(legacySuffix))
+									{
+										baseTrackId = fileName.dropLastCharacters(legacySuffix.length());
+										actualSuffix = legacySuffix;
+									}
+									if (baseTrackId.isNotEmpty())
+									{
+										juce::File originalFile = audioFile.getParentDirectory()
+											.getChildFile(baseTrackId + "_original" + actualSuffix + ".wav");
+
+										if (originalFile.existsAsFile())
+										{
+											fileToLoad = originalFile;
+											DBG("Loading ORIGINAL version for page " << (char)('A' + pageIndex) << ": " << originalFile.getFullPathName());
+										}
+										else
+										{
+											DBG("Original file not found: " << originalFile.getFullPathName());
+										}
+									}
+								}
+
+								DBG("Loading page " << (char)('A' + pageIndex) << " from: " << fileToLoad.getFullPathName());
+								loadAudioFileForPage(track.get(), pageIndex, fileToLoad);
 							}
-							else {
+							else
+							{
 								DBG("Page " << (char)('A' + pageIndex) << " file not found: " << page.audioFilePath);
 								juce::String fileName = audioFile.getFileName();
-								if (fileName.contains("_" + juce::String('A' + pageIndex))) {
+								if (fileName.contains("_" + juce::String('A' + pageIndex)))
+								{
 									char pageName = static_cast<char>('A' + pageIndex);
 									juce::String newFileName = fileName.replace("_" + juce::String('A' + pageIndex), "_" + juce::String(pageName));
 									juce::File newFile = audioFile.getParentDirectory().getChildFile(newFileName);
 
-									if (newFile.existsAsFile()) {
+									if (newFile.existsAsFile())
+									{
 										DBG("Found file with new naming: " << newFile.getFullPathName());
 										loadAudioFileForPage(track.get(), pageIndex, newFile);
 										page.audioFilePath = newFile.getFullPathName();
@@ -432,33 +471,37 @@ public:
 							}
 						}
 					}
-					else {
+					else
+					{
 						DBG("Page " << pageIndex << " state not found - empty page");
 					}
 				}
 
 				track->syncLegacyProperties();
-				DBG("Track " << track->trackName << " loaded in pages mode - current page: " <<
-					(char)('A' + track->currentPageIndex) << " with " << track->numSamples << " samples");
-
+				DBG("Track " << track->trackName << " loaded in pages mode - current page: " << (char)('A' + track->currentPageIndex) << " with " << track->numSamples << " samples");
 			}
-			else {
+			else
+			{
 				DBG("Loading track " << track->trackName << " in legacy mode");
 				juce::String audioFilePath = trackState.getProperty("audioFilePath", "");
-				if (audioFilePath.isNotEmpty()) {
+				if (audioFilePath.isNotEmpty())
+				{
 					juce::File audioFile(audioFilePath);
 					DBG("LOADING STATE - audioFilePath: " + audioFilePath.toStdString());
-					if (audioFile.existsAsFile()) {
+					if (audioFile.existsAsFile())
+					{
 						DBG("File exists: YES");
 						track->audioFilePath = audioFilePath;
 						track->sampleRate = trackState.getProperty("sampleRate", 48000.0);
 						track->numSamples = trackState.getProperty("numSamples", 0);
 
 						juce::File fileToLoad = audioFile;
-						if (track->useOriginalFile.load() && track->hasOriginalVersion.load()) {
+						if (track->useOriginalFile.load() && track->hasOriginalVersion.load())
+						{
 							juce::String originalPath = audioFilePath.replace(".wav", "_original.wav");
 							juce::File originalFile(originalPath);
-							if (originalFile.existsAsFile()) {
+							if (originalFile.existsAsFile())
+							{
 								fileToLoad = originalFile;
 								DBG("Loading original version: " + originalPath.toStdString());
 							}
@@ -467,39 +510,37 @@ public:
 						loadAudioFileForTrack(track.get(), fileToLoad);
 						DBG("Loaded track audio from: " + fileToLoad.getFullPathName().toStdString());
 					}
-					else {
+					else
+					{
 						DBG("File exists: NO");
 						DBG("Audio file not found: " + audioFilePath.toStdString());
 					}
 				}
-				else {
+				else
+				{
 					DBG("No audioFilePath in state for track with slot index: " << juce::String(track->slotIndex));
 				}
 			}
 
-			if (!track->usePages.load()) {
-				juce::String stemsString = trackState.getProperty("preferredStems", "drums,bass");
+			if (!track->usePages.load())
+			{
 				track->lastPpqPosition = -1.0;
 				track->customStepCounter = 0;
 				track->sequencerData.stepAccumulator = 0.0;
-				track->preferredStems.clear();
-				if (stemsString.isNotEmpty()) {
-					juce::StringArray stemsArray = juce::StringArray::fromTokens(stemsString, ",", "");
-					for (const auto& stem : stemsArray) {
-						track->preferredStems.push_back(stem.trim());
-					}
-				}
 			}
 
 			auto sequencerState = trackState.getChildWithName("Sequencer");
-			if (sequencerState.isValid()) {
+			if (sequencerState.isValid())
+			{
 				track->sequencerData.isPlaying = sequencerState.getProperty("isPlaying", false);
 				track->sequencerData.currentStep = 0;
 				track->sequencerData.currentMeasure = 0;
 				track->sequencerData.numMeasures = sequencerState.getProperty("numMeasures", 1);
 				track->sequencerData.beatsPerMeasure = sequencerState.getProperty("beatsPerMeasure", 4);
-				for (int m = 0; m < 4; ++m) {
-					for (int s = 0; s < 16; ++s) {
+				for (int m = 0; m < 4; ++m)
+				{
+					for (int s = 0; s < 16; ++s)
+					{
 						juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
 						track->sequencerData.steps[m][s] = sequencerState.getProperty(stepKey, false);
 
@@ -509,10 +550,12 @@ public:
 				}
 			}
 
-			if (track->slotIndex < 0 || track->slotIndex >= 8 || usedSlots[track->slotIndex]) {
+			if (track->slotIndex < 0 || track->slotIndex >= 8 || usedSlots[track->slotIndex])
+			{
 				track->slotIndex = findFreeSlot();
 			}
-			if (track->slotIndex >= 0 && track->slotIndex < 8) {
+			if (track->slotIndex >= 0 && track->slotIndex < 8)
+			{
 				usedSlots[track->slotIndex] = true;
 			}
 
@@ -526,7 +569,8 @@ public:
 
 	void loadAudioFileForPage(TrackData* track, int pageIndex, const juce::File& audioFile)
 	{
-		if (!track || pageIndex < 0 || pageIndex >= 4) {
+		if (!track || pageIndex < 0 || pageIndex >= 4)
+		{
 			DBG("loadAudioFileForPage: Invalid parameters - track=" << (track ? "valid" : "null") << ", pageIndex=" << pageIndex);
 			return;
 		}
@@ -537,13 +581,15 @@ public:
 
 		static juce::AudioFormatManager formatManager;
 		static bool initialized = false;
-		if (!initialized) {
+		if (!initialized)
+		{
 			formatManager.registerBasicFormats();
 			initialized = true;
 		}
 
 		std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
-		if (!reader) {
+		if (!reader)
+		{
 			DBG("loadAudioFileForPage: Failed to create reader for page " << pageIndex << ": " << audioFile.getFullPathName());
 			page.numSamples = 0;
 			page.isLoaded = false;
@@ -556,7 +602,8 @@ public:
 
 		DBG("loadAudioFileForPage: File info - channels=" << numChannels << ", samples=" << numSamples << ", sampleRate=" << reader->sampleRate);
 
-		if (numSamples <= 0) {
+		if (numSamples <= 0)
+		{
 			DBG("loadAudioFileForPage: No samples in file for page " << pageIndex);
 			page.numSamples = 0;
 			page.isLoaded = false;
@@ -569,7 +616,8 @@ public:
 
 		DBG("loadAudioFileForPage: Buffer allocated - channels=" << page.audioBuffer.getNumChannels() << ", samples=" << page.audioBuffer.getNumSamples());
 
-		if (!reader->read(&page.audioBuffer, 0, numSamples, 0, true, true)) {
+		if (!reader->read(&page.audioBuffer, 0, numSamples, 0, true, true))
+		{
 			DBG("loadAudioFileForPage: Failed to read samples for page " << pageIndex);
 			page.numSamples = 0;
 			page.isLoaded = false;
@@ -577,7 +625,8 @@ public:
 			return;
 		}
 
-		if (numChannels == 1) {
+		if (numChannels == 1)
+		{
 			page.audioBuffer.copyFrom(1, 0, page.audioBuffer, 0, 0, numSamples);
 			DBG("loadAudioFileForPage: Converted mono to stereo");
 		}
@@ -587,13 +636,14 @@ public:
 		page.isLoaded = true;
 		page.isLoading = false;
 
-		DBG("loadAudioFileForPage: SUCCESS - Page " << (char)('A' + pageIndex) << " loaded with " <<
-			page.numSamples << " samples, buffer has " << page.audioBuffer.getNumSamples() << " samples");
+		DBG("loadAudioFileForPage: SUCCESS - Page " << (char)('A' + pageIndex) << " loaded with " << page.numSamples << " samples, buffer has " << page.audioBuffer.getNumSamples() << " samples");
 
 		float maxSample = 0.0f;
-		for (int ch = 0; ch < page.audioBuffer.getNumChannels(); ++ch) {
+		for (int ch = 0; ch < page.audioBuffer.getNumChannels(); ++ch)
+		{
 			auto* channelData = page.audioBuffer.getReadPointer(ch);
-			for (int i = 0; i < page.audioBuffer.getNumSamples(); ++i) {
+			for (int i = 0; i < page.audioBuffer.getNumSamples(); ++i)
+			{
 				maxSample = std::max(maxSample, std::abs(channelData[i]));
 			}
 		}
@@ -604,7 +654,8 @@ public:
 	{
 		static juce::AudioFormatManager formatManager;
 		static bool initialized = false;
-		if (!initialized) {
+		if (!initialized)
+		{
 			formatManager.registerBasicFormats();
 			initialized = true;
 		}
@@ -706,7 +757,8 @@ private:
 		double loopEndToUse = 0;
 		float originalBpmToUse = 126.0f;
 
-		if (track.usePages.load()) {
+		if (track.usePages.load())
+		{
 			const auto& currentPage = track.getCurrentPage();
 			bufferToUse = &currentPage.audioBuffer;
 			numSamplesToUse = currentPage.numSamples;
@@ -715,7 +767,8 @@ private:
 			loopEndToUse = currentPage.loopEnd;
 			originalBpmToUse = currentPage.originalBpm;
 		}
-		else {
+		else
+		{
 			bufferToUse = &track.audioBuffer;
 			numSamplesToUse = track.numSamples;
 			sampleRateToUse = track.sampleRate;
@@ -727,8 +780,21 @@ private:
 		if (numSamplesToUse == 0 || !track.isPlaying.load() || !bufferToUse)
 			return;
 
+
 		const float volume = juce::jlimit(0.0f, 1.0f, track.volume.load());
 		const float pan = juce::jlimit(-1.0f, 1.0f, track.pan.load());
+
+		float leftGain = 1.0f;
+		float rightGain = 1.0f;
+		if (pan < 0.0f)
+		{
+			rightGain = 1.0f + pan;
+		}
+		else if (pan > 0.0f)
+		{
+			leftGain = 1.0f - pan;
+		}
+
 		double currentPosition = track.readPosition.load();
 		double playbackRatio = 1.0;
 
@@ -778,34 +844,37 @@ private:
 			sectionLength = numSamplesToUse;
 		}
 
+		const float* leftChannel = bufferToUse->getReadPointer(0);
+		const float* rightChannel = bufferToUse->getNumChannels() > 1
+			? bufferToUse->getReadPointer(1)
+			: leftChannel;
+
+		const int bufferSize = bufferToUse->getNumSamples();
+
+		const double fadeStartPosition = endSample - 64.0;
+		const float fadeRcpLength = 1.0f / 64.0f;
+
+		const bool beatRepeatActive = track.beatRepeatActive.load();
+		const double beatRepeatStart = beatRepeatActive ? track.beatRepeatStartPosition.load() : 0.0;
+		const double beatRepeatEnd = beatRepeatActive ? track.beatRepeatEndPosition.load() : 0.0;
+
 		for (int i = 0; i < numSamples; ++i)
 		{
-			if (track.beatRepeatActive.load())
+			if (beatRepeatActive)
 			{
-				double beatRepeatStart = track.beatRepeatStartPosition.load();
-				double beatRepeatEnd = track.beatRepeatEndPosition.load();
-				if (track.readPosition.load() >= beatRepeatEnd)
+				double absolutePos = startSample + currentPosition;
+				if (absolutePos >= beatRepeatEnd)
 				{
 					currentPosition = beatRepeatStart - startSample;
 					track.readPosition.store(beatRepeatStart);
 				}
 			}
-			double absolutePosition = startSample + currentPosition;
-			float leftGain = 1.0f;
-			float rightGain = 1.0f;
 
-			if (pan < 0.0f)
-			{
-				rightGain = 1.0f + pan;
-			}
-			else if (pan > 0.0f)
-			{
-				leftGain = 1.0f - pan;
-			}
+			double absolutePosition = startSample + currentPosition;
+
 			if (absolutePosition >= endSample)
 			{
-				currentPosition = 0.0;
-				absolutePosition = startSample;
+				track.readPosition = 0.0;
 				track.isPlaying = false;
 				return;
 			}
@@ -816,39 +885,34 @@ private:
 				absolutePosition = startSample;
 			}
 
-			for (int ch = 0; ch < std::min(2, bufferToUse->getNumChannels()); ++ch)
+			int sampleIndex = static_cast<int>(absolutePosition);
+			if (sampleIndex >= bufferSize)
 			{
-				int sampleIndex = static_cast<int>(absolutePosition);
-				if (sampleIndex >= bufferToUse->getNumSamples())
-				{
-					track.isPlaying = false;
-					break;
-				}
-
-				float sample = interpolateLinear(
-					bufferToUse->getReadPointer(ch),
-					absolutePosition,
-					bufferToUse->getNumSamples());
-				sample *= volume;
-				if (ch == 0)
-				{
-					sample *= leftGain;
-				}
-				else
-				{
-					sample *= rightGain;
-				}
-				if (absolutePosition > (endSample - 64))
-				{
-					float fadeGain = (static_cast<float>(endSample) - static_cast<float>(absolutePosition)) / 64.0f;
-					fadeGain = juce::jlimit(0.0f, 1.0f, fadeGain);
-					sample *= fadeGain;
-				}
-				mixOutput.addSample(ch, i, sample);
-				individualOutput.setSample(ch, i, sample);
+				track.isPlaying = false;
+				break;
 			}
+
+			float fadeGain = 1.0f;
+			if (absolutePosition > fadeStartPosition)
+			{
+				fadeGain = static_cast<float>(endSample - absolutePosition) * fadeRcpLength;
+				fadeGain = juce::jlimit(0.0f, 1.0f, fadeGain);
+			}
+
+			float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
+			float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
+
+			leftSample *= volume * leftGain * fadeGain;
+			rightSample *= volume * rightGain * fadeGain;
+
+			mixOutput.addSample(0, i, leftSample);
+			mixOutput.addSample(1, i, rightSample);
+			individualOutput.setSample(0, i, leftSample);
+			individualOutput.setSample(1, i, rightSample);
+
 			currentPosition += playbackRatio;
 		}
+
 		track.readPosition = currentPosition;
 	}
 

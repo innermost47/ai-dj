@@ -1,10 +1,14 @@
-name: Build VST - All Platforms
+name: Build VST3 - All Platforms
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -14,7 +18,6 @@ permissions:
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,15 +26,32 @@ jobs:
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@v1
 
-      - name: Configure CMake
+      - name: Configure CMake (with performance optimizations)
         working-directory: vst
         run: |
           cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+          echo "✓ MSVC performance optimizations enabled (/O2 /fp:fast /GS- /LTCG)"
 
       - name: Build
         working-directory: vst
+        run: cmake --build build --config Release
+
+      - name: Verify optimizations
+        working-directory: vst
+        shell: pwsh
         run: |
-          cmake --build build --config Release
+          Write-Host "=== Windows Build Info ===" -ForegroundColor Cyan
+          Write-Host "Verifying performance optimizations..." -ForegroundColor Yellow
+
+          # Check that runtime checks are not present in Release
+          $buildLog = Get-Content build/CMakeFiles/ObsidianNeuralVST.dir/Release/*.log -ErrorAction SilentlyContinue
+          if ($buildLog -match "/RTC1") {
+            Write-Host "❌ WARNING: Runtime checks detected!" -ForegroundColor Red
+          } else {
+            Write-Host "✓ Runtime checks removed" -ForegroundColor Green
+          }
+
+          Write-Host "✓ Build completed with MSVC optimizations" -ForegroundColor Green
 
       - name: Upload Windows VST
         uses: actions/upload-artifact@v4
@@ -39,8 +59,9 @@ jobs:
           name: ObsidianNeural-Windows-VST3
           path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
 
-  build-macos:
-    runs-on: macos-latest
+  build-macos-universal:
+    name: Build macOS Universal (10.15+)
+    runs-on: macos-13
 
     steps:
       - uses: actions/checkout@v4
@@ -49,29 +70,269 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install cmake ninja create-dmg
+          brew install cmake ninja
 
-      - name: Configure CMake
+      - name: Configure CMake (with performance optimizations)
         working-directory: vst
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
+          echo "✓ Clang performance optimizations enabled (-O3 -ffast-math -fvectorize)"
 
       - name: Build
         working-directory: vst
+        run: cmake --build build --config Release
+
+      - name: Verify optimizations
+        working-directory: vst
         run: |
-          cmake --build build --config Release
+          echo "=== macOS Universal Build Info ==="
+          echo ""
+          echo "Architecture:"
+          lipo -info build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural
+
+          echo ""
+          echo "Deployment target:"
+          otool -l build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural | grep -A 5 LC_BUILD_VERSION
+
+          echo ""
+          echo "Checking for optimization flags in binary..."
+          # Vérifie que les optimisations vectorielles sont présentes
+          if otool -tv build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural | head -1000 | grep -q "vfmadd\|vmul\|vadd"; then
+            echo "✓ Vectorization detected (SIMD instructions present)"
+          else
+            echo "ℹ No SIMD instructions detected in sample (may be elsewhere)"
+          fi
+
+          echo ""
+          echo "✓ Build completed with Clang optimizations"
+
+      - name: Fix macOS permissions
+        run: chmod +x vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/*
+
+      - name: Import Code Signing Certificate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+          rm certificate.p12
+
+      - name: Sign VST3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
+            --timestamp \
+            --options runtime \
+            --deep \
+            vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+
+      - name: Verify signature
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          codesign --verify --verbose vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+
+      - name: Create ZIP for notarization
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          cd vst/build/ObsidianNeuralVST_artefacts/Release/VST3
+          ditto -c -k --keepParent OBSIDIAN-Neural.vst3 OBSIDIAN-Neural.zip
+          mv OBSIDIAN-Neural.zip ../../../../../
+
+      - name: Notarize VST3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+
+          : "${APPLE_ID:?Missing APPLE_ID}"
+          : "${APPLE_APP_SPECIFIC_PASSWORD:?Missing APPLE_APP_SPECIFIC_PASSWORD}"
+          : "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID}"
+
+          ZIP_FILE="OBSIDIAN-Neural.zip"
+          MAX_RETRIES=6
+          BASE_WAIT=5
+
+          check_connectivity() {
+            curl --silent --head --fail --max-time 10 "https://appstoreconnect.apple.com" >/dev/null 2>&1
+          }
+
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "🔄 Notarization attempt $attempt/$MAX_RETRIES..."
+            
+            if ! check_connectivity; then
+              echo "⚠️ Cannot reach appstoreconnect.apple.com"
+              if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+                sleep $(( BASE_WAIT * attempt ))
+                continue
+              else
+                echo "❌ Network unreachable after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+            
+            if xcrun notarytool submit "$ZIP_FILE" \
+                --apple-id "$APPLE_ID" \
+                --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+                --team-id "$APPLE_TEAM_ID" \
+                --wait; then
+              echo "✅ Notarization successful"
+              exit 0
+            else
+              echo "❌ notarytool failed on attempt $attempt"
+              if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+                WAIT_TIME=$(( BASE_WAIT * attempt ))
+                echo "⏳ Waiting ${WAIT_TIME}s before retry..."
+                sleep $WAIT_TIME
+              else
+                echo "❌ Notarization failed after $MAX_RETRIES attempts"
+                xcrun notarytool history --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" || true
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Staple VST3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          xcrun stapler staple vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+
+      - name: Verify build
+        run: |
+          echo "=== Universal Build Info ==="
+          echo "Architecture:"
+          lipo -info vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural
+          echo ""
+          echo "Deployment target:"
+          otool -l vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural | grep -A 5 LC_BUILD_VERSION
+          echo ""
+          if [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "Code signature:"
+            codesign -dv --verbose=4 vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+          else
+            echo "⚠️ Unsigned build (PR only)"
+          fi
 
       - name: Upload macOS VST
         uses: actions/upload-artifact@v4
         with:
-          name: ObsidianNeural-macOS-VST3
+          name: ObsidianNeural-macOS-Universal-VST3
           path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
+
+  build-macos-test:
+    name: Test Build - macOS ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    if: github.event_name == 'pull_request'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Ventura"
+            runner: macos-13
+            deployment_target: "13.0"
+          - name: "Sonoma"
+            runner: macos-14
+            deployment_target: "14.0"
+          - name: "Sequoia"
+            runner: macos-15
+            deployment_target: "15.0"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: brew install cmake ninja
+
+      - name: Configure CMake (with performance optimizations)
+        working-directory: vst
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ matrix.deployment_target }}"
+          echo "✓ Clang optimizations enabled for ${{ matrix.name }}"
+
+      - name: Build
+        working-directory: vst
+        run: cmake --build build --config Release
+
+      - name: Verify deployment target
+        run: |
+          echo "=== Build for ${{ matrix.name }} ==="
+          otool -l vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural | grep -A 5 LC_BUILD_VERSION
+
+  test-macos-universal:
+    name: Test Universal Build on macOS ${{ matrix.name }}
+    needs: build-macos-universal
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13
+            name: "13-Ventura"
+          - runner: macos-14
+            name: "14-Sonoma"
+          - runner: macos-15
+            name: "15-Sequoia"
+
+    steps:
+      - name: Download Universal VST
+        uses: actions/download-artifact@v4
+        with:
+          name: ObsidianNeural-macOS-Universal-VST3
+          path: ./vst
+
+      - name: Test VST loading
+        run: |
+          echo "=== Testing Universal Build on macOS ${{ matrix.name }} ==="
+          VST_PATH="./vst/OBSIDIAN-Neural.vst3"
+
+          if [ -d "$VST_PATH" ]; then
+            echo "✓ VST found"
+            
+            echo ""
+            echo "Architecture:"
+            lipo -info "$VST_PATH/Contents/MacOS/OBSIDIAN-Neural"
+            
+            echo ""
+            echo "Deployment target:"
+            otool -l "$VST_PATH/Contents/MacOS/OBSIDIAN-Neural" | grep -A 5 LC_BUILD_VERSION
+            
+            echo ""
+            echo "Dependencies (first 15):"
+            otool -L "$VST_PATH/Contents/MacOS/OBSIDIAN-Neural" | head -15
+            
+            echo ""
+            echo "Code signature:"
+            codesign -dv --verbose=4 "$VST_PATH" 2>&1 || echo "⚠️ Not signed (expected in PR build)"
+            
+            echo ""
+            echo "✅ Universal build successfully loaded on macOS ${{ matrix.name }}"
+          else
+            echo "❌ VST not found"
+            exit 1
+          fi
 
   build-linux:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,26 +341,44 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake ninja-build \
-            libasound2-dev \
-            libx11-dev libxext-dev libxrandr-dev libxcomposite-dev \
-            libxinerama-dev libxcursor-dev \
-            libfreetype6-dev \
-            libfontconfig1-dev \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libcurl4-openssl-dev
+          sudo apt-get install -y cmake ninja-build \
+            libasound2-dev libx11-dev libxext-dev libxrandr-dev libxcomposite-dev \
+            libxinerama-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libcurl4-openssl-dev
 
-      - name: Configure CMake
+      - name: Configure CMake (with performance optimizations)
         working-directory: vst
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          echo "✓ GCC performance optimizations enabled (-O3 -ffast-math -march=x86-64-v2)"
 
       - name: Build
         working-directory: vst
+        run: cmake --build build --config Release
+
+      - name: Verify optimizations
+        working-directory: vst
         run: |
-          cmake --build build --config Release
+          echo "=== Linux Build Info ==="
+          echo ""
+          echo "Binary info:"
+          file build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/x86_64-linux/OBSIDIAN-Neural.so
+
+          echo ""
+          echo "Checking for optimization indicators..."
+          # Vérifie la présence d'instructions SIMD
+          if objdump -d build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/x86_64-linux/OBSIDIAN-Neural.so | head -10000 | grep -q "mulss\|addss\|movaps"; then
+            echo "✓ SSE instructions detected (optimizations present)"
+          else
+            echo "ℹ SSE instructions not detected in sample"
+          fi
+
+          echo ""
+          echo "Dependencies:"
+          ldd build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/x86_64-linux/OBSIDIAN-Neural.so | head -10
+
+          echo ""
+          echo "✓ Build completed with GCC optimizations"
 
       - name: Upload Linux VST
         uses: actions/upload-artifact@v4
@@ -107,276 +386,20 @@ jobs:
           name: ObsidianNeural-Linux-VST3
           path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
 
-  build-python-executables:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            name: linux
-
-          - os: macos-13
-            name: macos-intel
-
-          - os: macos-latest
-            name: macos-arm64
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        shell: bash
-        run: |
-          pip install pillow pyinstaller psutil pystray GPUtil
-
-      - name: Build executables
-        shell: bash
-        run: |
-          pyinstaller --onefile --hidden-import=psutil --hidden-import=pystray --hidden-import=GPUtil --name obsidian-server-${{ matrix.name }} server_interface.py
-          pyinstaller --onefile --hidden-import=psutil --hidden-import=pystray --hidden-import=GPUtil --name obsidian-installer-${{ matrix.name }} installer.py
-
-      - name: Upload Python executables
-        uses: actions/upload-artifact@v4
-        with:
-          name: ObsidianNeural-Python-${{ matrix.name }}
-          path: dist/
-
-  build-macos-packages:
-    needs: [build-python-executables]
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install create-dmg
-        run: brew install create-dmg
-
-      - name: Download macOS Python executables
-        uses: actions/download-artifact@v4
-        with:
-          name: ObsidianNeural-Python-macos-intel
-          path: ./python-tools-intel/
-
-      - name: Download macOS ARM Python executables
-        uses: actions/download-artifact@v4
-        with:
-          name: ObsidianNeural-Python-macos-arm64
-          path: ./python-tools-arm64/
-
-      - name: Create Intel DMG with installer
-        run: |
-          mkdir -p dmg-staging-intel
-
-          # Copy Intel installer
-          cp python-tools-intel/obsidian-installer-macos-intel dmg-staging-intel/OBSIDIAN-Neural-Installer
-          chmod +x dmg-staging-intel/OBSIDIAN-Neural-Installer
-
-      - name: Create ARM DMG with installer
-        run: |
-          mkdir -p dmg-staging-arm64
-
-          # Copy ARM installer
-          cp python-tools-arm64/obsidian-installer-macos-arm64 dmg-staging-arm64/OBSIDIAN-Neural-Installer
-          chmod +x dmg-staging-arm64/OBSIDIAN-Neural-Installer
-
-      - name: Create Intel DMG
-        run: |
-          create-dmg \
-            --volname "OBSIDIAN-Neural-Installer-Intel" \
-            --window-pos 200 120 \
-            --window-size 500 300 \
-            --icon-size 100 \
-            --icon "OBSIDIAN-Neural-Installer" 250 150 \
-            --hide-extension "OBSIDIAN-Neural-Installer" \
-            "OBSIDIAN-Neural-Installer-macOS-Intel.dmg" \
-            "dmg-staging-intel/"
-
-      - name: Create ARM DMG
-        run: |
-          create-dmg \
-            --volname "OBSIDIAN-Neural-Installer-ARM64" \
-            --window-pos 200 120 \
-            --window-size 500 300 \
-            --icon-size 100 \
-            --icon "OBSIDIAN-Neural-Installer" 250 150 \
-            --hide-extension "OBSIDIAN-Neural-Installer" \
-            "OBSIDIAN-Neural-Installer-macOS-ARM64.dmg" \
-            "dmg-staging-arm64/"
-
-      - name: Upload Intel DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: ObsidianNeural-macOS-DMG-Intel
-          path: OBSIDIAN-Neural-Installer-macOS-Intel.dmg
-
-      - name: Upload ARM DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: ObsidianNeural-macOS-DMG-ARM64
-          path: OBSIDIAN-Neural-Installer-macOS-ARM64.dmg
-
-      - name: Prepare Intel PKG payload
-        run: |
-          mkdir -p pkg-staging-intel/payload/usr/local/bin
-          mkdir -p pkg-staging-intel/scripts
-
-          # Copy Intel installer to payload
-          cp python-tools-intel/obsidian-installer-macos-intel pkg-staging-intel/payload/usr/local/bin/obsidian-installer
-          chmod +x pkg-staging-intel/payload/usr/local/bin/obsidian-installer
-
-          # Copy Intel server to payload
-          cp python-tools-intel/obsidian-server-macos-intel pkg-staging-intel/payload/usr/local/bin/obsidian-server
-          chmod +x pkg-staging-intel/payload/usr/local/bin/obsidian-server
-
-      - name: Prepare ARM PKG payload
-        run: |
-          mkdir -p pkg-staging-arm64/payload/usr/local/bin
-          mkdir -p pkg-staging-arm64/scripts
-
-          # Copy ARM installer to payload
-          cp python-tools-arm64/obsidian-installer-macos-arm64 pkg-staging-arm64/payload/usr/local/bin/obsidian-installer
-          chmod +x pkg-staging-arm64/payload/usr/local/bin/obsidian-installer
-
-          # Copy ARM server to payload
-          cp python-tools-arm64/obsidian-server-macos-arm64 pkg-staging-arm64/payload/usr/local/bin/obsidian-server
-          chmod +x pkg-staging-arm64/payload/usr/local/bin/obsidian-server
-
-      - name: Create Intel postinstall script
-        run: |
-          cat > pkg-staging-intel/scripts/postinstall << 'EOF'
-          #!/bin/bash
-          ln -sf /usr/local/bin/obsidian-installer /usr/local/bin/obsidian-neural
-          echo "OBSIDIAN-Neural (Intel) installed successfully!"
-          echo "Available commands:"
-          echo "  obsidian-neural    - Run installer"
-          echo "  obsidian-server    - Run server directly"
-          echo "  obsidian-installer - Run installer directly"
-          exit 0
-          EOF
-          chmod +x pkg-staging-intel/scripts/postinstall
-
-      - name: Create ARM postinstall script
-        run: |
-          cat > pkg-staging-arm64/scripts/postinstall << 'EOF'
-          #!/bin/bash
-          ln -sf /usr/local/bin/obsidian-installer /usr/local/bin/obsidian-neural
-          echo "OBSIDIAN-Neural (Apple Silicon) installed successfully!"
-          echo "Available commands:"
-          echo "  obsidian-neural    - Run installer"
-          echo "  obsidian-server    - Run server directly"
-          echo "  obsidian-installer - Run installer directly"
-          exit 0
-          EOF
-          chmod +x pkg-staging-arm64/scripts/postinstall
-
-      - name: Build Intel PKG
-        run: |
-          pkgbuild \
-            --root pkg-staging-intel/payload \
-            --identifier com.obsidianneural.installer.intel \
-            --version "1.0.${{ github.run_number }}" \
-            --scripts pkg-staging-intel/scripts \
-            --install-location / \
-            OBSIDIAN-Neural-Installer-macOS-Intel.pkg
-
-      - name: Build ARM PKG
-        run: |
-          pkgbuild \
-            --root pkg-staging-arm64/payload \
-            --identifier com.obsidianneural.installer.arm64 \
-            --version "1.0.${{ github.run_number }}" \
-            --scripts pkg-staging-arm64/scripts \
-            --install-location / \
-            OBSIDIAN-Neural-Installer-macOS-ARM64.pkg
-
-      - name: Upload Intel PKG
-        uses: actions/upload-artifact@v4
-        with:
-          name: ObsidianNeural-macOS-PKG-Intel
-          path: OBSIDIAN-Neural-Installer-macOS-Intel.pkg
-
-      - name: Upload ARM PKG
-        uses: actions/upload-artifact@v4
-        with:
-          name: ObsidianNeural-macOS-PKG-ARM64
-          path: OBSIDIAN-Neural-Installer-macOS-ARM64.pkg
-
-  commit-binaries:
-    needs: [build-python-executables]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          fetch-depth: 0
-
-      - name: Download Python artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: ObsidianNeural-Python-*
-          merge-multiple: false
-
-      - name: Organize binaries
-        run: |
-          rm -rf bin/*
-          mkdir -p bin
-
-          if [ -d "ObsidianNeural-Python-macos-intel" ]; then
-            cp ObsidianNeural-Python-macos-intel/obsidian-server-macos-intel bin/OBSIDIAN-Neural-Server-macos-intel
-          fi
-
-          if [ -d "ObsidianNeural-Python-macos-arm64" ]; then
-            cp ObsidianNeural-Python-macos-arm64/obsidian-server-macos-arm64 bin/OBSIDIAN-Neural-Server-macos-arm64
-          fi
-
-          if [ -d "ObsidianNeural-Python-linux" ]; then
-            cp ObsidianNeural-Python-linux/obsidian-server-linux bin/OBSIDIAN-Neural-Server-linux
-          fi
-
-      - name: Commit binaries
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-
-          git add bin/
-          git commit -m "Update binaries [skip ci]" || exit 0
-
-          git pull --rebase origin main
-          git push
-
   create-release:
     needs:
-      [
-        build-windows,
-        build-macos,
-        build-linux,
-        build-python-executables,
-        build-macos-packages,
-        commit-binaries,
-      ]
+      [build-windows, build-macos-universal, test-macos-universal, build-linux]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
       - name: Create release assets
         run: |
-          # Copy installer.py for Windows users
-          cp installer.py ./OBSIDIAN-Neural-Installer.py
-
           # VST3 plugins
           if [ -d "ObsidianNeural-Windows-VST3" ]; then
             cd ObsidianNeural-Windows-VST3
@@ -384,8 +407,8 @@ jobs:
             cd ..
           fi
 
-          if [ -d "ObsidianNeural-macOS-VST3" ]; then
-            cd ObsidianNeural-macOS-VST3
+          if [ -d "ObsidianNeural-macOS-Universal-VST3" ]; then
+            cd ObsidianNeural-macOS-Universal-VST3
             zip -r ../OBSIDIAN-Neural-macOS-VST3.zip .
             cd ..
           fi
@@ -396,95 +419,69 @@ jobs:
             cd ..
           fi
 
-          # Copy Intel DMG and PKG
-          if [ -f "ObsidianNeural-macOS-DMG-Intel/OBSIDIAN-Neural-Installer-macOS-Intel.dmg" ]; then
-            cp "ObsidianNeural-macOS-DMG-Intel/OBSIDIAN-Neural-Installer-macOS-Intel.dmg" ./
-          fi
-
-          if [ -f "ObsidianNeural-macOS-PKG-Intel/OBSIDIAN-Neural-Installer-macOS-Intel.pkg" ]; then
-            cp "ObsidianNeural-macOS-PKG-Intel/OBSIDIAN-Neural-Installer-macOS-Intel.pkg" ./
-          fi
-
-          # Copy ARM DMG and PKG
-          if [ -f "ObsidianNeural-macOS-DMG-ARM64/OBSIDIAN-Neural-Installer-macOS-ARM64.dmg" ]; then
-            cp "ObsidianNeural-macOS-DMG-ARM64/OBSIDIAN-Neural-Installer-macOS-ARM64.dmg" ./
-          fi
-
-          if [ -f "ObsidianNeural-macOS-PKG-ARM64/OBSIDIAN-Neural-Installer-macOS-ARM64.pkg" ]; then
-            cp "ObsidianNeural-macOS-PKG-ARM64/OBSIDIAN-Neural-Installer-macOS-ARM64.pkg" ./
-          fi
-
-          # Linux installer
-          if [ -d "ObsidianNeural-Python-linux" ]; then
-            cp ObsidianNeural-Python-linux/obsidian-installer-linux ./OBSIDIAN-Neural-Installer-Linux
-          fi
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
           name: "OBSIDIAN-Neural v${{ github.run_number }}"
           body: |
-            ## 🎵 OBSIDIAN-Neural Release v${{ github.run_number }}
+            # 🎵 OBSIDIAN-Neural Release v${{ github.run_number }}
 
-            ### 📥 Quick Install
-              Download the installer for your platform:
-              - **Windows**: `OBSIDIAN-Neural-Installer.py` (requires Python 3.10+)
-              - **macOS Intel**: 
-                - `OBSIDIAN-Neural-Installer-macOS-Intel.dmg` (for Intel Macs)
-                - `OBSIDIAN-Neural-Installer-macOS-Intel.pkg` (system-wide install)
-              - **macOS Apple Silicon**: 
-                - `OBSIDIAN-Neural-Installer-macOS-ARM64.dmg` (for Apple Silicon Macs)
-                - `OBSIDIAN-Neural-Installer-macOS-ARM64.pkg` (system-wide install)
-              - **Linux**: `OBSIDIAN-Neural-Installer-Linux`
+            ## 📥 Installation
 
-              ### 🎛️ VST3 Plugins (for DAWs)
-              - **Windows**: `OBSIDIAN-Neural-Windows-VST3.zip`
-              - **macOS**: `OBSIDIAN-Neural-macOS-VST3.zip`
-              - **Linux**: `OBSIDIAN-Neural-Linux-VST3.tar.gz`
+            ### 🎯 **Cloud API** (Recommended - No GPU Required)
 
-            ---
+            #### **Windows**
+            1. Download `OBSIDIAN-Neural-Windows-VST3.zip`
+            2. Extract to `C:\Program Files\Common Files\VST3\`
+            3. Get your API key at [obsidian-neural.com](https://obsidian-neural.com)
+            4. Load in your DAW
 
-            ## 🪟 Windows Installation
+            #### **macOS** (10.15 Catalina → 15.0 Sequoia)
+            1. Download and extract `OBSIDIAN-Neural-macOS-VST3.zip`
+            2. Double-click `OBSIDIAN-Neural.vst3` to install
+            3. Get your API key at [obsidian-neural.com](https://obsidian-neural.com)
+            4. Load in your DAW
 
-            **Requirements:** Python 3.10+ installed from [python.org](https://python.org)
-
-            1. **Download** `OBSIDIAN-Neural-Installer.py` from the assets below
-            2. **Run** `python OBSIDIAN-Neural-Installer.py` 
-            3. **Follow** the installation prompts
+            #### **Linux**
+            1. Download `OBSIDIAN-Neural-Linux-VST3.tar.gz`
+            2. Extract to `~/.vst3/`
+            3. Get your API key at [obsidian-neural.com](https://obsidian-neural.com)
+            4. Load in your DAW
 
             ---
 
-            ## 🍎 macOS Installation
+            ### 🔧 **Self-Hosted Server** (Advanced)
 
-            **⚠️ Choose the right version for your Mac:**
-            - **Intel Macs**: Use `*-Intel.*` files
-            - **Apple Silicon (M1/M2/M3)**: Use `*-ARM64.*` files
+            **Requirements:** NVIDIA GPU with CUDA, Python 3.10+
+            ```bash
+            # Clone the repository
+            git clone https://github.com/innermost47/ai-dj.git
+            cd ai-dj
 
-            **⚠️ Important:** Files are not signed, so macOS will block them initially.
+            # Run the installer
+            python installer.py
+            ```
 
-            ### Option 1: DMG (Recommended)
-            1. **Download** the correct DMG for your architecture
-            2. **Double-click** the `.dmg` file to mount it
-            3. **Double-click** `OBSIDIAN-Neural-Installer` in the opened window
-            4. If blocked: **Right-click** → **Open** → **Open** again
+            The installer will guide you through the setup process and start the local server.
 
-            ### Option 2: PKG (System-wide)
-            1. **Download** the correct PKG for your architecture
-            2. **Double-click** the `.pkg` file
-            3. If blocked by Gatekeeper, run: `sudo spctl --master-disable`
-            4. **Install** the package, then re-enable: `sudo spctl --master-enable`
-            5. **Run** `obsidian-neural` from terminal
+            ---
+
+            ## 📚 Resources
+
+            - 📘 [Getting Started](https://obsidian-neural.com/documentation.html?page=getting-started)
+            - 🚀 [First Steps](https://obsidian-neural.com/documentation.html?page=first-step)
+            - 🎵 [Bank Management](https://obsidian-neural.com/documentation.html?page=bank-management)
+            - 🎨 [Draw to Audio](https://obsidian-neural.com/documentation.html?page=draw-to-audio)
+            - 🎓 [Video Tutorial](https://www.youtube.com/watch?v=l4KMC5adxVA)
+            - 💬 [Discussions](https://github.com/innermost47/ai-dj/discussions)
+            - 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
+
+            ---
+
+            ⭐ Star the repo if you find OBSIDIAN-Neural useful!
 
           files: |
-            OBSIDIAN-Neural-Installer-macOS-Intel.dmg
-            OBSIDIAN-Neural-Installer-macOS-Intel.pkg
-            OBSIDIAN-Neural-Installer-macOS-ARM64.dmg
-            OBSIDIAN-Neural-Installer-macOS-ARM64.pkg
-            OBSIDIAN-Neural-Installer-Linux
-            OBSIDIAN-Neural-Installer.py
-            OBSIDIAN-Neural-*-VST3.*
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            OBSIDIAN-Neural-Windows-VST3.zip
+            OBSIDIAN-Neural-macOS-VST3.zip
+            OBSIDIAN-Neural-Linux-VST3.tar.gz

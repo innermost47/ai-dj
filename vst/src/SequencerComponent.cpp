@@ -1,15 +1,8 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
-#include "SequencerComponent.h"
+﻿#include "SequencerComponent.h"
 #include "PluginProcessor.h"
 #include "ColourPalette.h"
 
-SequencerComponent::SequencerComponent(const juce::String &trackId, DjIaVstProcessor &processor)
+SequencerComponent::SequencerComponent(const juce::String& trackId, DjIaVstProcessor& processor)
 	: trackId(trackId), audioProcessor(processor)
 {
 	setupUI();
@@ -24,56 +17,61 @@ void SequencerComponent::setupUI()
 	measureSlider.setValue(1);
 	measureSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 30, 20);
 	measureSlider.setDoubleClickReturnValue(true, 1);
+	measureSlider.setColour(juce::Slider::backgroundColourId, juce::Colours::black);
 	measureSlider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
 	measureSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
-	measureSlider.setColour(juce::Slider::backgroundColourId, juce::Colours::black);
+	measureSlider.setColour(juce::Slider::textBoxTextColourId, ColourPalette::textPrimary);
+	measureSlider.setColour(juce::Slider::textBoxBackgroundColourId, ColourPalette::backgroundDark);
+	measureSlider.setColour(juce::Slider::textBoxOutlineColourId, ColourPalette::backgroundDark.darker(0.3f).withAlpha(0.3f));
+
 	measureSlider.onValueChange = [this]()
-	{
-		isEditing = true;
-		setNumMeasures((int)measureSlider.getValue());
-		juce::Timer::callAfterDelay(500, [this]()
-									{ isEditing = false; });
-	};
+		{
+			isEditing = true;
+			setNumMeasures((int)measureSlider.getValue());
+			juce::Timer::callAfterDelay(500, [this]()
+				{ isEditing = false; });
+		};
 
 	addAndMakeVisible(prevMeasureButton);
 	prevMeasureButton.setButtonText("<");
 	prevMeasureButton.onClick = [this]()
-	{
-		isEditing = true;
-		if (currentMeasure > 0)
 		{
-			setCurrentMeasure(currentMeasure - 1);
-		}
-		juce::Timer::callAfterDelay(500, [this]()
-									{ isEditing = false; });
-	};
+			isEditing = true;
+			if (currentMeasure > 0)
+			{
+				setCurrentMeasure(currentMeasure - 1);
+			}
+			juce::Timer::callAfterDelay(500, [this]()
+				{ isEditing = false; });
+		};
 
 	addAndMakeVisible(nextMeasureButton);
 	nextMeasureButton.setButtonText(">");
 	nextMeasureButton.onClick = [this]()
-	{
-		isEditing = true;
-		if (currentMeasure < numMeasures - 1)
 		{
-			setCurrentMeasure(currentMeasure + 1);
-		}
-		juce::Timer::callAfterDelay(500, [this]()
-									{ isEditing = false; });
-	};
+			isEditing = true;
+			if (currentMeasure < numMeasures - 1)
+			{
+				setCurrentMeasure(currentMeasure + 1);
+			}
+			juce::Timer::callAfterDelay(500, [this]()
+				{ isEditing = false; });
+		};
 
 	addAndMakeVisible(measureLabel);
 	measureLabel.setText("1/1", juce::dontSendNotification);
 	measureLabel.setJustificationType(juce::Justification::centred);
+	measureLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 
 	addAndMakeVisible(currentPlayingMeasureLabel);
 	currentPlayingMeasureLabel.setText("M 1", juce::dontSendNotification);
-	currentPlayingMeasureLabel.setColour(juce::Label::textColourId, ColourPalette::textSuccess);
-	currentPlayingMeasureLabel.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDark);
+	currentPlayingMeasureLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+	currentPlayingMeasureLabel.setColour(juce::Label::backgroundColourId, ColourPalette::trackSelected.withAlpha(0.1f));
 	currentPlayingMeasureLabel.setJustificationType(juce::Justification::centred);
 	currentPlayingMeasureLabel.setFont(juce::FontOptions(11.0f, juce::Font::bold));
 }
 
-void SequencerComponent::paint(juce::Graphics &g)
+void SequencerComponent::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds();
 
@@ -89,7 +87,7 @@ void SequencerComponent::paint(juce::Graphics &g)
 	juce::Colour beatColour = ColourPalette::sequencerBeat;
 	juce::Colour subBeatColour = ColourPalette::sequencerSubBeat;
 
-	TrackData *track = audioProcessor.getTrack(trackId);
+	TrackData* track = audioProcessor.getTrack(trackId);
 	if (!track)
 	{
 		g.setColour(ColourPalette::textDanger);
@@ -248,7 +246,7 @@ juce::Rectangle<int> SequencerComponent::getStepBounds(int step)
 	return juce::Rectangle<int>(x, y, stepWidth, stepHeight);
 }
 
-void SequencerComponent::mouseDown(const juce::MouseEvent &event)
+void SequencerComponent::mouseDown(const juce::MouseEvent& event)
 {
 	int totalSteps = getTotalStepsForCurrentSignature();
 
@@ -260,7 +258,7 @@ void SequencerComponent::mouseDown(const juce::MouseEvent &event)
 			toggleStep(i);
 			repaint();
 			juce::Timer::callAfterDelay(50, [this]()
-										{ isEditing = false; });
+				{ isEditing = false; });
 			return;
 		}
 	}
@@ -274,19 +272,19 @@ int SequencerComponent::getTotalStepsForCurrentSignature() const
 	int stepsPerBeat;
 	if (denominator == 8)
 	{
-		stepsPerBeat = 2; // ← 2 subdivisions par croche (pas 4)
+		stepsPerBeat = 2;
 	}
 	else if (denominator == 4)
 	{
-		stepsPerBeat = 4; // 4 subdivisions par noire (16th notes)
+		stepsPerBeat = 4;
 	}
 	else if (denominator == 2)
 	{
-		stepsPerBeat = 8; // 8 subdivisions par blanche
+		stepsPerBeat = 8;
 	}
 	else
 	{
-		stepsPerBeat = 4; // Default
+		stepsPerBeat = 4;
 	}
 
 	return numerator * stepsPerBeat;
@@ -294,7 +292,7 @@ int SequencerComponent::getTotalStepsForCurrentSignature() const
 
 void SequencerComponent::toggleStep(int step)
 {
-	TrackData *track = audioProcessor.getTrack(trackId);
+	TrackData* track = audioProcessor.getTrack(trackId);
 	if (track)
 	{
 		int safeMeasure = juce::jlimit(0, MAX_MEASURES - 1, currentMeasure);
@@ -349,7 +347,7 @@ void SequencerComponent::setCurrentMeasure(int measure)
 {
 	currentMeasure = juce::jlimit(0, numMeasures - 1, measure);
 	measureLabel.setText(juce::String(currentMeasure + 1) + "/" + juce::String(numMeasures),
-						 juce::dontSendNotification);
+		juce::dontSendNotification);
 	repaint();
 }
 
@@ -363,7 +361,7 @@ void SequencerComponent::setNumMeasures(int measures)
 		setCurrentMeasure(numMeasures - 1);
 	}
 
-	TrackData *track = audioProcessor.getTrack(trackId);
+	TrackData* track = audioProcessor.getTrack(trackId);
 	if (track)
 	{
 		track->sequencerData.numMeasures = numMeasures;
@@ -383,7 +381,7 @@ void SequencerComponent::setNumMeasures(int measures)
 	}
 
 	measureLabel.setText(juce::String(currentMeasure + 1) + "/" + juce::String(numMeasures),
-						 juce::dontSendNotification);
+		juce::dontSendNotification);
 	repaint();
 }
 
@@ -391,7 +389,7 @@ void SequencerComponent::updateFromTrackData()
 {
 	if (isEditing)
 		return;
-	TrackData *track = audioProcessor.getTrack(trackId);
+	TrackData* track = audioProcessor.getTrack(trackId);
 	if (track)
 	{
 		int totalSteps = getTotalStepsForCurrentSignature();
@@ -400,21 +398,19 @@ void SequencerComponent::updateFromTrackData()
 		numMeasures = track->sequencerData.numMeasures;
 		measureSlider.setValue(track->sequencerData.numMeasures);
 		measureLabel.setText(juce::String(currentMeasure + 1) + "/" + juce::String(numMeasures),
-							 juce::dontSendNotification);
+			juce::dontSendNotification);
 		if (isPlaying)
 		{
 			int playingMeasure = track->sequencerData.currentMeasure + 1;
 			currentPlayingMeasureLabel.setText("M " + juce::String(playingMeasure),
-											   juce::dontSendNotification);
-			currentPlayingMeasureLabel.setColour(juce::Label::textColourId, ColourPalette::playActive);
+				juce::dontSendNotification);
 		}
 		else
 		{
 			track->sequencerData.currentStep = 0;
 			track->sequencerData.currentMeasure = 0;
 			currentPlayingMeasureLabel.setText("M " + juce::String(track->sequencerData.currentMeasure + 1),
-											   juce::dontSendNotification);
-			currentPlayingMeasureLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+				juce::dontSendNotification);
 		}
 		repaint();
 	}

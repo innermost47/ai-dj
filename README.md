@@ -2,356 +2,298 @@
 
 🎵 **Real-time AI music generation VST3 plugin for live performance**
 
-### 🎓 **Base Tutorial**
+**⚡ Quick Start:** [Get your API key](https://obsidian-neural.com) and start generating in minutes — no GPU or setup required. 🔥 [Free codes available ↓](#-free-pro-pack-codes)
 
-[![OBSIDIAN-Neural Tutorial](./assets/tuto.png)](https://youtu.be/-qdFo_PcKoY)
-
-_Base OBSIDIAN-Neural workflow tutorial (French with English subtitles available) - from DAW setup to live performance with hardware synths!_
-
-**Video created by [Chart Photography](https://chart-photography.fr/)**
-
-**💡 Enable English subtitles or English audio dubbing on YouTube for international viewers**
+📄 **[Late Breaking Paper - AIMLA 2025](https://drive.google.com/file/d/1cwqmrV0_qC462LLQgQUz-5Cd422gL-8F/view)** - Presented at the first AES International Conference on Artificial Intelligence and Machine Learning for Audio (Queen Mary University London, Sept 8-10, 2025)  
+🎓 **[Tutorial](https://youtu.be/-qdFo_PcKoY)** - From DAW setup to live performance (French + English subtitles)
 
 ---
 
-**🎯 Want to see YOUR jam sessions featured here?**
+## Draw-to-Audio Live Demo
 
-I'm the only one posting live OBSIDIAN jams so far, and honestly... **I'm dying to see how YOU use it!**
+**Watch the draw-to-audio feature in action** - Live improvisation session showing real-time sketch-to-sound generation:
 
-Every AI-generated rhythm is different, sometimes weird, sometimes genius. That's the beauty - it forces you out of your comfort zone and into unexplored territory.
+[![Draw-to-Audio Demo](https://img.youtube.com/vi/zhJ865KoPCU/maxresdefault.jpg)](https://youtu.be/zhJ865KoPCU)
 
-**Share your OBSIDIAN videos:**  
-📧 Email me: b03caa1n5@mozmail.com  
-💬 Or create a [Discussion](https://github.com/innermost47/ai-dj/discussions) with your YouTube link!
-
-### 🔥 **Community Jam Sessions**
-
-[![Jungle/DnB Session](https://img.youtube.com/vi/cFmRJIFUOCU/maxresdefault.jpg)](https://youtu.be/cFmRJIFUOCU)
-
-_AI + analog gear jungle improvisation - when OBSIDIAN throws you curveballs and you roll with it!_
-
-**📺 Check out all community jams → [YOUTUBE.md](YOUTUBE.md)**
-
-Let's build a community of AI-human musical chaos! 🤖🎵
+_Raw improvisation showcasing the experimental draw-to-audio workflow: sketch patterns → AI interprets visuals → generates matching loops on the fly._
 
 ---
 
-**📖 [Read the full story](https://medium.com/@innermost47/obsidian-neural-when-ai-becomes-your-jam-partner-5203726a3840) - Why I built an AI that jams with you in real-time**
+## What Obsidian Neural does
+
+Type words → Get musical loops instantly. No stopping your creative flow.
+
+- **8-track sampler** with MIDI triggering (C3-B3)
+- **4 pages per track** (A/B/C/D) - Switch variations instantly by clicking page buttons
+- **Draw-to-sound** - Sketch your ideas visually and let AI interpret them musically
+- **Perfect DAW sync** - Auto time-stretch to project tempo
+- **Real-time generation** - No pre-recorded samples
+
+**Text example:** Type "dark techno kick" → AI generates techno loop → Trigger with MIDI while jamming
+
+**Drawing example:** Draw a chaotic pattern → AI interprets visual elements as musical characteristics → Generates matching loop
 
 ---
 
-## 🚀 **Installation Options**
+## What Obsidian Neural does NOT
 
-### 📦 **Option 1: Local Models**
+**OBSIDIAN Neural is NOT a song generator** like Suno or Udio. It's a performance tool for musicians:
 
-**🎉 Runs completely offline with local TensorFlow Lite models!**
+- **No full songs in one click** - You build your track loop by loop
+- **No lyrics or vocals** - Focus on instrumental loops and sound design
+- **No auto-arrangement** - You're the composer, AI is your loop generator
 
-**No more servers, Python, or GPU requirements!**
-
-#### What You'll Need:
-
-1. **Get Stability AI access**: [Request access](https://huggingface.co/stabilityai/stable-audio-open-small) to Stable Audio Open on Hugging Face
-2. **Download models**: Get all files from [innermost47/stable-audio-open-small-tflite](https://huggingface.co/innermost47/stable-audio-open-small-tflite)
-3. **Simple setup**: Copy models to `%APPDATA%\OBSIDIAN-Neural\stable-audio\`
-4. **Launch**: Choose "Local Model" option
-
-**✅ Benefits:** Completely offline, no GPU server, no Python installation, instant generation  
-**⚠️ Requirements:** 16GB+ RAM recommended, Windows only initially
-
-### ⚠️ **Current Limitations**
-
-**The TensorFlow Lite models have some quality trade-offs:**
-
-- **Timing issues**: Generated rhythms may not be perfectly quantized
-- **Quality reduction**: TFLite quantization affects audio precision
-- **High RAM usage**: Expect significant memory consumption during generation
-- **Fixed duration**: Audio generation locked to 10 seconds (audiogen/TFLite limitation)
-- **No STEMS separation**: DEMUCS stem separation not available in local mode
-
-**For live performance and production use, the server-based approach still provides better quality, timing precision, variable duration, and STEMS separation.**
+**Think of it as:** A creative sampler that generates sounds on-demand, not a "press play and get a song" tool.
 
 ---
 
-## 🎯 **Alternative Options (if local doesn't work for you):**
+## Features
 
-### 🚀 **Option 2: Beta Testing**
+### Text-to-Audio Generation
 
-**Get FREE API access - No setup required!**
+Type natural language descriptions and get instant musical loops:
 
-- Contact me for a free API key (**only 10 slots available**)
-- Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
-- **Contact:** b03caa1n5@mozmail.com
+- "dark techno kick"
+- "ambient pad with reverb"
+- "808 bass with distortion"
 
-### 🔧 **Option 3: Build from Source (Self-Hosting)**
+### Draw-to-Audio Generation
 
-**Complete control with local server - for developers and advanced users!**
+**Express your musical ideas visually** _(original concept by A.D.)_ - Each track includes a drawing canvas where you can sketch patterns, shapes, or abstract concepts. The AI analyzes your drawing using a Vision Language Model (VLM) and translates visual elements into musical descriptions:
 
-#### **Prerequisites:**
+1. Click the **Draw** button on any track
+2. Use pencil, brush, spray, or eraser tools
+3. Choose colors and brush sizes
+4. Click **Generate** to send your drawing
 
-1. **Python 3.10+** installed from [python.org](https://python.org)
-2. **Get Stability AI access**: [Request access](https://huggingface.co/stabilityai/stable-audio-open-1.0) to Stable Audio Open on Hugging Face
-3. **Wait for approval**: Usually takes a few minutes to a few hours
+**How it works:**
 
-#### **Installation Steps:**
-
-**🪟 Windows:**
-
-```bash
-# Download the Python installer
-# From releases: OBSIDIAN-Neural-Installer.py
-python OBSIDIAN-Neural-Installer.py
-
-# Alternative: Clone and build
-git clone https://github.com/innermost47/ai-dj.git
-cd ai-dj
-python installer.py
-```
-
-**🍎 macOS:**
-
-```bash
-# Download from releases
-# OBSIDIAN-Neural-Installer-macOS.dmg (recommended)
-# OR OBSIDIAN-Neural-Installer-macOS.pkg (system-wide)
-
-# Alternative: Use the executable
-chmod +x OBSIDIAN-Neural-Installer-macOS
-./OBSIDIAN-Neural-Installer-macOS
-```
-
-**🐧 Linux:**
-
-```bash
-# Download from releases
-chmod +x OBSIDIAN-Neural-Installer-Linux
-./OBSIDIAN-Neural-Installer-Linux
-
-# Alternative: Build from source
-git clone https://github.com/innermost47/ai-dj.git
-cd ai-dj
-python installer.py
-```
-
-**The installer automatically handles:**
-
-- **Virtual environment creation**
-- **All Python dependencies** (PyTorch, FastAPI, Stable Audio Tools, etc.)
-- **AI model downloads** (Gemma-3-4B, 2.49 GB)
-- **CUDA/ROCm detection** and installation (if GPU available)
-- **VST3 compilation** (optional, requires build tools)
-- **Configuration setup**
-
-#### **Step-by-step workflow after installation:**
-
-#### 1. **Launch Server Interface**
-
-The installation creates a GUI control panel with:
-
-**Server Interface Features:**
-
-- **System Tray Support**: Minimize to tray with green triangle icon
-- **🚀 Server Control Tab**: Real-time status, start/stop/restart buttons
-- **⚙️ Configuration Tab**:
-  - API Keys management with credit system (🔓 UNLIMITED, ✅ 50/50 credits)
-  - Secure Hugging Face token storage with built-in verification
-  - Model settings and server configuration
-- **📝 Logs Tab**: Real-time server output with color-coded messages
-- **First-Time Setup Wizard**: Guided configuration for new installations
-
-#### 2. **Configure the Server**
-
-- Launch the server interface: `python server_interface.py`
-- **First launch**: Setup wizard will guide you through configuration
-- **Hugging Face Token**: Enter your approved token (built-in verification available)
-- **API Keys**: Generate keys with credit limits or unlimited access
-
-#### 3. **Start the Server**
-
-- Start the AI server from the GUI interface
-- **API Keys prompt**:
-  - **"Use stored API keys for authentication?"**
-  - **Yes**: Use API authentication (for production/network access)
-  - **No**: Development bypass - no auth needed (for localhost)
-- **Server URL**: Will be displayed (usually `http://localhost:8000`)
-
-#### 4. **Configure the VST**
-
-- Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases) or build from source
-- Load OBSIDIAN-Neural VST3 in your DAW
-- **Server URL**: Paste from server GUI (e.g., `http://localhost:8000`)
-- **API Key**: Copy from server interface (if using authentication)
-
-**Troubleshooting:**
-
-- **Windows users**: Python installer is the simplest approach
-- **No Hugging Face access?** You must be approved for Stable Audio Open first
-- **Build errors?** Download pre-compiled VST3 from releases instead
-- **API confusion?** Choose "No" for simple localhost setup
-- **Can't connect?** Make sure server is running before configuring VST
-
-### 🎛️ **VST3 Downloads**
-
-Pre-compiled VST3 plugins available for all platforms:
-
-- **Windows**: `OBSIDIAN-Neural-Windows-VST3.zip`
-- **macOS**: `OBSIDIAN-Neural-macOS-VST3.zip`
-- **Linux**: `OBSIDIAN-Neural-Linux-VST3.tar.gz`
-
-**Installation locations:**
-
-- **Windows**: `C:\Program Files\Common Files\VST3\`
-- **macOS**: `~/Library/Audio/Plug-Ins/VST3/` or `/Library/Audio/Plug-Ins/VST3/`
-- **Linux**: `~/.vst3/` or `/usr/lib/vst3/`
-
----
-
-**## 🎯 What OBSIDIAN-Neural Actually Does**
-
-**Think of it as having an AI jam partner directly in your DAW.**
-
-- **Type simple keywords** → AI generates musical loops instantly
-- **Real-time generation** → No stopping your creative flow
-- **8-track sampler with multi-page system** → Each track has 4 pages (A/B/C/D) for instant variation switching
-- **MIDI triggering** → Play AI samples from your keyboard (C3-B3)
-- **Perfect DAW sync** → Everything locks to your project tempo with intelligent time-stretching
-- **Beat repeat & retrigger** → Built-in performance effects for live jamming
-- **Stems separation** → Generate with isolated drums, bass, vocals, etc.
-- **Sample bank** → Drag & drop your generated samples between tracks
+- Your drawing is encoded as Base64 image data
+- A Vision Language Model interprets the visual elements using musical vocabulary
+- The generated textual description is sent to the audio generation model
+- Result: A unique sound that matches your visual concept
 
 **Example workflow:**
 
-1. Type "dark techno kick" → AI generates a techno kick loop on page A
-2. Switch to page B → Type "acid bassline" → Generate 303-style bass
-3. Use keyboard shortcuts (Q-W-E-R) to switch between pages instantly
-4. Trigger both with MIDI keys while jamming on hardware synths
-5. Apply beat repeat for live performance effects
+- Draw sharp, angular lines → AI interprets as "aggressive staccato synth"
+- Sketch flowing curves → AI interprets as "smooth flowing pad"
+- Use red/orange colors → AI might associate with "warm analog tones"
+- Create chaotic patterns → AI interprets as "glitchy percussion"
 
-**It's like having a TB-303, but instead of tweaking knobs, you describe what you want in plain English. Plus you get 4 variations per track for endless creative possibilities.**
+**Canvas features:**
 
----
+- 512x512 drawing area
+- 4 brush types (Pencil, Brush, Spray, Eraser)
+- 10 color presets
+- Adjustable brush size (1-50)
+- State preservation per track/page
 
-## 🌍 **Beyond the Plugin: A Different Approach to AI Music**
+This feature bridges the gap between visual creativity and sonic experimentation, allowing producers to explore sound design through intuitive visual metaphors.
 
-### 🏢 **Studio-Owned AI Models**
-
-What if recording studios could create AI models based on their own recordings?
-
-- Studios develop their unique AI signatures from decades of work
-- Musicians access these signatures for their projects
-- Revenue sharing creates new income streams for studios and session musicians
-- AI becomes a collaborative tool with traceable musical heritage
-
-**The concept:** Instead of generic AI trained on anonymous data, musicians could work with AI that carries the DNA of legendary studios like Abbey Road, or their local favorite recording space.
-
-### 🌐 **Distributed GPU Network**
-
-Current AI music generation requires expensive hardware that most musicians don't have.
-
-**A potential solution:** Community-owned GPU network where:
-
-- GPU owners share idle computing power
-- Musicians get affordable access to AI generation
-- Revenue gets distributed fairly among contributors
-- Infrastructure stays independent from big tech
-
-**Looking for volunteers** to help develop this distributed approach. If you have GPU resources or infrastructure expertise, let's discuss.
-
-### 🤝 **Collaboration Over Replacement**
-
-OBSIDIAN-Neural explores AI as a creative partner rather than a replacement for human musicians. The goal is building tools that enhance musical creativity while ensuring fair compensation for everyone who contributes to training these systems.
-
-**Get involved:**
-
-- **Studios**: Interested in exploring AI signature models?
-- **GPU owners**: Want to contribute to a community network?
-- **Musicians**: Have thoughts on ethical AI music tools?
-
-Contact: b03caa1n5@mozmail.com
+**Note:** This draw-to-audio feature is currently experimental and under active development.
 
 ---
 
-## 📰 **Press coverage moved to [PRESS.md](PRESS.md)**
+## Quick Start
+
+### 🟣 Cloud Inference API (Recommended)
+
+**Generate AI loops directly from your DAW with zero setup. Professional quality.**
+
+1. Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
+2. Get your API key from [obsidian-neural.com](https://obsidian-neural.com)
+3. Load the VST in your DAW
+4. Configure in the plugin:
+   - Click the **⚙️ settings button** (top right) or wait for the first-time setup dialog
+   - Choose "Server/API" mode
+   - Enter Server URL: `https://ai-harmony.duckdns.org/obsidian`
+   - Enter your API key
+   - Click "Save & Continue"
+
+👉 **Detailed setup guide:**  
+📘 [Getting Started](https://obsidian-neural.com/documentation.html?page=getting-started)  
+🎚️ [First Step - Using the Plugin in Your DAW](https://obsidian-neural.com/documentation.html?page=first-step)  
+🎨 [Draw-to-Audio - Express Your Musical Ideas Visually](https://obsidian-neural.com/documentation.html?page=draw-to-audio)  
+🎛️ [Bank Management - Organize and Manage Your Generated Sounds](https://obsidian-neural.com/documentation.html?page=bank-management)
+
+**Pricing:**
+
+- **Free**: 10 credits (10 samples) - Try it out
+- **Starter**: €14.99/month - 500 credits (500 samples)
+- **Pro**: €29.99/month - 1500 credits (1500 samples)
+- **Studio**: €59.99/month - 4000 credits (4000 samples)
+
+Each generation costs **1 credit** (1 LLM generation + 1 audio generation). Samples up to 30 seconds, ~10s generation time.
+
+**Benefits:**
+
+- Zero setup - Works immediately
+- Professional quality
+- Variable duration (up to 30s)
+- No GPU or powerful hardware required
+- Perfect for live performance
 
 ---
 
-![OBSIDIAN-Neural Interface](./assets/screenshot.png)
+### 🔵 Self-Hosted Server + GPU (Advanced)
+
+**Best for privacy, customization, and unlimited generations.**
+
+1. Get [Stability AI access](https://huggingface.co/stabilityai/stable-audio-open-1.0)
+2. Follow [build from source instructions](INSTALLATION.md#option-3-build-from-source)
+3. Run server interface: `python server_interface.py`
+4. Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
+5. Load the VST in your DAW
+6. Configure in the plugin:
+   - Click the **⚙️ settings button** (top right) or wait for the first-time setup dialog
+   - Choose "Server/API" mode
+   - Enter your local server URL (default: `http://localhost:8000`)
+   - Leave API key empty for local server
+   - Click "Save & Continue"
+
+**Benefits:** Unlimited generations, full privacy, variable duration
+
+**Requirements:** GPU with CUDA support, Python environment
 
 ---
 
-## 🐛 Bug Reports & Feedback
+### 🟢 Local Models (Offline)
 
-**Found issues?** [Create GitHub Issue](https://github.com/innermost47/ai-dj/issues/new)
+**Runs completely offline. No servers, Python, or GPU needed.**
 
-Include: DAW name/version, OS, steps to reproduce, expected vs actual behavior
+1. Get [Stability AI access](https://huggingface.co/stabilityai/stable-audio-open-small)
+2. Download models from [innermost47/stable-audio-open-small-tflite](https://huggingface.co/innermost47/stable-audio-open-small-tflite)
+3. Copy to `%APPDATA%\OBSIDIAN-Neural\stable-audio\`
+4. Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
+5. Choose "Local Model" in plugin
 
----
+**Requirements:** 16GB+ RAM, Windows (macOS/Linux coming soon)
 
-## 📈 Project Status
+**Current limitations:**
 
-🚀 **Local models**: Available now (with some limitations)
-✅ **Server option**: Still the best for live performance
-⚠️ **Pre-release**: Active development, frequent updates
-🌟 **Star count**: 90+ - Thank you for the support!
-
----
-
-## 📝 License
-
-**OBSIDIAN-Neural** is dual-licensed to provide maximum flexibility for different use cases:
-
-### 🆓 **Open Source License**
-
-Mozilla Public License 2.0 (MPL-2.0) - Free for open source projects and commercial use. If you modify OBSIDIAN-Neural files, those modifications must remain MPL-2.0, but you can combine them with proprietary code in separate files.
-
-### 💼 **Commercial License**
-
-For organizations preferring proprietary licensing terms or requiring additional rights beyond MPL-2.0, commercial licenses are available.
-
-**Contact for commercial licensing:** b03caa1n5@mozmail.com
-
-### 🤝 **Why Dual Licensing?**
-
-- **Open Source Community**: Full access to innovation with file-level copyleft protection
-- **Commercial Users**: Flexibility for proprietary integration while protecting core innovations
-- **Project Sustainability**: Commercial licenses fund continued development
-- **License Compatibility**: MPL-2.0 is compatible with GPL, LGPL, and AGPL projects
-
-**Attribution**: Please keep attribution to InnerMost47 in all cases.
+- Fixed 10-second generation
+- Some timing/quantization issues
+- High RAM usage
 
 ---
 
-## ⚖️ Disclaimer
+## Which Option Should I Choose?
 
-**OBSIDIAN-Neural is provided "AS IS" without warranty of any kind.**
-
-By using this software, you acknowledge that:
-
-- You install at your own risk
-- You are responsible for choosing appropriate installation paths
-- The developer is not liable for any system damage or data loss
-- You should have backups before installation
-- You understand this is experimental software
-
-**Installation Safety:** Always review installation paths carefully.
-Avoid system directories like `/Applications`, `/System`, `C:\Windows`, etc.
+| Feature                   | Cloud API               | Self-Hosted                    | Local Models          |
+| ------------------------- | ----------------------- | ------------------------------ | --------------------- |
+| **Setup Difficulty**      | ⭐ Easy                 | ⭐⭐⭐ Advanced                | ⭐⭐ Moderate         |
+| **Hardware Requirements** | None                    | GPU + CUDA                     | 16GB+ RAM             |
+| **Generation Quality**    | ⭐⭐⭐ Best             | ⭐⭐ Good                      | ⭐ Bad                |
+| **Variable Duration**     | ✅ Up to 30s            | ✅ Yes                         | ❌ Fixed 10s          |
+| **Cost**                  | Pay per use             | Free (after setup)             | Free                  |
+| **Privacy**               | Data processed on cloud | Full privacy                   | Full privacy          |
+| **Internet Required**     | ✅ Yes                  | ❌ No                          | ❌ No                 |
+| **Best For**              | Beginners, live gigs    | Privacy-focused, unlimited use | Offline work, testing |
 
 ---
 
-## 🌐 More Projects
+## Community
 
-**Music & Creative Coding:**
+**🎯 Share your jams!** I'm the only one posting OBSIDIAN videos so far. Show me how YOU use it!
 
-- **[YouTube Channel](https://www.youtube.com/@innermost9675)** - Original compositions
-- **[Unexpected Records](https://unexpected.anthony-charretier.fr/)** - Mobile recording studio
-- **[Randomizer](https://randomizer.anthony-charretier.fr/)** - Generative music studio
+📧 **Contact:** [Form](https://obsidian-neural.com/contact.html)  
+💬 **Discussions:** [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions)  
+📺 **Examples:** [Community Sessions](YOUTUBE.md)  
+🌐 **Website:** [obsidian-neural.com](https://obsidian-neural.com)
 
-**AI Art Projects:**
+[![Jungle Session](https://img.youtube.com/vi/cFmRJIFUOCU/maxresdefault.jpg)](https://youtu.be/cFmRJIFUOCU)
 
-- **[AutoGenius Daily](https://autogenius.anthony-charretier.fr/)** - AI personas platform
-- **[AI Harmony Radio](https://autogenius.anthony-charretier.fr/webradio)** - 24/7 experimental radio
+---
+
+## Download
+
+**VST3 Plugin:**
+
+- [Windows](https://github.com/innermost47/ai-dj/releases)
+- [macOS](https://github.com/innermost47/ai-dj/releases)
+- [Linux](https://github.com/innermost47/ai-dj/releases)
+
+**Install to:**
+
+- Windows: `C:\Program Files\Common Files\VST3\`
+- macOS: `~/Library/Audio/Plug-Ins/VST3/`
+- Linux: `~/.vst3/`
+
+---
+
+## Status & Support
+
+🚀 **Active development** - Updates pushed regularly  
+⭐ **136+ GitHub stars** - Thanks for the support!  
+🐛 **Issues:** [Report bugs here](https://github.com/innermost47/ai-dj/issues/new)  
+📊 **API Status:** Check [status page](https://obsidian-neural.com/status.html) for real-time service monitoring
+
+---
+
+## 🎯 Community Milestone
+
+**Road to 200 Stars!** Currently at 136+ 🌟
+
+When we hit 200 stars, we're celebrating with a community giveaway:
+
+**Prize:** 1 year of Starter Pack free access (€179.88 value)  
+**Eligibility:** Active community members (stars, discussions, issues, contributions)
+
+👉 [Join the discussion](https://github.com/innermost47/ai-dj/discussions/156)
+
+Every star, contribution, and piece of feedback helps make Obsidian Neural better. Thank you for being part of this journey! 🙏
+
+---
+
+## License
+
+- 🆓 **GNU Affero General Public License v3.0** (Open source)
+
+**AI Model:** Stability AI Community License
+
+---
+
+## More Projects
+
+### 🎵 Music Production Tools
+
+🥁 **[BeatCrafter](https://github.com/innermost47/beatcrafter)** - Intelligent MIDI drum pattern generator VST3  
+_Proof of concept for live performance with foot controller. Generates authentic drum patterns that evolve from simple to complex._
+
+🎛️ **[Randomizer](https://randomizer.anthony-charretier.fr/)** - Generative music studio  
+_Experimental web-based music creation tool with procedural generation._
+
+### 🎧 Audio Content
+
+🎵 **[YouTube Channel](https://www.youtube.com/@innermost9675)** - Original compositions  
+_Electronic music, ambient soundscapes, metal, and experimental productions by InnerMost (2010-2023)._
+
+### 💬 Connect
+
+📧 **Contact:** [Form](https://obsidian-neural.com/contact.html)  
+💬 **GitHub:** [@innermost47](https://github.com/innermost47)  
+🌐 **Website:** [anthony-charretier.fr](https://anthony-charretier.fr)
+
+---
+
+## Credits & Attribution
+
+**Developed by InnerMost47 (Anthony Charretier)**
+
+Special thanks to:
+
+- **A.D.** for the original draw-to-audio concept
+- Stability AI for Stable Audio Open
+- The open-source community
+- All beta testers and early adopters
 
 ---
 
 **OBSIDIAN-Neural** - Where artificial intelligence meets live music performance.
 
-_Developed by InnerMost47_
+_Made with 🎵 in France_
+
+[![Website](https://img.shields.io/badge/Website-obsidian--neural.com-blue)](https://obsidian-neural.com)
+[![API Status](https://img.shields.io/badge/API-Operational-green)](https://obsidian-neural.com/status.html)
+[![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/innermost47/ai-dj?style=social)](https://github.com/innermost47/ai-dj)

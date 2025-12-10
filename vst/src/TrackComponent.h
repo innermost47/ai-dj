@@ -1,15 +1,9 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #pragma once
 #include "JuceHeader.h"
 #include "TrackManager.h"
 #include "MidiLearnableComponents.h"
 #include "ColourPalette.h"
+#include "DrawingCanvas.h"
 
 class WaveformDisplay;
 class SequencerComponent;
@@ -48,6 +42,8 @@ public:
 	std::function<void(const juce::String&, const juce::String&)> onTrackRenamed;
 	std::function<void(const juce::String&, const juce::String&)> onTrackPromptChanged;
 	std::function<void(const juce::String&)> onStatusMessage;
+	std::function<void(const juce::String&, const juce::String&, const juce::StringArray&)> onGenerateWithImage;
+	std::function<void(const juce::String&)> onStopPreview;
 
 	bool isInterestedInDragSource(const SourceDetails& dragSourceDetails) override;
 	void itemDragEnter(const SourceDetails& dragSourceDetails) override;
@@ -58,6 +54,7 @@ public:
 	static const int BASE_HEIGHT = 60;
 	static const int WAVEFORM_HEIGHT = 100;
 	static const int SEQUENCER_HEIGHT = 100;
+	static const int PAGE_BUTTON_SIZE = 14;
 
 	juce::TextButton showWaveformButton;
 	juce::TextButton sequencerToggleButton;
@@ -84,59 +81,115 @@ public:
 	void setupMidiLearn();
 	void updatePromptSelection(const juce::String& promptText);
 	void onPageSelected(int pageIndex);
+	void performPageChange(int pageIndex);
+	void updatePagesDisplay();
+	void setSamplePending(bool pending);
+	bool isSamplePending() const { return hasSamplePending; }
+	void setPreviewPlaying(bool playing);
 
 	bool isEditingLabel = false;
+	bool sequencerVisible = false;
+
 	MidiLearnableComboBox promptPresetSelector;
+
+	juce::Component::SafePointer<juce::DocumentWindow> drawingWindowPtr;
+
+	juce::String trackId;
 
 	juce::TextButton* getGenerateButton() { return &generateButton; }
 	juce::Slider* getBpmOffsetSlider() { return &bpmOffsetSlider; }
 
 	SequencerComponent* getSequencer() const { return sequencer.get(); }
 
+	void setCanvasGenerating(bool generating)
+	{
+		canvasIsGenerating = generating;
+		if (drawingWindowPtr != nullptr)
+		{
+			if (auto* window = drawingWindowPtr.getComponent())
+			{
+				if (auto* canvas = dynamic_cast<DrawingCanvas*>(window->getContentComponent()))
+				{
+					canvas->setGenerating(generating);
+				}
+			}
+		}
+	}
+
 private:
-	juce::String trackId;
-	TrackData* track;
-	bool isSelected = false;
-	std::unique_ptr<WaveformDisplay> waveformDisplay;
-	std::unique_ptr<SequencerComponent> sequencer;
-	DjIaVstProcessor& audioProcessor;
-	CustomInfoLabelLookAndFeel customLookAndFeel;
-	juce::Label trackNumberLabel;
-	bool isDragOver = false;
-	juce::TextButton selectButton;
-	juce::Label trackNameLabel;
-	juce::TextButton deleteButton;
-	MidiLearnableButton generateButton;
-	juce::Label infoLabel;
-	juce::TextButton previewButton;
-	juce::TextButton originalSyncButton;
+	class DrawingWindow : public juce::DocumentWindow
+	{
+	public:
+		DrawingWindow(const juce::String& name, DrawingCanvas* canvas)
+			: juce::DocumentWindow(name, juce::Colour(0xff2a2a2a),
+				juce::DocumentWindow::closeButton)
+		{
+			setContentOwned(canvas, true);
+			centreWithSize(920, 770);
+			setResizable(false, false);
+			setUsingNativeTitleBar(true);
+		}
+
+		void closeButtonPressed() override
+		{
+			if (onBeforeClose)
+				onBeforeClose();
+			delete this;
+		}
+
+		std::function<void()> onBeforeClose;
+	};
 
 	juce::StringArray promptPresets;
 
-	juce::ComboBox timeStretchModeSelector;
+	TrackData* track;
 
+	std::unique_ptr<WaveformDisplay> waveformDisplay;
+	std::unique_ptr<SequencerComponent> sequencer;
+	std::unique_ptr<DrawingCanvas> drawingCanvas;
+
+	DjIaVstProcessor& audioProcessor;
+
+	CustomInfoLabelLookAndFeel customLookAndFeel;
+
+	MidiLearnableButton pageButtons[4];
+	MidiLearnableButton generateButton;
 	MidiLearnableButton randomRetriggerButton;
 	MidiLearnableSlider intervalKnob;
-	juce::Label intervalLabel;
 
-	juce::ToggleButton randomDurationToggle;
+	juce::TextButton trackNumberButton;
+	juce::TextButton previewButton;
+	juce::TextButton originalSyncButton;
+	juce::TextButton deleteButton;
+	juce::TextButton drawButton;
 
 	juce::Slider bpmOffsetSlider;
+
+	juce::Label trackNameLabel;
+	juce::Label intervalLabel;
+
+	juce::Label infoLabel;
 	juce::Label bpmOffsetLabel;
+
+	juce::ComboBox timeStretchModeSelector;
+
+	juce::ToggleButton randomDurationToggle;
 
 	std::atomic<bool> isDestroyed{ false };
 
 	bool isGenerating = false;
 	bool blinkState = false;
-	bool sequencerVisible = false;
+	bool isSelected = false;
+	bool isDragOver = false;
+	bool hasSamplePending = false;
+	bool pagesMode = true;
+	bool pageBlinkState = false;
+	bool canvasIsGenerating = false;
+	bool isPreviewPlaying = false;
 
-	juce::TextButton pageButtons[4];
 	juce::TextButton togglePagesButton;
-	bool pagesMode = false;
-	static const int PAGE_BUTTON_SIZE = 14;
 
 	void setupPagesUI();
-	void updatePagesDisplay();
 	void onTogglePagesMode();
 	void loadPageIfNeeded(int pageIndex);
 	void loadPageAudioFile(int pageIndex, const juce::File& audioFile);
@@ -150,7 +203,7 @@ private:
 	void setupUI();
 	void adjustLoopPointsToTempo();
 	void updateTrackInfo();
-	void learn(juce::String param, std::function<void(float)> uiCallback = nullptr);
+	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
 	void removeMidiMapping(const juce::String& param);
 	void addListener(juce::String name);
 	void removeListener(juce::String name);
@@ -166,6 +219,10 @@ private:
 	void onIntervalChanged();
 	void setSliderParameter(juce::String name, juce::Slider& slider);
 	void addEventListeners();
+	void updateRandomRetriggerButtonColor();
+	void updateRandomDurationButtonColor();
+	void openDrawingCanvas();
+	void updatePreviewButton();
 
 	float calculateEffectiveBpm();
 

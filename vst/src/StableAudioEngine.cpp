@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #include "StableAudioEngine.h"
 
 #ifdef _WIN32
@@ -25,11 +18,16 @@ bool StableAudioEngine::initialize(const juce::String& modelsDir)
 		modelsDirectory = modelsDir;
 
 		auto baseDir = juce::File(modelsDir);
+
+#ifdef _WIN32
 		audiogenExecutable = baseDir.getChildFile("audiogen.exe");
+#else
+		audiogenExecutable = baseDir.getChildFile("audiogen");
+#endif
 
 		if (!audiogenExecutable.exists())
 		{
-			audiogenExecutable = baseDir.getChildFile("audiogen");
+			return false;
 		}
 
 		if (!checkRequiredFiles())
@@ -38,12 +36,11 @@ bool StableAudioEngine::initialize(const juce::String& modelsDir)
 		}
 
 		isInitialized = true;
-		DBG("Stable Audio Engine ready! Using executable: " << audiogenExecutable.getFullPathName());
 		return true;
 	}
-	catch (const std::exception& e)
+	catch (const std::exception& /*e*/)
 	{
-		DBG("Exception during initialization: " << e.what());
+		DBG("Exception during Stable Audio Engine initialization");
 		return false;
 	}
 }
@@ -95,11 +92,24 @@ StableAudioEngine::GenerationResult StableAudioEngine::generateSample(const Gene
 		auto seed = (params.seed == -1) ? generateRandomSeed() : params.seed;
 
 		juce::StringArray command;
+
+#ifdef _WIN32
 		command.add(audiogenExecutable.getFullPathName());
 		command.add(modelsDirectory);
 		command.add(sanitizedPrompt);
 		command.add(juce::String(params.numThreads));
 		command.add(juce::String(seed));
+#else
+		command.add(audiogenExecutable.getFullPathName());
+		command.add("-m");
+		command.add(modelsDirectory);
+		command.add("-p");
+		command.add(sanitizedPrompt);
+		command.add("-t");
+		command.add(juce::String(params.numThreads));
+		command.add("-s");
+		command.add(juce::String(seed));
+#endif
 
 		DBG("Executing command: " << command.joinIntoString(" "));
 
@@ -242,9 +252,9 @@ std::vector<float> StableAudioEngine::loadAndResampleWavFile(const juce::File& w
 			DBG("No resampling needed: " << audioData.size() << " samples");
 		}
 	}
-	catch (const std::exception& e)
+	catch (const std::exception& /*e*/)
 	{
-		DBG("Exception loading/resampling WAV file: " << e.what());
+		DBG("Exception loading/resampling WAV file in Stable Audio Engine");
 		audioData.clear();
 	}
 

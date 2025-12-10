@@ -1,16 +1,11 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #pragma once
 #include "PluginProcessor.h"
 #include "TrackComponent.h"
 #include "MixerPanel.h"
 #include "MidiLearnableComponents.h"
 #include "SampleBankPanel.h"
+#include "CustomLookAndFeel.h"
+#include "MidiMappingEditorWindow.h"
 
 class SequencerComponent;
 
@@ -18,7 +13,27 @@ class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::MenuBarMod
 {
 public:
 	explicit DjIaVstEditor(DjIaVstProcessor&);
+
 	~DjIaVstEditor() override;
+
+	std::vector<std::unique_ptr<TrackComponent>> trackComponents;
+	std::vector<std::unique_ptr<TrackComponent>>& getTrackComponents()
+	{
+		return trackComponents;
+	}
+
+	MixerPanel* getMixerPanel() { return mixerPanel.get(); }
+
+	std::unique_ptr<MixerPanel> mixerPanel;
+
+	juce::StringArray getBuiltInPrompts() const { return promptPresets; }
+	juce::StringArray getMenuBarNames() override;
+
+	juce::Label statusLabel;
+
+	juce::PopupMenu getMenuForIndex(int topLevelMenuIndex, const juce::String& menuName) override;
+
+	TrackComponent* getTrackComponent(const juce::String& trackId);
 
 	void paint(juce::Graphics&) override;
 	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
@@ -31,31 +46,25 @@ public:
 	void onGenerationComplete(const juce::String& trackId, const juce::String& message) override;
 	void refreshMixerChannels();
 	void initUI();
-
-	juce::Label statusLabel;
-
-	juce::StringArray getMenuBarNames() override;
-	juce::PopupMenu getMenuForIndex(int topLevelMenuIndex, const juce::String& menuName) override;
+	void refreshWavevormsAndSequencers();
 	void menuItemSelected(int menuItemID, int topLevelMenuIndex) override;
-
-	std::vector<std::unique_ptr<TrackComponent>>& getTrackComponents()
-	{
-		return trackComponents;
-	}
-	MixerPanel* getMixerPanel() { return mixerPanel.get(); }
 	void toggleWaveFormButtonOnTrack();
 	void setStatusWithTimeout(const juce::String& message, int timeoutMs = 2000);
 	void* getSequencerForTrack(const juce::String& trackId);
 	void stopGenerationUI(const juce::String& trackId, bool success = true, const juce::String& errorMessage = "");
 	void startGenerationUI(const juce::String& trackId);
-	juce::StringArray getBuiltInPrompts() const { return promptPresets; }
 	void restoreUICallbacks();
 	void updateSelectedTrack();
 	void onGenerateButtonClicked();
 	void toggleSampleBank();
+	void onSampleLoaded(const juce::String& trackId);
+	void reEnableCanvasForTrack();
+
+	bool keyStateChanged(bool isKeyDown) override;
 
 private:
 	DjIaVstProcessor& audioProcessor;
+	CustomLookAndFeel customLookAndFeel;
 	juce::Image logoImage;
 	juce::Image bannerImage;
 	juce::Rectangle<int> bannerArea;
@@ -63,10 +72,17 @@ private:
 	std::unique_ptr<SampleBankPanel> sampleBankPanel;
 	juce::TextButton showSampleBankButton;
 	bool sampleBankVisible = false;
-	enum KeyboardLayout { QWERTY, AZERTY, QWERTZ };
+	enum KeyboardLayout
+	{
+		QWERTY,
+		AZERTY,
+		QWERTZ
+	};
 	KeyboardLayout detectKeyboardLayout();
-	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
-	bool keyPressed(const juce::KeyPress& key) override;
+	juce::TextButton openMidiEditorButton;
+	MidiMappingEditorWindow* midiEditorWindow = nullptr;
+
+	void openMidiMappingEditor();
 	void setupUI();
 	void addEventListeners();
 	void loadPromptPresets();
@@ -95,11 +111,15 @@ private:
 	void checkLocalModelsAndNotify();
 	void notifyTracksPromptUpdate();
 	void generateFromTrackComponent(const juce::String& trackId);
+	void refreshCredits();
+	void refreshCreditsAsync();
+
+	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
+	bool keyPressed(const juce::KeyPress& key) override;
 
 	juce::StringArray getAllPrompts() const;
 
 	juce::File getSessionsDirectory();
-	std::unique_ptr<MixerPanel> mixerPanel;
 	juce::TextButton showMixerButton;
 	bool mixerVisible = false;
 	std::atomic<bool> isGenerating{ false };
@@ -137,39 +157,34 @@ private:
 	juce::ComboBox keySelector;
 	MidiLearnableButton generateButton;
 	juce::TextButton configButton;
+	juce::TextButton sponsorButton;
 	juce::TextButton resetUIButton;
 	juce::Label serverUrlLabel;
 	juce::TextEditor serverUrlInput;
 	juce::Label apiKeyLabel;
 	juce::TextEditor apiKeyInput;
-	juce::Label stemsLabel;
-	juce::ToggleButton drumsButton;
-	juce::ToggleButton bassButton;
-	juce::ToggleButton otherButton;
-	juce::ToggleButton vocalsButton;
-	juce::ToggleButton guitarButton;
-	juce::ToggleButton pianoButton;
 	juce::TextButton playButton;
 	juce::Slider durationSlider;
 	juce::Label durationLabel;
-	juce::ToggleButton autoLoadButton;
+	juce::TextButton  autoLoadButton;
 	juce::TextButton loadSampleButton;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::TextButton testMidiButton;
 	juce::Viewport tracksViewport;
 	juce::Component tracksContainer;
-	std::vector<std::unique_ptr<TrackComponent>> trackComponents;
 	juce::TextButton addTrackButton;
 	juce::Label tracksLabel;
 	juce::TextButton saveSessionButton;
 	juce::TextButton loadSessionButton;
 	juce::ComboBox sessionSelector;
-	juce::ToggleButton bypassSequencerButton;
+	juce::TextButton  bypassSequencerButton;
 	std::unique_ptr<juce::MenuBarComponent> menuBar;
 
 	MidiLearnableButton nextTrackButton;
 	MidiLearnableButton prevTrackButton;
+
+	juce::Label creditsLabel;
 
 	enum MenuIDs
 	{

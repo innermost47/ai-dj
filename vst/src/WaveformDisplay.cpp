@@ -1,14 +1,8 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
-#include "JuceHeader.h"
+﻿#include "JuceHeader.h"
 #include "WaveformDisplay.h"
 #include "PluginProcessor.h"
 #include "TrackData.h"
+#include "ColourPalette.h" 
 
 WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData) : audioProcessor(processor), track(trackData)
 {
@@ -44,8 +38,8 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffe
 {
 	jassert(juce::MessageManager::getInstance()->isThisTheMessageThread());
 
-	if (newAudioBuffer.getNumChannels() == 0 || newAudioBuffer.getNumSamples() == 0) {
-		DBG("WaveformDisplay: Empty buffer received");
+	if (newAudioBuffer.getNumChannels() == 0 || newAudioBuffer.getNumSamples() == 0)
+	{
 		audioBuffer.setSize(0, 0);
 		sampleRate = newSampleRate;
 		thumbnail.clear();
@@ -53,10 +47,12 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffe
 		return;
 	}
 
-	try {
+	try
+	{
 		audioBuffer.setSize(newAudioBuffer.getNumChannels(), newAudioBuffer.getNumSamples(), false, true, true);
 
-		for (int channel = 0; channel < newAudioBuffer.getNumChannels(); ++channel) {
+		for (int channel = 0; channel < newAudioBuffer.getNumChannels(); ++channel)
+		{
 			audioBuffer.copyFrom(channel, 0, newAudioBuffer, channel, 0, newAudioBuffer.getNumSamples());
 		}
 
@@ -66,13 +62,9 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffe
 
 		generateThumbnail();
 		repaint();
-
-		DBG("WaveformDisplay: Buffer set successfully - "
-			<< audioBuffer.getNumChannels() << " channels, "
-			<< audioBuffer.getNumSamples() << " samples");
 	}
-	catch (const std::exception& e) {
-		DBG("WaveformDisplay: Exception during buffer set: " << e.what());
+	catch (const std::exception& /*e*/)
+	{
 		audioBuffer.setSize(0, 0);
 		sampleRate = newSampleRate;
 		thumbnail.clear();
@@ -120,23 +112,21 @@ void WaveformDisplay::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds();
 
-	g.setColour(juce::Colours::black);
+	g.setColour(ColourPalette::backgroundMid);
 	g.fillRect(bounds);
 
 	if (thumbnail.empty())
 	{
-		g.setColour(juce::Colours::grey);
+		g.setColour(ColourPalette::textSecondary);
 		g.setFont(12.0f);
 		g.drawText("No audio data", bounds.reduced(5).removeFromTop(20), juce::Justification::centred);
 
-		g.setColour(juce::Colours::lightgrey);
+		g.setColour(ColourPalette::textSecondary);
 		g.setFont(10.0f);
 		g.drawText("Ctrl+Wheel: Zoom | Wheel: Scroll | Right-click: Lock/Unlock | Ctrl+Click: Drag and Drop in DAW",
 			bounds.reduced(5).removeFromBottom(15), juce::Justification::centred);
 		return;
 	}
-
-	g.setColour(juce::Colours::lightblue);
 
 	drawWaveform(g);
 	drawLoopMarkers(g);
@@ -147,14 +137,14 @@ void WaveformDisplay::paint(juce::Graphics& g)
 
 	if (zoomFactor > 1.0)
 	{
-		g.setColour(juce::Colours::yellow);
+		g.setColour(ColourPalette::buttonWarning);
 		g.setFont(10.0f);
 		g.drawText("Zoom: " + juce::String(zoomFactor, 1) + "x", 5, getHeight() - 20, 60, 15, juce::Justification::left);
 	}
 
 	if (loopPointsLocked)
 	{
-		g.setColour(juce::Colours::red);
+		g.setColour(ColourPalette::muteActive);
 		g.setFont(10.0f);
 		g.drawText("LOCKED", getWidth() - 60, getHeight() - 20, 55, 15, juce::Justification::right);
 	}
@@ -197,13 +187,30 @@ void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
 		if (distanceFromStart > 10 && !isDraggingAudio)
 		{
 			isDraggingAudio = true;
-			juce::StringArray files;
-			files.add(currentAudioFile.getFullPathName());
-			DBG("Starting external drag with: " << currentAudioFile.getFullPathName());
-			performExternalDragDropOfFiles(files, false);
+
+			juce::File exportedFile = audioProcessor.exportSampleForDragDrop(currentAudioFile);
+
+			if (exportedFile.existsAsFile())
+			{
+				juce::StringArray files;
+				files.add(exportedFile.getFullPathName());
+				performExternalDragDropOfFiles(files, false);
+
+				DBG("Dragging exported copy: " + exportedFile.getFullPathName());
+			}
+			else
+			{
+				juce::StringArray files;
+				files.add(currentAudioFile.getFullPathName());
+				performExternalDragDropOfFiles(files, false);
+
+				DBG("Export failed, dragging original file");
+			}
+
 			return;
 		}
 	}
+
 	if (loopPointsLocked || trackBpm <= 0.0f)
 		return;
 
@@ -488,7 +495,7 @@ void WaveformDisplay::drawWaveform(juce::Graphics& g)
 
 	g.strokePath(bottomPath, juce::PathStrokeType(1.5f, juce::PathStrokeType::curved));
 
-	g.setColour(juce::Colours::lightblue.withAlpha(0.3f));
+	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
 	float centerY = getHeight() * 0.5f;
 	float width = static_cast<float>(getWidth());
 	g.drawLine(0.0f, centerY, width, centerY, 0.5f);
@@ -500,7 +507,7 @@ void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour& waveformCo
 
 	if (deviation < 0.005f)
 	{
-		waveformColor = juce::Colour(0xff90EE90);
+		waveformColor = ColourPalette::buttonPrimary;
 	}
 	else if (deviation < 0.08f)
 	{
@@ -508,42 +515,25 @@ void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour& waveformCo
 
 		if (stretchRatio > 1.0f)
 		{
-			if (normalizedDev < 0.5f)
-			{
-				float factor = normalizedDev / 0.5f;
-				juce::Colour baseGreen(0xff98D982);
-				juce::Colour beige(0xffD4AF8C);
-				waveformColor = baseGreen.interpolatedWith(beige, factor);
-			}
-			else
-			{
-				float factor = (normalizedDev - 0.5f) / 0.5f;
-				juce::Colour beige(0xffD4AF8C);
-				juce::Colour orangePale(0xffCC8866);
-				waveformColor = beige.interpolatedWith(orangePale, factor);
-			}
+			waveformColor = ColourPalette::buttonPrimary.interpolatedWith(
+				ColourPalette::buttonDangerLight, normalizedDev);
 		}
 		else
 		{
-			if (normalizedDev < 0.5f)
-			{
-				float factor = normalizedDev / 0.5f;
-				juce::Colour baseGreen(0xff98D982);
-				juce::Colour blueGrey(0xff7B9CB0);
-				waveformColor = baseGreen.interpolatedWith(blueGrey, factor);
-			}
-			else
-			{
-				float factor = (normalizedDev - 0.5f) / 0.5f;
-				juce::Colour blueGrey(0xff7B9CB0);
-				juce::Colour bluePale(0xff6B8CAE);
-				waveformColor = blueGrey.interpolatedWith(bluePale, factor);
-			}
+			waveformColor = ColourPalette::buttonPrimary.interpolatedWith(
+				ColourPalette::buttonDangerDark, normalizedDev);
 		}
 	}
 	else
 	{
-		waveformColor = stretchRatio > 1.0f ? juce::Colour(0xffAA6644) : juce::Colour(0xff556B8D);
+		if (stretchRatio > 1.0f)
+		{
+			waveformColor = juce::Colour(0xffE6A5A5);
+		}
+		else
+		{
+			waveformColor = juce::Colour(0xff6B3535);
+		}
 	}
 }
 
@@ -609,8 +599,16 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 	float startX = timeToX(loopStart);
 	float endX = timeToX(loopEnd);
 
-	juce::Colour loopColour = loopPointsLocked ? juce::Colours::orange : juce::Colours::purple;
-	g.setColour(loopColour.withAlpha(0.3f));
+	juce::Colour loopColour = loopPointsLocked ? ColourPalette::textAccent : ColourPalette::buttonPrimary;
+
+	if (loopPointsLocked)
+	{
+		g.setColour(loopColour.darker(0.3f).withAlpha(0.5f));
+	}
+	else
+	{
+		g.setColour(loopColour.withAlpha(0.15f));
+	}
 	g.fillRect(startX, 0.0f, endX - startX, (float)getHeight());
 
 	float lineWidth = loopPointsLocked ? 3.0f : 2.0f;
@@ -619,6 +617,32 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 
 	g.drawLine(startX, 0.0f, startX, height, lineWidth);
 	g.drawLine(endX, 0.0f, endX, height, lineWidth);
+
+	int triangleSize = 12;
+
+	juce::Path startTriangle;
+	startTriangle.addTriangle(
+		startX, 0.0f,
+		startX, static_cast<float>(triangleSize),
+		startX + triangleSize, triangleSize / 2.0f
+	);
+
+	g.setColour(loopColour);
+	g.fillPath(startTriangle);
+	g.setColour(loopColour.brighter(0.3f));
+	g.strokePath(startTriangle, juce::PathStrokeType(1.5f));
+
+	juce::Path endTriangle;
+	endTriangle.addTriangle(
+		endX, 0.0f,
+		endX, static_cast<float>(triangleSize),
+		endX - triangleSize, triangleSize / 2.0f
+	);
+
+	g.setColour(loopColour);
+	g.fillPath(endTriangle);
+	g.setColour(loopColour.brighter(0.3f));
+	g.strokePath(endTriangle, juce::PathStrokeType(1.5f));
 
 	if (trackBpm > 0.0f)
 	{
@@ -632,7 +656,7 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 
 void WaveformDisplay::drawLoopTimeLabels(juce::Graphics& g, float startX, float endX)
 {
-	g.setColour(juce::Colours::white);
+	g.setColour(ColourPalette::textPrimary);
 	g.setFont(10.0f);
 	int startTextX = static_cast<int>(startX + 2);
 	int endTextX = static_cast<int>(endX - 50);
@@ -644,7 +668,7 @@ void WaveformDisplay::drawLoopTimeLabels(juce::Graphics& g, float startX, float 
 
 void WaveformDisplay::drawLoopBarLabels(juce::Graphics& g, float startX, float endX) const
 {
-	g.setColour(juce::Colours::white);
+	g.setColour(ColourPalette::textPrimary);
 	g.setFont(10.0f);
 	int startTextX = static_cast<int>(startX + 5);
 	int endTextX = static_cast<int>(endX - 55);
@@ -685,7 +709,7 @@ void WaveformDisplay::drawVisibleBarLabels(juce::Graphics& g)
 	int visibleBars = rightBar - leftBar + 1;
 	if (visibleBars > 1)
 	{
-		g.setColour(juce::Colours::lightgrey);
+		g.setColour(ColourPalette::textSecondary);
 		g.setFont(10.0f);
 		g.drawText("(" + juce::String(visibleBars) + " bars visible)",
 			getWidth() / 2 - 40, 2, 80, 15, juce::Justification::centred);
@@ -703,20 +727,20 @@ void WaveformDisplay::drawPlaybackHead(juce::Graphics& g)
 
 		if (playbackPosition >= viewStart && playbackPosition <= viewEnd && headX >= 0 && headX <= getWidth())
 		{
-			g.setColour(juce::Colours::red);
+			g.setColour(ColourPalette::playArmed);
 			float height = static_cast<float>(getHeight());
 			g.drawLine(headX, 0.0f, headX, height, 4.0f);
 
 			juce::Path triangle;
 			triangle.addTriangle(headX - 8, 0.0f, headX + 8, 0.0f, headX, 16.0f);
-			g.setColour(juce::Colours::yellow);
+			g.setColour(ColourPalette::buttonDangerLight);
 			g.fillPath(triangle);
 			triangle.clear();
 
 			triangle.addTriangle(headX - 8, height, headX + 8, height, headX, height - 16.0f);
 			g.fillPath(triangle);
 
-			g.setColour(juce::Colours::white);
+			g.setColour(ColourPalette::textPrimary);
 			g.setFont(14.0f);
 			g.drawText(juce::String(playbackPosition, 2) + "s",
 				static_cast<int>(headX - 40),
@@ -741,22 +765,17 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 {
 	if (thumbnail.empty())
 		return;
-
 	float hostBpm = getHostBpm();
 	if (hostBpm <= 0.0f)
 		return;
-
 	int numerator = audioProcessor.getTimeSignatureNumerator();
 	int denominator = audioProcessor.getTimeSignatureDenominator();
-
 	double totalDuration = getTotalDuration();
 	double viewDuration = totalDuration / zoomFactor;
 	double viewEndTime = juce::jlimit(viewStartTime, totalDuration, viewStartTime + viewDuration);
-
 	float baseBeatDuration = 60.0f / hostBpm;
 	float actualBeatDuration;
 	float barDuration;
-
 	if (denominator == 8)
 	{
 		actualBeatDuration = baseBeatDuration * 0.5f * stretchRatio;
@@ -767,17 +786,14 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		actualBeatDuration = baseBeatDuration * stretchRatio;
 		barDuration = actualBeatDuration * numerator;
 	}
-
 	double measureAtLoopStart = floor(loopStart / barDuration);
 	double gridOffset = loopStart - (measureAtLoopStart * barDuration);
-
 	double extendedStart = viewStartTime - (actualBeatDuration * 50);
 	double extendedEnd = viewEndTime + (actualBeatDuration * 50);
-
 	extendedStart -= gridOffset;
 	extendedEnd -= gridOffset;
 
-	g.setColour(juce::Colours::white.withAlpha(0.9f));
+	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.9f));
 	double firstBarTime = floor(extendedStart / barDuration) * barDuration;
 	for (double time = firstBarTime; time <= extendedEnd; time += barDuration)
 	{
@@ -785,7 +801,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		drawMeasureLine(shiftedTime, g, barDuration, viewDuration);
 	}
 
-	g.setColour(juce::Colours::white.withAlpha(0.6f));
+	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.6f));
 	double firstBeatTime = floor(extendedStart / actualBeatDuration) * actualBeatDuration;
 	for (double time = firstBeatTime; time <= extendedEnd; time += actualBeatDuration)
 	{
@@ -796,7 +812,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		}
 	}
 
-	g.setColour(juce::Colours::white.withAlpha(0.3f));
+	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.5f));
 	double subdivisionDuration = actualBeatDuration * 0.5f;
 	double firstSubTime = floor(extendedStart / subdivisionDuration) * subdivisionDuration;
 	for (double time = firstSubTime; time <= extendedEnd; time += subdivisionDuration)
@@ -810,7 +826,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		}
 	}
 
-	g.setColour(juce::Colours::white.withAlpha(0.2f));
+	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.35f));
 	subdivisionDuration = actualBeatDuration * 0.25f;
 	firstSubTime = floor(extendedStart / subdivisionDuration) * subdivisionDuration;
 	for (double time = firstSubTime; time <= extendedEnd; time += subdivisionDuration)
@@ -872,7 +888,7 @@ void WaveformDisplay::drawSubdivisionLine(double time, juce::Graphics& g, double
 
 void WaveformDisplay::drawBeats(juce::Graphics& g, float beatDuration, float viewEndTime, float barDuration, double viewDuration)
 {
-	g.setColour(juce::Colours::white.withAlpha(0.4f));
+	g.setColour(ColourPalette::sequencerBeat.withAlpha(0.4f));
 	double firstBeatTime = floor(viewStartTime / beatDuration) * beatDuration;
 	for (double time = firstBeatTime; time <= viewEndTime; time += beatDuration)
 	{

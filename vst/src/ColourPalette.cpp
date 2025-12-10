@@ -1,51 +1,49 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #include "ColourPalette.h"
 
-constexpr auto COLOR_SUCCESS = 0xff5cb85c;
-constexpr auto COLOR_WARNING = 0xfff0ad4e;
-constexpr auto COLOR_DANGER = 0xffd9534f;
-constexpr auto COLOR_DANGER_LIGHT = 0xfff07a7a;
-constexpr auto COLOR_DANGER_DARK = 0xff9d3838;
-constexpr auto COLOR_PRIMARY = 0xff5bc0de;
-constexpr auto COLOR_SECONDARY = 0xff999988;
-constexpr auto COLOR_BG_DEEP = 0xff181818;
-constexpr auto COLOR_BG_DARK = 0xff252525;
-constexpr auto COLOR_BG_MID = 0xff353535;
-constexpr auto COLOR_BG_LIGHT = 0xff454545;
-constexpr auto COLOR_TEXT_PRIMARY = 0xfff5f5f5;
-constexpr auto COLOR_TEXT_SECONDARY = 0xffb0b0b0;
-constexpr auto COLOR_TEXT_ACCENT = 0xff0099ff;
-constexpr auto COLOR_INACTIVE = 0xff4a4a4a;
-constexpr auto COLOR_SELECTED = 0xff00ff80;
-constexpr auto COLOR_PLAY_ARMED = 0xffcc8844;
-constexpr auto COLOR_SOLO_ACTIVE = 0xffffc107;
-constexpr auto COLOR_SOLO_TEXT = 0xff1a1a1a;
-constexpr auto COLOR_STOP_ACTIVE = 0xffbf6030;
-constexpr auto COLOR_TRACK1 = 0xff5a7a9a;
-constexpr auto COLOR_TRACK2 = 0xff9a7a5a;
-constexpr auto COLOR_TRACK3 = 0xff6a8a6a;
-constexpr auto COLOR_TRACK4 = 0xff8a5a6a;
-constexpr auto COLOR_TRACK5 = 0xff7a6a8a;
-constexpr auto COLOR_TRACK6 = 0xff5a8a8a;
-constexpr auto COLOR_TRACK7 = 0xff7a8a6a;
-constexpr auto COLOR_TRACK8 = 0xff8a6a7a;
-constexpr auto COLOR_SEQUENCER_ACCENT = 0xff6a7a6a;
-constexpr auto COLOR_SEQUENCER_BEAT = 0xff6a6a7a;
-constexpr auto COLOR_SEQUENCER_SUBBEAT = 0xff5a5a5a;
-constexpr auto COLOR_CREDITS = 0xff888888;
-constexpr auto COLOR_VIOLET = 0xff9b59b6;
-constexpr auto COLOR_EMERALD = 0xff27ae60;
-constexpr auto COLOR_CORAL = 0xffe67e22;
-constexpr auto COLOR_SLATE = 0xff7f8c8d;
-constexpr auto COLOR_INDIGO = 0xff5b6b9d;
-constexpr auto COLOR_TEAL = 0xff16a085;
-constexpr auto COLOR_AMBER = 0xfff39c12;
+constexpr auto COLOR_SUCCESS = 0xffF5F5F5;
+constexpr auto COLOR_WARNING = 0xffFFFFFF;
+constexpr auto COLOR_DANGER = 0xffB8605C;
+constexpr auto COLOR_DANGER_LIGHT = 0xffC97571;
+constexpr auto COLOR_DANGER_DARK = 0xff8B4545;
+constexpr auto COLOR_PRIMARY = 0xffB8605C;
+constexpr auto COLOR_SECONDARY = 0xffB8605C;
+constexpr auto COLOR_BG_DEEP = 0xffFFFFFF;
+constexpr auto COLOR_BG_DARK = 0xffFAFAFA;
+constexpr auto COLOR_BG_MID = 0xffF5F5F5;
+constexpr auto COLOR_BG_LIGHT = 0xffF0F0F0;
+constexpr auto COLOR_TEXT_PRIMARY = 0xff1A1A1A;
+constexpr auto COLOR_TEXT_SECONDARY = 0xff4A4A4A;
+constexpr auto COLOR_TEXT_ACCENT = 0xffB8605C;
+constexpr auto COLOR_INACTIVE = 0xffCCCCCC;
+constexpr auto COLOR_SELECTED = 0xffB8605C;
+constexpr auto COLOR_PLAY_ARMED = 0xffD4A5A0;
+constexpr auto COLOR_SOLO_ACTIVE = 0xffB8605C;
+constexpr auto COLOR_SOLO_TEXT = 0xffFFFFFF;
+constexpr auto COLOR_STOP_ACTIVE = 0xff8B4545;
+constexpr auto COLOR_TRACK1 = 0xffB8605C;
+constexpr auto COLOR_TRACK2 = 0xffB8605C;
+constexpr auto COLOR_TRACK3 = 0xffB8605C;
+constexpr auto COLOR_TRACK4 = 0xffB8605C;
+constexpr auto COLOR_TRACK5 = 0xffB8605C;
+constexpr auto COLOR_TRACK6 = 0xffB8605C;
+constexpr auto COLOR_TRACK7 = 0xffB8605C;
+constexpr auto COLOR_TRACK8 = 0xffB8605C;
+constexpr auto COLOR_SEQUENCER_ACCENT = 0xffB8605C;
+constexpr auto COLOR_SEQUENCER_BEAT = 0xff1A1A1A;
+constexpr auto COLOR_SEQUENCER_SUBBEAT = 0xffCCCCCC;
+constexpr auto COLOR_CREDITS = 0xff4A4A4A;
+constexpr auto COLOR_VIOLET = 0xff8B4545;
+constexpr auto COLOR_EMERALD = 0xffB8605C;
+constexpr auto COLOR_CORAL = 0xffB8605C;
+constexpr auto COLOR_SLATE = 0xff1A1A1A;
+constexpr auto COLOR_INDIGO = 0xff1A1A1A;
+constexpr auto COLOR_TEAL = 0xffB8605C;
+constexpr auto COLOR_AMBER = 0xffF5F5F5;
+constexpr auto COLOR_VU_GREEN = 0xffD4A5A0;
+constexpr auto COLOR_VU_ORANGE = 0xffC97571;
+constexpr auto COLOR_VU_RED = 0xffB8605C;
+constexpr auto COLOR_PLAY_ACTIVE = 0xff8B4545;
+constexpr auto COLOR_SAMPLE_PENDING = COLOR_PLAY_ARMED;
 
 const juce::Colour ColourPalette::track1(COLOR_TRACK1);
 const juce::Colour ColourPalette::track2(COLOR_TRACK2);
@@ -76,16 +74,16 @@ const juce::Colour ColourPalette::textSuccess(COLOR_SUCCESS);
 const juce::Colour ColourPalette::textWarning(COLOR_WARNING);
 const juce::Colour ColourPalette::textAccent(COLOR_TEXT_ACCENT);
 
-const juce::Colour ColourPalette::sliderThumb(COLOR_SUCCESS);
+const juce::Colour ColourPalette::sliderThumb(COLOR_PRIMARY);
 const juce::Colour ColourPalette::sliderTrack(COLOR_INACTIVE);
 
 const juce::Colour ColourPalette::vuPeak(COLOR_TEXT_PRIMARY);
-const juce::Colour ColourPalette::vuClipping(COLOR_DANGER_LIGHT);
-const juce::Colour ColourPalette::vuGreen(COLOR_SUCCESS);
-const juce::Colour ColourPalette::vuOrange(COLOR_WARNING);
-const juce::Colour ColourPalette::vuRed(COLOR_DANGER);
+const juce::Colour ColourPalette::vuClipping(COLOR_DANGER);
+const juce::Colour ColourPalette::vuGreen(COLOR_VU_GREEN);
+const juce::Colour ColourPalette::vuOrange(COLOR_VU_ORANGE);
+const juce::Colour ColourPalette::vuRed(COLOR_VU_RED);
 
-const juce::Colour ColourPalette::playActive(COLOR_SUCCESS);
+const juce::Colour ColourPalette::playActive(COLOR_PLAY_ACTIVE);
 const juce::Colour ColourPalette::playArmed(COLOR_PLAY_ARMED);
 const juce::Colour ColourPalette::muteActive(COLOR_DANGER);
 const juce::Colour ColourPalette::soloActive(COLOR_SOLO_ACTIVE);
@@ -107,6 +105,9 @@ const juce::Colour ColourPalette::slate(COLOR_SLATE);
 const juce::Colour ColourPalette::indigo(COLOR_INDIGO);
 const juce::Colour ColourPalette::teal(COLOR_TEAL);
 const juce::Colour ColourPalette::amber(COLOR_AMBER);
+const juce::Colour ColourPalette::textInactive(COLOR_INACTIVE);
+
+const juce::Colour ColourPalette::samplePending(COLOR_SAMPLE_PENDING);
 
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {

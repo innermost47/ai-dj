@@ -1,20 +1,109 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-# Copyright (C) 2025 Anthony Charretier
-
 import sys
-import platform
+import subprocess
 import os
+from pathlib import Path
+
+
+def safe_run(cmd, **kwargs):
+    if sys.platform == "win32":
+        kwargs.setdefault("creationflags", subprocess.CREATE_NO_WINDOW)
+    return subprocess.run(cmd, **kwargs)
+
+
+def check_and_install_dependencies():
+    print("=== OBSIDIAN-Neural Installer Bootstrap ===\n")
+
+    missing = []
+
+    try:
+        import tkinter
+
+        print("✓ tkinter available")
+    except ImportError:
+        missing.append(("tkinter", "CRITICAL - Reinstall Python with tkinter support"))
+
+    try:
+        from PIL import Image
+
+        print("✓ Pillow available")
+    except ImportError:
+        missing.append(("Pillow", "pip"))
+
+    try:
+        import psutil
+
+        print("✓ psutil available")
+    except ImportError:
+        missing.append(("psutil", "pip"))
+
+    try:
+        import GPUtil
+
+        print("✓ GPUtil available")
+    except ImportError:
+        missing.append(("GPUtil", "pip"))
+
+    if not missing:
+        print("\n✓ All installer dependencies available\n")
+        return True
+
+    print("\n⚠ Missing installer dependencies:")
+    for pkg, install_method in missing:
+        if install_method == "CRITICAL":
+            print(f"  ✗ {pkg} - {install_method}")
+        else:
+            print(f"  ✗ {pkg}")
+
+    tkinter_missing = any(pkg == "tkinter" for pkg, _ in missing)
+    if tkinter_missing:
+        print("\n❌ CRITICAL: tkinter is not available")
+        print("tkinter is required for the installer GUI.")
+        print("\nSolutions:")
+        print("  - Windows: Reinstall Python and check 'tcl/tk and IDLE'")
+        print("  - Linux: sudo apt install python3-tk")
+        print("  - macOS: tkinter should be included with Python")
+        input("\nPress Enter to exit...")
+        return False
+
+    print("\nThese packages are required to run the installer GUI.")
+    response = input("Install them now? (y/n): ").strip().lower()
+
+    if response != "y":
+        print("\n❌ Cannot proceed without dependencies.")
+        input("Press Enter to exit...")
+        return False
+
+    print("\nInstalling missing packages...\n")
+    for pkg, install_method in missing:
+        if install_method == "pip":
+            print(f"Installing {pkg}...")
+            try:
+                safe_run(
+                    [sys.executable, "-m", "pip", "install", pkg],
+                    check=True,
+                    capture_output=True,
+                )
+                print(f"  ✓ {pkg} installed successfully")
+            except subprocess.CalledProcessError as e:
+                print(f"  ✗ Failed to install {pkg}")
+                print(f"    Error: {e.stderr.decode() if e.stderr else 'Unknown'}")
+                return False
+
+    print("\n✓ All dependencies installed successfully!")
+    print("Please restart the installer manually.\n")
+    input("Press Enter to exit...")
+    return False
+
+
+if __name__ == "__main__":
+    if not check_and_install_dependencies():
+        sys.exit(1)
+
+import platform
 import time
 import ctypes
-from pathlib import Path
 import re
-import subprocess
-import sys
 import json
-import platform
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext, filedialog
 import threading
@@ -29,6 +118,7 @@ try:
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
+
 
 if platform.system() == "Windows":
     try:
@@ -1246,7 +1336,7 @@ class ObsidianNeuralInstaller:
                         "Server setup & desktop shortcut",
                         self.create_server_executable_and_shortcut,
                     ),
-                    ("AI Model Download (2.49 GB)", self.download_model),
+                    ("AI GGUF Models Download", self.download_model),
                     ("VST Setup", self.setup_vst),
                     ("Environment configuration", self.setup_environment),
                 ]
@@ -2028,23 +2118,67 @@ class ObsidianNeuralInstaller:
 
     def download_model(self, install_dir):
         models_dir = install_dir / "models"
-        model_path = models_dir / "gemma-3-4b-it.gguf"
+        gemma_model_path = models_dir / "gemma-3-4b-it.gguf"
+        if gemma_model_path.exists():
+            self.log("Gemma model already uploaded, ignored")
+        else:
+            gemma_url = "https://huggingface.co/unsloth/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it-Q4_K_M.gguf"
+            self.log("Download the Gemma-3-4B model...")
 
-        if model_path.exists():
-            self.log("Model already uploaded, ignored")
-            return
+            def download_gemma_progress(block_num, block_size, total_size):
+                downloaded = block_num * block_size
+                percent = min(100, (downloaded / total_size) * 100)
+                self.update_progress(
+                    percent * 0.4, f"Download Gemma model: {percent:.1f}%"
+                )
 
-        model_url = "https://huggingface.co/unsloth/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it-Q4_K_M.gguf"
+            urllib.request.urlretrieve(
+                gemma_url, gemma_model_path, reporthook=download_gemma_progress
+            )
+            self.log("✅ Gemma model downloaded successfully.")
 
-        self.log("Download the Gemma-3-4B model (2.49 GB)...")
+        vision_text_model_path = models_dir / "ggml-model-Q4_K_M.gguf"
+        if vision_text_model_path.exists():
+            self.log("Vision text model already uploaded, ignored")
+        else:
+            vision_text_url = "https://huggingface.co/openbmb/MiniCPM-V-2_6-gguf/resolve/main/ggml-model-Q4_K_M.gguf"
+            self.log("Download MiniCPM-V text model...")
 
-        def download_progress(block_num, block_size, total_size):
-            downloaded = block_num * block_size
-            percent = min(100, (downloaded / total_size) * 100)
-            self.update_progress(percent * 0.7, f"Download model: {percent:.1f}%")
+            def download_vision_text_progress(block_num, block_size, total_size):
+                downloaded = block_num * block_size
+                percent = min(100, (downloaded / total_size) * 100)
+                self.update_progress(
+                    40 + (percent * 0.3), f"Download vision text model: {percent:.1f}%"
+                )
 
-        urllib.request.urlretrieve(model_url, model_path, reporthook=download_progress)
-        self.log("✅ Model downloaded successfully.")
+            urllib.request.urlretrieve(
+                vision_text_url,
+                vision_text_model_path,
+                reporthook=download_vision_text_progress,
+            )
+            self.log("✅ Vision text model downloaded successfully.")
+
+        mmproj_model_path = models_dir / "mmproj-model-f16.gguf"
+        if mmproj_model_path.exists():
+            self.log("Vision mmproj model already uploaded, ignored")
+        else:
+            mmproj_url = "https://huggingface.co/openbmb/MiniCPM-V-2_6-gguf/resolve/main/mmproj-model-f16.gguf"
+            self.log("Download MiniCPM-V mmproj model...")
+
+            def download_mmproj_progress(block_num, block_size, total_size):
+                downloaded = block_num * block_size
+                percent = min(100, (downloaded / total_size) * 100)
+                self.update_progress(
+                    70 + (percent * 0.3),
+                    f"Download vision mmproj model: {percent:.1f}%",
+                )
+
+            urllib.request.urlretrieve(
+                mmproj_url, mmproj_model_path, reporthook=download_mmproj_progress
+            )
+            self.log("✅ Vision mmproj model downloaded successfully.")
+
+        self.log("✅ All GGUF models downloaded successfully.")
 
     def create_installation_registry(self, install_dir):
         if platform.system() == "Windows":

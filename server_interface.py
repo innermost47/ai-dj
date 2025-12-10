@@ -682,6 +682,7 @@ class ObsidianNeuralLauncher:
         self.server_url = tk.StringVar(value="")
         self.auto_save_enabled = False
         self.hf_token_var = tk.StringVar(value="")
+        self.bypass_llm = tk.BooleanVar(value=False)
 
     def enable_auto_save(self):
         if self.auto_save_enabled:
@@ -695,6 +696,7 @@ class ObsidianNeuralLauncher:
             self.port,
             self.audio_model,
             self.hf_token_var,
+            self.bypass_llm,
         ]
 
         for var in variables:
@@ -846,6 +848,12 @@ class ObsidianNeuralLauncher:
             actions_button_frame,
             text="📍 Minimize to Tray",
             command=self.show_in_tray,
+        ).pack(side="left", padx=(0, 10))
+
+        ttk.Button(
+            actions_button_frame,
+            text="🔄 Check for Updates",
+            command=self.check_for_updates,
         ).pack(side="left")
 
     def save_hf_token(self):
@@ -1230,6 +1238,24 @@ class ObsidianNeuralLauncher:
             button_frame, text="🔧 Reset to Defaults", command=self.reset_to_defaults
         ).pack(side="left")
 
+        bypass_frame = ttk.Frame(server_frame)
+        bypass_frame.pack(fill="x", pady=(10, 0))
+
+        self.bypass_checkbox = ttk.Checkbutton(
+            bypass_frame,
+            text="🚀 Bypass LLM (Direct Audio Generation)",
+            variable=self.bypass_llm,
+        )
+        self.bypass_checkbox.pack(anchor="w")
+
+        bypass_help = ttk.Label(
+            bypass_frame,
+            text="Skip AI brain analysis, use raw prompts directly with Stable Audio",
+            font=("Arial", 9),
+            foreground="gray",
+        )
+        bypass_help.pack(anchor="w", pady=(2, 0))
+
     def remove_api_keys(self):
         selections = self.api_keys_listbox.curselection()
         if not selections:
@@ -1388,7 +1414,6 @@ class ObsidianNeuralLauncher:
                 cursor.execute(f"ALTER TABLE api_keys ADD COLUMN {col_name} {col_def}")
                 self.log(f"Added column {col_name} to api_keys table", "SUCCESS")
 
-        # Migration des anciennes clés non-chiffrées (si elles existent encore)
         cursor.execute("PRAGMA table_info(api_keys)")
         api_columns = [column[1] for column in cursor.fetchall()]
 
@@ -1417,7 +1442,6 @@ class ObsidianNeuralLauncher:
 
             for key_value, name in old_data:
                 encrypted_key = self.secure_storage.encrypt(key_value)
-                # Les anciennes clés deviennent limitées par défaut avec 50 crédits
                 cursor.execute(
                     """INSERT INTO api_keys 
                     (key_value_encrypted, name, is_limited, total_credits, credits_used) 
@@ -1430,7 +1454,6 @@ class ObsidianNeuralLauncher:
                 "SUCCESS",
             )
 
-        # Migration de la table config
         cursor.execute("PRAGMA table_info(config)")
         config_columns = [column[1] for column in cursor.fetchall()]
 
@@ -1736,6 +1759,7 @@ class ObsidianNeuralLauncher:
                 ("host", self.host.get(), 0),
                 ("port", self.port.get(), 0),
                 ("audio_model", self.audio_model.get(), 0),
+                ("bypass_llm", str(self.bypass_llm.get()), 0),
             ]
 
             if hasattr(self, "hf_token_var") and self.hf_token_var.get().strip():
@@ -1781,6 +1805,8 @@ class ObsidianNeuralLauncher:
                         self.port.set(value)
                     elif key == "audio_model":
                         self.audio_model.set(value)
+                    elif key == "bypass_llm":
+                        self.bypass_llm.set(value.lower() == "true")
 
             conn.close()
 
@@ -2382,6 +2408,277 @@ class ObsidianNeuralLauncher:
 
             self.save_config()
 
+    def is_git_repo(self):
+        git_dir = self.installation_dir / ".git"
+        return git_dir.exists() and git_dir.is_dir()
+
+    def check_for_updates(self):
+        if not self.is_git_repo():
+            messagebox.showinfo(
+                "Not a Git Installation",
+                "This installation doesn't appear to be a git repository.\n"
+                "Updates via git pull are only available for git installations.",
+            )
+            return False
+
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=str(self.installation_dir),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            if result.stdout.strip():
+                if not messagebox.askyesno(
+                    "Uncommitted Changes",
+                    "You have uncommitted local changes.\n\n"
+                    "Pulling updates may cause conflicts.\n"
+                    "Continue anyway?",
+                ):
+                    return False
+
+            subprocess.run(["git", "fetch"], cwd=str(self.installation_dir), check=True)
+
+            result = subprocess.run(
+                ["git", "rev-list", "HEAD...origin/main", "--count"],
+                cwd=str(self.installation_dir),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            commits_behind = int(result.stdout.strip())
+
+            if commits_behind == 0:
+                messagebox.showinfo(
+                    "Up to Date", "You're already running the latest version!"
+                )
+                return False
+
+            return commits_behind
+
+        except subprocess.CalledProcessError as e:
+            self.log(f"Git check failed: {e}", "ERROR")
+            messagebox.showerror("Git Error", f"Could not check for updates:\n{e}")
+            return False
+        except Exception as e:
+            self.log(f"Error checking updates: {e}", "ERROR")
+            return False
+
+    def install_dependencies(self):
+        requirements_file = self.installation_dir / "requirements.txt"
+
+        if not requirements_file.exists():
+            messagebox.showerror(
+                "Requirements Not Found",
+                f"requirements.txt not found at:\n{requirements_file}",
+            )
+            return False
+
+        if platform.system() == "Windows":
+            pip_exe = self.installation_dir / "env" / "Scripts" / "pip.exe"
+        else:
+            pip_exe = self.installation_dir / "env" / "bin" / "pip"
+
+        if not pip_exe.exists():
+            messagebox.showerror(
+                "Pip Not Found",
+                f"Could not find pip in virtual environment:\n{pip_exe}",
+            )
+            return False
+
+        if not messagebox.askyesno(
+            "Install Dependencies",
+            f"This will install/update packages from:\n{requirements_file}\n\n"
+            f"Using pip: {pip_exe}\n\n"
+            "Continue?",
+        ):
+            return False
+
+        try:
+            self.log("Installing dependencies...", "INFO")
+
+            progress_window = tk.Toplevel(self.root)
+            progress_window.title("Installing Dependencies")
+            progress_window.geometry("600x400")
+            progress_window.transient(self.root)
+            progress_window.grab_set()
+
+            progress_frame = ttk.Frame(progress_window, padding="20")
+            progress_frame.pack(fill="both", expand=True)
+
+            ttk.Label(
+                progress_frame,
+                text="Installing Python packages...",
+                font=("Arial", 12, "bold"),
+            ).pack(pady=(0, 10))
+
+            output_text = scrolledtext.ScrolledText(
+                progress_frame, height=15, font=("Consolas", 9)
+            )
+            output_text.pack(fill="both", expand=True, pady=(0, 10))
+
+            status_label = ttk.Label(progress_frame, text="Working...")
+            status_label.pack()
+
+            def run_install():
+                try:
+                    cmd = [str(pip_exe), "install", "-r", str(requirements_file)]
+
+                    if platform.system() == "Windows":
+                        process = subprocess.Popen(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            universal_newlines=True,
+                            bufsize=1,
+                            cwd=str(self.installation_dir),
+                            creationflags=subprocess.CREATE_NO_WINDOW,
+                        )
+                    else:
+                        process = subprocess.Popen(
+                            cmd,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            universal_newlines=True,
+                            bufsize=1,
+                            cwd=str(self.installation_dir),
+                        )
+
+                    for line in iter(process.stdout.readline, ""):
+                        if line:
+                            self.root.after(
+                                0, lambda l=line: output_text.insert(tk.END, l)
+                            )
+                            self.root.after(0, lambda: output_text.see(tk.END))
+
+                    return_code = process.wait()
+
+                    if return_code == 0:
+                        self.root.after(
+                            0,
+                            lambda: status_label.config(
+                                text="✅ Installation complete!", foreground="green"
+                            ),
+                        )
+                        self.log("Dependencies installed successfully", "SUCCESS")
+                    else:
+                        self.root.after(
+                            0,
+                            lambda: status_label.config(
+                                text="❌ Installation failed", foreground="red"
+                            ),
+                        )
+                        self.log("Dependencies installation failed", "ERROR")
+
+                    self.root.after(2000, progress_window.destroy)
+
+                except Exception as e:
+                    self.root.after(
+                        0,
+                        lambda: status_label.config(
+                            text=f"❌ Error: {str(e)}", foreground="red"
+                        ),
+                    )
+                    self.log(f"Error installing dependencies: {e}", "ERROR")
+                    self.root.after(3000, progress_window.destroy)
+
+            install_thread = threading.Thread(target=run_install, daemon=True)
+            install_thread.start()
+
+            return True
+
+        except Exception as e:
+            self.log(f"Error installing dependencies: {e}", "ERROR")
+            messagebox.showerror("Error", f"Could not install dependencies:\n{e}")
+            return False
+
+    def update_from_git(self):
+        if not self.is_git_repo():
+            messagebox.showinfo(
+                "Not a Git Installation",
+                "This installation doesn't appear to be a git repository.\n"
+                "Updates via git pull are only available for git installations.",
+            )
+            return
+
+        if self.is_server_running:
+            if not messagebox.askyesno(
+                "Server Running",
+                "The server must be stopped before updating.\n\n"
+                "Stop server and continue with update?",
+            ):
+                return
+            self.stop_server()
+            time.sleep(2)
+
+        try:
+            self.log("Checking for updates...", "INFO")
+
+            subprocess.run(
+                ["git", "fetch"],
+                cwd=str(self.installation_dir),
+                check=True,
+                capture_output=True,
+            )
+
+            result = subprocess.run(
+                ["git", "rev-list", "HEAD...origin/main", "--count"],
+                cwd=str(self.installation_dir),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            commits_behind = int(result.stdout.strip())
+
+            if commits_behind == 0:
+                messagebox.showinfo(
+                    "Up to Date", "You're already running the latest version!"
+                )
+                return
+
+            if not messagebox.askyesno(
+                "Update Available",
+                f"There are {commits_behind} new commit(s) available.\n\n"
+                "Do you want to update now?",
+            ):
+                return
+
+            self.log("Updating...", "INFO")
+
+            result = subprocess.run(
+                ["git", "pull"],
+                cwd=str(self.installation_dir),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            self.log(result.stdout, "SUCCESS")
+
+            if "requirements.txt" in result.stdout:
+                if messagebox.askyesno(
+                    "Dependencies Updated",
+                    "requirements.txt was updated.\n\n"
+                    "Install new dependencies now?\n"
+                    "(Recommended)",
+                ):
+                    self.install_dependencies()
+
+            messagebox.showinfo(
+                "Update Complete",
+                "✅ Update successful!\n\n" "You may need to restart the launcher.",
+            )
+
+            self.log("Update completed successfully", "SUCCESS")
+
+        except subprocess.CalledProcessError as e:
+            self.log(f"Git pull failed: {e.stderr}", "ERROR")
+            messagebox.showerror("Update Failed", f"Could not update:\n\n{e.stderr}")
+
     def start_server(self):
         if self.is_server_running:
             self.log("Server is already running", "WARNING")
@@ -2479,6 +2776,10 @@ class ObsidianNeuralLauncher:
                 "--audio-model",
                 self.audio_model.get(),
             ]
+
+            if self.bypass_llm.get():
+                cmd.append("--bypass-llm")
+                self.log("LLM bypass enabled - direct audio generation mode")
 
             environment = self.environment.get()
             has_api_keys = len(self.api_keys_list) > 0

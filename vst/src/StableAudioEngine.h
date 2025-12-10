@@ -1,11 +1,4 @@
-﻿/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 #include <vector>
 #include <memory>
@@ -22,7 +15,7 @@ public:
 		int sampleRate = 44100;
 
 		GenerationParams() = default;
-		GenerationParams(const juce::String& p, float dur = 10.0f)
+		GenerationParams(const juce::String &p, float dur = 10.0f)
 			: prompt(p), duration(dur)
 		{
 		}
@@ -45,11 +38,11 @@ public:
 	};
 	StableAudioEngine() {}
 
-	bool initialize(const juce::String& modelsDir);
+	bool initialize(const juce::String &modelsDir);
 	bool isReady() const { return isInitialized; }
 
-	GenerationResult generateSample(const GenerationParams& params);
-	std::vector<float> generateAudio(const juce::String& prompt, float duration = 10.0f);
+	GenerationResult generateSample(const GenerationParams &params);
+	std::vector<float> generateAudio(const juce::String &prompt, float duration = 10.0f);
 
 private:
 	bool isInitialized = false;
@@ -58,12 +51,12 @@ private:
 	juce::Random random;
 
 	bool checkRequiredFiles();
-	std::vector<float> loadAndResampleWavFile(const juce::File& wavFile, double targetSampleRate);
-	juce::AudioBuffer<float> resampleBuffer(const juce::AudioBuffer<float>& inputBuffer,
-		double inputSampleRate,
-		double outputSampleRate);
+	std::vector<float> loadAndResampleWavFile(const juce::File &wavFile, double targetSampleRate);
+	juce::AudioBuffer<float> resampleBuffer(const juce::AudioBuffer<float> &inputBuffer,
+											double inputSampleRate,
+											double outputSampleRate);
 	void cleanupTempFiles();
-	juce::String sanitizePrompt(const juce::String& prompt);
+	juce::String sanitizePrompt(const juce::String &prompt);
 	int generateRandomSeed();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StableAudioEngine)

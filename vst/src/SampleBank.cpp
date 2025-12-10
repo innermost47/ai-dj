@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #include "SampleBank.h"
 
 SampleBank::SampleBank()
@@ -13,13 +6,16 @@ SampleBank::SampleBank()
 	bankIndexFile = bankDirectory.getChildFile("sample_bank.json");
 	ensureBankDirectoryExists();
 	loadBankData();
+	if (!bankIndexFile.exists())
+	{
+		saveBankData();
+	}
 }
 
 juce::String SampleBank::addSample(const juce::String& prompt,
 	const juce::File& audioFile,
 	float bpm,
-	const juce::String& key,
-	const std::vector<juce::String>& stems)
+	const juce::String& key)
 {
 	juce::ScopedLock lock(bankLock);
 
@@ -29,30 +25,26 @@ juce::String SampleBank::addSample(const juce::String& prompt,
 	entry->creationTime = juce::Time::getCurrentTime();
 	entry->bpm = bpm;
 	entry->key = key;
-	entry->stems = stems;
 
 	auto& categories = entry->categories;
 
-	for (const auto& stem : stems)
-	{
-		if (stem == "drums") categories.push_back("Drums");
-		if (stem == "bass") categories.push_back("Bass");
-		if (stem == "vocals") categories.push_back("Vocal");
-		if (stem == "piano") categories.push_back("Piano");
-		if (stem == "guitar") categories.push_back("Guitar");
-	}
 
 	juce::String lowerPrompt = prompt.toLowerCase();
 	if (lowerPrompt.contains("ambient") || lowerPrompt.contains("pad"))
 		categories.push_back("Ambient");
-	if (lowerPrompt.contains("house")) categories.push_back("House");
-	if (lowerPrompt.contains("techno")) categories.push_back("Techno");
+	if (lowerPrompt.contains("house"))
+		categories.push_back("House");
+	if (lowerPrompt.contains("techno"))
+		categories.push_back("Techno");
 	if (lowerPrompt.contains("hip hop") || lowerPrompt.contains("hiphop"))
 		categories.push_back("Hip-Hop");
-	if (lowerPrompt.contains("jazz")) categories.push_back("Jazz");
-	if (lowerPrompt.contains("rock")) categories.push_back("Rock");
+	if (lowerPrompt.contains("jazz"))
+		categories.push_back("Jazz");
+	if (lowerPrompt.contains("rock"))
+		categories.push_back("Rock");
 
-	if (categories.empty()) categories.push_back("Electronic");
+	if (categories.empty())
+		categories.push_back("Electronic");
 
 	entry->filename = createSafeFilename(prompt, entry->creationTime);
 
@@ -81,27 +73,39 @@ juce::String SampleBank::addSample(const juce::String& prompt,
 
 bool SampleBank::removeSample(const juce::String& sampleId)
 {
-	juce::ScopedLock lock(bankLock);
+	juce::File fileToDelete;
+	bool needsCallback = false;
 
-	auto it = std::find_if(samples.begin(), samples.end(),
-		[&sampleId](const std::unique_ptr<SampleBankEntry>& entry) {
-			return entry->id == sampleId;
-		});
-
-	if (it == samples.end())
-		return false;
-
-	juce::File sampleFile((*it)->filePath);
-	if (sampleFile.exists())
 	{
-		sampleFile.deleteFile();
+		juce::ScopedLock lock(bankLock);
+
+		auto it = std::find_if(samples.begin(), samples.end(),
+			[&sampleId](const std::unique_ptr<SampleBankEntry>& entry)
+			{
+				return entry->id == sampleId;
+			});
+
+		if (it == samples.end())
+			return false;
+
+		fileToDelete = juce::File((*it)->filePath);
+
+		samples.erase(it);
+		needsCallback = true;
+
+		saveBankData();
+
 	}
 
-	samples.erase(it);
-	saveBankData();
+	if (fileToDelete.exists())
+	{
+		fileToDelete.deleteFile();
+	}
 
-	if (onBankChanged)
+	if (needsCallback && onBankChanged)
+	{
 		onBankChanged();
+	}
 
 	return true;
 }
@@ -111,7 +115,8 @@ SampleBankEntry* SampleBank::getSample(const juce::String& sampleId)
 	juce::ScopedLock lock(bankLock);
 
 	auto it = std::find_if(samples.begin(), samples.end(),
-		[&sampleId](const std::unique_ptr<SampleBankEntry>& entry) {
+		[&sampleId](const std::unique_ptr<SampleBankEntry>& entry)
+		{
 			return entry->id == sampleId;
 		});
 
@@ -156,22 +161,46 @@ int SampleBank::removeUnusedSamples()
 			removedCount++;
 	}
 
+	if (removedCount > 0 && onBankChanged)
+	{
+		juce::MessageManager::callAsync([this]()
+			{
+				if (onBankChanged)
+					onBankChanged();
+			});
+	}
+
 	return removedCount;
 }
 
+
 void SampleBank::markSampleAsUsed(const juce::String& sampleId, const juce::String& projectId)
 {
-	juce::ScopedLock lock(bankLock);
+	bool needsSave = false;
 
-	auto* entry = getSample(sampleId);
-	if (entry)
 	{
-		auto& projects = entry->usedInProjects;
-		if (std::find(projects.begin(), projects.end(), projectId) == projects.end())
+		juce::ScopedLock lock(bankLock);
+
+		auto it = std::find_if(samples.begin(), samples.end(),
+			[&sampleId](const std::unique_ptr<SampleBankEntry>& entry)
+			{
+				return entry->id == sampleId;
+			});
+
+		if (it != samples.end())
 		{
-			projects.push_back(projectId);
-			saveBankData();
+			auto& projects = (*it)->usedInProjects;
+			if (std::find(projects.begin(), projects.end(), projectId) == projects.end())
+			{
+				projects.push_back(projectId);
+				needsSave = true;
+			}
 		}
+	}
+
+	if (needsSave)
+	{
+		saveBankData();
 	}
 }
 
@@ -200,7 +229,8 @@ juce::String SampleBank::promptToSnakeCase(const juce::String& prompt)
 	juce::String result = prompt.toLowerCase();
 
 	juce::String invalidChars = " !@#$%^&*()+-=[]{}|;':\",./<>?";
-	for (int i = 0; i < invalidChars.length(); ++i) {
+	for (int i = 0; i < invalidChars.length(); ++i)
+	{
 		result = result.replaceCharacter(invalidChars[i], '_');
 	}
 
@@ -209,8 +239,10 @@ juce::String SampleBank::promptToSnakeCase(const juce::String& prompt)
 		result = result.replace("__", "_");
 	}
 
-	if (result.startsWith("_")) result = result.substring(1);
-	if (result.endsWith("_")) result = result.dropLastCharacters(1);
+	if (result.startsWith("_"))
+		result = result.substring(1);
+	if (result.endsWith("_"))
+		result = result.dropLastCharacters(1);
 
 	if (result.length() > 50)
 	{
@@ -252,46 +284,70 @@ void SampleBank::ensureBankDirectoryExists()
 
 void SampleBank::saveBankData()
 {
-	juce::DynamicObject::Ptr bankData = new juce::DynamicObject();
-	juce::Array<juce::var> samplesArray;
-
-	for (const auto& entry : samples)
+	try
 	{
-		juce::DynamicObject::Ptr sampleData = new juce::DynamicObject();
-		sampleData->setProperty("id", entry->id);
-		sampleData->setProperty("filename", entry->filename);
-		sampleData->setProperty("originalPrompt", entry->originalPrompt);
-		sampleData->setProperty("filePath", entry->filePath);
-		sampleData->setProperty("creationTime", entry->creationTime.toMilliseconds());
-		sampleData->setProperty("duration", entry->duration);
-		sampleData->setProperty("bpm", entry->bpm);
-		sampleData->setProperty("key", entry->key);
-		sampleData->setProperty("sampleRate", entry->sampleRate);
-		sampleData->setProperty("numChannels", entry->numChannels);
-		sampleData->setProperty("numSamples", entry->numSamples);
-		juce::Array<juce::var> categoriesArray;
-		for (const auto& category : entry->categories)
-			categoriesArray.add(category);
-		sampleData->setProperty("categories", categoriesArray);
+		if (!bankDirectory.exists())
+		{
+			auto result = bankDirectory.createDirectory();
+			if (!result.wasOk())
+				return;
+		}
 
-		juce::Array<juce::var> stemsArray;
-		for (const auto& stem : entry->stems)
-			stemsArray.add(stem);
-		sampleData->setProperty("stems", stemsArray);
+		juce::DynamicObject::Ptr bankData = new juce::DynamicObject();
+		juce::Array<juce::var> samplesArray;
 
-		juce::Array<juce::var> projectsArray;
-		for (const auto& project : entry->usedInProjects)
-			projectsArray.add(project);
-		sampleData->setProperty("usedInProjects", projectsArray);
+		for (const auto& entry : samples)
+		{
+			if (!entry) continue;
 
-		samplesArray.add(sampleData.get());
+			juce::DynamicObject::Ptr sampleData = new juce::DynamicObject();
+
+			sampleData->setProperty("id", entry->id.isEmpty() ? juce::Uuid().toString() : entry->id);
+			sampleData->setProperty("filename", entry->filename);
+			sampleData->setProperty("originalPrompt", entry->originalPrompt);
+			sampleData->setProperty("filePath", entry->filePath);
+			sampleData->setProperty("creationTime", entry->creationTime.toMilliseconds());
+			sampleData->setProperty("duration", static_cast<double>(entry->duration));
+			sampleData->setProperty("bpm", static_cast<double>(entry->bpm));
+			sampleData->setProperty("key", entry->key);
+			sampleData->setProperty("sampleRate", static_cast<double>(entry->sampleRate));
+			sampleData->setProperty("numChannels", static_cast<int>(entry->numChannels));
+			sampleData->setProperty("numSamples", static_cast<int>(entry->numSamples));
+
+			juce::Array<juce::var> categoriesArray;
+			for (const auto& category : entry->categories)
+			{
+				if (!category.isEmpty())
+					categoriesArray.add(category);
+			}
+			sampleData->setProperty("categories", categoriesArray);
+
+			juce::Array<juce::var> projectsArray;
+			for (const auto& project : entry->usedInProjects)
+			{
+				if (!project.isEmpty())
+					projectsArray.add(project);
+			}
+			sampleData->setProperty("usedInProjects", projectsArray);
+
+			samplesArray.add(sampleData.get());
+		}
+
+		bankData->setProperty("samples", samplesArray);
+		bankData->setProperty("version", "1.0");
+
+		juce::String jsonString = juce::JSON::toString(juce::var(bankData.get()), true);
+
+		if (jsonString.isEmpty())
+			return;
+
+		bankIndexFile.replaceWithText(jsonString);
+
 	}
-
-	bankData->setProperty("samples", samplesArray);
-	bankData->setProperty("version", "1.0");
-
-	juce::String jsonString = juce::JSON::toString(juce::var(bankData.get()));
-	bankIndexFile.replaceWithText(jsonString);
+	catch (...)
+	{
+		return;
+	}
 }
 
 void SampleBank::loadBankData()
@@ -345,14 +401,6 @@ void SampleBank::loadBankData()
 			auto* categoriesArray = categoriesVar.getArray();
 			for (int j = 0; j < categoriesArray->size(); ++j)
 				entry->categories.push_back(categoriesArray->getUnchecked(j).toString());
-		}
-
-		auto stemsVar = sampleObj->getProperty("stems");
-		if (stemsVar.isArray())
-		{
-			auto* stemsArray = stemsVar.getArray();
-			for (int j = 0; j < stemsArray->size(); ++j)
-				entry->stems.push_back(stemsArray->getUnchecked(j).toString());
 		}
 
 		auto projectsVar = sampleObj->getProperty("usedInProjects");

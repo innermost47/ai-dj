@@ -1,10 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * Copyright (C) 2025 Anthony Charretier
- */
-
 #pragma once
 #include "JuceHeader.h"
 #include "PluginProcessor.h"
@@ -78,7 +71,7 @@ private:
 	void parameterValueChanged(int parameterIndex, float newValue) override;
 	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
 
-	void learn(juce::String param, std::function<void(float)> uiCallback = nullptr);
+	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
 	void removeListener(juce::String name);
 	void addListener(juce::String name);
 	void setSliderParameter(juce::String name, juce::Slider& slider);
