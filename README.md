@@ -425,7 +425,7 @@ _Electronic music, ambient soundscapes, metal, and experimental productions by I
 
 Special thanks to:
 
-- **A.D.** for the original draw-to-audio concept
+- **A.D.[167]** for the original draw-to-audio concept
 - **Moteka** for the incredible testimonial and early adoption
 - Stability AI for Stable Audio Open
 - The open-source community
