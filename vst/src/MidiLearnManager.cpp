@@ -263,13 +263,6 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 		if (mapping.midiType == 0 && message.isNoteOnOrOff() && mapping.midiChannel == midiChannel)
 		{
 			int noteNumber = message.getNoteNumber();
-			bool isInSampleRange = (noteNumber >= 60 && noteNumber <= 67);
-
-			if (isInSampleRange)
-			{
-				continue;
-			}
-
 			if (message.getNoteNumber() == mapping.midiNumber)
 			{
 				matches = true;
@@ -319,6 +312,36 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 				value = message.getControllerValue() / 127.0f;
 				statusMessage = "CC" + juce::String(mapping.midiNumber) + " >> " + mapping.parameterName +
 					" (" + juce::String(message.getControllerValue()) + ")";
+				int ccVal = message.getControllerValue();
+				if (mapping.parameterName.endsWith("Page") && matches)
+				{
+					int ccVal = message.getControllerValue();
+					int slotNum = mapping.parameterName.substring(4, 5).getIntValue();
+
+					juce::String suffix = (ccVal >= 96) ? "D" : (ccVal >= 64) ? "C" : (ccVal >= 32) ? "B" : "A";
+					juce::String realParam = "slot" + juce::String(slotNum) + "Page" + suffix;
+
+					if (auto* p = mapping.processor->getParameterTreeState().getParameter(realParam))
+					{
+						p->setValueNotifyingHost(1.0f);
+						showStatus(mapping, "Slot " + juce::String(slotNum) + " -> Page " + suffix, false);
+					}
+					continue;
+				}
+				if (mapping.parameterName.endsWith("Seq"))
+				{
+					int seqIdx = (ccVal / 16) + 1;
+					if (seqIdx > 8) seqIdx = 8;
+					juce::String targetParam = mapping.parameterName + juce::String(seqIdx);
+
+					if (auto* p = mapping.processor->getParameterTreeState().getParameter(targetParam))
+					{
+						p->setValueNotifyingHost(1.0f);
+						statusMessage = "Slot Seq -> " + juce::String(seqIdx);
+						showStatus(mapping, statusMessage, false);
+					}
+					continue;
+				}
 			}
 		}
 		else if (mapping.midiType == 2 && message.isPitchWheel() && mapping.midiChannel == midiChannel)
@@ -597,6 +620,24 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 	}
 }
 
+void MidiLearnManager::showStatus(const MidiMapping& mapping, const juce::String& text, bool isWarning)
+{
+	juce::MessageManager::callAsync([mapping, text, isWarning]() {
+		if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
+			editor->statusLabel.setText(text, juce::dontSendNotification);
+			if (isWarning)
+				editor->statusLabel.setColour(juce::Label::textColourId, juce::Colours::red);
+
+			juce::Timer::callAfterDelay(2000, [mapping]() {
+				if (auto* ed = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
+					ed->statusLabel.setText("Ready", juce::dontSendNotification);
+					ed->statusLabel.setColour(juce::Label::textColourId, juce::Colours::violet);
+				}
+				});
+		}
+		});
+}
+
 bool MidiLearnManager::isBooleanParameter(const juce::String& parameterName)
 {
 	return parameterName.contains("Play") ||
@@ -739,4 +780,62 @@ juce::String MidiLearnManager::getMappingDescription(const juce::String& paramet
 	}
 
 	return juce::String();
+}
+
+void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor* processor)
+{
+	if (!mappings.empty())
+		return;
+
+	auto addNote = [&](const juce::String& param, int note, const juce::String& desc)
+		{
+			MidiMapping m;
+			m.midiType = 0;
+			m.midiNumber = note;
+			m.midiChannel = 0;
+			m.processor = processor;
+			m.parameterName = param;
+			m.description = desc;
+			mappings.push_back(m);
+		};
+
+	auto addCC = [&](const juce::String& param, int cc, const juce::String& desc)
+		{
+			MidiMapping m;
+			m.midiType = 1;
+			m.midiNumber = cc;
+			m.midiChannel = 0;
+			m.processor = processor;
+			m.parameterName = param;
+			m.description = desc;
+			mappings.push_back(m);
+		};
+
+	addCC("masterVolume", 7, "Master Volume");
+	addCC("masterPan", 10, "Master Pan");
+
+	addCC("nextTrack", 80, "Next Track");
+	addCC("prevTrack", 81, "Previous Track");
+
+	for (int i = 1; i <= 8; ++i)
+	{
+		juce::String s = "slot" + juce::String(i);
+
+		addNote(s + "Play", 59 + i, "Slot " + juce::String(i) + " Play");
+
+		addCC(s + "Volume", 19 + i, "Slot " + juce::String(i) + " Volume");
+		addCC(s + "Pan", 29 + i, "Slot " + juce::String(i) + " Pan");
+		addCC(s + "Mute", 39 + i, "Slot " + juce::String(i) + " Mute");
+		addCC(s + "Solo", 49 + i, "Slot " + juce::String(i) + " Solo");
+		addCC(s + "Generate", 59 + i, "Slot " + juce::String(i) + " Generate");
+		addCC(s + "Stop", 69 + i, "Slot " + juce::String(i) + " Stop");
+		addCC(s + "Pitch", 99 + i, "Slot " + juce::String(i) + " Pitch");
+		addCC(s + "Fine", 109 + i, "Slot " + juce::String(i) + " Fine");
+		addCC(s + "RandomRetrigger", 119 + i, "Slot " + juce::String(i) + " Beat Repeat");
+
+		addCC(s + "Page", 89 + i, "Slot " + juce::String(i) + " Page");
+		addCC(s + "Seq", 15 + i, "Slot " + juce::String(i) + " Seq");
+	}
+
+	DBG("Default MIDI mappings loaded (" + juce::String(mappings.size()) + " mappings)");
 }

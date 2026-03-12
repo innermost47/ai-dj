@@ -103,6 +103,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 			sampleBank = std::make_unique<SampleBank>();
 			sampleBankReady = true; });
 	loadParameters();
+	midiLearnManager.loadDefaultMappings(this);
 	initTracks();
 	initDummySynth();
 	trackManager.parameterUpdateCallback = [this](int slot, TrackData* track)
