@@ -28,6 +28,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot1Seq7", "Slot 1 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot1Seq8", "Slot 1 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot2Seq1", "Slot 2 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot2Seq2", "Slot 2 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot2Seq3", "Slot 2 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot2Seq4", "Slot 2 Sequence 4", false),
@@ -36,6 +37,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot2Seq7", "Slot 2 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot2Seq8", "Slot 2 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot3Seq1", "Slot 3 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot3Seq2", "Slot 3 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot3Seq3", "Slot 3 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot3Seq4", "Slot 3 Sequence 4", false),
@@ -44,6 +46,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot3Seq7", "Slot 3 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot3Seq8", "Slot 3 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot4Seq1", "Slot 4 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot4Seq2", "Slot 4 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot4Seq3", "Slot 4 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot4Seq4", "Slot 4 Sequence 4", false),
@@ -52,6 +55,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot4Seq7", "Slot 4 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot4Seq8", "Slot 4 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot5Seq1", "Slot 5 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot5Seq2", "Slot 5 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot5Seq3", "Slot 5 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot5Seq4", "Slot 5 Sequence 4", false),
@@ -60,6 +64,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot5Seq7", "Slot 5 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot5Seq8", "Slot 5 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot6Seq1", "Slot 6 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot6Seq2", "Slot 6 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot6Seq3", "Slot 6 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot6Seq4", "Slot 6 Sequence 4", false),
@@ -68,6 +73,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot6Seq7", "Slot 6 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot6Seq8", "Slot 6 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot7Seq1", "Slot 7 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot7Seq2", "Slot 7 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot7Seq3", "Slot 7 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot7Seq4", "Slot 7 Sequence 4", false),
@@ -76,6 +82,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 		std::make_unique<juce::AudioParameterBool>("slot7Seq7", "Slot 7 Sequence 7", false),
 		std::make_unique<juce::AudioParameterBool>("slot7Seq8", "Slot 7 Sequence 8", false),
 
+		std::make_unique<juce::AudioParameterBool>("slot8Seq1", "Slot 8 Sequence 1", false),
 		std::make_unique<juce::AudioParameterBool>("slot8Seq2", "Slot 8 Sequence 2", false),
 		std::make_unique<juce::AudioParameterBool>("slot8Seq3", "Slot 8 Sequence 3", false),
 		std::make_unique<juce::AudioParameterBool>("slot8Seq4", "Slot 8 Sequence 4", false),

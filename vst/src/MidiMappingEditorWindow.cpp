@@ -122,6 +122,12 @@ MidiMappingEditorWindow::MidiMappingEditorContent::MidiMappingEditorContent(Midi
 	clearAllButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	addAndMakeVisible(clearAllButton);
 
+	reloadDefaultsButton.setButtonText("Reset Defaults");
+	reloadDefaultsButton.addListener(this);
+	reloadDefaultsButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
+	reloadDefaultsButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	addAndMakeVisible(reloadDefaultsButton);
+
 	mappingsViewport.setViewedComponent(&mappingsContainer, false);
 	mappingsViewport.setScrollBarsShown(true, false);
 	mappingsViewport.setLookAndFeel(&customLookAndFeel);
@@ -150,11 +156,17 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::resized()
 	bounds.removeFromTop(10);
 
 	auto toolbarBounds = bounds.removeFromTop(35);
-	clearAllButton.setBounds(toolbarBounds.removeFromLeft(100).reduced(2));
+
+	clearAllButton.setBounds(toolbarBounds.removeFromRight(100).reduced(2));
+
+	toolbarBounds.removeFromRight(10);
+	reloadDefaultsButton.setBounds(toolbarBounds.removeFromRight(120).reduced(2));
 
 	bounds.removeFromTop(10);
 	mappingsViewport.setBounds(bounds);
 }
+
+
 
 void MidiMappingEditorWindow::MidiMappingEditorContent::buttonClicked(juce::Button* button)
 {
@@ -163,6 +175,15 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::buttonClicked(juce::Butt
 		showConfirmationDialog("Are you sure you want to clear all MIDI mappings?",
 			[this] {
 				midiLearnManager->clearAllMappings();
+				refreshMappingsList();
+			});
+	}
+	else if (button == &reloadDefaultsButton)
+	{
+		showConfirmationDialog("Reset mappings to default configuration?",
+			[this] {
+				midiLearnManager->clearAllMappings();
+				midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
 				refreshMappingsList();
 			});
 	}

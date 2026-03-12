@@ -78,11 +78,13 @@ private:
 
 		juce::Label titleLabel;
 		juce::TextButton clearAllButton;
+		juce::TextButton reloadDefaultsButton;
 
 		juce::Viewport mappingsViewport;
 		juce::Component mappingsContainer;
 
 		void createMappingRows();
+		void reloadDefaultMappings();
 		void showConfirmationDialog(const juce::String& message, std::function<void()> onConfirm);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiMappingEditorContent)
