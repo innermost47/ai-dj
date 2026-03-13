@@ -182,7 +182,7 @@ public:
 			trackState.setProperty("bpm", track->bpm, nullptr);
 			trackState.setProperty("originalBpm", track->originalBpm, nullptr);
 			trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
-			trackState.setProperty("bpmOffset", track->bpmOffset, nullptr);
+			trackState.setProperty("bpmOffset", track->bpmOffset.load(), nullptr);
 			trackState.setProperty("midiNote", track->midiNote, nullptr);
 			trackState.setProperty("loopStart", track->loopStart, nullptr);
 			trackState.setProperty("loopEnd", track->loopEnd, nullptr);
