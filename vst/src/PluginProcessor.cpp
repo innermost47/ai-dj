@@ -803,6 +803,7 @@ void DjIaVstProcessor::sendFullStateFeedback()
 		TrackData* track = trackManager.getTrack(trackId);
 		if (!track) continue;
 		int slot = track->slotIndex + 1;
+		int slotIdx = track->slotIndex;
 
 		if (track->isCurrentlyPlaying.load())
 			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackActive);
@@ -813,6 +814,23 @@ void DjIaVstProcessor::sendFullStateFeedback()
 
 		if (track->usePages.load())
 			sendMidiFeedback(MidiMapping::ccFeedbackPage(slot), track->currentPageIndex);
+
+		sendMidiFeedback(MidiMapping::ccFeedbackVolume(slot),
+			MidiMapping::volumeToMidi(slotVolumeParams[slotIdx]->load()));
+		sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
+			MidiMapping::panToMidi(slotPanParams[slotIdx]->load()));
+		sendMidiFeedback(MidiMapping::ccFeedbackPitch(slot),
+			MidiMapping::pitchToMidi(slotPitchParams[slotIdx]->load() * 8.0f));
+		sendMidiFeedback(MidiMapping::ccFeedbackFine(slot),
+			MidiMapping::fineToMidi(slotFineParams[slotIdx]->load() * 2.0f));
+		sendMidiFeedback(MidiMapping::ccFeedbackMute(slot),
+			track->isMuted.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+		sendMidiFeedback(MidiMapping::ccFeedbackSolo(slot),
+			track->isSolo.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+		sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slot),
+			track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+		sendMidiFeedback(MidiMapping::ccFeedbackSeq(slot),
+			track->getCurrentPage().currentSequenceIndex);
 	}
 }
 
@@ -1215,78 +1233,98 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData* track)
 	float paramMute = slotMuteParams[slot]->load();
 	float paramRandomRetrigger = slotRandomRetriggerParams[slot]->load();
 	float paramRetriggerInterval = slotRetriggerIntervalParams[slot]->load();
-
+	int slotNumber = slot + 1;
 	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
 	int retriggerInterval = juce::jlimit(1, 10, (int)juce::roundToInt(paramRetriggerInterval));
 
+	if (std::abs(track->lastFeedbackVolume.load() - paramVolume) > 0.01f)
+	{
+		track->lastFeedbackVolume = paramVolume;
+		sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber),
+			MidiMapping::volumeToMidi(paramVolume));
+	}
 	if (std::abs(track->volume.load() - paramVolume) > 0.01f)
-	{
 		track->volume = paramVolume;
-	}
 
-	if (std::abs(track->pan.load() - paramPan) > 0.01f)
+	if (std::abs(track->lastFeedbackPan.load() - paramPan) > 0.01f)
 	{
-		track->pan = paramPan;
+		track->lastFeedbackPan = paramPan;
+		sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber),
+			MidiMapping::panToMidi(paramPan));
 	}
+	if (std::abs(track->pan.load() - paramPan) > 0.01f)
+		track->pan = paramPan;
 
+	if (std::abs(track->lastFeedbackPitch.load() - paramPitch) > 0.01f)
+	{
+		track->lastFeedbackPitch = paramPitch;
+		sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber),
+			MidiMapping::pitchToMidi(paramPitch));
+	}
 	if (std::abs(track->bpmOffset - paramPitch) > 0.01f)
 	{
 		track->bpmOffset = paramPitch;
 		needsUIUpdate = true;
 	}
 
+	if (std::abs(track->lastFeedbackFine.load() - paramFine) > 0.01f)
+	{
+		track->lastFeedbackFine = paramFine;
+		sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber),
+			MidiMapping::fineToMidi(paramFine));
+	}
 	if (std::abs(track->fineOffset - paramFine) > 0.01f)
 	{
 		track->fineOffset = paramFine * 0.05f;
 		track->bpmOffset = paramPitch + track->fineOffset;
 		needsUIUpdate = true;
 	}
+
 	bool isSolo = paramSolo > 0.5f;
 	bool isMuted = paramMute > 0.5f;
-
 	if (track->isSolo.load() != isSolo)
 	{
 		track->isSolo = isSolo;
+		sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
+			isSolo ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 	}
 	if (track->isMuted.load() != isMuted)
 	{
 		track->isMuted = isMuted;
+		sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
+			isMuted ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+	}
+
+	if (track->lastFeedbackBeatRepeat.load() != isRetriggerEnabled)
+	{
+		track->lastFeedbackBeatRepeat = isRetriggerEnabled;
+		sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
+			isRetriggerEnabled ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 	}
 	if (track->randomRetriggerEnabled.load() != isRetriggerEnabled)
 	{
 		track->randomRetriggerEnabled = isRetriggerEnabled;
 		if (!isRetriggerEnabled)
-		{
 			track->beatRepeatStopPending.store(true);
-		}
 		else
-		{
 			track->beatRepeatPending.store(true);
-		}
 	}
 
 	if (track->randomRetriggerInterval.load() != retriggerInterval)
 	{
 		track->randomRetriggerInterval = retriggerInterval;
-
 		if (track->beatRepeatActive.load())
 		{
 			double hostBpm = lastHostBpmForQuantization.load();
 			if (hostBpm <= 0.0)
 				hostBpm = 120.0;
-
 			double startPosition = track->beatRepeatStartPosition.load();
-
 			double repeatDuration = calculateRetriggerInterval(retriggerInterval, hostBpm);
 			double repeatDurationSamples = repeatDuration * track->sampleRate;
-
 			track->beatRepeatEndPosition.store(startPosition + repeatDurationSamples);
-
 			double maxSamples = track->numSamples;
 			if (track->beatRepeatEndPosition.load() > maxSamples)
-			{
 				track->beatRepeatEndPosition.store(maxSamples);
-			}
 		}
 	}
 }
@@ -3179,6 +3217,7 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 						if (!track) continue;
 
 						int slotNumber = track->slotIndex + 1;
+
 						if (track->isCurrentlyPlaying.load())
 							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackActive);
 						else if (track->isArmed.load())
@@ -3188,6 +3227,24 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 
 						if (track->usePages.load())
 							sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), track->currentPageIndex);
+
+						float vol = slotVolumeParams[track->slotIndex] ? slotVolumeParams[track->slotIndex]->load() : track->volume.load();
+						sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber), MidiMapping::volumeToMidi(vol));
+
+						sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber), MidiMapping::panToMidi(track->pan.load()));
+
+						sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
+							track->isMuted.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+						sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
+							track->isSolo.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+						sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
+							track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+						float rawPitch = slotPitchParams[track->slotIndex] ? slotPitchParams[track->slotIndex]->load() * 8.0f : (float)track->bpmOffset;
+						float rawFine = slotFineParams[track->slotIndex] ? slotFineParams[track->slotIndex]->load() * 2.0f : track->fineOffset;
+						sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber), MidiMapping::pitchToMidi(rawPitch));
+						sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(rawFine));
+						sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
+							track->getCurrentPage().currentSequenceIndex);
 					}
 				});
 			midiLearnManager.restoreUICallbacks();
@@ -3352,7 +3409,7 @@ void DjIaVstProcessor::handleSequenceChange(const juce::String& parameterID)
 		{
 			auto& currentPage = track->getCurrentPage();
 			currentPage.currentSequenceIndex = seqNumber - 1;
-
+			sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber), seqNumber - 1);
 			DBG("Switched to sequence " << seqNumber << " for slot " << slotNumber);
 			juce::MessageManager::callAsync([this]()
 				{

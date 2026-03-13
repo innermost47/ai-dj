@@ -44,7 +44,7 @@ struct TrackPage
 	double loopStart = 0.0;
 	double loopEnd = 4.0;
 
-	float fineOffset = 0.0f;
+	std::atomic<float> fineOffset{ 0.0f };
 	float stagingOriginalBpm = 126.0f;
 	float bpm = 126.0f;
 	float originalBpm = 126.0f;
@@ -158,7 +158,7 @@ struct TrackData
 	float generationBpm;
 
 	double timeStretchRatio = 1.0;
-	double bpmOffset = 0.0;
+	std::atomic<double> bpmOffset{ 0.0 };
 	double sampleRate = 48000.0;
 	double loopStart = 0.0;
 	double loopEnd = 4.0;
@@ -187,6 +187,7 @@ struct TrackData
 	std::atomic<bool> beatRepeatStopPending{ false };
 	std::atomic<bool> randomRetriggerDurationEnabled{ false };
 	std::atomic<bool> pageChangePending{ false };
+	std::atomic<bool> lastFeedbackBeatRepeat{ false };
 
 	std::atomic<double> cachedPlaybackRatio{ 1.0 };
 	std::atomic<double> stagingSampleRate{ 48000.0 };
@@ -198,6 +199,11 @@ struct TrackData
 	std::atomic<double> lastRetriggerTime{ -1.0 };
 	std::atomic<double> nextRetriggerTime{ 0.0 };
 	std::atomic<double> lastBeatTime{ -1.0 };
+
+	std::atomic<float> lastFeedbackVolume{ -1.0f };
+	std::atomic<float> lastFeedbackPan{ -999.0f };
+	std::atomic<float> lastFeedbackPitch{ -999.0f };
+	std::atomic<float> lastFeedbackFine{ -999.0f };
 
 	std::atomic<int> stagingNumSamples{ 0 };
 	std::atomic<int> randomRetriggerInterval{ 3 };
