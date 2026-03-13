@@ -149,6 +149,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/SampleBankPanel.cpp
     src/CategoryWindow.cpp
     src/MidiMappingEditorWindow.cpp
+    src/Parameters.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE

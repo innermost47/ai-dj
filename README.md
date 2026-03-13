@@ -1,8 +1,6 @@
 # OBSIDIAN-Neural
 
-🎵 **Real-time AI music generation VST3 plugin for live performance**
-
----
+## 🎵 **Real-time AI music generation VST3 plugin for live performance**
 
 > _"I've cycled through almost every AI music tool on the market, but Obsidian is the first one that actually feels like a **real production tool** rather than a novelty. While other AI apps try to replace the songwriter, Obsidian treats AI like a powerful, playable instrument. The 8-track MIDI-triggering is a total game-changer—having immediate access to eight distinct loops that I can mix and manipulate individually makes it feel like a **smart sampler** rather than a 'black box.' Because it lives directly in my DAW, there is **zero latency** and zero break in my workflow; I'm not downloading files or waiting for a browser to render. It stays perfectly locked to my project's tempo and vibe, serving as the ultimate **'intelligent jam partner VST'** whenever I need to break through a creative block, or start a new track from scratch."_
 >
@@ -12,11 +10,11 @@
 ---
 
 **⚡ Quick Start:** [Get your API key](https://obsidian-neural.com) and start generating in minutes — no GPU or setup required.
-
 🎁 **7-Day FREE Trial** - Try any plan risk-free with no credit card required to start!
-
 📄 **[Late Breaking Paper - AIMLA 2025](https://drive.google.com/file/d/1cwqmrV0_qC462LLQgQUz-5Cd422gL-8F/view)** - Presented at the first AES International Conference on Artificial Intelligence and Machine Learning for Audio (Queen Mary University London, Sept 8-10, 2025)  
 🎓 **[Tutorial](https://youtu.be/-qdFo_PcKoY)** - From DAW setup to live performance (French + English subtitles)
+
+📱 **[OBSIDIAN Neural Mobile Controller](https://github.com/innermost47/obsidian-neural-controller)** _(in development)_ - Turn your Android or iOS device into a dedicated hardware-style MIDI surface controller for OBSIDIAN Neural
 
 <div align="center">
   <img src="assets/screenshot.png" alt="OBSIDIAN-Neural Interface" width="800"/>

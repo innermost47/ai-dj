@@ -44,6 +44,7 @@ public:
 	void moveMappingsFromSlotToSlot(int fromSlot, int toSlot);
 	void setProcessor(DjIaVstProcessor* p) { learningProcessor = p; }
 	DjIaVstProcessor* getProcessor() const { return learningProcessor; }
+	void loadDefaultMappings(DjIaVstProcessor* processor);
 
 private:
 	void timerCallback() override;
@@ -63,6 +64,7 @@ private:
 	MidiMapping learningMapping;
 	DjIaVstEditor* currentEditor = nullptr;
 	MidiLearnableBase* currentLearningComponent = nullptr;
+	void showStatus(const MidiMapping& mapping, const juce::String& text, bool isWarning);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiLearnManager)
 };

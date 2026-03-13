@@ -4,6 +4,7 @@
 #include "DummySynth.h"
 #include "MidiMapping.h"
 #include "SequencerComponent.h"
+#include "Parameters.h"
 
 juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 {
@@ -18,72 +19,9 @@ juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 }
 
 DjIaVstProcessor::DjIaVstProcessor()
-	: AudioProcessor(createBusLayout()), apiClient("", "http://localhost:8000"),
-	parameters(*this, nullptr, "Parameters", { std::make_unique<juce::AudioParameterBool>("generate", "Generate Loop", false), std::make_unique<juce::AudioParameterBool>("play", "Play Loop", false), std::make_unique<juce::AudioParameterFloat>("masterVolume", "Master Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("masterPan", "Master Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("masterHigh", "Master High EQ", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("masterMid", "Master Mid EQ", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("masterLow", "Master Low EQ", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot1Volume", "Slot 1 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot1Pan", "Slot 1 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot1Mute", "Slot 1 Mute", false), std::make_unique<juce::AudioParameterBool>("slot1Solo", "Slot 1 Solo", false), std::make_unique<juce::AudioParameterBool>("slot1Play", "Slot 1 Play", false), std::make_unique<juce::AudioParameterBool>("slot1Stop", "Slot 1 Stop", false), std::make_unique<juce::AudioParameterBool>("slot1Generate", "Slot 1 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot1Pitch", "Slot 1 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot1Fine", "Slot 1 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot1BpmOffset", "Slot 1 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot2Volume", "Slot 2 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot2Pan", "Slot 2 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot2Mute", "Slot 2 Mute", false), std::make_unique<juce::AudioParameterBool>("slot2Solo", "Slot 2 Solo", false), std::make_unique<juce::AudioParameterBool>("slot2Play", "Slot 2 Play", false), std::make_unique<juce::AudioParameterBool>("slot2Stop", "Slot 2 Stop", false), std::make_unique<juce::AudioParameterBool>("slot2Generate", "Slot 2 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot2Pitch", "Slot 2 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot2Fine", "Slot 2 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot2BpmOffset", "Slot 2 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot3Volume", "Slot 3 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot3Pan", "Slot 3 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot3Mute", "Slot 3 Mute", false), std::make_unique<juce::AudioParameterBool>("slot3Solo", "Slot 3 Solo", false), std::make_unique<juce::AudioParameterBool>("slot3Play", "Slot 3 Play", false), std::make_unique<juce::AudioParameterBool>("slot3Stop", "Slot 3 Stop", false), std::make_unique<juce::AudioParameterBool>("slot3Generate", "Slot 3 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot3Pitch", "Slot 3 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot3Fine", "Slot 3 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot3BpmOffset", "Slot 3 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot4Volume", "Slot 4 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot4Pan", "Slot 4 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot4Mute", "Slot 4 Mute", false), std::make_unique<juce::AudioParameterBool>("slot4Solo", "Slot 4 Solo", false), std::make_unique<juce::AudioParameterBool>("slot4Play", "Slot 4 Play", false), std::make_unique<juce::AudioParameterBool>("slot4Stop", "Slot 4 Stop", false), std::make_unique<juce::AudioParameterBool>("slot4Generate", "Slot 4 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot4Pitch", "Slot 4 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot4Fine", "Slot 4 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot4BpmOffset", "Slot 4 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot5Volume", "Slot 5 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot5Pan", "Slot 5 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot5Mute", "Slot 5 Mute", false), std::make_unique<juce::AudioParameterBool>("slot5Solo", "Slot 5 Solo", false), std::make_unique<juce::AudioParameterBool>("slot5Play", "Slot 5 Play", false), std::make_unique<juce::AudioParameterBool>("slot5Stop", "Slot 5 Stop", false), std::make_unique<juce::AudioParameterBool>("slot5Generate", "Slot 5 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot5Pitch", "Slot 5 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot5Fine", "Slot 5 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot5BpmOffset", "Slot 5 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot6Volume", "Slot 6 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot6Pan", "Slot 6 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot6Mute", "Slot 6 Mute", false), std::make_unique<juce::AudioParameterBool>("slot6Solo", "Slot 6 Solo", false), std::make_unique<juce::AudioParameterBool>("slot6Play", "Slot 6 Play", false), std::make_unique<juce::AudioParameterBool>("slot6Stop", "Slot 6 Stop", false), std::make_unique<juce::AudioParameterBool>("slot6Generate", "Slot 6 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot6Pitch", "Slot 6 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot6Fine", "Slot 6 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot6BpmOffset", "Slot 6 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot7Volume", "Slot 7 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot7Pan", "Slot 7 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot7Mute", "Slot 7 Mute", false), std::make_unique<juce::AudioParameterBool>("slot7Solo", "Slot 7 Solo", false), std::make_unique<juce::AudioParameterBool>("slot7Play", "Slot 7 Play", false), std::make_unique<juce::AudioParameterBool>("slot7Stop", "Slot 7 Stop", false), std::make_unique<juce::AudioParameterBool>("slot7Generate", "Slot 7 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot7Pitch", "Slot 7 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot7Fine", "Slot 7 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot7BpmOffset", "Slot 7 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot8Volume", "Slot 8 Volume", 0.0f, 1.0f, 0.8f), std::make_unique<juce::AudioParameterFloat>("slot8Pan", "Slot 8 Pan", -1.0f, 1.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot8Mute", "Slot 8 Mute", false), std::make_unique<juce::AudioParameterBool>("slot8Solo", "Slot 8 Solo", false), std::make_unique<juce::AudioParameterBool>("slot8Play", "Slot 8 Play", false), std::make_unique<juce::AudioParameterBool>("slot8Stop", "Slot 8 Stop", false), std::make_unique<juce::AudioParameterBool>("slot8Generate", "Slot 8 Generate", false), std::make_unique<juce::AudioParameterFloat>("slot8Pitch", "Slot 8 Pitch", -12.0f, 12.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot8Fine", "Slot 8 Fine", -50.0f, 50.0f, 0.0f), std::make_unique<juce::AudioParameterFloat>("slot8BpmOffset", "Slot 8 BPM Offset", -20.0f, 20.0f, 0.0f), std::make_unique<juce::AudioParameterBool>("slot1RandomRetrigger", "Slot 1 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot1RetriggerInterval", "Slot 1 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot2RandomRetrigger", "Slot 2 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot2RetriggerInterval", "Slot 2 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot3RandomRetrigger", "Slot 3 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot3RetriggerInterval", "Slot 3 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot4RandomRetrigger", "Slot 4 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot4RetriggerInterval", "Slot 4 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot5RandomRetrigger", "Slot 5 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot5RetriggerInterval", "Slot 5 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot6RandomRetrigger", "Slot 6 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot6RetriggerInterval", "Slot 6 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot7RandomRetrigger", "Slot 7 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot7RetriggerInterval", "Slot 7 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("slot8RandomRetrigger", "Slot 8 Random Retrigger", false), std::make_unique<juce::AudioParameterFloat>("slot8RetriggerInterval", "Slot 8 Retrigger Interval", juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f), std::make_unique<juce::AudioParameterBool>("nextTrack", "Next Track", false), std::make_unique<juce::AudioParameterBool>("prevTrack", "Previous Track", false), std::make_unique<juce::AudioParameterBool>("slot1PageA", "Slot 1 Page A", false), std::make_unique<juce::AudioParameterBool>("slot1PageB", "Slot 1 Page B", false), std::make_unique<juce::AudioParameterBool>("slot1PageC", "Slot 1 Page C", false), std::make_unique<juce::AudioParameterBool>("slot1PageD", "Slot 1 Page D", false), std::make_unique<juce::AudioParameterBool>("slot2PageA", "Slot 2 Page A", false), std::make_unique<juce::AudioParameterBool>("slot2PageB", "Slot 2 Page B", false), std::make_unique<juce::AudioParameterBool>("slot2PageC", "Slot 2 Page C", false), std::make_unique<juce::AudioParameterBool>("slot2PageD", "Slot 2 Page D", false), std::make_unique<juce::AudioParameterBool>("slot3PageA", "Slot 3 Page A", false), std::make_unique<juce::AudioParameterBool>("slot3PageB", "Slot 3 Page B", false), std::make_unique<juce::AudioParameterBool>("slot3PageC", "Slot 3 Page C", false), std::make_unique<juce::AudioParameterBool>("slot3PageD", "Slot 3 Page D", false), std::make_unique<juce::AudioParameterBool>("slot4PageA", "Slot 4 Page A", false), std::make_unique<juce::AudioParameterBool>("slot4PageB", "Slot 4 Page B", false), std::make_unique<juce::AudioParameterBool>("slot4PageC", "Slot 4 Page C", false), std::make_unique<juce::AudioParameterBool>("slot4PageD", "Slot 4 Page D", false), std::make_unique<juce::AudioParameterBool>("slot5PageA", "Slot 5 Page A", false), std::make_unique<juce::AudioParameterBool>("slot5PageB", "Slot 5 Page B", false), std::make_unique<juce::AudioParameterBool>("slot5PageC", "Slot 5 Page C", false), std::make_unique<juce::AudioParameterBool>("slot5PageD", "Slot 5 Page D", false), std::make_unique<juce::AudioParameterBool>("slot6PageA", "Slot 6 Page A", false), std::make_unique<juce::AudioParameterBool>("slot6PageB", "Slot 6 Page B", false), std::make_unique<juce::AudioParameterBool>("slot6PageC", "Slot 6 Page C", false), std::make_unique<juce::AudioParameterBool>("slot6PageD", "Slot 6 Page D", false), std::make_unique<juce::AudioParameterBool>("slot7PageA", "Slot 7 Page A", false), std::make_unique<juce::AudioParameterBool>("slot7PageB", "Slot 7 Page B", false), std::make_unique<juce::AudioParameterBool>("slot7PageC", "Slot 7 Page C", false), std::make_unique<juce::AudioParameterBool>("slot7PageD", "Slot 7 Page D", false), std::make_unique<juce::AudioParameterBool>("slot8PageA", "Slot 8 Page A", false), std::make_unique<juce::AudioParameterBool>("slot8PageB", "Slot 8 Page B", false), std::make_unique<juce::AudioParameterBool>("slot8PageC", "Slot 8 Page C", false), std::make_unique<juce::AudioParameterBool>("slot8PageD", "Slot 8 Page D", false),         std::make_unique<juce::AudioParameterBool>("slot1Seq1", "Slot 1 Sequence 1", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq2", "Slot 1 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq3", "Slot 1 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq4", "Slot 1 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq5", "Slot 1 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq6", "Slot 1 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq7", "Slot 1 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot1Seq8", "Slot 1 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot2Seq2", "Slot 2 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot2Seq3", "Slot 2 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot2Seq4", "Slot 2 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot2Seq5", "Slot 2 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot2Seq6", "Slot 2 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot2Seq7", "Slot 2 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot2Seq8", "Slot 2 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot3Seq2", "Slot 3 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot3Seq3", "Slot 3 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot3Seq4", "Slot 3 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot3Seq5", "Slot 3 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot3Seq6", "Slot 3 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot3Seq7", "Slot 3 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot3Seq8", "Slot 3 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot4Seq2", "Slot 4 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot4Seq3", "Slot 4 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot4Seq4", "Slot 4 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot4Seq5", "Slot 4 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot4Seq6", "Slot 4 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot4Seq7", "Slot 4 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot4Seq8", "Slot 4 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot5Seq2", "Slot 5 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot5Seq3", "Slot 5 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot5Seq4", "Slot 5 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot5Seq5", "Slot 5 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot5Seq6", "Slot 5 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot5Seq7", "Slot 5 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot5Seq8", "Slot 5 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot6Seq2", "Slot 6 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot6Seq3", "Slot 6 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot6Seq4", "Slot 6 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot6Seq5", "Slot 6 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot6Seq6", "Slot 6 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot6Seq7", "Slot 6 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot6Seq8", "Slot 6 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot7Seq2", "Slot 7 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot7Seq3", "Slot 7 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot7Seq4", "Slot 7 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot7Seq5", "Slot 7 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot7Seq6", "Slot 7 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot7Seq7", "Slot 7 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot7Seq8", "Slot 7 Sequence 8", false),
-
-		std::make_unique<juce::AudioParameterBool>("slot8Seq2", "Slot 8 Sequence 2", false),
-		std::make_unique<juce::AudioParameterBool>("slot8Seq3", "Slot 8 Sequence 3", false),
-		std::make_unique<juce::AudioParameterBool>("slot8Seq4", "Slot 8 Sequence 4", false),
-		std::make_unique<juce::AudioParameterBool>("slot8Seq5", "Slot 8 Sequence 5", false),
-		std::make_unique<juce::AudioParameterBool>("slot8Seq6", "Slot 8 Sequence 6", false),
-		std::make_unique<juce::AudioParameterBool>("slot8Seq7", "Slot 8 Sequence 7", false),
-		std::make_unique<juce::AudioParameterBool>("slot8Seq8", "Slot 8 Sequence 8", false),
-		})
+	: AudioProcessor(createBusLayout()),
+	apiClient("", "http://localhost:8000"),
+	parameters(*this, nullptr, "Parameters", createParameterLayout())
 {
 	midiLearnManager.setProcessor(this);
 	projectId = "legacy";
@@ -103,6 +41,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 			sampleBank = std::make_unique<SampleBank>();
 			sampleBankReady = true; });
 	loadParameters();
+	midiLearnManager.loadDefaultMappings(this);
 	initTracks();
 	initDummySynth();
 	trackManager.parameterUpdateCallback = [this](int slot, TrackData* track)
@@ -513,6 +452,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 		sequencerMidiBuffer.clear();
 	}
 	processMidiMessages(midiMessages, hostIsPlaying, hostBpm);
+	{
+		juce::ScopedLock lock(feedbackMidiLock);
+		midiMessages.addEvents(feedbackMidiBuffer, 0, buffer.getNumSamples(), 0);
+		feedbackMidiBuffer.clear();
+	}
 	if (hasPendingAudioData.load())
 	{
 		processIncomingAudio(hostIsPlaying);
@@ -612,9 +556,7 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 			TrackData* track = trackManager.getTrack(trackId);
 			bool arm = false;
 			if (track->isCurrentlyPlaying.load())
-			{
 				arm = true;
-			}
 			if (track)
 			{
 				auto& seqData = track->getCurrentSequencerData();
@@ -629,6 +571,7 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 				seqData.stepAccumulator = 0.0;
 				track->customStepCounter = 0;
 				track->lastPpqPosition = -1.0;
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 			}
 		}
 		needsUIUpdate = true;
@@ -639,8 +582,7 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 		for (const auto& trackId : trackIds)
 		{
 			TrackData* track = trackManager.getTrack(trackId);
-			bool arm = false;
-			if (track->isCurrentlyPlaying.load())
+			if (track && track->isCurrentlyPlaying.load())
 			{
 				auto& seqData = track->getCurrentSequencerData();
 				track->isArmed = true;
@@ -652,8 +594,9 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 				track->customStepCounter = 0;
 				track->lastPpqPosition = -1.0;
 				seqData.isPlaying = false;
-				track->isArmed = arm;
+				track->isArmed = false;
 				track->isPlaying.store(false);
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 			}
 		}
 		needsUIUpdate = true;
@@ -820,6 +763,14 @@ void DjIaVstProcessor::processMidiMessages(juce::MidiBuffer& midiMessages, bool 
 		{
 			continue;
 		}
+		if (message.isController() &&
+			message.getChannel() == 1 &&
+			message.getControllerNumber() == MidiMapping::ccRequestState &&
+			message.getControllerValue() == 127)
+		{
+			sendFullStateFeedback();
+			continue;
+		}
 		midiLearnManager.processMidiMappings(message);
 		handlePlayAndStop(hostIsPlaying);
 		handleGenerate();
@@ -841,6 +792,27 @@ void DjIaVstProcessor::processMidiMessages(juce::MidiBuffer& midiMessages, bool 
 	if (midiIndicatorCallback && notesPlayedInThisBuffer.size() > 0)
 	{
 		updateMidiIndicatorWithActiveNotes(hostBpm, notesPlayedInThisBuffer);
+	}
+}
+
+void DjIaVstProcessor::sendFullStateFeedback()
+{
+	auto trackIds = trackManager.getAllTrackIds();
+	for (const auto& trackId : trackIds)
+	{
+		TrackData* track = trackManager.getTrack(trackId);
+		if (!track) continue;
+		int slot = track->slotIndex + 1;
+
+		if (track->isCurrentlyPlaying.load())
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackActive);
+		else if (track->isArmed.load())
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackPending);
+		else
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackIdle);
+
+		if (track->usePages.load())
+			sendMidiFeedback(MidiMapping::ccFeedbackPage(slot), track->currentPageIndex);
 	}
 }
 
@@ -1131,7 +1103,7 @@ void DjIaVstProcessor::generateLoopFromMidi(const juce::String& trackId)
 
 	setIsGenerating(true);
 	setGeneratingTrackId(trackId);
-
+	sendMidiFeedback(MidiMapping::ccFeedbackGenerate(track->slotIndex + 1), MidiMapping::feedbackPending);
 	juce::MessageManager::callAsync([this, trackId]()
 		{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor())) {
@@ -1217,12 +1189,14 @@ void DjIaVstProcessor::handlePlayAndStop(bool /*hostIsPlaying*/)
 				if (paramPlay)
 				{
 					track->setArmed(true);
+					sendMidiFeedback(MidiMapping::ccFeedbackPlay(changedSlot + 1), MidiMapping::feedbackPending);
 				}
 				else
 				{
 					track->pendingAction = TrackData::PendingAction::StopOnNextMeasure;
 					track->setArmedToStop(true);
 					track->setArmed(false);
+					sendMidiFeedback(MidiMapping::ccFeedbackPlay(changedSlot + 1), MidiMapping::feedbackPending);
 				}
 				break;
 			}
@@ -1522,6 +1496,8 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 		if (track)
 		{
 			track->isPlaying = false;
+			if (!track->isArmed.load() && !track->isCurrentlyPlaying.load())
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 		}
 		playingTracks.erase(it);
 	}
@@ -2088,6 +2064,8 @@ void DjIaVstProcessor::notifyGenerationComplete(const juce::String& trackId, con
 	pendingMessage = message;
 	hasPendingNotification = true;
 	triggerAsyncUpdate();
+	if (TrackData* t = trackManager.getTrack(trackId))
+		sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1), MidiMapping::feedbackIdle);
 }
 
 void DjIaVstProcessor::handleAsyncUpdate()
@@ -3192,6 +3170,26 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 					}
 				}
 			} });
+			juce::Timer::callAfterDelay(2000, [this]()
+				{
+					auto trackIds = trackManager.getAllTrackIds();
+					for (const auto& trackId : trackIds)
+					{
+						TrackData* track = trackManager.getTrack(trackId);
+						if (!track) continue;
+
+						int slotNumber = track->slotIndex + 1;
+						if (track->isCurrentlyPlaying.load())
+							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackActive);
+						else if (track->isArmed.load())
+							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackPending);
+						else
+							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
+
+						if (track->usePages.load())
+							sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), track->currentPageIndex);
+					}
+				});
 			midiLearnManager.restoreUICallbacks();
 			stateLoaded = true;
 			juce::MessageManager::callAsync([this]()
@@ -3370,7 +3368,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 {
 	juce::String slotStr = parameterID.substring(4, 5);
 	int slotNumber = slotStr.getIntValue();
-
 	char pageChar = static_cast<char>(parameterID[parameterID.length() - 1]);
 	int pageIndex = pageChar - 'A';
 
@@ -3386,12 +3383,15 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			if (track->pages[pageIndex].numSamples == 0)
 			{
 				track->setCurrentPage(pageIndex);
+
 				if (!getActiveEditor())
 				{
 					track->isPlaying = false;
 					track->isCurrentlyPlaying = false;
 					track->readPosition = 0.0;
 				}
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
@@ -3404,8 +3404,11 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 									trackComp->performPageChange(pageIndex);
 									break;
 								}
-							} });
+							}
+						});
 				}
+
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 
 				DBG("Page change immediate (empty page): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 				return;
@@ -3415,9 +3418,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			if (auto currentPlayHead = getPlayHead())
 			{
 				if (auto positionInfo = currentPlayHead->getPosition())
-				{
 					isPlaying = positionInfo->getIsPlaying();
-				}
 			}
 
 			if (!isPlaying || !track->isCurrentlyPlaying.load())
@@ -3435,8 +3436,11 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 									trackComp->performPageChange(pageIndex);
 									break;
 								}
-							} });
+							}
+						});
 				}
+
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 
 				DBG("Page change immediate (not playing): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 			}
@@ -3444,6 +3448,8 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			{
 				track->pageChangePending = true;
 				track->pendingPageIndex = pageIndex;
+
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackPending);
 
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
@@ -3454,23 +3460,28 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 								if (trackComp->getTrackId() == trackId)
 								{
 									if (!trackComp->isTimerRunning())
-									{
 										trackComp->startTimer(200);
-									}
+
 									trackComp->updatePagesDisplay();
 									editor->setStatusWithTimeout("Page " + juce::String((char)('A' + pageIndex)) +
 										" will switch at next measure", 3000);
 									break;
 								}
-							} });
+							}
+						});
 				}
 
 				DBG("Page change pending: slot " << slotNumber << " -> page " << (char)('A' + pageIndex) << " (will switch at next measure)");
 			}
-
 			break;
 		}
 	}
+}
+
+
+void DjIaVstProcessor::notifyPageChangedFeedback(int slotNumber, int pageIndex)
+{
+	sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 }
 
 void DjIaVstProcessor::selectNextTrack()
@@ -3666,7 +3677,7 @@ void DjIaVstProcessor::editCustomPrompt(const juce::String& oldPrompt, const juc
 	}
 }
 
-void DjIaVstProcessor::executePendingAction(TrackData* track) const
+void DjIaVstProcessor::executePendingAction(TrackData* track)
 {
 	switch (track->pendingAction)
 	{
@@ -3682,6 +3693,7 @@ void DjIaVstProcessor::executePendingAction(TrackData* track) const
 			seqData.currentMeasure = 0;
 			seqData.stepAccumulator = 0.0;
 			track->isCurrentlyPlaying = true;
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackActive);
 		}
 		break;
 
@@ -3689,6 +3701,7 @@ void DjIaVstProcessor::executePendingAction(TrackData* track) const
 		track->isPlaying = false;
 		track->isArmedToStop = false;
 		track->isCurrentlyPlaying = false;
+		sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 		if (onUIUpdateNeeded)
 			onUIUpdateNeeded();
 		break;
@@ -3795,9 +3808,10 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 	if (newMeasure == 0 && newStep == 0 && track->pageChangePending.load())
 	{
 		int targetPage = track->pendingPageIndex.load();
+		int slotNumber = track->slotIndex + 1;
 		if (targetPage >= 0 && targetPage < 4)
 		{
-			juce::MessageManager::callAsync([this, trackId = track->trackId, targetPage]()
+			juce::MessageManager::callAsync([this, trackId = track->trackId, targetPage, slotNumber]()
 				{
 					if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 					{
@@ -3820,7 +3834,9 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 							t->pendingPageIndex = -1;
 							DBG("Page changed without UI at measure boundary: " << (char)('A' + targetPage));
 						}
-					} });
+					}
+					notifyPageChangedFeedback(slotNumber, targetPage);
+				});
 		}
 	}
 
@@ -4120,4 +4136,14 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 			trackComp->setPreviewPlaying(false);
 		}
 	}
+}
+
+void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
+{
+	DBG("FEEDBACK OUT -> CC: " << cc << " | Val: " << value);
+	juce::ScopedLock lock(feedbackMidiLock);
+	feedbackMidiBuffer.addEvent(
+		juce::MidiMessage::controllerEvent(MidiMapping::feedbackChannel + 1, cc, value),
+		0
+	);
 }
