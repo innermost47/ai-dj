@@ -452,6 +452,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 		sequencerMidiBuffer.clear();
 	}
 	processMidiMessages(midiMessages, hostIsPlaying, hostBpm);
+	{
+		juce::ScopedLock lock(feedbackMidiLock);
+		midiMessages.addEvents(feedbackMidiBuffer, 0, buffer.getNumSamples(), 0);
+		feedbackMidiBuffer.clear();
+	}
 	if (hasPendingAudioData.load())
 	{
 		processIncomingAudio(hostIsPlaying);
@@ -1070,7 +1075,7 @@ void DjIaVstProcessor::generateLoopFromMidi(const juce::String& trackId)
 
 	setIsGenerating(true);
 	setGeneratingTrackId(trackId);
-
+	sendMidiFeedback(MidiMapping::ccFeedbackGenerate(track->slotIndex + 1), MidiMapping::feedbackPending);
 	juce::MessageManager::callAsync([this, trackId]()
 		{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor())) {
@@ -1156,12 +1161,14 @@ void DjIaVstProcessor::handlePlayAndStop(bool /*hostIsPlaying*/)
 				if (paramPlay)
 				{
 					track->setArmed(true);
+					sendMidiFeedback(MidiMapping::ccFeedbackPlay(changedSlot + 1), MidiMapping::feedbackPending);
 				}
 				else
 				{
 					track->pendingAction = TrackData::PendingAction::StopOnNextMeasure;
 					track->setArmedToStop(true);
 					track->setArmed(false);
+					sendMidiFeedback(MidiMapping::ccFeedbackPlay(changedSlot + 1), MidiMapping::feedbackPending);
 				}
 				break;
 			}
@@ -1461,6 +1468,8 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 		if (track)
 		{
 			track->isPlaying = false;
+			if (!track->isArmed.load() && !track->isCurrentlyPlaying.load())
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 		}
 		playingTracks.erase(it);
 	}
@@ -2027,6 +2036,8 @@ void DjIaVstProcessor::notifyGenerationComplete(const juce::String& trackId, con
 	pendingMessage = message;
 	hasPendingNotification = true;
 	triggerAsyncUpdate();
+	if (TrackData* t = trackManager.getTrack(trackId))
+		sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1), MidiMapping::feedbackIdle);
 }
 
 void DjIaVstProcessor::handleAsyncUpdate()
@@ -3309,7 +3320,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 {
 	juce::String slotStr = parameterID.substring(4, 5);
 	int slotNumber = slotStr.getIntValue();
-
 	char pageChar = static_cast<char>(parameterID[parameterID.length() - 1]);
 	int pageIndex = pageChar - 'A';
 
@@ -3325,12 +3335,18 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			if (track->pages[pageIndex].numSamples == 0)
 			{
 				track->setCurrentPage(pageIndex);
+
 				if (!getActiveEditor())
 				{
 					track->isPlaying = false;
 					track->isCurrentlyPlaying = false;
 					track->readPosition = 0.0;
 				}
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
+				juce::Timer::callAfterDelay(200, [this, slotNumber]() {
+					sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
+					});
 
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
@@ -3343,8 +3359,14 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 									trackComp->performPageChange(pageIndex);
 									break;
 								}
-							} });
+							}
+						});
 				}
+
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
+				juce::Timer::callAfterDelay(200, [this, slotNumber]() {
+					sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
+					});
 
 				DBG("Page change immediate (empty page): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 				return;
@@ -3354,9 +3376,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			if (auto currentPlayHead = getPlayHead())
 			{
 				if (auto positionInfo = currentPlayHead->getPosition())
-				{
 					isPlaying = positionInfo->getIsPlaying();
-				}
 			}
 
 			if (!isPlaying || !track->isCurrentlyPlaying.load())
@@ -3374,8 +3394,14 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 									trackComp->performPageChange(pageIndex);
 									break;
 								}
-							} });
+							}
+						});
 				}
+
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
+				juce::Timer::callAfterDelay(200, [this, slotNumber]() {
+					sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
+					});
 
 				DBG("Page change immediate (not playing): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 			}
@@ -3383,6 +3409,8 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			{
 				track->pageChangePending = true;
 				track->pendingPageIndex = pageIndex;
+
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackPending);
 
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
@@ -3393,24 +3421,33 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 								if (trackComp->getTrackId() == trackId)
 								{
 									if (!trackComp->isTimerRunning())
-									{
 										trackComp->startTimer(200);
-									}
+
 									trackComp->updatePagesDisplay();
 									editor->setStatusWithTimeout("Page " + juce::String((char)('A' + pageIndex)) +
 										" will switch at next measure", 3000);
 									break;
 								}
-							} });
+							}
+						});
 				}
 
 				DBG("Page change pending: slot " << slotNumber << " -> page " << (char)('A' + pageIndex) << " (will switch at next measure)");
 			}
-
 			break;
 		}
 	}
 }
+
+
+void DjIaVstProcessor::notifyPageChangedFeedback(int slotNumber)
+{
+	sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
+	juce::Timer::callAfterDelay(200, [this, slotNumber]() {
+		sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
+		});
+}
+
 
 void DjIaVstProcessor::selectNextTrack()
 {
@@ -3605,7 +3642,7 @@ void DjIaVstProcessor::editCustomPrompt(const juce::String& oldPrompt, const juc
 	}
 }
 
-void DjIaVstProcessor::executePendingAction(TrackData* track) const
+void DjIaVstProcessor::executePendingAction(TrackData* track)
 {
 	switch (track->pendingAction)
 	{
@@ -3621,6 +3658,7 @@ void DjIaVstProcessor::executePendingAction(TrackData* track) const
 			seqData.currentMeasure = 0;
 			seqData.stepAccumulator = 0.0;
 			track->isCurrentlyPlaying = true;
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackActive);
 		}
 		break;
 
@@ -3628,6 +3666,7 @@ void DjIaVstProcessor::executePendingAction(TrackData* track) const
 		track->isPlaying = false;
 		track->isArmedToStop = false;
 		track->isCurrentlyPlaying = false;
+		sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 		if (onUIUpdateNeeded)
 			onUIUpdateNeeded();
 		break;
@@ -3734,9 +3773,10 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 	if (newMeasure == 0 && newStep == 0 && track->pageChangePending.load())
 	{
 		int targetPage = track->pendingPageIndex.load();
+		int slotNumber = track->slotIndex + 1;
 		if (targetPage >= 0 && targetPage < 4)
 		{
-			juce::MessageManager::callAsync([this, trackId = track->trackId, targetPage]()
+			juce::MessageManager::callAsync([this, trackId = track->trackId, targetPage, slotNumber]()
 				{
 					if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 					{
@@ -3759,7 +3799,9 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 							t->pendingPageIndex = -1;
 							DBG("Page changed without UI at measure boundary: " << (char)('A' + targetPage));
 						}
-					} });
+					}
+					notifyPageChangedFeedback(slotNumber);
+				});
 		}
 	}
 
@@ -4059,4 +4101,14 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 			trackComp->setPreviewPlaying(false);
 		}
 	}
+}
+
+void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
+{
+	DBG("FEEDBACK OUT -> CC: " << cc << " | Val: " << value);
+	juce::ScopedLock lock(feedbackMidiLock);
+	feedbackMidiBuffer.addEvent(
+		juce::MidiMessage::controllerEvent(MidiMapping::feedbackChannel + 1, cc, value),
+		0
+	);
 }

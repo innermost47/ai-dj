@@ -263,6 +263,8 @@ private:
 	bool migrationCompleted = false;
 	std::unique_ptr<SampleBank> sampleBank;
 	juce::StringArray customKeywords;
+	juce::MidiBuffer feedbackMidiBuffer;
+	juce::CriticalSection feedbackMidiLock;
 
 	std::atomic<float>* nextTrackParam = nullptr;
 	std::atomic<float>* prevTrackParam = nullptr;
@@ -463,7 +465,7 @@ private:
 	void saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 		const juce::File& outputFile,
 		double sampleRate);
-	void executePendingAction(TrackData* track) const;
+	void executePendingAction(TrackData* track);
 	void handleGenerate();
 	void notifyGenerationComplete(const juce::String& trackId, const juce::String& message);
 	void generateLoopFromMidi(const juce::String& trackId);
@@ -477,6 +479,8 @@ private:
 	void loadAudioFileForSwitch(const juce::String& trackId, const juce::File& audioFile);
 	void loadSampleToBankPage(const juce::String& trackId, int pageIndex, const juce::File& sampleFile, const juce::String& sampleId);
 	void loadAudioFileForPageSwitch(const juce::String& trackId, int pageIndex, const juce::File& audioFile);
+	void sendMidiFeedback(int cc, int value);
+	void notifyPageChangedFeedback(int slotNumber);
 
 	juce::File getTrackPageAudioFile(const juce::String& trackId, int pageIndex);
 
