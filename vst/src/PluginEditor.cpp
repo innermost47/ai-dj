@@ -323,10 +323,133 @@ void DjIaVstEditor::showFirstTimeSetup()
 						statusLabel.setText("Configuration saved!", juce::dontSendNotification);
 					}
 					refreshUIForMode();
+					juce::Timer::callAfterDelay(400, [this]() { showOnboardingTour(); });
 				}
 			}
 			windowPtr->exitModalState(result);
 			delete windowPtr; }));
+}
+
+void DjIaVstEditor::showOnboardingTour()
+{
+	if (audioProcessor.getOnboardingDone())
+		return;
+
+	showOnboardingStep(1);
+}
+
+void DjIaVstEditor::showOnboardingStep(int step)
+{
+	struct StepInfo
+	{
+		juce::String title;
+		juce::String message;
+		juce::String buttonNext;
+		juce::String buttonSkip;
+	};
+
+	std::vector<StepInfo> steps = {
+		{
+			"OBSIDIAN Neural - Step 1 / 3",
+			"Welcome! Let's generate your first sound in 3 steps.\n\n"
+			"STEP 1: Choose a prompt\n\n"
+			"At the top of the interface, you'll see a dropdown\n"
+			"and a text field. This is where you describe the sound\n"
+			"you want to generate.\n\n"
+			"Example: \"Dark techno bassline\", \"Ambient guitar loop\"\n\n"
+			"Select a preset from the dropdown, or type your own.",
+			"Next ->",
+			"Skip tour"
+		},
+		{
+			"OBSIDIAN Neural - Step 2 / 3",
+			"STEP 2: Hit Generate\n\n"
+			"Once your prompt is ready, click the [>] button\n"
+			"to the right of the text field.\n\n"
+			"The AI will generate a sample for the selected track.\n"
+			"This takes about 10-30 seconds - perfectly normal!\n\n"
+			"You'll see a generation animation on the track\n"
+			"while it's working.",
+			"Next ->",
+			"Skip tour"
+		},
+		{
+			"OBSIDIAN Neural - Step 3 / 3",
+			"STEP 3: Play it back\n\n"
+			"Once generated, a waveform appears on your track.\n\n"
+			"To preview instantly:\n"
+			"  - Click the Play button on the track (left side)\n\n"
+			"To play in sync with your DAW:\n"
+			"  - Enable a step in the sequencer on the track\n"
+			"  - Click Play on the matching Mixer channel (right panel)\n"
+			"  - Press Play in your DAW\n\n"
+			"Tip: hover any button to see a tooltip.\n\n"
+			"Full setup guide: obsidian-neural.com -> Documentation\n\n"
+			"That's it - you're ready to create. Enjoy!",
+			"Let's go!",
+			"Skip"
+		}
+	};
+
+	if (step < 1 || step >(int)steps.size())
+		return;
+
+	const auto& info = steps[step - 1];
+	bool isLastStep = (step == steps.size());
+
+	auto* alertWindow = new juce::AlertWindow(
+		info.title,
+		info.message,
+		juce::MessageBoxIconType::InfoIcon);
+
+	alertWindow->setColour(juce::AlertWindow::backgroundColourId,
+		ColourPalette::backgroundDeep);
+	alertWindow->setColour(juce::AlertWindow::textColourId,
+		ColourPalette::textPrimary);
+	alertWindow->setColour(juce::AlertWindow::outlineColourId,
+		ColourPalette::textAccent.withAlpha(0.4f));
+
+	alertWindow->addButton(info.buttonNext, 1);
+	alertWindow->addButton(info.buttonSkip, 0);
+
+	alertWindow->enterModalState(true,
+		juce::ModalCallbackFunction::create([this, alertWindow, step, isLastStep](int result)
+			{
+				alertWindow->exitModalState(result);
+				delete alertWindow;
+
+				if (result == 1 && !isLastStep)
+				{
+					juce::Timer::callAfterDelay(50, [this, step]()
+						{
+							showOnboardingStep(step + 1);
+						});
+				}
+				else
+				{
+					audioProcessor.setOnboardingDone(true);
+					audioProcessor.saveGlobalConfig();
+
+
+					if (isLastStep && result == 1)
+					{
+						statusLabel.setText(
+							juce::String::fromUTF8("Ready - select a prompt and hit [>] to generate your first loop!"),
+							juce::dontSendNotification);
+						statusLabel.setColour(juce::Label::textColourId,
+							ColourPalette::violet);
+					}
+				}
+			}),
+		true);
+	juce::Timer::callAfterDelay(100, [alertWindow]()
+		{
+			if (alertWindow != nullptr)
+			{
+				alertWindow->toFront(true);
+				alertWindow->grabKeyboardFocus();
+			}
+		});
 }
 
 void DjIaVstEditor::refreshUIForMode()

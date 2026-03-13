@@ -104,6 +104,8 @@ private:
 	void generateFromTrackComponent(const juce::String& trackId);
 	void refreshCredits();
 	void refreshCreditsAsync();
+	void showOnboardingStep(int step);
+	void showOnboardingTour();
 
 	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
 	bool keyPressed(const juce::KeyPress& key) override;

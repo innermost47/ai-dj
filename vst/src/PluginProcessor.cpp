@@ -138,7 +138,7 @@ void DjIaVstProcessor::loadGlobalConfig()
 			apiKey = object->getProperty("apiKey").toString();
 			serverUrl = object->getProperty("serverUrl").toString();
 			requestTimeoutMS = object->getProperty("requestTimeoutMS").toString().getIntValue();
-
+			onboardingDone = object->getProperty("onboardingDone").toString() == "true";
 			useLocalModel = object->getProperty("useLocalModel").toString() == "true";
 			localModelsPath = object->getProperty("localModelsPath").toString();
 
@@ -195,6 +195,7 @@ void DjIaVstProcessor::saveGlobalConfig()
 	config->setProperty("requestTimeoutMS", requestTimeoutMS);
 	config->setProperty("useLocalModel", useLocalModel ? "true" : "false");
 	config->setProperty("localModelsPath", localModelsPath);
+	config->setProperty("onboardingDone", onboardingDone ? "true" : "false");
 
 	juce::Array<juce::var> promptsArray;
 	for (const auto& prompt : customPrompts)
