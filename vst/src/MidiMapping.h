@@ -17,6 +17,7 @@ struct MidiMapping
 	static const int feedbackIdle = 0;
 	static const int feedbackPending = 64;
 	static const int feedbackActive = 127;
+	static const int ccRequestState = 118;
 
 	static int ccFeedbackPlay(int slot) { return 20 + slot; }
 	static int ccFeedbackGenerate(int slot) { return 30 + slot; }

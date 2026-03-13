@@ -481,6 +481,7 @@ private:
 	void loadAudioFileForPageSwitch(const juce::String& trackId, int pageIndex, const juce::File& audioFile);
 	void sendMidiFeedback(int cc, int value);
 	void notifyPageChangedFeedback(int slotNumber, int pageIndex);
+	void sendFullStateFeedback();
 
 	juce::File getTrackPageAudioFile(const juce::String& trackId, int pageIndex);
 

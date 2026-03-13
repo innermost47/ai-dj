@@ -763,6 +763,14 @@ void DjIaVstProcessor::processMidiMessages(juce::MidiBuffer& midiMessages, bool 
 		{
 			continue;
 		}
+		if (message.isController() &&
+			message.getChannel() == 1 &&
+			message.getControllerNumber() == MidiMapping::ccRequestState &&
+			message.getControllerValue() == 127)
+		{
+			sendFullStateFeedback();
+			continue;
+		}
 		midiLearnManager.processMidiMappings(message);
 		handlePlayAndStop(hostIsPlaying);
 		handleGenerate();
@@ -784,6 +792,27 @@ void DjIaVstProcessor::processMidiMessages(juce::MidiBuffer& midiMessages, bool 
 	if (midiIndicatorCallback && notesPlayedInThisBuffer.size() > 0)
 	{
 		updateMidiIndicatorWithActiveNotes(hostBpm, notesPlayedInThisBuffer);
+	}
+}
+
+void DjIaVstProcessor::sendFullStateFeedback()
+{
+	auto trackIds = trackManager.getAllTrackIds();
+	for (const auto& trackId : trackIds)
+	{
+		TrackData* track = trackManager.getTrack(trackId);
+		if (!track) continue;
+		int slot = track->slotIndex + 1;
+
+		if (track->isCurrentlyPlaying.load())
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackActive);
+		else if (track->isArmed.load())
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackPending);
+		else
+			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackIdle);
+
+		if (track->usePages.load())
+			sendMidiFeedback(MidiMapping::ccFeedbackPage(slot), track->currentPageIndex);
 	}
 }
 
