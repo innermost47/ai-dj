@@ -217,6 +217,9 @@ public:
 	double getHostBpm() const;
 	double calculateRetriggerInterval(int intervalValue, double hostBpm) const;
 
+	bool getOnboardingDone() const { return onboardingDone; }
+	void setOnboardingDone(bool v) { onboardingDone = v; }
+
 	bool getUseLocalModel() const { return useLocalModel; }
 	bool getIsGenerating() const { return isGenerating; }
 	bool hasSampleWaiting() const { return hasUnloadedSample.load(); }
@@ -309,6 +312,7 @@ private:
 	bool guitarEnabled = false;
 	bool pianoEnabled = false;
 	bool isGenerating = false;
+	bool onboardingDone = false;
 
 	int lastKeyIndex = 1;
 	int lastPresetIndex = -1;
