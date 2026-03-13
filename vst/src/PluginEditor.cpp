@@ -262,7 +262,10 @@ void DjIaVstEditor::showFirstTimeSetup()
 {
 	auto alertWindow = std::make_unique<juce::AlertWindow>(
 		"OBSIDIAN-Neural Configuration " + Version::FULL,
-		"Choose your generation method:",
+		"Choose your generation method.\n\n"
+		"No API key yet? Get your free account at:\n"
+		"obsidian-neural.com\n\n"
+		"Free plan includes 10 generations to get started.",
 		juce::MessageBoxIconType::InfoIcon);
 
 	juce::StringArray modes;
