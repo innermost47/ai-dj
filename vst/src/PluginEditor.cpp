@@ -265,7 +265,7 @@ void DjIaVstEditor::showFirstTimeSetup()
 		"Choose your generation method.\n\n"
 		"No API key yet? Get your free account at:\n"
 		"obsidian-neural.com\n\n"
-		"Free plan includes 10 generations to get started.",
+		"7-day free trial - 100 credits included - no credit card required.",
 		juce::MessageBoxIconType::InfoIcon);
 
 	juce::StringArray modes;
