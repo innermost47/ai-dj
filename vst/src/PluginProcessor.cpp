@@ -556,9 +556,7 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 			TrackData* track = trackManager.getTrack(trackId);
 			bool arm = false;
 			if (track->isCurrentlyPlaying.load())
-			{
 				arm = true;
-			}
 			if (track)
 			{
 				auto& seqData = track->getCurrentSequencerData();
@@ -573,6 +571,7 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 				seqData.stepAccumulator = 0.0;
 				track->customStepCounter = 0;
 				track->lastPpqPosition = -1.0;
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 			}
 		}
 		needsUIUpdate = true;
@@ -583,8 +582,7 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 		for (const auto& trackId : trackIds)
 		{
 			TrackData* track = trackManager.getTrack(trackId);
-			bool arm = false;
-			if (track->isCurrentlyPlaying.load())
+			if (track && track->isCurrentlyPlaying.load())
 			{
 				auto& seqData = track->getCurrentSequencerData();
 				track->isArmed = true;
@@ -596,8 +594,9 @@ void DjIaVstProcessor::handleSequencerPlayState(bool hostIsPlaying)
 				track->customStepCounter = 0;
 				track->lastPpqPosition = -1.0;
 				seqData.isPlaying = false;
-				track->isArmed = arm;
+				track->isArmed = false;
 				track->isPlaying.store(false);
+				sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1), MidiMapping::feedbackIdle);
 			}
 		}
 		needsUIUpdate = true;
@@ -3142,6 +3141,26 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 					}
 				}
 			} });
+			juce::Timer::callAfterDelay(2000, [this]()
+				{
+					auto trackIds = trackManager.getAllTrackIds();
+					for (const auto& trackId : trackIds)
+					{
+						TrackData* track = trackManager.getTrack(trackId);
+						if (!track) continue;
+
+						int slotNumber = track->slotIndex + 1;
+						if (track->isCurrentlyPlaying.load())
+							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackActive);
+						else if (track->isArmed.load())
+							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackPending);
+						else
+							sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
+
+						if (track->usePages.load())
+							sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), track->currentPageIndex);
+					}
+				});
 			midiLearnManager.restoreUICallbacks();
 			stateLoaded = true;
 			juce::MessageManager::callAsync([this]()
@@ -3343,10 +3362,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 					track->readPosition = 0.0;
 				}
 				sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
-				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
-				juce::Timer::callAfterDelay(200, [this, slotNumber]() {
-					sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
-					});
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
@@ -3363,10 +3379,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 						});
 				}
 
-				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
-				juce::Timer::callAfterDelay(200, [this, slotNumber]() {
-					sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
-					});
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 
 				DBG("Page change immediate (empty page): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 				return;
@@ -3398,10 +3411,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 						});
 				}
 
-				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
-				juce::Timer::callAfterDelay(200, [this, slotNumber]() {
-					sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
-					});
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 
 				DBG("Page change immediate (not playing): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 			}
@@ -3440,14 +3450,10 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 }
 
 
-void DjIaVstProcessor::notifyPageChangedFeedback(int slotNumber)
+void DjIaVstProcessor::notifyPageChangedFeedback(int slotNumber, int pageIndex)
 {
-	sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackActive);
-	juce::Timer::callAfterDelay(200, [this, slotNumber]() {
-		sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackIdle);
-		});
+	sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 }
-
 
 void DjIaVstProcessor::selectNextTrack()
 {
@@ -3800,7 +3806,7 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 							DBG("Page changed without UI at measure boundary: " << (char)('A' + targetPage));
 						}
 					}
-					notifyPageChangedFeedback(slotNumber);
+					notifyPageChangedFeedback(slotNumber, targetPage);
 				});
 		}
 	}
