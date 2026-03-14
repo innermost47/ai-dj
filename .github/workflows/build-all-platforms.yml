@@ -19,23 +19,23 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           submodules: recursive
 
       - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v1
-
-      - name: Configure CMake
-        working-directory: vst
-        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+        uses: microsoft/setup-msbuild@v2
 
       - name: Configure CMake
         working-directory: vst
         run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
 
+      - name: Build
+        working-directory: vst
+        run: cmake --build build --config Release
+
       - name: Upload Windows VST3
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-Windows-VST3
           path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
@@ -45,7 +45,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           submodules: recursive
 
@@ -164,13 +164,13 @@ jobs:
           xcrun stapler staple vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
 
       - name: Upload macOS VST3
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-macOS-Universal-VST3
           path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
 
       - name: Upload macOS AU
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-macOS-Universal-AU
           path: vst/build/ObsidianNeuralVST_artefacts/Release/AU/
@@ -178,7 +178,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           submodules: recursive
 
@@ -199,7 +199,7 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Upload Linux VST3
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-Linux-VST3
           path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
@@ -210,10 +210,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.3.0
 
       - name: Create release assets
         run: |
@@ -246,7 +246,7 @@ jobs:
           fi
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: "OBSIDIAN-Neural v${{ github.run_number }}"
