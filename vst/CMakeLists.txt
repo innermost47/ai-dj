@@ -109,7 +109,11 @@ if(NOT nlohmann_json_FOUND)
     FetchContent_MakeAvailable(nlohmann_json)
 endif()
 
-string(TIMESTAMP BUILD_NUMBER "%Y%m%d_%H%M") 
+if(DEFINED GITHUB_BUILD_NUMBER)
+    set(BUILD_NUMBER "${GITHUB_BUILD_NUMBER}")
+else()
+    string(TIMESTAMP BUILD_NUMBER "%Y%m%d_%H%M")
+endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/version.h"
