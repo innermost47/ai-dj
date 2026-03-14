@@ -64,6 +64,7 @@ public:
 	juce::AudioProcessorValueTreeState& getParameters() { return parameters; }
 
 	std::atomic<bool> needsUIUpdate{ false };
+	bool updateCheckDone = false;
 
 	juce::String getGlobalKey() const { return globalKey; }
 	juce::String getGlobalPrompt() const { return globalPrompt; }

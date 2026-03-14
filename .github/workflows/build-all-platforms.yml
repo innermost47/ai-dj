@@ -30,9 +30,9 @@ jobs:
         working-directory: vst
         run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
+      - name: Configure CMake
         working-directory: vst
-        run: cmake --build build --config Release
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
 
       - name: Upload Windows VST3
         uses: actions/upload-artifact@v4
@@ -58,7 +58,8 @@ jobs:
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15" \
+            -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
 
       - name: Build
         working-directory: vst
@@ -191,7 +192,7 @@ jobs:
 
       - name: Configure CMake
         working-directory: vst
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
 
       - name: Build
         working-directory: vst

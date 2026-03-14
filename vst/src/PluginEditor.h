@@ -106,6 +106,7 @@ private:
 	void refreshCreditsAsync();
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
+	void checkForUpdates();
 
 	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
 	bool keyPressed(const juce::KeyPress& key) override;

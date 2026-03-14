@@ -52,6 +52,17 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 					}
 				}
 			} });
+			juce::Timer::callAfterDelay(4000, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+				{
+					if (auto* editor = safeThis.getComponent())
+					{
+						if (!editor->audioProcessor.updateCheckDone)
+						{
+							editor->audioProcessor.updateCheckDone = true;
+							editor->checkForUpdates();
+						}
+					}
+				});
 }
 
 DjIaVstEditor::~DjIaVstEditor()
@@ -2363,6 +2374,66 @@ void DjIaVstEditor::refreshCreditsAsync()
 				}
 			}
 			});
+		});
+}
+
+void DjIaVstEditor::checkForUpdates()
+{
+	juce::Thread::launch([safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+		{
+			juce::URL url("https://api.github.com/repos/innermost47/ai-dj/releases/latest");
+			auto stream = url.createInputStream(
+				juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+				.withExtraHeaders("User-Agent: OBSIDIAN-Neural-Plugin")
+				.withConnectionTimeoutMs(5000));
+
+			if (stream == nullptr) return;
+
+			auto json = juce::JSON::parse(stream->readEntireStreamAsString());
+			if (auto* obj = json.getDynamicObject())
+			{
+				auto tagName = obj->getProperty("tag_name").toString();
+				int latestNum = tagName.trimCharactersAtStart("v").getIntValue();
+				int currentNum = juce::String(BUILD_NUMBER).getIntValue();
+
+				if (latestNum > currentNum)
+				{
+					juce::MessageManager::callAsync([safeThis, tagName]()
+						{
+							if (auto* editor = safeThis.getComponent())
+							{
+								if (editor->isInitialized.load())
+								{
+									juce::Timer::callAfterDelay(2000, [safeThis, tagName]()
+										{
+											if (auto* editor = safeThis.getComponent())
+											{
+												juce::AlertWindow::showAsync(
+													juce::MessageBoxOptions()
+													.withIconType(juce::MessageBoxIconType::InfoIcon)
+													.withTitle("Update Available!")
+													.withMessage(
+														"A new version of OBSIDIAN Neural is available: " + tagName + "\n\n"
+														"Your current build: v" + juce::String(BUILD_NUMBER) + "\n\n"
+														"Download the latest version at:\n"
+														"github.com/innermost47/ai-dj/releases/latest")
+													.withButton("Download Now")
+													.withButton("Later"),
+													[](int result)
+													{
+														if (result == 1)
+														{
+															juce::URL("https://github.com/innermost47/ai-dj/releases/latest")
+																.launchInDefaultBrowser();
+														}
+													});
+											}
+										});
+								}
+							}
+						});
+				}
+			}
 		});
 }
 
