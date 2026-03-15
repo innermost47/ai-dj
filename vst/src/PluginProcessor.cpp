@@ -3428,10 +3428,8 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 	int slotNumber = slotStr.getIntValue();
 	char pageChar = static_cast<char>(parameterID[parameterID.length() - 1]);
 	int pageIndex = pageChar - 'A';
-
 	if (slotNumber < 1 || slotNumber > 8 || pageIndex < 0 || pageIndex > 3)
 		return;
-
 	auto trackIds = trackManager.getAllTrackIds();
 	for (const auto& trackId : trackIds)
 	{
@@ -3441,7 +3439,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 			if (track->pages[pageIndex].numSamples == 0)
 			{
 				track->setCurrentPage(pageIndex);
-
 				if (!getActiveEditor())
 				{
 					track->isPlaying = false;
@@ -3450,7 +3447,8 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 				}
 				sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
 				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
-
+				sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
+					track->pages[pageIndex].currentSequenceIndex);
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
 					juce::MessageManager::callAsync([editor, trackId, pageIndex]()
@@ -3465,24 +3463,18 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 							}
 						});
 				}
-
-				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
-
 				DBG("Page change immediate (empty page): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 				return;
 			}
-
 			bool isPlaying = false;
 			if (auto currentPlayHead = getPlayHead())
 			{
 				if (auto positionInfo = currentPlayHead->getPosition())
 					isPlaying = positionInfo->getIsPlaying();
 			}
-
 			if (!isPlaying || !track->isCurrentlyPlaying.load())
 			{
 				track->setCurrentPage(pageIndex);
-
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
 					juce::MessageManager::callAsync([editor, trackId, pageIndex]()
@@ -3497,18 +3489,17 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 							}
 						});
 				}
-
 				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
-
+				sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
+					track->pages[pageIndex].currentSequenceIndex);
 				DBG("Page change immediate (not playing): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 			}
 			else
 			{
 				track->pageChangePending = true;
 				track->pendingPageIndex = pageIndex;
-
 				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), MidiMapping::feedbackPending);
-
+				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), 80 + pageIndex);
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 				{
 					juce::MessageManager::callAsync([editor, trackId, pageIndex]()
@@ -3519,7 +3510,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 								{
 									if (!trackComp->isTimerRunning())
 										trackComp->startTimer(200);
-
 									trackComp->updatePagesDisplay();
 									editor->setStatusWithTimeout("Page " + juce::String((char)('A' + pageIndex)) +
 										" will switch at next measure", 3000);
@@ -3528,7 +3518,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 							}
 						});
 				}
-
 				DBG("Page change pending: slot " << slotNumber << " -> page " << (char)('A' + pageIndex) << " (will switch at next measure)");
 			}
 			break;
@@ -3540,6 +3529,17 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 void DjIaVstProcessor::notifyPageChangedFeedback(int slotNumber, int pageIndex)
 {
 	sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
+	auto trackIds = trackManager.getAllTrackIds();
+	for (const auto& trackId : trackIds)
+	{
+		TrackData* track = trackManager.getTrack(trackId);
+		if (track && track->slotIndex == (slotNumber - 1))
+		{
+			sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
+				track->pages[pageIndex].currentSequenceIndex);
+			break;
+		}
+	}
 }
 
 void DjIaVstProcessor::selectNextTrack()
