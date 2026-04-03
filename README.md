@@ -69,9 +69,9 @@ VST Plugin → Central server → Provider GPU pool → WAV returned to DAW
 **Revenue sharing — full transparency:**  
 Subscription revenue is redistributed **strictly equally** among all eligible providers each month via Stripe Connect, after a 15% platform fee covering infrastructure costs. Redistribution history is public:
 
-```
-GET https://api.obsidian-neural.com/api/v1/public/finances
-```
+**[obsidian-neural.com/public.html](https://obsidian-neural.com/public.html)**
+
+No authentication required. No data is ever deleted.
 
 **Provider eligibility:**
 
