@@ -75,7 +75,7 @@ No authentication required. No data is ever deleted.
 
 **Provider eligibility:**
 
-- Uptime score ≥ 60% (based on random unpredictable pings)
+- Uptime score ≥ 80% (based on random unpredictable pings)
 - At least 1 real job processed during the month
 
 **🚀 We're looking for our first 10 GPU providers.**  
