@@ -5,7 +5,7 @@
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-	static CustomLookAndFeel& getInstance()
+	static CustomLookAndFeel &getInstance()
 	{
 		static CustomLookAndFeel instance;
 		return instance;
@@ -30,23 +30,22 @@ public:
 	}
 
 private:
-	static juce::Colour soften(const juce::Colour& colour)
+	static juce::Colour soften(const juce::Colour &colour)
 	{
 		return colour.withSaturation(colour.getSaturation() * 0.8f)
 			.brighter(0.15f);
 	}
 
 public:
-
-	void drawButtonBackground(juce::Graphics& g,
-		juce::Button& button,
-		const juce::Colour& backgroundColour,
-		bool shouldDrawButtonAsHighlighted,
-		bool shouldDrawButtonAsDown) override
+	void drawButtonBackground(juce::Graphics &g,
+							  juce::Button &button,
+							  const juce::Colour &backgroundColour,
+							  bool shouldDrawButtonAsHighlighted,
+							  bool shouldDrawButtonAsDown) override
 	{
 		auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
 		auto baseColour = soften(backgroundColour)
-			.withMultipliedAlpha(button.isEnabled() ? 1.0f : 0.5f);
+							  .withMultipliedAlpha(button.isEnabled() ? 1.0f : 0.5f);
 
 		if (shouldDrawButtonAsDown)
 			baseColour = baseColour.darker(0.15f);
@@ -73,14 +72,14 @@ public:
 		g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 	}
 
-	void drawButtonText(juce::Graphics& g,
-		juce::TextButton& button,
-		bool /*shouldDrawButtonAsHighlighted*/,
-		bool /*shouldDrawButtonAsDown*/) override
+	void drawButtonText(juce::Graphics &g,
+						juce::TextButton &button,
+						bool /*shouldDrawButtonAsHighlighted*/,
+						bool /*shouldDrawButtonAsDown*/) override
 	{
 		auto textColour = button.findColour(button.getToggleState()
-			? juce::TextButton::textColourOnId
-			: juce::TextButton::textColourOffId);
+												? juce::TextButton::textColourOnId
+												: juce::TextButton::textColourOffId);
 
 		if (!button.isEnabled())
 			textColour = textColour.withAlpha(0.5f);
@@ -89,14 +88,14 @@ public:
 		g.setFont(juce::FontOptions(14.0f));
 
 		g.drawText(button.getButtonText(),
-			button.getLocalBounds(),
-			juce::Justification::centred);
+				   button.getLocalBounds(),
+				   juce::Justification::centred);
 	}
 
-	void drawToggleButton(juce::Graphics& g,
-		juce::ToggleButton& button,
-		bool shouldDrawButtonAsHighlighted,
-		bool shouldDrawButtonAsDown) override
+	void drawToggleButton(juce::Graphics &g,
+						  juce::ToggleButton &button,
+						  bool shouldDrawButtonAsHighlighted,
+						  bool shouldDrawButtonAsDown) override
 	{
 		auto bounds = button.getLocalBounds().toFloat();
 
@@ -129,8 +128,8 @@ public:
 		g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 
 		auto textColour = button.findColour(button.getToggleState()
-			? juce::TextButton::textColourOnId
-			: juce::TextButton::textColourOffId);
+												? juce::TextButton::textColourOnId
+												: juce::TextButton::textColourOffId);
 
 		if (!button.isEnabled())
 			textColour = textColour.withAlpha(0.5f);
@@ -140,12 +139,75 @@ public:
 		g.drawText(button.getButtonText(), bounds, juce::Justification::centred);
 	}
 
-	void drawComboBox(juce::Graphics& g,
-		int width, int height,
-		bool /*isButtonDown*/,
-		int buttonX, int buttonY,
-		int buttonW, int buttonH,
-		juce::ComboBox& /*box*/) override
+	juce::AlertWindow *createAlertWindow(
+		const juce::String &title,
+		const juce::String &message,
+		const juce::String &button1,
+		const juce::String &button2,
+		const juce::String &button3,
+		juce::MessageBoxIconType iconType,
+		int numButtons,
+		juce::Component *associatedComponent) override
+	{
+		auto *aw = new juce::AlertWindow(title, message, iconType, associatedComponent);
+
+		aw->setColour(juce::AlertWindow::backgroundColourId, ColourPalette::backgroundDeep);
+		aw->setColour(juce::AlertWindow::textColourId, ColourPalette::textPrimary);
+		aw->setColour(juce::AlertWindow::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
+
+		return aw;
+	}
+
+	void drawAlertBox(
+		juce::Graphics &g,
+		juce::AlertWindow &alert,
+		const juce::Rectangle<int> &textArea,
+		juce::TextLayout &textLayout) override
+	{
+		// Fond principal
+		g.fillAll(ColourPalette::backgroundDeep);
+
+		// Bordure subtile
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.4f));
+		g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1.0f), 4.0f, 1.5f);
+
+		// Bande de titre en haut
+		auto titleBar = alert.getLocalBounds().removeFromTop(42).toFloat();
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.15f));
+		g.fillRect(titleBar);
+
+		// Ligne de séparation sous le titre
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
+		g.drawLine(titleBar.getBottomLeft().x, titleBar.getBottom(),
+				   titleBar.getBottomRight().x, titleBar.getBottom(), 1.0f);
+
+		// Texte
+		textLayout.draw(g, textArea.toFloat());
+	}
+
+	int getAlertWindowButtonHeight() override { return 32; }
+
+	juce::Font getAlertWindowTitleFont() override
+	{
+		return juce::Font(juce::FontOptions("Courier New", 16.0f, juce::Font::bold));
+	}
+
+	juce::Font getAlertWindowMessageFont() override
+	{
+		return juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+	}
+
+	juce::Font getAlertWindowFont() override
+	{
+		return juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+	}
+
+	void drawComboBox(juce::Graphics &g,
+					  int width, int height,
+					  bool /*isButtonDown*/,
+					  int buttonX, int buttonY,
+					  int buttonW, int buttonH,
+					  juce::ComboBox & /*box*/) override
 	{
 		auto bounds = juce::Rectangle<int>(0, 0, width, height).toFloat();
 
@@ -169,14 +231,13 @@ public:
 		arrow.addTriangle(
 			arrowBounds.getCentreX() - 3.0f, arrowBounds.getCentreY() - 2.0f,
 			arrowBounds.getCentreX() + 3.0f, arrowBounds.getCentreY() - 2.0f,
-			arrowBounds.getCentreX(), arrowBounds.getCentreY() + 2.0f
-		);
+			arrowBounds.getCentreX(), arrowBounds.getCentreY() + 2.0f);
 
 		g.setColour(soften(ColourPalette::textSecondary));
 		g.fillPath(arrow);
 	}
 
-	void drawLabel(juce::Graphics& g, juce::Label& label) override
+	void drawLabel(juce::Graphics &g, juce::Label &label) override
 	{
 		g.fillAll(label.findColour(juce::Label::backgroundColourId));
 
@@ -191,10 +252,10 @@ public:
 			auto textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
 
 			g.drawFittedText(label.getText(),
-				textArea,
-				label.getJustificationType(),
-				juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())),
-				1.0f);
+							 textArea,
+							 label.getJustificationType(),
+							 juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())),
+							 1.0f);
 		}
 		else if (label.isEnabled())
 		{
@@ -202,17 +263,17 @@ public:
 		}
 	}
 
-	juce::BorderSize<int> getLabelBorderSize(juce::Label& /*label*/) override
+	juce::BorderSize<int> getLabelBorderSize(juce::Label & /*label*/) override
 	{
 		return juce::BorderSize<int>(1, 5, 1, 5);
 	}
 
-	void drawLinearSlider(juce::Graphics& g,
-		int x, int y, int width, int height,
-		float sliderPos,
-		float minSliderPos, float maxSliderPos,
-		const juce::Slider::SliderStyle style,
-		juce::Slider& /* slider */) override
+	void drawLinearSlider(juce::Graphics &g,
+						  int x, int y, int width, int height,
+						  float sliderPos,
+						  float minSliderPos, float maxSliderPos,
+						  const juce::Slider::SliderStyle style,
+						  juce::Slider & /* slider */) override
 	{
 		if (style == juce::Slider::LinearVertical || style == juce::Slider::LinearHorizontal)
 		{
@@ -223,14 +284,14 @@ public:
 			if (style == juce::Slider::LinearVertical)
 			{
 				auto cx = (float)x + (float)width * 0.5f;
-				startPoint = { cx, (float)y };
-				endPoint = { cx, (float)(y + height) };
+				startPoint = {cx, (float)y};
+				endPoint = {cx, (float)(y + height)};
 			}
 			else
 			{
 				auto cy = (float)y + (float)height * 0.5f;
-				startPoint = { (float)x, cy };
-				endPoint = { (float)(x + width), cy };
+				startPoint = {(float)x, cy};
+				endPoint = {(float)(x + width), cy};
 			}
 
 			auto trackRect = juce::Rectangle<float>(startPoint, endPoint).expanded(trackWidth * 0.5f);
@@ -264,16 +325,16 @@ public:
 		g.setColour(soften(ColourPalette::sliderThumb));
 
 		if (style == juce::Slider::LinearVertical)
-			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ (float)x + (float)width * 0.5f, sliderPos }));
+			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({(float)x + (float)width * 0.5f, sliderPos}));
 		else
-			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ sliderPos, (float)y + (float)height * 0.5f }));
+			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({sliderPos, (float)y + (float)height * 0.5f}));
 	}
 
-	void drawRotarySlider(juce::Graphics& g,
-		int x, int y, int width, int height,
-		float sliderPosProportional,
-		float rotaryStartAngle, float rotaryEndAngle,
-		juce::Slider& /* slider */) override
+	void drawRotarySlider(juce::Graphics &g,
+						  int x, int y, int width, int height,
+						  float sliderPosProportional,
+						  float rotaryStartAngle, float rotaryEndAngle,
+						  juce::Slider & /* slider */) override
 	{
 		auto bounds = juce::Rectangle<float>((float)x, (float)y, (float)width, (float)height).reduced(8.0f);
 		auto radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) / 2.0f;
@@ -283,16 +344,16 @@ public:
 
 		juce::Path backgroundArc;
 		backgroundArc.addCentredArc(bounds.getCentreX(), bounds.getCentreY(),
-			arcRadius, arcRadius,
-			0.0f, rotaryStartAngle, rotaryEndAngle, true);
+									arcRadius, arcRadius,
+									0.0f, rotaryStartAngle, rotaryEndAngle, true);
 
 		g.setColour(ColourPalette::backgroundDeep);
 		g.strokePath(backgroundArc, juce::PathStrokeType(lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
 		juce::Path valueArc;
 		valueArc.addCentredArc(bounds.getCentreX(), bounds.getCentreY(),
-			arcRadius, arcRadius,
-			0.0f, rotaryStartAngle, toAngle, true);
+							   arcRadius, arcRadius,
+							   0.0f, rotaryStartAngle, toAngle, true);
 
 		g.setColour(soften(ColourPalette::sliderThumb));
 		g.strokePath(valueArc, juce::PathStrokeType(lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
@@ -307,9 +368,9 @@ public:
 		g.fillPath(pointer);
 	}
 
-	void drawTextEditorOutline(juce::Graphics& g,
-		int width, int height,
-		juce::TextEditor& textEditor) override
+	void drawTextEditorOutline(juce::Graphics &g,
+							   int width, int height,
+							   juce::TextEditor &textEditor) override
 	{
 		if (textEditor.isEnabled())
 		{
@@ -326,15 +387,15 @@ public:
 		}
 	}
 
-	void drawScrollbar(juce::Graphics& g,
-		juce::ScrollBar& /*scrollbar*/,
-		int x, int y,
-		int width, int height,
-		bool isScrollbarVertical,
-		int thumbStartPosition,
-		int thumbSize,
-		bool isMouseOver,
-		bool isMouseDown) override
+	void drawScrollbar(juce::Graphics &g,
+					   juce::ScrollBar & /*scrollbar*/,
+					   int x, int y,
+					   int width, int height,
+					   bool isScrollbarVertical,
+					   int thumbStartPosition,
+					   int thumbSize,
+					   bool isMouseOver,
+					   bool isMouseDown) override
 	{
 		g.setColour(findColour(juce::ScrollBar::backgroundColourId));
 		g.fillRoundedRectangle((float)x, (float)y, (float)width, (float)height, 4.0f);
@@ -343,14 +404,14 @@ public:
 
 		if (isScrollbarVertical)
 			thumbBounds = juce::Rectangle<float>((float)x,
-				(float)thumbStartPosition,
-				(float)width,
-				(float)thumbSize);
+												 (float)thumbStartPosition,
+												 (float)width,
+												 (float)thumbSize);
 		else
 			thumbBounds = juce::Rectangle<float>((float)thumbStartPosition,
-				(float)y,
-				(float)thumbSize,
-				(float)height);
+												 (float)y,
+												 (float)thumbSize,
+												 (float)height);
 
 		auto thumbColour = findColour(juce::ScrollBar::thumbColourId);
 

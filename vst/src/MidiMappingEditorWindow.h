@@ -6,27 +6,27 @@
 #include "CustomLookAndFeel.h"
 
 class MidiMappingRow : public juce::Component,
-	public juce::Button::Listener
+					   public juce::Button::Listener
 {
 public:
-	MidiMappingRow(const MidiMapping& mapping, MidiLearnManager* manager);
+	MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *manager);
 	~MidiMappingRow() override;
 
-	void paint(juce::Graphics& g) override;
+	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void buttonClicked(juce::Button* button) override;
+	void buttonClicked(juce::Button *button) override;
 
 	std::function<void()> onDeleteClicked;
 	std::function<void()> onLearnClicked;
 
-	const MidiMapping& getMapping() const { return mapping; }
+	const MidiMapping &getMapping() const { return mapping; }
 	void setLearningActive(bool active);
 	void toggleBlink();
-	void updateMapping(const MidiMapping& newMapping);
+	void updateMapping(const MidiMapping &newMapping);
 
 private:
 	MidiMapping mapping;
-	MidiLearnManager* midiLearnManager = nullptr;
+	MidiLearnManager *midiLearnManager = nullptr;
 
 	juce::Label parameterLabel;
 	juce::Label midiInfoLabel;
@@ -42,10 +42,10 @@ private:
 };
 
 class MidiMappingEditorWindow : public juce::DocumentWindow,
-	public juce::Timer
+								public juce::Timer
 {
 public:
-	MidiMappingEditorWindow(MidiLearnManager* manager);
+	MidiMappingEditorWindow(MidiLearnManager *manager);
 	~MidiMappingEditorWindow() override;
 
 	void closeButtonPressed() override;
@@ -55,24 +55,24 @@ public:
 
 private:
 	class MidiMappingEditorContent : public juce::Component,
-		public juce::Button::Listener
+									 public juce::Button::Listener
 	{
 	public:
-		MidiMappingEditorContent(MidiLearnManager* manager);
+		MidiMappingEditorContent(MidiLearnManager *manager);
 		~MidiMappingEditorContent() override;
 
-		void paint(juce::Graphics& g) override;
+		void paint(juce::Graphics &g) override;
 		void resized() override;
-		void buttonClicked(juce::Button* button) override;
+		void buttonClicked(juce::Button *button) override;
 
 		void refreshMappingsList();
-		void deleteMapping(const MidiMapping& mapping);
-		void startLearningForMapping(const MidiMapping& mapping);
+		void deleteMapping(const MidiMapping &mapping);
+		void startLearningForMapping(const MidiMapping &mapping);
 
 		juce::OwnedArray<MidiMappingRow> mappingRows;
 
 	private:
-		MidiLearnManager* midiLearnManager = nullptr;
+		MidiLearnManager *midiLearnManager = nullptr;
 
 		CustomLookAndFeel customLookAndFeel;
 
@@ -84,13 +84,11 @@ private:
 		juce::Component mappingsContainer;
 
 		void createMappingRows();
-		void reloadDefaultMappings();
-		void showConfirmationDialog(const juce::String& message, std::function<void()> onConfirm);
 
 		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiMappingEditorContent)
 	};
 
-	MidiLearnManager* midiLearnManager = nullptr;
+	MidiLearnManager *midiLearnManager = nullptr;
 	std::unique_ptr<MidiMappingEditorContent> content;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiMappingEditorWindow)
