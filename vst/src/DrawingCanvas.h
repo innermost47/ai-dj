@@ -3,15 +3,16 @@
 #include "ColourPalette.h"
 #include "PluginProcessor.h"
 #include "CustomLookAndFeel.h"
+#include "ObsidianAlertManager.h"
 
 class KeywordBadge : public juce::TextButton
 {
 public:
-	KeywordBadge(const juce::String& text) : juce::TextButton(text) {}
+	KeywordBadge(const juce::String &text) : juce::TextButton(text) {}
 
-	std::function<void(const juce::MouseEvent&)> onRightClick;
+	std::function<void(const juce::MouseEvent &)> onRightClick;
 
-	void mouseDown(const juce::MouseEvent& e) override
+	void mouseDown(const juce::MouseEvent &e) override
 	{
 		if (e.mods.isRightButtonDown() && onRightClick)
 		{
@@ -32,7 +33,7 @@ public:
 		setColour(juce::TextButton::buttonColourId, color);
 	}
 
-	void paintButton(juce::Graphics& g, bool /*shouldDrawButtonAsHighlighted*/, bool /*shouldDrawButtonAsDown*/) override
+	void paintButton(juce::Graphics &g, bool /*shouldDrawButtonAsHighlighted*/, bool /*shouldDrawButtonAsDown*/) override
 	{
 		auto bounds = getLocalBounds().toFloat();
 
@@ -73,16 +74,16 @@ public:
 			xml.setAttribute("brushSize", brushSize);
 			xml.setAttribute("brushColor", brushColor.toString());
 
-			auto* imageElement = xml.createNewChildElement("Image");
+			auto *imageElement = xml.createNewChildElement("Image");
 			imageElement->setAttribute("data", imageBase64);
 
-			auto* keywordsElement = xml.createNewChildElement("Keywords");
+			auto *keywordsElement = xml.createNewChildElement("Keywords");
 			keywordsElement->setAttribute("data", selectedKeywords.joinIntoString("|"));
 
 			return xml.toString();
 		}
 
-		static CanvasState fromXml(const juce::String& xmlString)
+		static CanvasState fromXml(const juce::String &xmlString)
 		{
 			CanvasState state;
 
@@ -92,12 +93,12 @@ public:
 				state.brushSize = (float)xml->getDoubleAttribute("brushSize", 5.0);
 				state.brushColor = juce::Colour::fromString(xml->getStringAttribute("brushColor", "ff000000"));
 
-				if (auto* imageElement = xml->getChildByName("Image"))
+				if (auto *imageElement = xml->getChildByName("Image"))
 				{
 					state.imageBase64 = imageElement->getStringAttribute("data");
 				}
 
-				if (auto* keywordsElement = xml->getChildByName("Keywords"))
+				if (auto *keywordsElement = xml->getChildByName("Keywords"))
 				{
 					juce::String keywordsData = keywordsElement->getStringAttribute("data");
 					if (keywordsData.isNotEmpty())
@@ -114,15 +115,25 @@ public:
 	CanvasState getState() const
 	{
 		CanvasState state;
-		state.imageBase64 = const_cast<DrawingCanvas*>(this)->getBase64Image();
+		state.imageBase64 = const_cast<DrawingCanvas *>(this)->getBase64Image();
 
 		switch (currentBrushType)
 		{
-		case BrushType::Pencil: state.brushType = 0; break;
-		case BrushType::Brush: state.brushType = 1; break;
-		case BrushType::Airbrush: state.brushType = 2; break;
-		case BrushType::Fill: state.brushType = 3; break;
-		case BrushType::Eraser: state.brushType = 4; break;
+		case BrushType::Pencil:
+			state.brushType = 0;
+			break;
+		case BrushType::Brush:
+			state.brushType = 1;
+			break;
+		case BrushType::Airbrush:
+			state.brushType = 2;
+			break;
+		case BrushType::Fill:
+			state.brushType = 3;
+			break;
+		case BrushType::Eraser:
+			state.brushType = 4;
+			break;
 		}
 
 		state.brushSize = currentBrushSize;
@@ -141,7 +152,7 @@ public:
 		Fill
 	};
 
-	DrawingCanvas(DjIaVstProcessor& proc)
+	DrawingCanvas(DjIaVstProcessor &proc)
 		: audioProcessor(proc)
 	{
 		canvas = juce::Image(juce::Image::RGB, 512, 512, true);
@@ -167,7 +178,7 @@ public:
 		generateButton.setButtonText(generating ? "Generating..." : "Generate");
 	}
 
-	void paint(juce::Graphics& g) override
+	void paint(juce::Graphics &g) override
 	{
 		g.fillAll(ColourPalette::backgroundDeep);
 
@@ -225,10 +236,10 @@ public:
 			int totalWidth = numColumns * (badgeWidth + spacingX) + spacingX;
 
 			keywordsBadgesContainer.setSize(juce::jmax(totalWidth, viewportArea.getWidth()),
-				availableHeight);
+											availableHeight);
 
 			int badgeIndex = 0;
-			for (auto* badge : keywordBadges)
+			for (auto *badge : keywordBadges)
 			{
 				int col = badgeIndex / maxRows;
 				int row = badgeIndex % maxRows;
@@ -280,7 +291,7 @@ public:
 
 			for (int i = 0; i < numSwatches; ++i)
 			{
-				auto* swatch = colorSwatches[i];
+				auto *swatch = colorSwatches[i];
 				swatch->setBounds(colorRow.removeFromLeft(swatchWidth));
 				if (i < numSwatches - 1)
 					colorRow.removeFromLeft(5);
@@ -300,7 +311,7 @@ public:
 		generateButton.setBounds(actionRow);
 	}
 
-	void mouseMove(const juce::MouseEvent& e) override
+	void mouseMove(const juce::MouseEvent &e) override
 	{
 		if (isPointInCanvas(e.getPosition()))
 		{
@@ -312,7 +323,7 @@ public:
 		}
 	}
 
-	void mouseDown(const juce::MouseEvent& e) override
+	void mouseDown(const juce::MouseEvent &e) override
 	{
 		if (isPointInCanvas(e.getPosition()))
 		{
@@ -348,7 +359,7 @@ public:
 		}
 	}
 
-	void mouseDrag(const juce::MouseEvent& e) override
+	void mouseDrag(const juce::MouseEvent &e) override
 	{
 		if (isDrawing && isPointInCanvas(e.getPosition()))
 		{
@@ -364,7 +375,7 @@ public:
 		}
 	}
 
-	void mouseUp(const juce::MouseEvent&) override
+	void mouseUp(const juce::MouseEvent &) override
 	{
 		if (isDrawing)
 		{
@@ -373,7 +384,7 @@ public:
 		isDrawing = false;
 	}
 
-	void drawAtPoint(juce::Graphics& g, juce::Point<int> point)
+	void drawAtPoint(juce::Graphics &g, juce::Point<int> point)
 	{
 		switch (currentBrushType)
 		{
@@ -388,8 +399,7 @@ public:
 				point.x - currentBrushSize / 2.0f,
 				point.y - currentBrushSize / 2.0f,
 				currentBrushSize,
-				currentBrushSize
-			);
+				currentBrushSize);
 			break;
 
 		case BrushType::Airbrush:
@@ -419,13 +429,12 @@ public:
 				point.x - currentBrushSize / 2.0f,
 				point.y - currentBrushSize / 2.0f,
 				currentBrushSize,
-				currentBrushSize
-			);
+				currentBrushSize);
 			break;
 		}
 	}
 
-	void drawLine(juce::Graphics& g, juce::Point<int> from, juce::Point<int> to)
+	void drawLine(juce::Graphics &g, juce::Point<int> from, juce::Point<int> to)
 	{
 		float dx = (float)(to.x - from.x);
 		float dy = (float)(to.y - from.y);
@@ -463,7 +472,7 @@ public:
 			float t = (float)i / steps;
 			int x = (int)(from.x + t * dx);
 			int y = (int)(from.y + t * dy);
-			drawAtPoint(g, { x, y });
+			drawAtPoint(g, {x, y});
 		}
 	}
 
@@ -477,30 +486,24 @@ public:
 	void clearCanvasWithConfirmation()
 	{
 		if (!isShowing() || !isVisible())
-		{
 			return;
-		}
 
-		juce::AlertWindow::showOkCancelBox(
-			juce::MessageBoxIconType::QuestionIcon,
+		ObsidianAlertManager::showConfirm(
 			"Clear Canvas",
 			"Are you sure you want to clear the canvas? This will erase the undo/redo history.",
-			"Clear",
-			"Cancel",
-			nullptr,
-			juce::ModalCallbackFunction::create([this](int result)
+			"Clear", "Cancel",
+			[this](bool confirmed)
+			{
+				if (confirmed && isShowing())
 				{
-					if (result == 1 && isShowing())
-					{
-						juce::Graphics g(canvas);
-						g.fillAll(juce::Colours::white);
-						repaint();
-						undoHistory.clear();
-						historyIndex = -1;
-						updateUndoRedoButtons();
-					}
-				})
-		);
+					juce::Graphics g(canvas);
+					g.fillAll(juce::Colours::white);
+					repaint();
+					undoHistory.clear();
+					historyIndex = -1;
+					updateUndoRedoButtons();
+				}
+			});
 	}
 
 	juce::String getBase64Image()
@@ -513,10 +516,11 @@ public:
 			juce::MemoryBlock block = memStream.getMemoryBlock();
 			juce::String base64 = juce::Base64::toBase64(block.getData(), block.getSize());
 
-
 			int padding = 0;
-			if (base64.endsWith("==")) padding = 2;
-			else if (base64.endsWith("=")) padding = 1;
+			if (base64.endsWith("=="))
+				padding = 2;
+			else if (base64.endsWith("="))
+				padding = 1;
 
 			return base64;
 		}
@@ -524,7 +528,7 @@ public:
 		return {};
 	}
 
-	void loadFromBase64(const juce::String& base64Data)
+	void loadFromBase64(const juce::String &base64Data)
 	{
 		if (base64Data.isEmpty())
 		{
@@ -545,7 +549,6 @@ public:
 		juce::PNGImageFormat pngFormat;
 		auto loadedImage = pngFormat.decodeImage(imageStream);
 
-
 		if (loadedImage.isValid())
 		{
 
@@ -556,7 +559,7 @@ public:
 		}
 	}
 
-	void setState(const CanvasState& state)
+	void setState(const CanvasState &state)
 	{
 		DBG("setState called");
 
@@ -599,7 +602,7 @@ public:
 
 		selectedKeywords = state.selectedKeywords;
 
-		for (auto* badge : keywordBadges)
+		for (auto *badge : keywordBadges)
 		{
 			juce::String keyword = badge->getButtonText();
 			badge->setToggleState(selectedKeywords.contains(keyword), juce::dontSendNotification);
@@ -608,16 +611,16 @@ public:
 		repaint();
 
 		DBG("State restored - brush type: " << state.brushType
-			<< ", size: " << state.brushSize
-			<< ", color: " << state.brushColor.toString()
-			<< ", keywords: " << selectedKeywords.joinIntoString(", "));
+											<< ", size: " << state.brushSize
+											<< ", color: " << state.brushColor.toString()
+											<< ", keywords: " << selectedKeywords.joinIntoString(", "));
 	}
 
-	std::function<void(const juce::String&)> onGenerate;
+	std::function<void(const juce::String &)> onGenerate;
 	std::function<void()> onClose;
 
 private:
-	DjIaVstProcessor& audioProcessor;
+	DjIaVstProcessor &audioProcessor;
 
 	juce::StringArray selectedKeywords;
 	juce::StringArray availableKeywords;
@@ -637,8 +640,7 @@ private:
 			"drums", "bass", "techno", "ambient", "glitch",
 			"synth", "melody", "percussion", "kick", "snare",
 			"hihat", "808", "acid", "reverb", "delay",
-			"distortion", "filter", "groove", "rhythm", "texture"
-		};
+			"distortion", "filter", "groove", "rhythm", "texture"};
 	}
 
 	void updateMouseCursor()
@@ -663,7 +665,7 @@ private:
 		availableKeywords = getDefaultKeywords();
 
 		auto customKeywords = audioProcessor.getCustomKeywords();
-		for (const auto& keyword : customKeywords)
+		for (const auto &keyword : customKeywords)
 		{
 			if (!availableKeywords.contains(keyword))
 			{
@@ -682,13 +684,15 @@ private:
 		keywordInput.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
 		keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep);
 		keywordInput.setTextToShowWhenEmpty("Add keyword...", ColourPalette::textSecondary);
-		keywordInput.onReturnKey = [this]() { addCustomKeyword(); };
+		keywordInput.onReturnKey = [this]()
+		{ addCustomKeyword(); };
 
 		addAndMakeVisible(addKeywordButton);
 		addKeywordButton.setButtonText("+");
 		addKeywordButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 		addKeywordButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-		addKeywordButton.onClick = [this]() { addCustomKeyword(); };
+		addKeywordButton.onClick = [this]()
+		{ addCustomKeyword(); };
 
 		addAndMakeVisible(keywordsViewport);
 		keywordsViewport.setViewedComponent(&keywordsBadgesContainer, false);
@@ -704,9 +708,9 @@ private:
 		juce::StringArray sortedKeywords = availableKeywords;
 		sortedKeywords.sort(true);
 
-		for (const auto& keyword : sortedKeywords)
+		for (const auto &keyword : sortedKeywords)
 		{
-			auto* badge = new KeywordBadge(keyword);
+			auto *badge = new KeywordBadge(keyword);
 			badge->setClickingTogglesState(true);
 			badge->setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
 			badge->setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonPrimary);
@@ -719,14 +723,14 @@ private:
 			}
 
 			badge->onClick = [this, keyword]()
-				{
-					toggleKeyword(keyword);
-				};
+			{
+				toggleKeyword(keyword);
+			};
 
-			badge->onRightClick = [this, badge, keyword](const juce::MouseEvent&)
-				{
-					showKeywordContextMenu(badge, keyword);
-				};
+			badge->onRightClick = [this, badge, keyword](const juce::MouseEvent &)
+			{
+				showKeywordContextMenu(badge, keyword);
+			};
 
 			keywordsBadgesContainer.addAndMakeVisible(badge);
 			keywordBadges.add(badge);
@@ -735,7 +739,7 @@ private:
 		resized();
 	}
 
-	void showKeywordContextMenu(KeywordBadge* badge, const juce::String& keyword)
+	void showKeywordContextMenu(KeywordBadge *badge, const juce::String &keyword)
 	{
 		juce::PopupMenu menu;
 
@@ -755,121 +759,82 @@ private:
 		}
 
 		menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(badge),
-			[this, keyword, isDefaultKeyword](int result)
+						   [this, keyword, isDefaultKeyword](int result)
+						   {
+							   if (result == 1 && !isDefaultKeyword)
+							   {
+								   editKeyword(keyword);
+							   }
+							   else if (result == 2 && !isDefaultKeyword)
+							   {
+								   deleteKeyword(keyword);
+							   }
+						   });
+	}
+
+	void editKeyword(const juce::String &oldKeyword)
+	{
+		ObsidianAlertManager::showEditPrompt(oldKeyword,
+											 [this, oldKeyword](const juce::String &newKeyword)
+											 {
+												 juce::String kw = newKeyword.trim().toLowerCase();
+
+												 if (!isKeywordValid(kw))
+												 {
+													 ObsidianAlertManager::showError("Invalid Keyword",
+																					 "Keyword must be 1-15 characters and contain only letters, numbers, spaces or hyphens.");
+													 return;
+												 }
+												 if (kw != oldKeyword && availableKeywords.contains(kw))
+												 {
+													 ObsidianAlertManager::showError("Duplicate Keyword", "This keyword already exists.");
+													 return;
+												 }
+
+												 int index = availableKeywords.indexOf(oldKeyword);
+												 if (index >= 0)
+													 availableKeywords.set(index, kw);
+
+												 if (selectedKeywords.contains(oldKeyword))
+												 {
+													 selectedKeywords.removeString(oldKeyword);
+													 selectedKeywords.add(kw);
+												 }
+
+												 auto customKeywords = audioProcessor.getCustomKeywords();
+												 if (customKeywords.contains(oldKeyword))
+												 {
+													 juce::StringArray newCustomKeywords;
+													 for (const auto &k : customKeywords)
+														 newCustomKeywords.add(k == oldKeyword ? kw : k);
+													 audioProcessor.setCustomKeywords(newCustomKeywords);
+												 }
+
+												 updateKeywordBadges();
+											 });
+	}
+
+	void deleteKeyword(const juce::String &keyword)
+	{
+		ObsidianAlertManager::showConfirm(
+			"Delete Keyword",
+			"Are you sure you want to delete \"" + keyword + "\"?",
+			"Delete", "Cancel",
+			[this, keyword](bool confirmed)
 			{
-				if (result == 1 && !isDefaultKeyword)
+				if (confirmed)
 				{
-					editKeyword(keyword);
-				}
-				else if (result == 2 && !isDefaultKeyword)
-				{
-					deleteKeyword(keyword);
+					availableKeywords.removeString(keyword);
+					selectedKeywords.removeString(keyword);
+					auto customKeywords = audioProcessor.getCustomKeywords();
+					customKeywords.removeString(keyword);
+					audioProcessor.setCustomKeywords(customKeywords);
+					updateKeywordBadges();
 				}
 			});
 	}
 
-	void editKeyword(const juce::String& oldKeyword)
-	{
-		auto* alertWindow = new juce::AlertWindow(
-			"Edit Keyword",
-			"Enter new keyword name:",
-			juce::MessageBoxIconType::NoIcon
-		);
-
-		alertWindow->addTextEditor("keyword", oldKeyword, "Keyword:");
-		alertWindow->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
-		alertWindow->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
-
-		alertWindow->enterModalState(true, juce::ModalCallbackFunction::create(
-			[this, oldKeyword, alertWindow](int result)
-			{
-				if (result == 1)
-				{
-					juce::String newKeyword = alertWindow->getTextEditorContents("keyword").trim().toLowerCase();
-
-					if (!isKeywordValid(newKeyword))
-					{
-						juce::AlertWindow::showMessageBoxAsync(
-							juce::MessageBoxIconType::WarningIcon,
-							"Invalid Keyword",
-							"Keyword must be 1-15 characters and contain only letters, numbers, spaces or hyphens.");
-						return;
-					}
-
-					if (newKeyword != oldKeyword && availableKeywords.contains(newKeyword))
-					{
-						juce::AlertWindow::showMessageBoxAsync(
-							juce::MessageBoxIconType::WarningIcon,
-							"Duplicate Keyword",
-							"This keyword already exists.");
-						return;
-					}
-
-					int index = availableKeywords.indexOf(oldKeyword);
-					if (index >= 0)
-					{
-						availableKeywords.set(index, newKeyword);
-					}
-
-					if (selectedKeywords.contains(oldKeyword))
-					{
-						selectedKeywords.removeString(oldKeyword);
-						selectedKeywords.add(newKeyword);
-					}
-
-					auto customKeywords = audioProcessor.getCustomKeywords();
-					if (customKeywords.contains(oldKeyword))
-					{
-						juce::StringArray newCustomKeywords;
-						for (const auto& kw : customKeywords)
-						{
-							if (kw == oldKeyword)
-								newCustomKeywords.add(newKeyword);
-							else
-								newCustomKeywords.add(kw);
-						}
-						audioProcessor.setCustomKeywords(newCustomKeywords);
-					}
-
-					updateKeywordBadges();
-
-					DBG("Keyword renamed: " << oldKeyword << " -> " << newKeyword);
-				}
-
-				delete alertWindow;
-			}), true);
-	}
-
-	void deleteKeyword(const juce::String& keyword)
-	{
-		juce::AlertWindow::showOkCancelBox(
-			juce::MessageBoxIconType::QuestionIcon,
-			"Delete Keyword",
-			"Are you sure you want to delete \"" + keyword + "\"?",
-			"Delete",
-			"Cancel",
-			nullptr,
-			juce::ModalCallbackFunction::create([this, keyword](int result)
-				{
-					if (result == 1)
-					{
-						availableKeywords.removeString(keyword);
-
-						selectedKeywords.removeString(keyword);
-
-						auto customKeywords = audioProcessor.getCustomKeywords();
-						customKeywords.removeString(keyword);
-						audioProcessor.setCustomKeywords(customKeywords);
-
-						updateKeywordBadges();
-
-						DBG("Keyword deleted: " << keyword);
-					}
-				})
-		);
-	}
-
-	void toggleKeyword(const juce::String& keyword)
+	void toggleKeyword(const juce::String &keyword)
 	{
 		if (selectedKeywords.contains(keyword))
 		{
@@ -885,7 +850,7 @@ private:
 		DBG("Selected keywords: " + selectedKeywords.joinIntoString(", "));
 	}
 
-	bool isKeywordValid(const juce::String& keyword) const
+	bool isKeywordValid(const juce::String &keyword) const
 	{
 		if (keyword.trim().isEmpty())
 			return false;
@@ -912,9 +877,7 @@ private:
 		{
 			keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonDanger);
 			juce::Timer::callAfterDelay(500, [this]()
-				{
-					keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep);
-				});
+										{ keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
 			return;
 		}
 
@@ -922,9 +885,7 @@ private:
 		{
 			keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonWarning);
 			juce::Timer::callAfterDelay(500, [this]()
-				{
-					keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep);
-				});
+										{ keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
 			keywordInput.clear();
 			return;
 		}
@@ -938,26 +899,24 @@ private:
 
 		keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonSuccess);
 		juce::Timer::callAfterDelay(500, [this]()
-			{
-				keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep);
-			});
+									{ keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
 
 		DBG("Custom keyword added: " + newKeyword);
 	}
 
 	bool isGenerating = false;
 
-	juce::TextButton* selectedColorSwatch = nullptr;
+	juce::TextButton *selectedColorSwatch = nullptr;
 
 	void updateColorSwatchSelection()
 	{
-		for (auto* swatch : colorSwatches)
+		for (auto *swatch : colorSwatches)
 		{
 			swatch->setToggleState(false, juce::dontSendNotification);
 		}
 
 		bool colorFound = false;
-		for (auto* swatch : colorSwatches)
+		for (auto *swatch : colorSwatches)
 		{
 			auto swatchColor = swatch->findColour(juce::TextButton::buttonColourId);
 			if (swatchColor == currentColor)
@@ -975,12 +934,11 @@ private:
 			DBG("Warning: No matching color swatch found for " << currentColor.toString());
 		}
 
-		for (auto* swatch : colorSwatches)
+		for (auto *swatch : colorSwatches)
 		{
 			swatch->repaint();
 		}
 	}
-
 
 	void timerCallback() override
 	{
@@ -1013,10 +971,9 @@ private:
 		pencilButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		pencilButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
 		pencilButton.onClick = [this]
-			{
-				currentBrushType = BrushType::Pencil;
-			};
-
+		{
+			currentBrushType = BrushType::Pencil;
+		};
 
 		addAndMakeVisible(brushButton);
 		brushButton.setButtonText("Brush");
@@ -1027,9 +984,9 @@ private:
 		brushButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		brushButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
 		brushButton.onClick = [this]
-			{
-				currentBrushType = BrushType::Brush;
-			};
+		{
+			currentBrushType = BrushType::Brush;
+		};
 
 		addAndMakeVisible(airbrushButton);
 		airbrushButton.setButtonText("Spray");
@@ -1040,9 +997,9 @@ private:
 		airbrushButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		airbrushButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
 		airbrushButton.onClick = [this]
-			{
-				currentBrushType = BrushType::Airbrush;
-			};
+		{
+			currentBrushType = BrushType::Airbrush;
+		};
 
 		addAndMakeVisible(eraserButton);
 		eraserButton.setButtonText("Eraser");
@@ -1053,9 +1010,9 @@ private:
 		eraserButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		eraserButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
 		eraserButton.onClick = [this]
-			{
-				currentBrushType = BrushType::Eraser;
-			};
+		{
+			currentBrushType = BrushType::Eraser;
+		};
 
 		addAndMakeVisible(fillButton);
 		fillButton.setButtonText("Fill");
@@ -1066,9 +1023,9 @@ private:
 		fillButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		fillButton.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
 		fillButton.onClick = [this]
-			{
-				currentBrushType = BrushType::Fill;
-			};
+		{
+			currentBrushType = BrushType::Fill;
+		};
 
 		addAndMakeVisible(brushSizeLabel);
 		brushSizeLabel.setText("Size:", juce::dontSendNotification);
@@ -1084,9 +1041,9 @@ private:
 		brushSizeSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
 		brushSizeSlider.setColour(juce::Slider::textBoxTextColourId, ColourPalette::textPrimary);
 		brushSizeSlider.onValueChange = [this]
-			{
-				currentBrushSize = (float)brushSizeSlider.getValue();
-			};
+		{
+			currentBrushSize = (float)brushSizeSlider.getValue();
+		};
 
 		addAndMakeVisible(colorLabel);
 		colorLabel.setText("Color:", juce::dontSendNotification);
@@ -1094,21 +1051,20 @@ private:
 		colorLabel.setJustificationType(juce::Justification::centredRight);
 
 		juce::Array<juce::Colour> colors = {
-			   juce::Colours::black,
-			   juce::Colours::red,
-			   juce::Colours::blue,
-			   juce::Colours::green,
-			   juce::Colours::yellow,
-			   juce::Colours::orange,
-			   juce::Colours::purple,
-			   juce::Colours::brown,
-			   juce::Colours::grey,
-			   juce::Colours::white
-		};
+			juce::Colours::black,
+			juce::Colours::red,
+			juce::Colours::blue,
+			juce::Colours::green,
+			juce::Colours::yellow,
+			juce::Colours::orange,
+			juce::Colours::purple,
+			juce::Colours::brown,
+			juce::Colours::grey,
+			juce::Colours::white};
 
 		for (auto c : colors)
 		{
-			auto* b = new ColorSwatch(c);
+			auto *b = new ColorSwatch(c);
 			addAndMakeVisible(b);
 			b->setClickingTogglesState(true);
 			b->setRadioGroupId(2);
@@ -1119,10 +1075,10 @@ private:
 			}
 
 			b->onClick = [this, c]()
-				{
-					currentColor = c;
-					DBG("Color changed to: " << c.toString());
-				};
+			{
+				currentColor = c;
+				DBG("Color changed to: " << c.toString());
+			};
 
 			colorSwatches.add(b);
 		}
@@ -1131,20 +1087,23 @@ private:
 		clearButton.setButtonText("Clear");
 		clearButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 		clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-		clearButton.onClick = [this] { clearCanvasWithConfirmation(); };
+		clearButton.onClick = [this]
+		{ clearCanvasWithConfirmation(); };
 
 		addAndMakeVisible(undoButton);
 		undoButton.setButtonText("Undo");
 		undoButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
 		undoButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
-		undoButton.onClick = [this] { undo(); };
+		undoButton.onClick = [this]
+		{ undo(); };
 		undoButton.setEnabled(false);
 
 		addAndMakeVisible(redoButton);
 		redoButton.setButtonText("Redo");
 		redoButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
 		redoButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
-		redoButton.onClick = [this] { redo(); };
+		redoButton.onClick = [this]
+		{ redo(); };
 		redoButton.setEnabled(false);
 
 		addAndMakeVisible(generateButton);
@@ -1152,14 +1111,14 @@ private:
 		generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 		generateButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		generateButton.onClick = [this]
+		{
+			if (onGenerate && !isGenerating)
 			{
-				if (onGenerate && !isGenerating)
-				{
-					onGenerate(getBase64Image());
-				}
-			};
+				onGenerate(getBase64Image());
+			}
+		};
 
-		for (auto* swatch : colorSwatches)
+		for (auto *swatch : colorSwatches)
 		{
 			swatch->setSize(28, 28);
 		}
@@ -1177,7 +1136,7 @@ private:
 	{
 		if (!forceAdd && !undoHistory.empty() && historyIndex >= 0)
 		{
-			auto& lastImage = undoHistory[historyIndex];
+			auto &lastImage = undoHistory[historyIndex];
 			if (imagesAreEqual(canvas, lastImage))
 			{
 				return;
@@ -1203,7 +1162,7 @@ private:
 		updateUndoRedoButtons();
 	}
 
-	bool imagesAreEqual(const juce::Image& img1, const juce::Image& img2)
+	bool imagesAreEqual(const juce::Image &img1, const juce::Image &img2)
 	{
 		if (img1.getWidth() != img2.getWidth() || img1.getHeight() != img2.getHeight())
 			return false;
@@ -1253,31 +1212,35 @@ private:
 
 	void floodFill(int x, int y, juce::Colour targetColor, juce::Colour replacementColor)
 	{
-		if (targetColor == replacementColor) return;
-		if (!canvas.getBounds().contains(x, y)) return;
+		if (targetColor == replacementColor)
+			return;
+		if (!canvas.getBounds().contains(x, y))
+			return;
 
 		std::vector<juce::Point<int>> stack;
-		stack.push_back({ x, y });
+		stack.push_back({x, y});
 
 		while (!stack.empty())
 		{
 			auto p = stack.back();
 			stack.pop_back();
 
-			if (!canvas.getBounds().contains(p.x, p.y)) continue;
-			if (canvas.getPixelAt(p.x, p.y) != targetColor) continue;
+			if (!canvas.getBounds().contains(p.x, p.y))
+				continue;
+			if (canvas.getPixelAt(p.x, p.y) != targetColor)
+				continue;
 
 			canvas.setPixelAt(p.x, p.y, replacementColor);
 
-			stack.push_back({ p.x + 1, p.y });
-			stack.push_back({ p.x - 1, p.y });
-			stack.push_back({ p.x, p.y + 1 });
-			stack.push_back({ p.x, p.y - 1 });
+			stack.push_back({p.x + 1, p.y});
+			stack.push_back({p.x - 1, p.y});
+			stack.push_back({p.x, p.y + 1});
+			stack.push_back({p.x, p.y - 1});
 		}
 		repaint();
 	}
 
-	bool keyPressed(const juce::KeyPress& key) override
+	bool keyPressed(const juce::KeyPress &key) override
 	{
 		if (key == juce::KeyPress('z', juce::ModifierKeys::commandModifier, 0))
 		{
@@ -1292,7 +1255,6 @@ private:
 		}
 		return false;
 	}
-
 
 	juce::Image canvas;
 	juce::Rectangle<int> canvasAreaBounds;

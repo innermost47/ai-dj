@@ -4,25 +4,27 @@
 #include "SequencerComponent.h"
 #include "version.h"
 #include "ColourPalette.h"
+#include "ObsidianAlertManager.h"
 #if JUCE_WINDOWS
 #include <windows.h>
 #include <winuser.h>
 #endif
 
-DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
+DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p)
 	: AudioProcessorEditor(&p), audioProcessor(p)
 {
 	setResizable(false, false);
 	setSize(1300, 800);
 	setScaleFactor(1.0f);
 	setLookAndFeel(&customLookAndFeel);
+	ObsidianAlertManager::initialize();
 	setWantsKeyboardFocus(true);
 	setMouseClickGrabsKeyboardFocus(false);
 	setFocusContainerType(FocusContainerType::focusContainer);
 	setInterceptsMouseClicks(true, true);
 	tooltipWindow = std::make_unique<juce::TooltipWindow>(this, 700);
 	logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_png,
-		BinaryData::logo_pngSize);
+												BinaryData::logo_pngSize);
 	audioProcessor.setGenerationListener(this);
 	if (audioProcessor.isStateReady())
 	{
@@ -32,7 +34,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 		startTimer(50);
 
 	juce::Timer::callAfterDelay(300, [this]()
-		{
+								{
 			loadPromptPresets();
 			refreshTracks();
 			refreshWavevormsAndSequencers();
@@ -52,8 +54,8 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 					}
 				}
 			} });
-			juce::Timer::callAfterDelay(4000, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-				{
+	juce::Timer::callAfterDelay(4000, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+								{
 					if (auto* editor = safeThis.getComponent())
 					{
 						if (!editor->audioProcessor.updateCheckDone)
@@ -61,8 +63,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 							editor->audioProcessor.updateCheckDone = true;
 							editor->checkForUpdates();
 						}
-					}
-				});
+					} });
 }
 
 DjIaVstEditor::~DjIaVstEditor()
@@ -70,6 +71,7 @@ DjIaVstEditor::~DjIaVstEditor()
 	audioProcessor.onUIUpdateNeeded = nullptr;
 	audioProcessor.setGenerationListener(nullptr);
 	audioProcessor.getMidiLearnManager().registerUICallback("promptPresetSelector", nullptr);
+	ObsidianAlertManager::shutdown();
 	setLookAndFeel(nullptr);
 	if (midiEditorWindow != nullptr)
 	{
@@ -81,7 +83,7 @@ DjIaVstEditor::~DjIaVstEditor()
 
 void DjIaVstEditor::refreshWavevormsAndSequencers()
 {
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrack() && trackComp->getTrack()->showWaveform)
 		{
@@ -106,11 +108,11 @@ bool DjIaVstEditor::keyStateChanged(bool isKeyDown)
 	return false;
 }
 
-void DjIaVstEditor::updateMidiIndicator(const juce::String& noteInfo)
+void DjIaVstEditor::updateMidiIndicator(const juce::String &noteInfo)
 {
 	lastMidiNote = noteInfo;
 	juce::MessageManager::callAsync([this, noteInfo]()
-		{
+									{
 			if (midiIndicator.isShowing())
 			{
 				midiIndicator.setText(noteInfo, juce::dontSendNotification);
@@ -135,11 +137,11 @@ void DjIaVstEditor::updateUIComponents()
 		startGenerationButtonAnimation();
 		startTimer(200);
 	}
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->isShowing())
 		{
-			TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
+			TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
 			if (track && !trackComp->isEditingLabel)
 			{
 				trackComp->updateFromTrackData();
@@ -167,9 +169,9 @@ void DjIaVstEditor::updateUIComponents()
 		updateLoadButtonState();
 	}
 
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
-		TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
+		TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
 		if (track && track->isPlaying.load() && track->numSamples > 0)
 		{
 			double startSample = track->loopStart * track->sampleRate;
@@ -183,7 +185,7 @@ void DjIaVstEditor::updateUIComponents()
 	bool isCurrentlyGenerating = generateButton.isEnabled() == false;
 	if (currentWasGenerating && !isCurrentlyGenerating)
 	{
-		for (auto& trackComp : trackComponents)
+		for (auto &trackComp : trackComponents)
 		{
 			trackComp->refreshWaveformIfNeeded();
 		}
@@ -191,7 +193,7 @@ void DjIaVstEditor::updateUIComponents()
 	currentWasGenerating = isCurrentlyGenerating;
 }
 
-void DjIaVstEditor::onGenerationComplete(const juce::String& trackId, const juce::String& message)
+void DjIaVstEditor::onGenerationComplete(const juce::String &trackId, const juce::String &message)
 {
 	bool isError = message.startsWith("ERROR:");
 	stopGenerationUI(trackId, !isError, isError ? message : "");
@@ -204,25 +206,23 @@ void DjIaVstEditor::onGenerationComplete(const juce::String& trackId, const juce
 		{
 			statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
 			juce::Timer::callAfterDelay(5000, [this]()
-				{
+										{
 					if (isShowing())
 					{
 						statusLabel.setText("Ready", juce::dontSendNotification);
 						statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-					}
-				});
+					} });
 		}
 		else
 		{
 			statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 			juce::Timer::callAfterDelay(3000, [this]()
-				{
+										{
 					if (isShowing())
 					{
 						statusLabel.setText("Ready", juce::dontSendNotification);
 						statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-					}
-				});
+					} });
 		}
 	}
 	refreshCredits();
@@ -251,97 +251,52 @@ void DjIaVstEditor::initUI()
 	if (audioProcessor.getServerUrl().isEmpty())
 	{
 		juce::Timer::callAfterDelay(500, [this]()
-			{ showFirstTimeSetup(); });
+									{ showFirstTimeSetup(); });
 	}
 	isInitialized.store(true);
 	juce::WeakReference<DjIaVstEditor> weakThis(this);
-	audioProcessor.setMidiIndicatorCallback([weakThis](const juce::String& noteInfo)
-		{
+	audioProcessor.setMidiIndicatorCallback([weakThis](const juce::String &noteInfo)
+											{
 			if (weakThis != nullptr) {
 				weakThis->updateMidiIndicator(noteInfo);
 			} });
-			loadPromptPresets();
-			refreshTracks();
-			audioProcessor.onUIUpdateNeeded = [this]()
-				{
-					juce::MessageManager::callAsync([this]()
-						{ updateUIComponents(); });
-				};
+	loadPromptPresets();
+	refreshTracks();
+	audioProcessor.onUIUpdateNeeded = [this]()
+	{
+		juce::MessageManager::callAsync([this]()
+										{ updateUIComponents(); });
+	};
 }
 
 void DjIaVstEditor::showFirstTimeSetup()
 {
-	auto alertWindow = std::make_unique<juce::AlertWindow>(
+	ObsidianAlertManager::showConfigDialog(
 		"OBSIDIAN-Neural Configuration " + Version::FULL,
-		"Choose your generation method.\n\n"
-		"No API key yet? Get your free account at:\n"
-		"obsidian-neural.com\n\n"
-		"7-day free trial - 100 credits included - no credit card required.",
-		juce::MessageBoxIconType::InfoIcon);
-
-	juce::StringArray modes;
-	modes.add("Server/API (Full features + stems separation)");
-	modes.add("Local Model (Basic - requires manual setup)");
-	alertWindow->addComboBox("generationMode", modes, "Generation Mode:");
-	if (auto* modeCombo = alertWindow->getComboBoxComponent("generationMode"))
-	{
-		modeCombo->setSelectedItemIndex(audioProcessor.getUseLocalModel() ? 1 : 0);
-	}
-
-	alertWindow->addTextEditor("serverUrl",
-		audioProcessor.getServerUrl().isEmpty() ? "http://localhost:8000" : audioProcessor.getServerUrl(),
-		"Server URL:");
-	alertWindow->addTextEditor("apiKey", "", "API Key:");
-	if (auto* apiKeyEditor = alertWindow->getTextEditor("apiKey"))
-	{
-		apiKeyEditor->setPasswordCharacter('*');
-	}
-
-	juce::StringArray timeouts = { "1 minute", "2 minutes", "5 minutes", "10 minutes", "15 minutes", "20 minutes", "30 minutes", "45 minutes" };
-	alertWindow->addComboBox("requestTimeout", timeouts, "Request Timeout:");
-	if (auto* timeoutCombo = alertWindow->getComboBoxComponent("requestTimeout"))
-	{
-		timeoutCombo->setSelectedItemIndex(2);
-	}
-
-	alertWindow->addButton("Save & Continue", 1);
-	alertWindow->addButton("Skip for now", 0);
-
-	auto* windowPtr = alertWindow.get();
-	alertWindow.release()->enterModalState(true, juce::ModalCallbackFunction::create([this, windowPtr](int result)
+		audioProcessor.getServerUrl(),
+		audioProcessor.getApiKey(),
+		audioProcessor.getUseLocalModel(),
+		audioProcessor.getRequestTimeout(),
+		true,
+		[this](const ObsidianAlertManager::ConfigDialogResult &res)
 		{
-			if (result == 1) {
-				auto* modeCombo = windowPtr->getComboBoxComponent("generationMode");
-				auto* urlEditor = windowPtr->getTextEditor("serverUrl");
-				auto* keyEditor = windowPtr->getTextEditor("apiKey");
-				auto* timeoutCombo = windowPtr->getComboBoxComponent("requestTimeout");
+			if (!res.confirmed)
+				return;
 
-				if (modeCombo && urlEditor && keyEditor && timeoutCombo) {
-					bool useLocal = (modeCombo->getSelectedItemIndex() == 1);
-					audioProcessor.setUseLocalModel(useLocal);
-
-					if (useLocal) {
-						checkLocalModelsAndNotify();
-					}
-					else {
-						audioProcessor.setServerUrl(urlEditor->getText());
-						audioProcessor.setApiKey(keyEditor->getText());
-					}
-
-					juce::Array<int> timeoutMinutes = { 1, 2, 5, 10, 15, 20, 30, 45 };
-					int selectedTimeoutMs = timeoutMinutes[timeoutCombo->getSelectedItemIndex()] * 60 * 1000;
-					audioProcessor.setRequestTimeout(selectedTimeoutMs);
-					audioProcessor.saveGlobalConfig();
-
-					if (!useLocal) {
-						statusLabel.setText("Configuration saved!", juce::dontSendNotification);
-					}
-					refreshUIForMode();
-					juce::Timer::callAfterDelay(400, [this]() { showOnboardingTour(); });
-				}
+			audioProcessor.setUseLocalModel(res.useLocalModel);
+			if (res.useLocalModel)
+				checkLocalModelsAndNotify();
+			else
+			{
+				audioProcessor.setServerUrl(res.serverUrl);
+				audioProcessor.setApiKey(res.apiKey);
 			}
-			windowPtr->exitModalState(result);
-			delete windowPtr; }));
+			audioProcessor.setRequestTimeout(res.timeoutMs);
+			audioProcessor.saveGlobalConfig();
+			refreshUIForMode();
+			juce::Timer::callAfterDelay(400, [this]()
+										{ showOnboardingTour(); });
+		});
 }
 
 void DjIaVstEditor::showOnboardingTour()
@@ -363,72 +318,60 @@ void DjIaVstEditor::showOnboardingStep(int step)
 	};
 
 	std::vector<StepInfo> steps = {
-		{
-			"OBSIDIAN Neural - Step 1 / 3",
-			"Welcome! Let's generate your first sound in 3 steps.\n\n"
-			"STEP 1: Choose a prompt\n\n"
-			"At the top of the interface, you'll see a dropdown\n"
-			"and a text field. This is where you describe the sound\n"
-			"you want to generate.\n\n"
-			"Example: \"Dark techno bassline\", \"Ambient guitar loop\"\n\n"
-			"Select a preset from the dropdown, or type your own.",
-			"Next ->",
-			"Skip tour"
-		},
-		{
-			"OBSIDIAN Neural - Step 2 / 3",
-			"STEP 2: Hit Generate\n\n"
-			"Once your prompt is ready, click the [>] button\n"
-			"to the right of the text field.\n\n"
-			"The AI will generate a sample for the selected track.\n"
-			"This takes about 10-30 seconds - perfectly normal!\n\n"
-			"You'll see a generation animation on the track\n"
-			"while it's working.",
-			"Next ->",
-			"Skip tour"
-		},
-		{
-			"OBSIDIAN Neural - Step 3 / 3",
-			"STEP 3: Play it back\n\n"
-			"Once generated, a waveform appears on your track.\n\n"
-			"To preview instantly:\n"
-			"  - Click the Play button on the track (left side)\n\n"
-			"To play in sync with your DAW:\n"
-			"  - Enable a step in the sequencer on the track\n"
-			"  - Click Play on the matching Mixer channel (right panel)\n"
-			"  - Press Play in your DAW\n\n"
-			"Tip: hover any button to see a tooltip.\n\n"
-			"Full setup guide: obsidian-neural.com -> Documentation\n\n"
-			"That's it - you're ready to create. Enjoy!",
-			"Let's go!",
-			"Skip"
-		}
-	};
+		{"OBSIDIAN Neural - Step 1 / 3",
+		 "Welcome! Let's generate your first sound in 3 steps.\n\n"
+		 "STEP 1: Choose a prompt\n\n"
+		 "At the top of the interface, you'll see a dropdown\n"
+		 "and a text field. This is where you describe the sound\n"
+		 "you want to generate.\n\n"
+		 "Example: \"Dark techno bassline\", \"Ambient guitar loop\"\n\n"
+		 "Select a preset from the dropdown, or type your own.",
+		 "Next ->",
+		 "Skip tour"},
+		{"OBSIDIAN Neural - Step 2 / 3",
+		 "STEP 2: Hit Generate\n\n"
+		 "Once your prompt is ready, click the [>] button\n"
+		 "to the right of the text field.\n\n"
+		 "The AI will generate a sample for the selected track.\n"
+		 "This takes about 10-30 seconds - perfectly normal!\n\n"
+		 "You'll see a generation animation on the track\n"
+		 "while it's working.",
+		 "Next ->",
+		 "Skip tour"},
+		{"OBSIDIAN Neural - Step 3 / 3",
+		 "STEP 3: Play it back\n\n"
+		 "Once generated, a waveform appears on your track.\n\n"
+		 "To preview instantly:\n"
+		 "  - Click the Play button on the track (left side)\n\n"
+		 "To play in sync with your DAW:\n"
+		 "  - Enable a step in the sequencer on the track\n"
+		 "  - Click Play on the matching Mixer channel (right panel)\n"
+		 "  - Press Play in your DAW\n\n"
+		 "Tip: hover any button to see a tooltip.\n\n"
+		 "Full setup guide: obsidian-neural.com -> Documentation\n\n"
+		 "That's it - you're ready to create. Enjoy!",
+		 "Let's go!",
+		 "Skip"}};
 
-	if (step < 1 || step >(int)steps.size())
+	if (step < 1 || step > (int)steps.size())
 		return;
 
-	const auto& info = steps[step - 1];
+	const auto &info = steps[step - 1];
 	bool isLastStep = (step == steps.size());
 
-	auto* alertWindow = new juce::AlertWindow(
+	auto *alertWindow = new juce::AlertWindow(
 		info.title,
 		info.message,
 		juce::MessageBoxIconType::InfoIcon);
 
-	alertWindow->setColour(juce::AlertWindow::backgroundColourId,
-		ColourPalette::backgroundDeep);
-	alertWindow->setColour(juce::AlertWindow::textColourId,
-		ColourPalette::textPrimary);
-	alertWindow->setColour(juce::AlertWindow::outlineColourId,
-		ColourPalette::textAccent.withAlpha(0.4f));
+	ObsidianAlertManager::applyThemeToAlertWindow(alertWindow);
 
 	alertWindow->addButton(info.buttonNext, 1);
 	alertWindow->addButton(info.buttonSkip, 0);
 
 	alertWindow->enterModalState(true,
-		juce::ModalCallbackFunction::create([this, alertWindow, step, isLastStep](int result)
-			{
+								 juce::ModalCallbackFunction::create([this, alertWindow, step, isLastStep](int result)
+																	 {
 				alertWindow->exitModalState(result);
 				delete alertWindow;
 
@@ -453,17 +396,15 @@ void DjIaVstEditor::showOnboardingStep(int step)
 						statusLabel.setColour(juce::Label::textColourId,
 							ColourPalette::violet);
 					}
-				}
-			}),
-		true);
+				} }),
+								 true);
 	juce::Timer::callAfterDelay(100, [alertWindow]()
-		{
+								{
 			if (alertWindow != nullptr)
 			{
 				alertWindow->toFront(true);
 				alertWindow->grabKeyboardFocus();
-			}
-		});
+			} });
 }
 
 void DjIaVstEditor::refreshUIForMode()
@@ -478,106 +419,44 @@ void DjIaVstEditor::refreshUIForMode()
 
 void DjIaVstEditor::showConfigDialog()
 {
-	auto alertWindow = std::make_unique<juce::AlertWindow>(
+	ObsidianAlertManager::showConfigDialog(
 		"OBSIDIAN-Neural Configuration " + Version::FULL,
-		"Update your settings:",
-		juce::MessageBoxIconType::QuestionIcon);
-
-	juce::StringArray modes;
-	modes.add("Server/API (Full features + stems separation)");
-	modes.add("Local Model (Basic - requires manual setup)");
-	alertWindow->addComboBox("generationMode", modes, "Generation Mode:");
-	if (auto* modeCombo = alertWindow->getComboBoxComponent("generationMode"))
-	{
-		modeCombo->setSelectedItemIndex(audioProcessor.getUseLocalModel() ? 1 : 0);
-	}
-
-	alertWindow->addTextEditor("serverUrl", audioProcessor.getServerUrl(), "Server URL:");
-	alertWindow->addTextEditor("apiKey", "", "API Key (leave blank to keep current):");
-	if (auto* apiKeyEditor = alertWindow->getTextEditor("apiKey"))
-	{
-		apiKeyEditor->setPasswordCharacter('*');
-	}
-
-	juce::StringArray timeouts = { "1 minute", "2 minutes", "5 minutes", "10 minutes", "15 minutes", "20 minutes", "30 minutes", "45 minutes" };
-	alertWindow->addComboBox("requestTimeout", timeouts, "Request Timeout:");
-	if (auto* timeoutCombo = alertWindow->getComboBoxComponent("requestTimeout"))
-	{
-		int currentTimeoutMs = audioProcessor.getRequestTimeout();
-		int currentTimeoutMinutes = currentTimeoutMs / (60 * 1000);
-		juce::Array<int> timeoutValues = { 1, 2, 5, 10, 15, 20, 30, 45 };
-		int selectedIndex = 2;
-		for (int i = 0; i < timeoutValues.size(); ++i)
+		audioProcessor.getServerUrl(),
+		audioProcessor.getApiKey(),
+		audioProcessor.getUseLocalModel(),
+		audioProcessor.getRequestTimeout(),
+		false,
+		[this](const ObsidianAlertManager::ConfigDialogResult &res)
 		{
-			if (timeoutValues[i] == currentTimeoutMinutes)
+			if (!res.confirmed)
+				return;
+
+			bool modeChanged = (res.useLocalModel != audioProcessor.getUseLocalModel());
+			audioProcessor.setUseLocalModel(res.useLocalModel);
+
+			if (res.useLocalModel)
+				checkLocalModelsAndNotify();
+			else
 			{
-				selectedIndex = i;
-				break;
+				audioProcessor.setServerUrl(res.serverUrl);
+				if (res.apiKey.isNotEmpty())
+					audioProcessor.setApiKey(res.apiKey);
 			}
-		}
-		timeoutCombo->setSelectedItemIndex(selectedIndex);
-	}
+			audioProcessor.setRequestTimeout(res.timeoutMs);
+			audioProcessor.saveGlobalConfig();
 
-	alertWindow->addButton("Update", 1);
-	alertWindow->addButton("Cancel", 0);
-
-	auto* windowPtr = alertWindow.get();
-	alertWindow.release()->enterModalState(true, juce::ModalCallbackFunction::create([this, windowPtr](int result)
-		{
-			if (result == 1) {
-				auto* modeCombo = windowPtr->getComboBoxComponent("generationMode");
-				auto* urlEditor = windowPtr->getTextEditor("serverUrl");
-				auto* keyEditor = windowPtr->getTextEditor("apiKey");
-				auto* timeoutCombo = windowPtr->getComboBoxComponent("requestTimeout");
-
-				if (modeCombo && urlEditor && keyEditor && timeoutCombo) {
-					bool useLocal = (modeCombo->getSelectedItemIndex() == 1);
-					bool modeChanged = (useLocal != audioProcessor.getUseLocalModel());
-
-					audioProcessor.setUseLocalModel(useLocal);
-
-					if (useLocal) {
-						checkLocalModelsAndNotify();
-					}
-					else {
-						audioProcessor.setServerUrl(urlEditor->getText());
-						juce::String newKey = keyEditor->getText();
-						if (newKey.isNotEmpty()) {
-							audioProcessor.setApiKey(newKey);
-						}
-					}
-
-					juce::Array<int> timeoutMinutes = { 1, 2, 5, 10, 15, 20, 30, 45 };
-					int selectedTimeoutMs = timeoutMinutes[timeoutCombo->getSelectedItemIndex()] * 60 * 1000;
-					audioProcessor.setRequestTimeout(selectedTimeoutMs);
-
-					audioProcessor.saveGlobalConfig();
-
-					if (modeChanged) {
-						refreshUIForMode();
-						statusLabel.setText("Mode changed! Configuration updated.", juce::dontSendNotification);
-					}
-					else {
-						statusLabel.setText("Configuration updated!", juce::dontSendNotification);
-					}
-
-					statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-
-					juce::Timer::callAfterDelay(3000, [this]() {
-						statusLabel.setText("Ready", juce::dontSendNotification);
-						statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-						});
-				}
-			}
-			windowPtr->setLookAndFeel(nullptr);
-			windowPtr->exitModalState(result);
-			delete windowPtr; }));
+			if (modeChanged)
+				refreshUIForMode();
+			setStatusWithTimeout(modeChanged ? "Mode changed! Configuration updated."
+											 : "Configuration updated.",
+								 3000);
+		});
 }
 
 void DjIaVstEditor::checkLocalModelsAndNotify()
 {
 	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		.getChildFile("OBSIDIAN-Neural");
+						  .getChildFile("OBSIDIAN-Neural");
 	auto stableAudioDir = appDataDir.getChildFile("stable-audio");
 
 	StableAudioEngine tempEngine;
@@ -590,24 +469,15 @@ void DjIaVstEditor::checkLocalModelsAndNotify()
 	}
 	else
 	{
-		juce::AlertWindow::showAsync(
-			juce::MessageBoxOptions()
-			.withIconType(juce::MessageBoxIconType::InfoIcon)
-			.withTitle("Local Models Required")
-			.withMessage("Local models not found!\n\n"
-				"You need to download and setup the required model files.\n"
-				"Please follow the setup instructions on GitHub.\n\n"
-				"Expected location: " +
-				stableAudioDir.getFullPathName())
-			.withButton("Open GitHub Instructions")
-			.withButton("OK"),
-			[this](int result)
+		ObsidianAlertManager::showConfirm(
+			"Local Models Required",
+			"Local models not found!\n\nExpected location: " + stableAudioDir.getFullPathName(),
+			"Open GitHub Instructions", "OK",
+			[](bool confirmed)
 			{
-				if (result == 1)
-				{
-					juce::URL githubUrl("https://github.com/innermost47/ai-dj/blob/main/README.md");
-					githubUrl.launchInDefaultBrowser();
-				}
+				if (confirmed)
+					juce::URL("https://github.com/innermost47/ai-dj/blob/main/README.md")
+						.launchInDefaultBrowser();
 			});
 
 		statusLabel.setText("Local mode selected - Models setup required", juce::dontSendNotification);
@@ -626,11 +496,11 @@ void DjIaVstEditor::timerCallback()
 		}
 		bool anyTrackPlaying = false;
 
-		for (auto& trackComp : trackComponents)
+		for (auto &trackComp : trackComponents)
 		{
 			if (trackComp->isShowing())
 			{
-				TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
+				TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
 				if (track && track->isPlaying.load())
 				{
 					trackComp->updateFromTrackData();
@@ -654,9 +524,9 @@ void DjIaVstEditor::timerCallback()
 		if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
 		{
 			lastHostBpm = currentHostBpm;
-			for (auto& trackComp : trackComponents)
+			for (auto &trackComp : trackComponents)
 			{
-				TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
+				TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
 				if (track && (track->timeStretchMode == 3 || track->timeStretchMode == 4))
 				{
 					trackComp->updateWaveformWithTimeStretch();
@@ -675,7 +545,7 @@ void DjIaVstEditor::timerCallback()
 				bool isWarning = (currentColor == ColourPalette::buttonPrimary);
 
 				generateButton.setColour(juce::TextButton::buttonColourId,
-					isWarning ? ColourPalette::buttonSuccess : ColourPalette::buttonPrimary);
+										 isWarning ? ColourPalette::buttonSuccess : ColourPalette::buttonPrimary);
 			}
 		}
 	}
@@ -882,7 +752,7 @@ void DjIaVstEditor::setupUI()
 	configButton.setButtonText(juce::String::fromUTF8("\xE2\x9B\xAD"));
 	configButton.setTooltip("Configure settings globally");
 	configButton.onClick = [this]()
-		{ showConfigDialog(); };
+	{ showConfigDialog(); };
 
 	addAndMakeVisible(creditsLabel);
 	creditsLabel.setText("Credits: --", juce::dontSendNotification);
@@ -892,8 +762,7 @@ void DjIaVstEditor::setupUI()
 		"Available generation credits\n"
 		"\n"
 		"Cost per generation:\n"
-		"  - 1 credit)"
-	);
+		"  - 1 credit)");
 
 	addAndMakeVisible(statusLabel);
 	statusLabel.setText("Ready", juce::dontSendNotification);
@@ -963,7 +832,8 @@ void DjIaVstEditor::setupUI()
 	addTrackButton.setTooltip("Add a new track to the session");
 	resetUIButton.setTooltip("Reset UI if stuck in generation mode");
 
-	if (!sampleBankPanel) {
+	if (!sampleBankPanel)
+	{
 		sampleBankPanel = std::make_unique<SampleBankPanel>(audioProcessor);
 		addChildComponent(*sampleBankPanel);
 		sampleBankPanel->setVisible(false);
@@ -980,207 +850,208 @@ void DjIaVstEditor::setupUI()
 void DjIaVstEditor::addEventListeners()
 {
 	addTrackButton.onClick = [this]()
-		{ onAddTrack(); };
+	{ onAddTrack(); };
 	autoLoadButton.onClick = [this]
-		{ onAutoLoadToggled(); };
+	{ onAutoLoadToggled(); };
 	loadSampleButton.onClick = [this]
-		{ onLoadSampleClicked(); };
+	{ onLoadSampleClicked(); };
 	savePresetButton.onClick = [this]
-		{ onSavePreset(); };
+	{ onSavePreset(); };
 	promptPresetSelector.onChange = [this]
-		{ onPresetSelected(); };
+	{ onPresetSelected(); };
 	promptPresetSelector.addMouseListener(this, false);
 
 	promptInput.onTextChange = [this]()
-		{
-			audioProcessor.setLastPrompt(promptInput.getText());
-			audioProcessor.setGlobalPrompt(promptInput.getText());
-		};
+	{
+		audioProcessor.setLastPrompt(promptInput.getText());
+		audioProcessor.setGlobalPrompt(promptInput.getText());
+	};
 
 	keySelector.onChange = [this]()
-		{
-			audioProcessor.setLastKeyIndex(keySelector.getSelectedId());
-			audioProcessor.setGlobalKey(keySelector.getText());
-		};
+	{
+		audioProcessor.setLastKeyIndex(keySelector.getSelectedId());
+		audioProcessor.setGlobalKey(keySelector.getText());
+	};
 
 	durationSlider.onValueChange = [this]()
-		{
-			audioProcessor.setLastDuration(durationSlider.getValue());
-			audioProcessor.setGlobalDuration((int)durationSlider.getValue());
-		};
+	{
+		audioProcessor.setLastDuration(durationSlider.getValue());
+		audioProcessor.setGlobalDuration((int)durationSlider.getValue());
+	};
 
 	promptPresetSelector.onChange = [this]()
-		{
-			onPresetSelected();
-			audioProcessor.setLastPresetIndex(promptPresetSelector.getSelectedId() - 1);
-		};
+	{
+		onPresetSelected();
+		audioProcessor.setLastPresetIndex(promptPresetSelector.getSelectedId() - 1);
+	};
 
 	resetUIButton.onClick = [this]()
+	{
+		audioProcessor.setIsGenerating(false);
+		audioProcessor.setGeneratingTrackId("");
+		generateButton.setEnabled(true);
+		setAllGenerateButtonsEnabled(true);
+		toggleWaveFormButtonOnTrack();
+		toggleSEQButtonOnTrack();
+		statusLabel.setText("UI Reset - Ready", juce::dontSendNotification);
+		for (auto &trackComp : trackComponents)
 		{
-			audioProcessor.setIsGenerating(false);
-			audioProcessor.setGeneratingTrackId("");
-			generateButton.setEnabled(true);
-			setAllGenerateButtonsEnabled(true);
-			toggleWaveFormButtonOnTrack();
-			toggleSEQButtonOnTrack();
-			statusLabel.setText("UI Reset - Ready", juce::dontSendNotification);
-			for (auto& trackComp : trackComponents)
-			{
-				trackComp->stopGeneratingAnimation();
-			}
-			refreshTracks();
-		};
+			trackComp->stopGeneratingAnimation();
+		}
+		refreshTracks();
+	};
 
 	promptPresetSelector.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for prompt selector...", juce::dontSendNotification);
-			audioProcessor.getMidiLearnManager().startLearning(
-				"promptPresetSelector",
-				&audioProcessor,
-				[this](float value)
-				{
-					juce::MessageManager::callAsync([this, value]()
-						{
+	{
+		statusLabel.setText("Learning MIDI for prompt selector...", juce::dontSendNotification);
+		audioProcessor.getMidiLearnManager().startLearning(
+			"promptPresetSelector",
+			&audioProcessor,
+			[this](float value)
+			{
+				juce::MessageManager::callAsync([this, value]()
+												{
 							int numItems = promptPresetSelector.getNumItems();
 							if (numItems > 0) {
 								int selectedIndex = (int)(value * (numItems - 1));
 								promptPresetSelector.setSelectedItemIndex(selectedIndex, juce::sendNotification);
 							} });
-				},
-				"Prompt Preset Selector", &promptPresetSelector);
-		};
+			},
+			"Prompt Preset Selector", &promptPresetSelector);
+	};
 
 	promptPresetSelector.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("promptPresetSelector");
-		};
+	{
+		audioProcessor.getMidiLearnManager().removeMappingForParameter("promptPresetSelector");
+	};
 
 	audioProcessor.getMidiLearnManager().registerUICallback("promptPresetSelector",
-		[this](float value)
-		{
-			juce::MessageManager::callAsync([this, value]()
-				{
+															[this](float value)
+															{
+																juce::MessageManager::callAsync([this, value]()
+																								{
 					int numItems = promptPresetSelector.getNumItems();
 					if (numItems > 0) {
 						int selectedIndex = (int)(value * (numItems - 1));
 						promptPresetSelector.setSelectedItemIndex(selectedIndex, juce::sendNotification);
 					} });
-		});
+															});
 
 	promptInput.onReturnKey = [this]()
+	{
+		juce::String currentPrompt = promptInput.getText().trim();
+		if (currentPrompt.isNotEmpty())
 		{
-			juce::String currentPrompt = promptInput.getText().trim();
-			if (currentPrompt.isNotEmpty())
+			audioProcessor.addCustomPrompt(currentPrompt);
+			loadPromptPresets();
+			notifyTracksPromptUpdate();
+			int totalItems = promptPresetSelector.getNumItems();
+			for (int i = 0; i < totalItems; ++i)
 			{
-				audioProcessor.addCustomPrompt(currentPrompt);
-				loadPromptPresets();
-				notifyTracksPromptUpdate();
-				int totalItems = promptPresetSelector.getNumItems();
-				for (int i = 0; i < totalItems; ++i)
+				if (promptPresetSelector.getItemText(i) == currentPrompt)
 				{
-					if (promptPresetSelector.getItemText(i) == currentPrompt)
-					{
-						promptPresetSelector.setSelectedId(i + 1, juce::dontSendNotification);
-						break;
-					}
+					promptPresetSelector.setSelectedId(i + 1, juce::dontSendNotification);
+					break;
 				}
-
-				statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
 			}
-			grabKeyboardFocus();
-		};
+
+			statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
+		}
+		grabKeyboardFocus();
+	};
 
 	bypassSequencerButton.onClick = [this]()
-		{
-			bool isBypassed = bypassSequencerButton.getToggleState();
-			audioProcessor.setBypassSequencer(isBypassed);
+	{
+		bool isBypassed = bypassSequencerButton.getToggleState();
+		audioProcessor.setBypassSequencer(isBypassed);
 
-			if (isBypassed)
-			{
-				bypassSequencerButton.setButtonText("Composition Mode");
-				statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
-				bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-					ColourPalette::buttonWarning.darker(0.3f));
-			}
-			else
-			{
-				bypassSequencerButton.setButtonText("Sequencer Mode");
-				statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
-				bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-					ColourPalette::buttonPrimary);
-			}
-		};
+		if (isBypassed)
+		{
+			bypassSequencerButton.setButtonText("Composition Mode");
+			statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
+			bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
+											ColourPalette::buttonWarning.darker(0.3f));
+		}
+		else
+		{
+			bypassSequencerButton.setButtonText("Sequencer Mode");
+			statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
+			bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
+											ColourPalette::buttonPrimary);
+		}
+	};
 
 	nextTrackButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for next track button...", juce::dontSendNotification);
-			audioProcessor.getMidiLearnManager().startLearning(
-				"nextTrack",
-				&audioProcessor,
-				nullptr,
-				"Next Track", &nextTrackButton);
-		};
+	{
+		statusLabel.setText("Learning MIDI for next track button...", juce::dontSendNotification);
+		audioProcessor.getMidiLearnManager().startLearning(
+			"nextTrack",
+			&audioProcessor,
+			nullptr,
+			"Next Track", &nextTrackButton);
+	};
 
 	nextTrackButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("nextTrack");
-		};
+	{
+		audioProcessor.getMidiLearnManager().removeMappingForParameter("nextTrack");
+	};
 
 	nextTrackButton.onClick = [this]()
-		{
-			audioProcessor.selectNextTrack();
-		};
+	{
+		audioProcessor.selectNextTrack();
+	};
 
 	prevTrackButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for previous track button...", juce::dontSendNotification);
-			audioProcessor.getMidiLearnManager().startLearning(
-				"prevTrack",
-				&audioProcessor,
-				nullptr,
-				"Previous Track", &prevTrackButton);
-		};
+	{
+		statusLabel.setText("Learning MIDI for previous track button...", juce::dontSendNotification);
+		audioProcessor.getMidiLearnManager().startLearning(
+			"prevTrack",
+			&audioProcessor,
+			nullptr,
+			"Previous Track", &prevTrackButton);
+	};
 
 	prevTrackButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("prevTrack");
-		};
+	{
+		audioProcessor.getMidiLearnManager().removeMappingForParameter("prevTrack");
+	};
 
 	prevTrackButton.onClick = [this]()
-		{
-			audioProcessor.selectPreviousTrack();
-		};
+	{
+		audioProcessor.selectPreviousTrack();
+	};
 
 	generateButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for generate button...", juce::dontSendNotification);
-			audioProcessor.getMidiLearnManager().startLearning(
-				"generate",
-				&audioProcessor,
-				nullptr,
-				"Generate Loop", &generateButton);
-		};
+	{
+		statusLabel.setText("Learning MIDI for generate button...", juce::dontSendNotification);
+		audioProcessor.getMidiLearnManager().startLearning(
+			"generate",
+			&audioProcessor,
+			nullptr,
+			"Generate Loop", &generateButton);
+	};
 
 	generateButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("generate");
-		};
+	{
+		audioProcessor.getMidiLearnManager().removeMappingForParameter("generate");
+	};
 
 	generateButton.onClick = [this]()
-		{
-			onGenerateButtonClicked();
-		};
+	{
+		onGenerateButtonClicked();
+	};
 
 	showSampleBankButton.onClick = [this]()
-		{ toggleSampleBank(); };
+	{ toggleSampleBank(); };
 
-	sampleBankPanel->onSampleDroppedToTrack = [this](const juce::String& sampleId, const juce::String& trackId)
-		{
-			audioProcessor.loadSampleFromBank(sampleId, trackId);
-			setStatusWithTimeout("Sample loaded from bank: " + sampleId.substring(0, 8) + "...", 3000);
-		};
+	sampleBankPanel->onSampleDroppedToTrack = [this](const juce::String &sampleId, const juce::String &trackId)
+	{
+		audioProcessor.loadSampleFromBank(sampleId, trackId);
+		setStatusWithTimeout("Sample loaded from bank: " + sampleId.substring(0, 8) + "...", 3000);
+	};
 
-	openMidiEditorButton.onClick = [this] { openMidiMappingEditor(); };
+	openMidiEditorButton.onClick = [this]
+	{ openMidiMappingEditor(); };
 }
 
 void DjIaVstEditor::notifyTracksPromptUpdate()
@@ -1188,7 +1059,7 @@ void DjIaVstEditor::notifyTracksPromptUpdate()
 	juce::StringArray allPrompts = promptPresets;
 	auto customPrompts = audioProcessor.getCustomPrompts();
 
-	for (const auto& customPrompt : customPrompts)
+	for (const auto &customPrompt : customPrompts)
 	{
 		if (!allPrompts.contains(customPrompt))
 		{
@@ -1196,13 +1067,13 @@ void DjIaVstEditor::notifyTracksPromptUpdate()
 		}
 	}
 	allPrompts.sort(true);
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		trackComp->updatePromptPresets(allPrompts);
 	}
 }
 
-void DjIaVstEditor::mouseDown(const juce::MouseEvent& event)
+void DjIaVstEditor::mouseDown(const juce::MouseEvent &event)
 {
 	if (event.eventComponent == &promptPresetSelector && event.mods.isPopupMenu())
 	{
@@ -1216,69 +1087,41 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent& event)
 			menu.addItem(2, "Delete");
 
 			menu.showMenuAsync(juce::PopupMenu::Options(), [this, selectedPrompt](int result)
-				{
+							   {
 					if (result == 1) {
 						editCustomPromptDialog(selectedPrompt);
 					}
 					else if (result == 2) {
-						juce::MessageManager::callAsync([this, selectedPrompt]()
-							{
-								juce::AlertWindow::showAsync(
-									juce::MessageBoxOptions()
-									.withIconType(juce::MessageBoxIconType::WarningIcon)
-									.withTitle("Delete Custom Prompt")
-									.withMessage("Are you sure you want to delete this prompt?\n\n'" + selectedPrompt + "'")
-									.withButton("Delete")
-									.withButton("Cancel"),
-									[this, selectedPrompt](int result)
-									{
-										if (result == 1)
-										{
-											audioProcessor.removeCustomPrompt(selectedPrompt);
-											promptPresets.removeString(selectedPrompt);
-											audioProcessor.setLastPresetIndex(audioProcessor.getLastPresetIndex() - 1);
-											loadPromptPresets();
-											notifyTracksPromptUpdate();
-										}
-									});
-							});
+					ObsidianAlertManager::showConfirm(
+						"Delete Custom Prompt",
+						"Are you sure you want to delete this prompt?\n\n'" + selectedPrompt + "'",
+						"Delete", "Cancel",
+						[this, selectedPrompt](bool confirmed) {
+							if (confirmed) {
+								audioProcessor.removeCustomPrompt(selectedPrompt);
+								promptPresets.removeString(selectedPrompt);
+								audioProcessor.setLastPresetIndex(audioProcessor.getLastPresetIndex() - 1);
+								loadPromptPresets();
+								notifyTracksPromptUpdate();
+							}
+						});
 
 					} });
 		}
 	}
 }
 
-void DjIaVstEditor::editCustomPromptDialog(const juce::String& selectedPrompt)
+void DjIaVstEditor::editCustomPromptDialog(const juce::String &selectedPrompt)
 {
-	auto alertWindow = std::make_unique<juce::AlertWindow>(
-		"Edit Custom Prompt",
-		"Edit your prompt:",
-		juce::MessageBoxIconType::InfoIcon);
-
-	alertWindow->addTextEditor("promptText", selectedPrompt, "Prompt text:");
-	alertWindow->addButton("Save", 1);
-	alertWindow->addButton("Cancel", 0);
-
-	auto* windowPtr = alertWindow.get();
-	alertWindow.release()->enterModalState(true,
-		juce::ModalCallbackFunction::create([this, windowPtr, selectedPrompt](int result)
-			{
-				if (result == 1) {
-					auto* promptEditor = windowPtr->getTextEditor("promptText");
-					if (promptEditor) {
-						juce::String newPrompt = promptEditor->getText();
-						if (!newPrompt.isEmpty()) {
-							audioProcessor.editCustomPrompt(selectedPrompt, newPrompt);
-							int index = promptPresets.indexOf(selectedPrompt);
-							if (index >= 0) {
-								promptPresets.set(index, newPrompt);
-							}
-							loadPromptPresets();
-						}
-					}
-				}
-				windowPtr->exitModalState(result);
-				delete windowPtr; }));
+	ObsidianAlertManager::showEditPrompt(selectedPrompt,
+										 [this, selectedPrompt](const juce::String &newPrompt)
+										 {
+											 audioProcessor.editCustomPrompt(selectedPrompt, newPrompt);
+											 int index = promptPresets.indexOf(selectedPrompt);
+											 if (index >= 0)
+												 promptPresets.set(index, newPrompt);
+											 loadPromptPresets();
+										 });
 }
 
 void DjIaVstEditor::updateUIFromProcessor()
@@ -1299,13 +1142,13 @@ void DjIaVstEditor::updateUIFromProcessor()
 	{
 		autoLoadButton.setButtonText("Auto-Load Mode");
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonWarning.darker(0.3f));
+								 ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
 		autoLoadButton.setButtonText("Manual Mode");
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonPrimary);
+								 ColourPalette::buttonPrimary);
 	}
 
 	bool bypassOn = audioProcessor.getBypassSequencer();
@@ -1315,13 +1158,13 @@ void DjIaVstEditor::updateUIFromProcessor()
 	{
 		bypassSequencerButton.setButtonText("Composition Mode");
 		bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonWarning.darker(0.3f));
+										ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
 		bypassSequencerButton.setButtonText("Sequencer Mode");
 		bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonPrimary);
+										ColourPalette::buttonPrimary);
 	}
 
 	int presetIndex = audioProcessor.getLastPresetIndex();
@@ -1337,7 +1180,7 @@ void DjIaVstEditor::updateUIFromProcessor()
 	refreshTrackComponents();
 }
 
-void DjIaVstEditor::paint(juce::Graphics& g)
+void DjIaVstEditor::paint(juce::Graphics &g)
 {
 	g.fillAll(ColourPalette::backgroundDeep);
 
@@ -1345,7 +1188,7 @@ void DjIaVstEditor::paint(juce::Graphics& g)
 	{
 		auto logoArea = juce::Rectangle<int>(0, 12, 100, 60);
 		g.drawImage(logoImage, logoArea.toFloat(),
-			juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
+					juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
 	}
 }
 
@@ -1479,19 +1322,18 @@ void DjIaVstEditor::openMidiMappingEditor()
 	midiEditorWindow = new MidiMappingEditorWindow(&audioProcessor.getMidiLearnManager());
 
 	midiEditorWindow->onWindowClosed = [this]()
-		{
-			midiEditorWindow = nullptr;
-		};
+	{
+		midiEditorWindow = nullptr;
+	};
 
 	midiEditorWindow->centreAroundComponent(this,
-		midiEditorWindow->getWidth(),
-		midiEditorWindow->getHeight());
+											midiEditorWindow->getWidth(),
+											midiEditorWindow->getHeight());
 }
-
 
 void DjIaVstEditor::setAllGenerateButtonsEnabled(bool enabled)
 {
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		trackComp->setGenerateButtonEnabled(enabled);
 		trackComp->setCanvasGenerating(!enabled);
@@ -1517,13 +1359,13 @@ void DjIaVstEditor::toggleSampleBank()
 	resized();
 }
 
-void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
+void DjIaVstEditor::startGenerationUI(const juce::String &trackId)
 {
 	generateButton.setEnabled(false);
 	setAllGenerateButtonsEnabled(false);
 	statusLabel.setText("Connecting to server...", juce::dontSendNotification);
 
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
@@ -1537,22 +1379,21 @@ void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
 	}
 
 	juce::Timer::callAfterDelay(100, [this, trackId]()
-		{
+								{
 			if (audioProcessor.getIsGenerating() &&
 				audioProcessor.getGeneratingTrackId() == trackId)
 			{
 				statusLabel.setText("Generating loop (this may take a few minutes)...",
 					juce::dontSendNotification);
-			}
-		});
+			} });
 }
 
-void DjIaVstEditor::stopGenerationUI(const juce::String& trackId, bool success, const juce::String& errorMessage)
+void DjIaVstEditor::stopGenerationUI(const juce::String &trackId, bool success, const juce::String &errorMessage)
 {
 	generateButton.setEnabled(true);
 	setAllGenerateButtonsEnabled(true);
 
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
@@ -1593,9 +1434,9 @@ void DjIaVstEditor::stopGenerationUI(const juce::String& trackId, bool success, 
 	}
 }
 
-void DjIaVstEditor::onSampleLoaded(const juce::String& trackId)
+void DjIaVstEditor::onSampleLoaded(const juce::String &trackId)
 {
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
@@ -1617,7 +1458,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 		return;
 	}
 	bool isLocalServer = serverUrl.contains("localhost") ||
-		serverUrl.contains("127.0.0.1");
+						 serverUrl.contains("127.0.0.1");
 	if (apiKey.isEmpty() && !isLocalServer)
 	{
 		statusLabel.setText("Error: API Key is required", juce::dontSendNotification);
@@ -1634,7 +1475,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	audioProcessor.setIsGenerating(true);
 	generatingTrackId = audioProcessor.getSelectedTrackId();
 	audioProcessor.setGeneratingTrackId(generatingTrackId);
-	TrackData* track = audioProcessor.trackManager.getTrack(generatingTrackId);
+	TrackData *track = audioProcessor.trackManager.getTrack(generatingTrackId);
 
 	if (!track)
 	{
@@ -1644,7 +1485,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 
 	if (track->usePages.load())
 	{
-		auto& currentPage = track->getCurrentPage();
+		auto &currentPage = track->getCurrentPage();
 		currentPage.selectedPrompt = promptInput.getText();
 		currentPage.generationPrompt = promptInput.getText();
 		currentPage.generationBpm = (float)audioProcessor.getHostBpm();
@@ -1665,7 +1506,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	juce::String selectedTrackId = generatingTrackId;
 	auto request = track->createLoopRequest();
 	juce::Thread::launch([this, selectedTrackId, request]()
-		{
+						 {
 			try
 			{
 				juce::MessageManager::callAsync([this]() {
@@ -1693,7 +1534,7 @@ void DjIaVstEditor::loadPromptPresets()
 	promptPresetSelector.clear();
 	juce::StringArray allPrompts = promptPresets;
 	auto customPrompts = audioProcessor.getCustomPrompts();
-	for (const auto& customPrompt : customPrompts)
+	for (const auto &customPrompt : customPrompts)
 	{
 		if (!allPrompts.contains(customPrompt))
 		{
@@ -1733,7 +1574,7 @@ DjIaVstEditor::KeyboardLayout DjIaVstEditor::detectKeyboardLayout()
 	return QWERTY;
 }
 
-bool DjIaVstEditor::keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected)
+bool DjIaVstEditor::keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected)
 {
 	if (pressed == expected)
 		return true;
@@ -1752,7 +1593,7 @@ bool DjIaVstEditor::keyMatches(const juce::KeyPress& pressed, const juce::KeyPre
 	return false;
 }
 
-bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
+bool DjIaVstEditor::keyPressed(const juce::KeyPress &key)
 {
 	KeyboardLayout layout = detectKeyboardLayout();
 
@@ -1769,7 +1610,7 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
 			{juce::KeyPress('8'), juce::KeyPress('9'), juce::KeyPress('0'), juce::KeyPress('-')},
 			{juce::KeyPress('t'), juce::KeyPress('y'), juce::KeyPress('u'), juce::KeyPress('i')},
 			{juce::KeyPress('g'), juce::KeyPress('h'), juce::KeyPress('j'), juce::KeyPress('k')},
-			{juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress(','), juce::KeyPress(';')} };
+			{juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress(','), juce::KeyPress(';')}};
 		break;
 
 	case QWERTY:
@@ -1781,7 +1622,7 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
 			{juce::KeyPress('8'), juce::KeyPress('9'), juce::KeyPress('0'), juce::KeyPress('-')},
 			{juce::KeyPress('t'), juce::KeyPress('y'), juce::KeyPress('u'), juce::KeyPress('i')},
 			{juce::KeyPress('g'), juce::KeyPress('h'), juce::KeyPress('j'), juce::KeyPress('k')},
-			{juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress('m'), juce::KeyPress(',')} };
+			{juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress('m'), juce::KeyPress(',')}};
 		break;
 
 	case QWERTZ:
@@ -1793,7 +1634,7 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
 			{juce::KeyPress('8'), juce::KeyPress('9'), juce::KeyPress('0'), juce::KeyPress('-')},
 			{juce::KeyPress('t'), juce::KeyPress('z'), juce::KeyPress('u'), juce::KeyPress('i')},
 			{juce::KeyPress('g'), juce::KeyPress('h'), juce::KeyPress('j'), juce::KeyPress('k')},
-			{juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress('m'), juce::KeyPress(',')} };
+			{juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress('m'), juce::KeyPress(',')}};
 		break;
 	}
 
@@ -1803,9 +1644,9 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
 		{
 			if (keyMatches(key, layoutKeys[slotIndex][page]))
 			{
-				for (auto& trackComp : trackComponents)
+				for (auto &trackComp : trackComponents)
 				{
-					if (auto* track = trackComp->getTrack())
+					if (auto *track = trackComp->getTrack())
 					{
 						if (track->slotIndex == slotIndex && track->usePages.load())
 						{
@@ -1817,8 +1658,8 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
 							else
 							{
 								DBG("Global shortcut: slot " << (slotIndex + 1) << " page " << (char)('A' + page) << " [" << (layout == AZERTY ? "AZERTY" : layout == QWERTZ ? "QWERTZ"
-									: "QWERTY")
-									<< "]");
+																																											 : "QWERTY")
+															 << "]");
 								trackComp->onPageSelected(page);
 								return true;
 							}
@@ -1887,7 +1728,7 @@ void DjIaVstEditor::onAutoLoadToggled()
 		loadSampleButton.setButtonText("Load Sample");
 		loadSampleButton.setEnabled(false);
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonWarning.darker(0.3f));
+								 ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
@@ -1896,7 +1737,7 @@ void DjIaVstEditor::onAutoLoadToggled()
 		loadSampleButton.setEnabled(true);
 		updateLoadButtonState();
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonPrimary);
+								 ColourPalette::buttonPrimary);
 	}
 }
 
@@ -1937,19 +1778,19 @@ void DjIaVstEditor::refreshTrackComponents()
 {
 	auto trackIds = audioProcessor.getAllTrackIds();
 	std::sort(trackIds.begin(), trackIds.end(),
-		[this](const juce::String& a, const juce::String& b)
-		{
-			TrackData* trackA = audioProcessor.getTrack(a);
-			TrackData* trackB = audioProcessor.getTrack(b);
-			if (!trackA || !trackB)
-				return false;
+			  [this](const juce::String &a, const juce::String &b)
+			  {
+				  TrackData *trackA = audioProcessor.getTrack(a);
+				  TrackData *trackB = audioProcessor.getTrack(b);
+				  if (!trackA || !trackB)
+					  return false;
 
-			return trackA->slotIndex < trackB->slotIndex;
-		});
+				  return trackA->slotIndex < trackB->slotIndex;
+			  });
 	if (trackComponents.size() == trackIds.size())
 	{
 		bool allVisible = true;
-		for (auto& comp : trackComponents)
+		for (auto &comp : trackComponents)
 		{
 			if (!comp->isVisible() || comp->getParentComponent() == nullptr)
 			{
@@ -1964,9 +1805,9 @@ void DjIaVstEditor::refreshTrackComponents()
 				trackComponents[i]->setTrackData(audioProcessor.getTrack(trackIds[i]));
 
 				juce::Timer::callAfterDelay(100, [this, i]()
-					{ trackComponents[i]->updatePromptPresets(getAllPrompts()); });
+											{ trackComponents[i]->updatePromptPresets(getAllPrompts()); });
 				trackComponents[i]->updateFromTrackData();
-				if (auto* sequencer = trackComponents[i]->getSequencer())
+				if (auto *sequencer = trackComponents[i]->getSequencer())
 				{
 					sequencer->updateFromTrackData();
 				}
@@ -1985,17 +1826,17 @@ void DjIaVstEditor::refreshTrackComponents()
 	tracksContainer.removeAllChildren();
 	int yPos = 5;
 
-	for (const auto& trackId : trackIds)
+	for (const auto &trackId : trackIds)
 	{
-		TrackData* trackData = audioProcessor.getTrack(trackId);
+		TrackData *trackData = audioProcessor.getTrack(trackId);
 		if (!trackData)
 			continue;
 
 		auto trackComp = std::make_unique<TrackComponent>(trackId, audioProcessor);
 		trackComp->setTrackData(trackData);
-		TrackComponent* trackCompPtr = trackComp.get();
+		TrackComponent *trackCompPtr = trackComp.get();
 		juce::Timer::callAfterDelay(100, [this, trackCompPtr, trackId]()
-			{
+									{
 				auto it = std::find_if(trackComponents.begin(), trackComponents.end(),
 					[trackCompPtr](const auto& tc) { return tc.get() == trackCompPtr; });
 
@@ -2003,86 +1844,85 @@ void DjIaVstEditor::refreshTrackComponents()
 				{
 					trackCompPtr->updatePromptPresets(getAllPrompts());
 				} });
-				trackComp->onSelectTrack = [this](const juce::String& id)
-					{
-						audioProcessor.selectTrack(id);
-						updateSelectedTrack();
-					};
+		trackComp->onSelectTrack = [this](const juce::String &id)
+		{
+			audioProcessor.selectTrack(id);
+			updateSelectedTrack();
+		};
 
-				trackComp->onDeleteTrack = [this](const juce::String& id)
-					{
-						if (audioProcessor.getAllTrackIds().size() > 1)
-						{
-							audioProcessor.deleteTrack(id);
-							juce::Timer::callAfterDelay(10, [this]()
-								{
+		trackComp->onDeleteTrack = [this](const juce::String &id)
+		{
+			if (audioProcessor.getAllTrackIds().size() > 1)
+			{
+				audioProcessor.deleteTrack(id);
+				juce::Timer::callAfterDelay(10, [this]()
+											{
 									refreshTrackComponents();
-									refreshWavevormsAndSequencers();
-								});
-						}
-					};
+									refreshWavevormsAndSequencers(); });
+			}
+		};
 
-				trackComp->onGenerateWithImage = [this](const juce::String& trackId, const juce::String& image, const juce::StringArray& keywords)
-					{
-						audioProcessor.generateSampleWithImage(trackId, image, keywords);
-					};
+		trackComp->onGenerateWithImage = [this](const juce::String &trackId, const juce::String &image, const juce::StringArray &keywords)
+		{
+			audioProcessor.generateSampleWithImage(trackId, image, keywords);
+		};
 
-				trackComp->onTrackRenamed = [this](const juce::String& id, const juce::String& newName)
-					{
-						if (mixerPanel)
-						{
-							mixerPanel->updateTrackName(id, newName);
-						}
-					};
+		trackComp->onTrackRenamed = [this](const juce::String &id, const juce::String &newName)
+		{
+			if (mixerPanel)
+			{
+				mixerPanel->updateTrackName(id, newName);
+			}
+		};
 
-				trackComp->onGenerateForTrack = [this](const juce::String& id)
-					{
-						audioProcessor.selectTrack(id);
-						generateFromTrackComponent(id);
-					};
+		trackComp->onGenerateForTrack = [this](const juce::String &id)
+		{
+			audioProcessor.selectTrack(id);
+			generateFromTrackComponent(id);
+		};
 
-				trackComp->onReorderTrack = [this](const juce::String& fromId, const juce::String& toId)
-					{
-						audioProcessor.reorderTracks(fromId, toId);
-						juce::Timer::callAfterDelay(10, [this]()
-							{ refreshTrackComponents(); });
-					};
+		trackComp->onReorderTrack = [this](const juce::String &fromId, const juce::String &toId)
+		{
+			audioProcessor.reorderTracks(fromId, toId);
+			juce::Timer::callAfterDelay(10, [this]()
+										{ refreshTrackComponents(); });
+		};
 
-				trackComp->onPreviewTrack = [this](const juce::String& trackId)
-					{
-						audioProcessor.previewTrack(trackId);
-					};
+		trackComp->onPreviewTrack = [this](const juce::String &trackId)
+		{
+			audioProcessor.previewTrack(trackId);
+		};
 
-				trackComp->onTrackPromptChanged = [this](const juce::String /*&trackId*/, const juce::String& prompt)
-					{
-						setStatusWithTimeout("Track prompt updated: " + prompt.substring(0, 20) + "...", 3000);
-					};
+		trackComp->onTrackPromptChanged = [this](const juce::String /*&trackId*/, const juce::String &prompt)
+		{
+			setStatusWithTimeout("Track prompt updated: " + prompt.substring(0, 20) + "...", 3000);
+		};
 
-				trackComp->onStatusMessage = [this](const juce::String& message)
-					{
-						setStatusWithTimeout(message, 3000);
-					};
+		trackComp->onStatusMessage = [this](const juce::String &message)
+		{
+			setStatusWithTimeout(message, 3000);
+		};
 
-				trackComp->onStopPreview = [this](const juce::String& trackId)
-					{
-						audioProcessor.stopTrackPreview(trackId);
-					};
+		trackComp->onStopPreview = [this](const juce::String &trackId)
+		{
+			audioProcessor.stopTrackPreview(trackId);
+		};
 
-				int fullWidth = tracksContainer.getWidth() - 4;
-				trackComp->setBounds(2, yPos, fullWidth, 60);
+		int fullWidth = tracksContainer.getWidth() - 4;
+		trackComp->setBounds(2, yPos, fullWidth, 60);
 
-				if (trackId == audioProcessor.getSelectedTrackId())
-				{
-					trackComp->setSelected(true);
-				}
-				if (wasGeneratingLocal && trackId == generatingId)
-				{
-					trackComp->startGeneratingAnimation();
-				}
-				tracksContainer.addAndMakeVisible(trackComp.get());
-				trackComponents.push_back(std::move(trackComp));
+		if (trackId == audioProcessor.getSelectedTrackId())
+		{
+			trackComp->setSelected(true);
+		}
+		if (wasGeneratingLocal && trackId == generatingId)
+		{
+			trackComp->startGeneratingAnimation();
+		}
+		tracksContainer.addAndMakeVisible(trackComp.get());
+		trackComponents.push_back(std::move(trackComp));
 
-				yPos += 85;
+		yPos += 85;
 	}
 
 	tracksContainer.setSize(tracksViewport.getWidth() - 20, yPos + 5);
@@ -2092,7 +1932,7 @@ void DjIaVstEditor::refreshTrackComponents()
 	}
 	setEnabled(true);
 	juce::MessageManager::callAsync([this]()
-		{
+									{
 			resized();
 			repaint(); });
 	tracksContainer.repaint();
@@ -2103,11 +1943,11 @@ void DjIaVstEditor::reEnableCanvasForTrack()
 	setAllGenerateButtonsEnabled(true);
 }
 
-void DjIaVstEditor::generateFromTrackComponent(const juce::String& trackId)
+void DjIaVstEditor::generateFromTrackComponent(const juce::String &trackId)
 {
 	audioProcessor.setIsGenerating(true);
 
-	TrackData* track = audioProcessor.getTrack(trackId);
+	TrackData *track = audioProcessor.getTrack(trackId);
 	if (!track)
 	{
 		statusLabel.setText("Error: Track not found", juce::dontSendNotification);
@@ -2127,7 +1967,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String& trackId)
 
 	if (track->usePages.load())
 	{
-		auto& currentPage = track->getCurrentPage();
+		auto &currentPage = track->getCurrentPage();
 
 		currentPage.selectedPrompt = track->selectedPrompt;
 		currentPage.generationPrompt = track->selectedPrompt;
@@ -2149,7 +1989,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String& trackId)
 	startGenerationUI(currentGeneratingTrackId);
 
 	juce::Thread::launch([this, currentGeneratingTrackId, track]()
-		{
+						 {
 			try {
 				auto request = track->createLoopRequest();
 				audioProcessor.generateLoop(request, currentGeneratingTrackId);
@@ -2168,7 +2008,7 @@ juce::StringArray DjIaVstEditor::getAllPrompts() const
 	juce::StringArray allPrompts = promptPresets;
 	auto customPrompts = audioProcessor.getCustomPrompts();
 
-	for (const auto& customPrompt : customPrompts)
+	for (const auto &customPrompt : customPrompts)
 	{
 		if (!allPrompts.contains(customPrompt))
 		{
@@ -2182,15 +2022,15 @@ juce::StringArray DjIaVstEditor::getAllPrompts() const
 void DjIaVstEditor::toggleWaveFormButtonOnTrack()
 {
 	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto& trackId : trackIds)
+	for (const auto &trackId : trackIds)
 	{
-		TrackData* track = audioProcessor.getTrack(trackId);
+		TrackData *track = audioProcessor.getTrack(trackId);
 		if (track)
 		{
 			track->showWaveform = false;
 		}
 	}
-	for (auto& trackComponent : trackComponents)
+	for (auto &trackComponent : trackComponents)
 	{
 		trackComponent->showWaveformButton.setToggleState(false, juce::dontSendNotification);
 	}
@@ -2198,7 +2038,7 @@ void DjIaVstEditor::toggleWaveFormButtonOnTrack()
 
 void DjIaVstEditor::restoreUICallbacks()
 {
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrack())
 		{
@@ -2210,25 +2050,25 @@ void DjIaVstEditor::restoreUICallbacks()
 void DjIaVstEditor::toggleSEQButtonOnTrack()
 {
 	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto& trackId : trackIds)
+	for (const auto &trackId : trackIds)
 	{
-		TrackData* track = audioProcessor.getTrack(trackId);
+		TrackData *track = audioProcessor.getTrack(trackId);
 		if (track)
 		{
 			track->showSequencer = false;
 		}
 	}
-	for (auto& trackComponent : trackComponents)
+	for (auto &trackComponent : trackComponents)
 	{
 		trackComponent->sequencerToggleButton.setToggleState(false, juce::dontSendNotification);
 	}
 }
 
-void DjIaVstEditor::setStatusWithTimeout(const juce::String& message, int timeoutMs)
+void DjIaVstEditor::setStatusWithTimeout(const juce::String &message, int timeoutMs)
 {
 	statusLabel.setText(message, juce::dontSendNotification);
 	juce::Timer::callAfterDelay(timeoutMs, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-		{
+								{
 			if (auto* editor = safeThis.getComponent())
 				editor->statusLabel.setText("Ready", juce::dontSendNotification); });
 }
@@ -2245,7 +2085,7 @@ void DjIaVstEditor::onAddTrack()
 
 		if (audioProcessor.getIsGenerating())
 		{
-			for (auto& trackComp : trackComponents)
+			for (auto &trackComp : trackComponents)
 			{
 				if (trackComp->trackId == newTrackId)
 				{
@@ -2266,7 +2106,7 @@ void DjIaVstEditor::onAddTrack()
 		}
 		setStatusWithTimeout("New track created");
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		setStatusWithTimeout("Error: " + juce::String(e.what()));
 	}
@@ -2274,7 +2114,7 @@ void DjIaVstEditor::onAddTrack()
 
 void DjIaVstEditor::updateSelectedTrack()
 {
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		trackComp->setSelected(false);
 	}
@@ -2282,7 +2122,7 @@ void DjIaVstEditor::updateSelectedTrack()
 	juce::String selectedId = audioProcessor.getSelectedTrackId();
 
 	bool found = false;
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrackId() == selectedId)
 		{
@@ -2298,13 +2138,13 @@ void DjIaVstEditor::updateSelectedTrack()
 	}
 }
 
-void* DjIaVstEditor::getSequencerForTrack(const juce::String& trackId)
+void *DjIaVstEditor::getSequencerForTrack(const juce::String &trackId)
 {
-	for (auto& trackComp : trackComponents)
+	for (auto &trackComp : trackComponents)
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
-			return (void*)trackComp->getSequencer();
+			return (void *)trackComp->getSequencer();
 		}
 	}
 	return nullptr;
@@ -2346,7 +2186,8 @@ void DjIaVstEditor::refreshCreditsAsync()
 	audioProcessor.getApiClient().setApiKey(currentApiKey);
 	audioProcessor.getApiClient().setBaseUrl(currentServerUrl);
 
-	juce::Thread::launch([this, timeout, safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]() {
+	juce::Thread::launch([this, timeout, safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+						 {
 		auto creditsInfo = audioProcessor.getApiClient().checkCredits(timeout);
 		juce::MessageManager::callAsync([safeThis, creditsInfo]() {
 			if (auto* editor = safeThis.getComponent())
@@ -2373,14 +2214,13 @@ void DjIaVstEditor::refreshCreditsAsync()
 					editor->creditsLabel.setText("Credits: Error", juce::dontSendNotification);
 				}
 			}
-			});
-		});
+			}); });
 }
 
 void DjIaVstEditor::checkForUpdates()
 {
 	juce::Thread::launch([safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-		{
+						 {
 			juce::URL url("https://api.github.com/repos/innermost47/ai-dj/releases/latest");
 			auto stream = url.createInputStream(
 				juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
@@ -2408,38 +2248,19 @@ void DjIaVstEditor::checkForUpdates()
 										{
 											if (auto* editor = safeThis.getComponent())
 											{
-												juce::AlertWindow::showAsync(
-													juce::MessageBoxOptions()
-													.withIconType(juce::MessageBoxIconType::InfoIcon)
-													.withTitle("Update Available!")
-													.withMessage(
-														"A new version of OBSIDIAN Neural is available: " + tagName + "\n\n"
-														"Your current build: v" + juce::String(BUILD_NUMBER) + "\n\n"
-														"Download the latest version at:\n"
-														"github.com/innermost47/ai-dj/releases/latest")
-													.withButton("Download Now")
-													.withButton("Later"),
-													[](int result)
-													{
-														if (result == 1)
-														{
-															juce::URL("https://github.com/innermost47/ai-dj/releases/latest")
-																.launchInDefaultBrowser();
-														}
-													});
+												ObsidianAlertManager::showUpdateAvailable(tagName, juce::String(BUILD_NUMBER));
 											}
 										});
 								}
 							}
 						});
 				}
-			}
-		});
+			} });
 }
 
-TrackComponent* DjIaVstEditor::getTrackComponent(const juce::String& trackId)
+TrackComponent *DjIaVstEditor::getTrackComponent(const juce::String &trackId)
 {
-	for (auto& track : trackComponents)
+	for (auto &track : trackComponents)
 	{
 		if (track->getTrackId() == trackId)
 		{
