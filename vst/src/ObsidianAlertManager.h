@@ -207,9 +207,18 @@ public:
         aw->setColour(juce::AlertWindow::backgroundColourId, ColourPalette::backgroundDeep);
         aw->setColour(juce::AlertWindow::textColourId, ColourPalette::textPrimary);
         aw->setColour(juce::AlertWindow::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
-
+        auto windowTitle = aw->getName();
         for (auto *child : aw->getChildren())
         {
+            if (auto *label = dynamic_cast<juce::Label *>(child))
+            {
+                if (label->getText().contains(windowTitle))
+                {
+                    label->setVisible(false);
+                    continue;
+                }
+                label->setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+            }
             if (auto *te = dynamic_cast<juce::TextEditor *>(child))
             {
                 te->setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
@@ -258,6 +267,11 @@ private:
             setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
             setColour(juce::ComboBox::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.5f));
             setColour(juce::ComboBox::arrowColourId, ColourPalette::buttonPrimary);
+
+            setColour(juce::PopupMenu::backgroundColourId, ColourPalette::backgroundDark);
+            setColour(juce::PopupMenu::textColourId, ColourPalette::textPrimary);
+            setColour(juce::PopupMenu::highlightedBackgroundColourId, ColourPalette::buttonPrimary);
+            setColour(juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
 
             setColour(juce::Label::textColourId, ColourPalette::textPrimary);
         }
