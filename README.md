@@ -19,8 +19,17 @@
 > **— Moteka, Electronic Music Producer**
 > [SoundCloud](https://soundcloud.com/moteka) • [Instagram](https://www.instagram.com/pmoteka/)
 
+## 🔥 What's New — April 13, 2025
+
+Provider nodes now run **[Foundation-1 by RoyalCities](https://huggingface.co/RoyalCities/Foundation-1)** — a model built specifically for music production: tempo-synced, key-aware loops with structured control over instrumentation, timbre, and musical phrasing.
+
+The LLM layer automatically adapts prompts to Foundation-1's vocabulary. For rhythmic content (drums, beats, percussion), the system routes to **Stable Audio Open** instead.
+
+🎁 New accounts now receive **200 free credits** on signup — no credit card required.
+
+---
+
 **⚡ Quick Start:** [Get your API key](https://obsidian-neural.com) and start generating in minutes.  
-🎁 **7-Day FREE Trial** — No credit card required.  
 📄 **[Late Breaking Paper — AIMLA 2025](https://drive.google.com/file/d/1cwqmrV0_qC462LLQgQUz-5Cd422gL-8F/view)** — Presented at the AES International Conference on AI and Machine Learning for Audio, Queen Mary University London.  
 🎓 **[Tutorial](https://youtu.be/-qdFo_PcKoY)** — From DAW setup to live performance (French + English subtitles)
 
@@ -164,7 +173,7 @@ Featured in **8 countries** and **6 languages**:
 
 ## 🎯 Community Milestone — Road to 200 Stars!
 
-Currently at **167+ stars** 🌟
+Currently at **195+ stars** 🌟
 
 When we hit 200 stars, we're celebrating with a community giveaway:
 
