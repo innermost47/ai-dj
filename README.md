@@ -10,14 +10,22 @@
 | [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                   |
 | **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3/AU plugin (client)                      |
 
----
-
 ## 🎵 Real-time AI music generation VST3 plugin for live performance
+
+<div align="center">
+
+[![Live Session](https://img.youtube.com/vi/5aXvwh3zIFE/maxresdefault.jpg)](https://youtu.be/5aXvwh3zIFE)
+
+_Live improvisation — Foundation-1 by RoyalCities for melodic content · Stable Audio Open for drums_
+
+</div>
+
+---
 
 > _"I've cycled through almost every AI music tool on the market, but Obsidian is the first one that actually feels like a **real production tool** rather than a novelty. While other AI apps try to replace the songwriter, Obsidian treats AI like a powerful, playable instrument. The 8-track MIDI-triggering is a total game-changer. Because it lives directly in my DAW, there is **zero latency** and zero break in my workflow. It stays perfectly locked to my project's tempo and vibe, serving as the ultimate **intelligent jam partner VST**."_
 >
 > **— Moteka, Electronic Music Producer**
-> [SoundCloud](https://soundcloud.com/moteka) • [Instagram](https://www.instagram.com/pmoteka/)
+> [SoundCloud](https://soundcloud.com/moteka) · [Instagram](https://www.instagram.com/pmoteka/)
 
 ## 🔥 What's New — April 13, 2025
 
