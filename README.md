@@ -41,19 +41,6 @@ The LLM layer automatically adapts prompts to Foundation-1's vocabulary. For rhy
 📄 **[Late Breaking Paper — AIMLA 2025](https://drive.google.com/file/d/1cwqmrV0_qC462LLQgQUz-5Cd422gL-8F/view)** — Presented at the AES International Conference on AI and Machine Learning for Audio, Queen Mary University London.  
 🎓 **[Tutorial](https://youtu.be/-qdFo_PcKoY)** — From DAW setup to live performance (French + English subtitles)
 
-<div align="center">
-  <img src="assets/screenshot.png" alt="OBSIDIAN-Neural Interface" width="800"/>
-  <p><i>Live AI music generation in your DAW</i></p>
-</div>
-
----
-
-## Draw-to-Audio Live Demo
-
-[![Draw-to-Audio Demo](https://img.youtube.com/vi/zhJ865KoPCU/maxresdefault.jpg)](https://youtu.be/zhJ865KoPCU)
-
-_Raw improvisation showcasing the draw-to-audio workflow: sketch patterns → AI interprets visuals → generates matching loops on the fly._
-
 ---
 
 ## What OBSIDIAN Neural does
@@ -117,12 +104,10 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 
 | Plan    | Price        | Credits/month |
 | ------- | ------------ | ------------- |
-| Free    | —            | 10 samples    |
-| Base    | €5.99/month  | 200 samples   |
-| Starter | €14.99/month | 500 samples   |
-| Pro     | €29.99/month | 1500 samples  |
-
-🎁 Every plan includes a **7-day free trial**. No credit card required to start. Cancel anytime.
+| Free    | —            | 20 samples    |
+| Base    | €7.99/month  | 150 samples   |
+| Starter | €11.99/month | 300 samples   |
+| Pro     | €14.99/month | 500 samples   |
 
 ### 🔵 Self-Hosted (Advanced)
 
@@ -185,7 +170,7 @@ Currently at **195+ stars** 🌟
 
 When we hit 200 stars, we're celebrating with a community giveaway:
 
-**Prize:** 1 year of Starter Pack free access (€179.88 value)  
+**Prize:** 1 year of Starter Pack free access (€143.88 value)  
 **Eligibility:** Active community members (stars, discussions, issues, contributions)
 
 👉 [Join the discussion](https://github.com/innermost47/ai-dj/discussions/156)
@@ -217,8 +202,6 @@ When we hit 200 stars, we're celebrating with a community giveaway:
 ## Community
 
 📧 [Contact](https://obsidian-neural.com/contact.html) · 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🌐 [obsidian-neural.com](https://obsidian-neural.com)
-
-[![Jungle Session](https://img.youtube.com/vi/cFmRJIFUOCU/maxresdefault.jpg)](https://youtu.be/cFmRJIFUOCU)
 
 ---
 
