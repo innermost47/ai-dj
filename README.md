@@ -33,7 +33,7 @@ Provider nodes now run **[Foundation-1 by RoyalCities](https://huggingface.co/Ro
 
 The LLM layer automatically adapts prompts to Foundation-1's vocabulary. For rhythmic content (drums, beats, percussion), the system routes to **Stable Audio Open** instead.
 
-🎁 New accounts now receive **200 free credits** on signup — no credit card required.
+🎁 New accounts now receive **20 free credits** on signup — no credit card required.
 
 ---
 
