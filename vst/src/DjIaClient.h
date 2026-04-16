@@ -184,6 +184,7 @@ public:
 			jsonRequest.getDynamicObject()->setProperty("prompt", request.prompt);
 			jsonRequest.getDynamicObject()->setProperty("bpm", bpm);
 			jsonRequest.getDynamicObject()->setProperty("key", request.key);
+			jsonRequest.getDynamicObject()->setProperty("model", request.model);
 			jsonRequest.getDynamicObject()->setProperty("sample_rate", sampleRate);
 			jsonRequest.getDynamicObject()->setProperty("generation_duration", request.generationDuration);
 			if (request.useImage && !request.imageBase64.isEmpty())

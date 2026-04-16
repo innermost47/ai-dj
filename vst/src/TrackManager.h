@@ -206,6 +206,7 @@ public:
 			trackState.setProperty("generationDuration", track->generationDuration, nullptr);
 			trackState.setProperty("loopPointsLocked", track->loopPointsLocked.load(), nullptr);
 			trackState.setProperty("selectedPrompt", track->selectedPrompt, nullptr);
+			trackState.setProperty("selectedModel", track->selectedModel, nullptr);
 			trackState.setProperty("useOriginalFile", track->useOriginalFile.load(), nullptr);
 			trackState.setProperty("hasOriginalVersion", track->hasOriginalVersion.load(), nullptr);
 			trackState.setProperty("nextHasOriginalVersion", track->nextHasOriginalVersion.load(), nullptr);
@@ -236,6 +237,7 @@ public:
 				pageState.setProperty("originalBpm", page.originalBpm, nullptr);
 				pageState.setProperty("prompt", page.prompt, nullptr);
 				pageState.setProperty("selectedPrompt", page.selectedPrompt, nullptr);
+				pageState.setProperty("selectedModel", page.selectedModel, nullptr);
 				pageState.setProperty("generationPrompt", page.generationPrompt, nullptr);
 				pageState.setProperty("generationBpm", page.generationBpm, nullptr);
 				pageState.setProperty("generationKey", page.generationKey, nullptr);
@@ -363,6 +365,7 @@ public:
 			track->generationDuration = trackState.getProperty("generationDuration", 6);
 			track->loopPointsLocked = trackState.getProperty("loopPointsLocked", false);
 			track->selectedPrompt = trackState.getProperty("selectedPrompt", "");
+			track->selectedModel = trackState.getProperty("selectedModel", "stable-audio-open-1.0");
 			track->useOriginalFile = trackState.getProperty("useOriginalFile", false);
 			track->hasOriginalVersion = trackState.getProperty("hasOriginalVersion", false);
 			track->nextHasOriginalVersion = trackState.getProperty("nextHasOriginalVersion", false);
@@ -417,6 +420,7 @@ public:
 						page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 						page.prompt = pageState.getProperty("prompt", "").toString();
 						page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
+						page.selectedModel = pageState.getProperty("selectedModel", "").toString();
 						page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 						page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 						page.generationKey = pageState.getProperty("generationKey", "").toString();
