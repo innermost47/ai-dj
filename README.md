@@ -29,16 +29,26 @@ _Live improvisation — Foundation-1 by RoyalCities for melodic content · Stabl
 
 ## 🔥 What's New — April 2025: The Multi-Model Era
 
-OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks:
+OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks, each optimized for specific tempos and styles:
 
 1.  **Stable Audio Open 1.0** — The versatile foundation for full-mix textures and drum loops.
+    - _Best BPM: Versatile (80–160 BPM)._
 2.  **Foundation-1** — Surgical tag-based control for melodic and harmonic phrasing.
+    - _Best BPM: 100–150 BPM (Sweet spots: 120, 128)._
 3.  **Audialab EDM Elements** — High-energy EDM leads, supersaws, and plucks.
+    - _Best BPM: 100–150 BPM (Ideal at 128)._
 4.  **RC Infinite Pianos** — High-fidelity grand and electric piano performances.
+    - _Best BPM: 100–150 BPM (Optimal at 120)._
 5.  **RC Vocal Textures** — Choral, operatic, and atmospheric vocal chord progressions.
+    - _Best BPM: 100–150 BPM (Best for atmospheric pads)._
 6.  **SAO Instrumental** — Melodic trap, lofi jazz rap, and modern indie stems.
+    - _Best BPM: 75–160 BPM (Great for 90 BPM Lofi)._
 7.  **StableBeaT** — The drum machine: specialized in trap beats and 808 grooves.
+    - _Best BPM: 75–160 BPM (Tightest at 140)._
 8.  **Gluten-V1** — Specialized engine for loopable melodic trap and wavy motifs.
+    - _Best BPM: 90–160 BPM (Optimal at 135)._
+
+⚠️ **Disclaimer:** This is a first implementation of the multi-model architecture. While I strive for the highest audio quality, AI generation can sometimes produce unexpected results. I am very much **open to feedback**! If you notice any issues with sound consistency or tempo sync for a specific model, please open a [GitHub Issue](https://github.com/innermost47/ai-dj/issues) or join the [Discussions](https://github.com/innermost47/ai-dj/discussions). Your feedback helps me fine-tune the engine!
 
 🎁 New accounts now receive **20 free credits** on signup — no credit card required.
 

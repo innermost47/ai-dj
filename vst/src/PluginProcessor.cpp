@@ -51,6 +51,10 @@ DjIaVstProcessor::DjIaVstProcessor()
 		if (trackManager.getAllTrackIds().empty())
 		{
 			initTracks();
+			juce::MessageManager::callAsync([this]() {
+				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
+					editor->refreshTrackComponents();
+				});
 		}
 		});
 
