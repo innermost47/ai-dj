@@ -27,11 +27,18 @@ _Live improvisation — Foundation-1 by RoyalCities for melodic content · Stabl
 > **— Moteka, Electronic Music Producer**
 > [SoundCloud](https://soundcloud.com/moteka) · [Instagram](https://www.instagram.com/pmoteka/)
 
-## 🔥 What's New — April 13, 2025
+## 🔥 What's New — April 2025: The Multi-Model Era
 
-Provider nodes now run **[Foundation-1 by RoyalCities](https://huggingface.co/RoyalCities/Foundation-1)** — a model built specifically for music production: tempo-synced, key-aware loops with structured control over instrumentation, timbre, and musical phrasing.
+OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks:
 
-The LLM layer automatically adapts prompts to Foundation-1's vocabulary. For rhythmic content (drums, beats, percussion), the system routes to **Stable Audio Open** instead.
+1.  **Stable Audio Open 1.0** — The versatile foundation for full-mix textures and drum loops.
+2.  **Foundation-1** — Surgical tag-based control for melodic and harmonic phrasing.
+3.  **Audialab EDM Elements** — High-energy EDM leads, supersaws, and plucks.
+4.  **RC Infinite Pianos** — High-fidelity grand and electric piano performances.
+5.  **RC Vocal Textures** — Choral, operatic, and atmospheric vocal chord progressions.
+6.  **SAO Instrumental** — Melodic trap, lofi jazz rap, and modern indie stems.
+7.  **StableBeaT** — The drum machine: specialized in trap beats and 808 grooves.
+8.  **Gluten-V1** — Specialized engine for loopable melodic trap and wavy motifs.
 
 🎁 New accounts now receive **20 free credits** on signup — no credit card required.
 
