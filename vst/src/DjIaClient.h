@@ -8,6 +8,7 @@ public:
 	struct LoopRequest
 	{
 		juce::String prompt;
+		juce::String model;
 		float generationDuration;
 		float bpm;
 		juce::String key;
@@ -17,6 +18,7 @@ public:
 
 		LoopRequest()
 			: prompt(""),
+			model(""),
 			generationDuration(6.0f),
 			bpm(120.0f),
 			key(""),

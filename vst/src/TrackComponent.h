@@ -87,6 +87,8 @@ public:
 	bool isSamplePending() const { return hasSamplePending; }
 	void setPreviewPlaying(bool playing);
 
+	juce::String getSelectedModel() const { return modelSelector.getText(); }
+
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
 
@@ -157,6 +159,9 @@ private:
 	MidiLearnableButton randomRetriggerButton;
 	MidiLearnableSlider intervalKnob;
 
+	juce::ComboBox modelSelector;
+	juce::StringArray aiModels;
+
 	juce::TextButton trackNumberButton;
 	juce::TextButton previewButton;
 	juce::TextButton originalSyncButton;
@@ -223,6 +228,8 @@ private:
 	void updateRandomDurationButtonColor();
 	void openDrawingCanvas();
 	void updatePreviewButton();
+	juce::Colour getColourForModel(const juce::String& modelName);
+	void updateModelUI();
 
 	float calculateEffectiveBpm();
 

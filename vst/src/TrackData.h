@@ -34,6 +34,7 @@ struct TrackPage
 	juce::String generationKey;
 	juce::String canvasData;
 	juce::String canvasState;
+	juce::String selectedModel;
 
 	juce::StringArray selectedKeywords;
 
@@ -70,6 +71,7 @@ struct TrackPage
 		generationBpm = other.generationBpm;
 		generationKey = other.generationKey;
 		generationDuration = other.generationDuration;
+		selectedModel = other.selectedModel;
 		loopStart = other.loopStart;
 		loopEnd = other.loopEnd;
 		useOriginalFile = other.useOriginalFile.load();
@@ -89,6 +91,7 @@ struct TrackPage
 		prompt.clear();
 		selectedPrompt.clear();
 		generationPrompt.clear();
+		selectedModel.clear();
 		generationBpm = 126.0f;
 		generationKey.clear();
 		generationDuration = 6;
@@ -132,6 +135,7 @@ struct TrackData
 	juce::String generationKey;
 	juce::String generationPrompt;
 	juce::String selectedPrompt;
+	juce::String selectedModel;
 	juce::String currentSampleId;
 	juce::String canvasData;
 	juce::String canvasState;
@@ -305,6 +309,7 @@ struct TrackData
 		generationBpm = currentPage.generationBpm;
 		generationKey = currentPage.generationKey;
 		generationDuration = currentPage.generationDuration;
+		selectedModel = currentPage.selectedModel;
 
 		useOriginalFile = currentPage.useOriginalFile.load();
 		hasOriginalVersion = currentPage.hasOriginalVersion.load();
@@ -328,6 +333,7 @@ struct TrackData
 		pages[0].prompt = prompt;
 		pages[0].selectedPrompt = selectedPrompt;
 		pages[0].generationPrompt = generationPrompt;
+		pages[0].selectedModel = selectedModel;
 		pages[0].generationBpm = generationBpm;
 		pages[0].generationKey = generationKey;
 		pages[0].generationDuration = generationDuration;
@@ -365,6 +371,7 @@ struct TrackData
 			request.bpm = currentPage.generationBpm;
 			request.key = currentPage.generationKey;
 			request.generationDuration = static_cast<float>(currentPage.generationDuration);
+			request.model = currentPage.selectedModel;
 		}
 		else
 		{
@@ -372,6 +379,7 @@ struct TrackData
 			request.bpm = generationBpm;
 			request.key = generationKey;
 			request.generationDuration = static_cast<float>(generationDuration);
+			request.model = selectedModel;
 		}
 		return request;
 	}
@@ -385,6 +393,7 @@ struct TrackData
 			currentPage.generationBpm = request.bpm;
 			currentPage.generationKey = request.key;
 			currentPage.generationDuration = static_cast<int>(request.generationDuration);
+			currentPage.selectedModel = request.model;
 			syncLegacyProperties();
 		}
 		else
@@ -393,6 +402,7 @@ struct TrackData
 			generationBpm = request.bpm;
 			generationKey = request.key;
 			generationDuration = static_cast<int>(request.generationDuration);
+			selectedModel = request.model;
 		}
 	}
 
@@ -426,6 +436,7 @@ struct TrackData
 			preservedLoopStart = 0.0;
 			preservedLoopEnd = 4.0;
 			preservedLoopLocked = false;
+			selectedModel.clear();
 		}
 	}
 

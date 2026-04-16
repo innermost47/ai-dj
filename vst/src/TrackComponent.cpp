@@ -8,6 +8,16 @@
 TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& processor)
 	: trackId(trackId), track(nullptr), audioProcessor(processor)
 {
+	aiModels = {
+		"stable-audio-open-1.0",
+		"foundation-1",
+		"audialab-edm-elements",
+		"rc-infinite-pianos",
+		"rc-vocal-textures",
+		"sao-instrumental",
+		"stablebeat",
+		"gluten-v1",
+	};
 	setupUI();
 	loadPromptPresets();
 }
@@ -394,6 +404,16 @@ void TrackComponent::updateFromTrackData()
 		intervalKnob.setValue(interval, juce::dontSendNotification);
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
+	juce::String modelToSet = track->usePages.load() ?
+		track->getCurrentPage().selectedModel :
+		track->selectedModel;
+
+	if (modelToSet.isNotEmpty())
+	{
+		modelSelector.setText(modelToSet, juce::dontSendNotification);
+	}
+
+	updateModelUI();
 
 	updateRandomRetriggerButtonColor();
 	updateRandomDurationButtonColor();
@@ -535,8 +555,12 @@ void TrackComponent::resized()
 	}
 
 	trackNameLabel.setBounds(headerArea.removeFromLeft(65));
-	int promptWidth = 175;
+	int promptWidth = 100;
 	promptPresetSelector.setBounds(headerArea.removeFromLeft(promptWidth).reduced(2));
+
+	int modelWidth = 80;
+	modelSelector.setBounds(headerArea.removeFromLeft(modelWidth).reduced(2));
+
 	headerArea.removeFromLeft(5);
 
 	deleteButton.setBounds(headerArea.removeFromRight(35));
@@ -1421,6 +1445,34 @@ void TrackComponent::setupUI()
 	{
 		pageButtons[i].setVisible(true);
 	}
+	addAndMakeVisible(modelSelector);
+	for (int i = 0; i < aiModels.size(); ++i)
+	{
+		modelSelector.addItem(aiModels[i], i + 1);
+	}
+	int trackIndex = trackId.retainCharacters("0123456789").getIntValue();
+
+	if (trackIndex >= 1 && trackIndex <= 8)
+	{
+		modelSelector.setSelectedId(trackIndex);
+	}
+	else
+	{
+		modelSelector.setSelectedId(1);
+	}
+	modelSelector.onChange = [this] {
+		auto selectedModel = modelSelector.getText();
+		if (track != nullptr) {
+			if (track->usePages.load()) {
+				track->getCurrentPage().selectedModel = selectedModel;
+				track->syncLegacyProperties();
+			}
+			else {
+				track->selectedModel = selectedModel;
+			}
+		}
+		updateModelUI();
+		};
 	setupPagesUI();
 }
 
@@ -2056,4 +2108,31 @@ void TrackComponent::updatePreviewButton()
 		previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 		previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
 	}
+}
+
+void TrackComponent::updateModelUI()
+{
+	auto currentModel = modelSelector.getText();
+	auto modelColour = getColourForModel(currentModel);
+
+	trackNumberButton.setColour(juce::TextButton::buttonColourId, modelColour);
+
+	trackNumberButton.setColour(juce::TextButton::textColourOffId,
+		modelColour.getBrightness() > 0.7f ? juce::Colours::black : juce::Colours::white);
+
+	repaint();
+}
+
+juce::Colour TrackComponent::getColourForModel(const juce::String& modelName)
+{
+	if (modelName == "stable-audio-open-1.0")   return juce::Colour(0xff1A1A1A);
+	if (modelName == "foundation-1")            return juce::Colour(0xffB8605C);
+	if (modelName == "audialab-edm-elements")   return juce::Colour(0xff9BB09B);
+	if (modelName == "rc-infinite-pianos")      return juce::Colour(0xff8B4545);
+	if (modelName == "rc-vocal-textures")       return juce::Colour(0xffD4A5A0);
+	if (modelName == "sao-instrumental")        return juce::Colour(0xff4A4A4A);
+	if (modelName == "stablebeat")              return juce::Colour(0xffD4A87A);
+	if (modelName == "gluten-v1")               return juce::Colour(0xffCCCCCC);
+
+	return juce::Colour(0xffB8605C);
 }
