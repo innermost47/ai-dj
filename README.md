@@ -31,21 +31,21 @@ _Live improvisation — Foundation-1 by RoyalCities for melodic content · Stabl
 
 OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks, each optimized for specific tempos and styles:
 
-1.  **Stable Audio Open 1.0** — The versatile foundation for full-mix textures and drum loops.
+1.  **[stabilityai/stable-audio-open-1.0](https://huggingface.co/stabilityai/stable-audio-open-1.0)** — The versatile foundation for full-mix textures and drum loops.
     - _Best BPM: Versatile (80–160 BPM)._
-2.  **Foundation-1** — Surgical tag-based control for melodic and harmonic phrasing.
+2.  **[RoyalCities/Foundation-1](https://huggingface.co/RoyalCities/Foundation-1)** — Surgical tag-based control for melodic and harmonic phrasing.
     - _Best BPM: 100–150 BPM (Sweet spots: 120, 128)._
-3.  **Audialab EDM Elements** — High-energy EDM leads, supersaws, and plucks.
+3.  **[adlb/Audialab_EDM_Elements](https://huggingface.co/adlb/Audialab_EDM_Elements)** — High-energy EDM leads, supersaws, and plucks.
     - _Best BPM: 100–150 BPM (Ideal at 128)._
-4.  **RC Infinite Pianos** — High-fidelity grand and electric piano performances.
+4.  **[RoyalCities/RC_Infinite_Pianos](https://huggingface.co/RoyalCities/RC_Infinite_Pianos)** — High-fidelity grand and electric piano performances.
     - _Best BPM: 100–150 BPM (Optimal at 120)._
-5.  **RC Vocal Textures** — Choral, operatic, and atmospheric vocal chord progressions.
+5.  **[RoyalCities/Vocal_Textures_Main](https://huggingface.co/RoyalCities/Vocal_Textures_Main)** — Choral, operatic, and atmospheric vocal chord progressions.
     - _Best BPM: 100–150 BPM (Best for atmospheric pads)._
-6.  **SAO Instrumental** — Melodic trap, lofi jazz rap, and modern indie stems.
+6.  **[santifiorino/SAO-Instrumental-Finetune](https://huggingface.co/santifiorino/SAO-Instrumental-Finetune)** — Melodic trap, lofi jazz rap, and modern indie stems.
     - _Best BPM: 75–160 BPM (Great for 90 BPM Lofi)._
-7.  **StableBeaT** — The drum machine: specialized in trap beats and 808 grooves.
+7.  **[gab-gdp/StableBeaT](https://huggingface.co/gab-gdp/StableBeaT)** — The drum machine: specialized in trap beats and 808 grooves.
     - _Best BPM: 75–160 BPM (Tightest at 140)._
-8.  **Gluten-V1** — Specialized engine for loopable melodic trap and wavy motifs.
+8.  **[atoof/gluten_v1](https://huggingface.co/atoof/gluten_v1)** — Specialized engine for loopable melodic trap and wavy motifs.
     - _Best BPM: 90–160 BPM (Optimal at 135)._
 
 ⚠️ **Disclaimer:** This is a first implementation of the multi-model architecture. While I strive for the highest audio quality, AI generation can sometimes produce unexpected results. I am very much **open to feedback**! If you notice any issues with sound consistency or tempo sync for a specific model, please open a [GitHub Issue](https://github.com/innermost47/ai-dj/issues) or join the [Discussions](https://github.com/innermost47/ai-dj/discussions). Your feedback helps me fine-tune the engine!
