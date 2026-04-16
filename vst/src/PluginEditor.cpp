@@ -1778,6 +1778,16 @@ void DjIaVstEditor::updateLoadButtonState()
 	}
 }
 
+void DjIaVstEditor::visibilityChanged()
+{
+	if (isVisible())
+	{
+		juce::Timer::callAfterDelay(50, [this]() {
+			refreshTrackComponents();
+			});
+	}
+}
+
 void DjIaVstEditor::refreshTrackComponents()
 {
 	auto trackIds = audioProcessor.getAllTrackIds();

@@ -78,6 +78,7 @@ private:
 	juce::TextButton openMidiEditorButton;
 	MidiMappingEditorWindow* midiEditorWindow = nullptr;
 
+	void visibilityChanged() override;
 	void openMidiMappingEditor();
 	void setupUI();
 	void addEventListeners();

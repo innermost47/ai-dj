@@ -68,10 +68,20 @@ public:
 	static const juce::Colour amber;
 	static const juce::Colour textInactive;
 
+	static const juce::Colour modelStableAudio;
+	static const juce::Colour modelFoundation;
+	static const juce::Colour modelEdm;
+	static const juce::Colour modelPianos;
+	static const juce::Colour modelVocals;
+	static const juce::Colour modelInstrumental;
+	static const juce::Colour modelBeats;
+	static const juce::Colour modelGluten;
+
 	static const juce::Colour samplePending;
 
 	static juce::Colour getTrackColour(int trackIndex);
 	static juce::Colour withAlpha(const juce::Colour& colour, float alpha);
 	static juce::Colour darken(const juce::Colour& colour, float amount = 0.2f);
 	static juce::Colour lighten(const juce::Colour& colour, float amount = 0.2f);
+	static juce::Colour getModelColourByIndex(int index);
 };

@@ -4,20 +4,11 @@
 #include "SequencerComponent.h"
 #include "PluginEditor.h"
 #include "ColourPalette.h"
+#include "AiModelDefinitions.h"
 
 TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& processor)
 	: trackId(trackId), track(nullptr), audioProcessor(processor)
 {
-	aiModels = {
-		"stable-audio-open-1.0",
-		"foundation-1",
-		"audialab-edm-elements",
-		"rc-infinite-pianos",
-		"rc-vocal-textures",
-		"sao-instrumental",
-		"stablebeat",
-		"gluten-v1",
-	};
 	setupUI();
 	loadPromptPresets();
 }
@@ -292,8 +283,7 @@ void TrackComponent::updatePlaybackPosition(double timeInSeconds)
 
 void TrackComponent::updateFromTrackData()
 {
-	if (!track)
-		return;
+	if (track == nullptr) return;
 
 	if (track->usePages.load())
 	{
@@ -404,14 +394,17 @@ void TrackComponent::updateFromTrackData()
 		intervalKnob.setValue(interval, juce::dontSendNotification);
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
+
 	juce::String modelToSet = track->usePages.load() ?
 		track->getCurrentPage().selectedModel :
 		track->selectedModel;
 
-	if (modelToSet.isNotEmpty())
-	{
-		modelSelector.setText(modelToSet, juce::dontSendNotification);
+	if (modelToSet.isEmpty()) {
+		auto& models = AiModelDefinitions::getAvailableModels();
+		modelToSet = models[0];
 	}
+
+	modelSelector.setText(modelToSet, juce::dontSendNotification);
 
 	updateModelUI();
 
@@ -1445,34 +1438,47 @@ void TrackComponent::setupUI()
 	{
 		pageButtons[i].setVisible(true);
 	}
-	addAndMakeVisible(modelSelector);
-	for (int i = 0; i < aiModels.size(); ++i)
-	{
-		modelSelector.addItem(aiModels[i], i + 1);
-	}
-	int trackIndex = trackId.retainCharacters("0123456789").getIntValue();
 
-	if (trackIndex >= 1 && trackIndex <= 8)
+	addAndMakeVisible(modelSelector);
+	modelSelector.clear();
+
+	auto& models = AiModelDefinitions::getAvailableModels();
+
+	for (int i = 0; i < models.size(); ++i)
 	{
-		modelSelector.setSelectedId(trackIndex);
+		modelSelector.addItem(models[i], i + 1);
+	}
+
+	int trackNum = trackId.retainCharacters("0123456789").getIntValue();
+
+	if (trackNum >= 1 && trackNum <= models.size())
+	{
+		modelSelector.setSelectedId(trackNum, juce::dontSendNotification);
 	}
 	else
 	{
-		modelSelector.setSelectedId(1);
+		modelSelector.setSelectedId(1, juce::dontSendNotification);
 	}
+
+	updateModelUI();
+
 	modelSelector.onChange = [this] {
 		auto selectedModel = modelSelector.getText();
-		if (track != nullptr) {
-			if (track->usePages.load()) {
+		if (track != nullptr)
+		{
+			if (track->usePages.load())
+			{
 				track->getCurrentPage().selectedModel = selectedModel;
 				track->syncLegacyProperties();
 			}
-			else {
+			else
+			{
 				track->selectedModel = selectedModel;
 			}
 		}
 		updateModelUI();
 		};
+
 	setupPagesUI();
 }
 
@@ -2112,27 +2118,21 @@ void TrackComponent::updatePreviewButton()
 
 void TrackComponent::updateModelUI()
 {
-	auto currentModel = modelSelector.getText();
-	auto modelColour = getColourForModel(currentModel);
+	if (track == nullptr) return;
+
+	juce::String currentModel = modelSelector.getText();
+
+	if (currentModel.isEmpty())
+		currentModel = track->selectedModel;
+
+	if (currentModel.isEmpty())
+		currentModel = AiModelDefinitions::getAvailableModels()[0];
+
+	auto modelColour = AiModelDefinitions::getColourForModel(currentModel);
 
 	trackNumberButton.setColour(juce::TextButton::buttonColourId, modelColour);
-
 	trackNumberButton.setColour(juce::TextButton::textColourOffId,
-		modelColour.getBrightness() > 0.7f ? juce::Colours::black : juce::Colours::white);
+		modelColour.getBrightness() > 0.6f ? juce::Colours::black : juce::Colours::white);
 
 	repaint();
-}
-
-juce::Colour TrackComponent::getColourForModel(const juce::String& modelName)
-{
-	if (modelName == "stable-audio-open-1.0")   return juce::Colour(0xff1A1A1A);
-	if (modelName == "foundation-1")            return juce::Colour(0xffB8605C);
-	if (modelName == "audialab-edm-elements")   return juce::Colour(0xff9BB09B);
-	if (modelName == "rc-infinite-pianos")      return juce::Colour(0xff8B4545);
-	if (modelName == "rc-vocal-textures")       return juce::Colour(0xffD4A5A0);
-	if (modelName == "sao-instrumental")        return juce::Colour(0xff4A4A4A);
-	if (modelName == "stablebeat")              return juce::Colour(0xffD4A87A);
-	if (modelName == "gluten-v1")               return juce::Colour(0xffCCCCCC);
-
-	return juce::Colour(0xffB8605C);
 }

@@ -109,6 +109,15 @@ const juce::Colour ColourPalette::textInactive(COLOR_INACTIVE);
 
 const juce::Colour ColourPalette::samplePending(COLOR_SAMPLE_PENDING);
 
+const juce::Colour ColourPalette::modelStableAudio(COLOR_SLATE);
+const juce::Colour ColourPalette::modelFoundation(COLOR_CORAL);
+const juce::Colour ColourPalette::modelEdm(COLOR_VU_GREEN);
+const juce::Colour ColourPalette::modelPianos(COLOR_DANGER_DARK);
+const juce::Colour ColourPalette::modelVocals(COLOR_PLAY_ARMED);
+const juce::Colour ColourPalette::modelInstrumental(COLOR_TEXT_SECONDARY);
+const juce::Colour ColourPalette::modelBeats(COLOR_VU_ORANGE);
+const juce::Colour ColourPalette::modelGluten(COLOR_INACTIVE);
+
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {
 	static const std::vector<juce::Colour> trackColours = {
@@ -129,4 +138,20 @@ juce::Colour ColourPalette::darken(const juce::Colour& colour, float amount)
 juce::Colour ColourPalette::lighten(const juce::Colour& colour, float amount)
 {
 	return colour.brighter(amount);
+}
+
+juce::Colour ColourPalette::getModelColourByIndex(int index)
+{
+	switch (index % 8)
+	{
+	case 0: return modelStableAudio;
+	case 1: return modelFoundation;
+	case 2: return modelEdm;
+	case 3: return modelPianos;
+	case 4: return modelVocals;
+	case 5: return modelInstrumental;
+	case 6: return modelBeats;
+	case 7: return modelGluten;
+	default: return modelFoundation;
+	}
 }

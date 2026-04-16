@@ -1,6 +1,7 @@
 #pragma once
 #include "JuceHeader.h"
 #include "TrackData.h"
+#include "AiModelDefinitions.h"
 
 class TrackManager
 {
@@ -365,7 +366,8 @@ public:
 			track->generationDuration = trackState.getProperty("generationDuration", 6);
 			track->loopPointsLocked = trackState.getProperty("loopPointsLocked", false);
 			track->selectedPrompt = trackState.getProperty("selectedPrompt", "");
-			track->selectedModel = trackState.getProperty("selectedModel", "stable-audio-open-1.0");
+			track->selectedModel = trackState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
+			if (track->selectedModel.isEmpty()) track->selectedModel = "stable-audio-open-1.0";
 			track->useOriginalFile = trackState.getProperty("useOriginalFile", false);
 			track->hasOriginalVersion = trackState.getProperty("hasOriginalVersion", false);
 			track->nextHasOriginalVersion = trackState.getProperty("nextHasOriginalVersion", false);
@@ -420,7 +422,8 @@ public:
 						page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 						page.prompt = pageState.getProperty("prompt", "").toString();
 						page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
-						page.selectedModel = pageState.getProperty("selectedModel", "").toString();
+						page.selectedModel = pageState.getProperty("selectedModel", track->selectedModel).toString();
+						if (page.selectedModel.isEmpty()) page.selectedModel = track->selectedModel;
 						page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 						page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 						page.generationKey = pageState.getProperty("generationKey", "").toString();
@@ -538,6 +541,7 @@ public:
 					}
 					else
 					{
+						track->pages[pageIndex].selectedModel = track->selectedModel;
 						DBG("Page " << pageIndex << " state not found - empty page");
 					}
 				}

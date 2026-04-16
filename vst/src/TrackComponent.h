@@ -228,7 +228,6 @@ private:
 	void updateRandomDurationButtonColor();
 	void openDrawingCanvas();
 	void updatePreviewButton();
-	juce::Colour getColourForModel(const juce::String& modelName);
 	void updateModelUI();
 
 	float calculateEffectiveBpm();

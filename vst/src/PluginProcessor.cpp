@@ -6,6 +6,7 @@
 #include "SequencerComponent.h"
 #include "Parameters.h"
 #include "ObsidianAlertManager.h"
+#include "AiModelDefinitions.h"
 
 juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 {
@@ -24,36 +25,46 @@ DjIaVstProcessor::DjIaVstProcessor()
 	apiClient("", "http://localhost:8000"),
 	parameters(*this, nullptr, "Parameters", createParameterLayout())
 {
+	individualOutputBuffers.resize(MAX_TRACKS);
+	for (auto& buffer : individualOutputBuffers)
+	{
+		buffer.setSize(2, 512);
+	}
+
 	midiLearnManager.setProcessor(this);
 	projectId = "legacy";
 	loadGlobalConfig();
 	obsidianEngine = std::make_unique<ObsidianEngine>();
 	sharedFormatManager.registerBasicFormats();
-	if (!obsidianEngine->initialize())
-	{
-		DBG("Failed to initialize OBSIDIAN Engine");
-	}
-	else
-	{
-		DBG("OBSIDIAN Engine ready!");
-	}
-	sampleBankInitFuture = std::async(std::launch::async, [this]()
-		{
-			sampleBank = std::make_unique<SampleBank>();
-			sampleBankReady = true; });
+	obsidianEngine->initialize();
+
+	sampleBankInitFuture = std::async(std::launch::async, [this]() {
+		sampleBank = std::make_unique<SampleBank>();
+		sampleBankReady = true;
+		});
+
 	loadParameters();
 	midiLearnManager.loadDefaultMappings(this);
-	initTracks();
 	initDummySynth();
-	trackManager.parameterUpdateCallback = [this](int slot, TrackData* track)
+
+	juce::Timer::callAfterDelay(200, [this]() {
+		if (trackManager.getAllTrackIds().empty())
 		{
-			handleSampleParams(slot, track);
+			initTracks();
+		}
+		});
+
+	trackManager.parameterUpdateCallback = [this](int slot, TrackData* track) {
+		handleSampleParams(slot, track);
 		};
+
 	startTimerHz(30);
 	autoLoadEnabled.store(true);
 	stateLoaded = true;
-	juce::Timer::callAfterDelay(1000, [this]()
-		{ performMigrationIfNeeded(); });
+
+	juce::Timer::callAfterDelay(1000, [this]() {
+		performMigrationIfNeeded();
+		});
 }
 
 void DjIaVstProcessor::performMigrationIfNeeded()
@@ -225,11 +236,25 @@ void DjIaVstProcessor::initDummySynth()
 
 void DjIaVstProcessor::initTracks()
 {
-	selectedTrackId = trackManager.createTrack();
-	individualOutputBuffers.resize(MAX_TRACKS);
-	for (auto& buffer : individualOutputBuffers)
+	auto& models = AiModelDefinitions::getAvailableModels();
+
+	for (int i = 0; i < 8; ++i)
 	{
-		buffer.setSize(2, 512);
+		juce::String newTrackId = trackManager.createTrack();
+
+		if (auto* track = trackManager.getTrack(newTrackId))
+		{
+			track->slotIndex = i;
+			juce::String modelName = models[i];
+			track->selectedModel = modelName;
+
+			for (int p = 0; p < 4; ++p)
+				track->pages[p].selectedModel = modelName;
+
+			track->syncLegacyProperties();
+
+			if (i == 0) selectedTrackId = newTrackId;
+		}
 	}
 }
 

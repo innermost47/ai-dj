@@ -8,7 +8,7 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-project(OBSIDIAN-Neural VERSION 1.2.0)
+project(OBSIDIAN-Neural VERSION 1.3.0)
 
 if(MSVC)
 
@@ -121,12 +121,12 @@ configure_file(
 )
 
 juce_add_plugin(ObsidianNeuralVST
-    VERSION "1.2.0"
+    VERSION "1.3.0"
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
     COMPANY_NAME "InnerMost47"
     BUNDLE_ID "com.innermost47.obsidian-neural-vst" 
-    FORMATS VST3 AU
+    FORMATS VST3 AU Standalone
     PRODUCT_NAME "OBSIDIAN-Neural"
     IS_SYNTH TRUE
     WANTS_MIDI_INPUT TRUE

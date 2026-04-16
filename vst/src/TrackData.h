@@ -34,7 +34,7 @@ struct TrackPage
 	juce::String generationKey;
 	juce::String canvasData;
 	juce::String canvasState;
-	juce::String selectedModel;
+	juce::String selectedModel = "stable-audio-open-1.0";
 
 	juce::StringArray selectedKeywords;
 
@@ -135,7 +135,7 @@ struct TrackData
 	juce::String generationKey;
 	juce::String generationPrompt;
 	juce::String selectedPrompt;
-	juce::String selectedModel;
+	juce::String selectedModel = "stable-audio-open-1.0";
 	juce::String currentSampleId;
 	juce::String canvasData;
 	juce::String canvasState;
