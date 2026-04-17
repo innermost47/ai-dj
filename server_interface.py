@@ -750,7 +750,7 @@ class ObsidianNeuralLauncher:
 
                 subtitle_label = ttk.Label(
                     titles_frame,
-                    text="Real-time AI Music Generation Control Panel",
+                    text="AI Music Generation Control Panel",
                     font=("Arial", 12),
                 )
                 subtitle_label.pack(anchor="w")
@@ -767,7 +767,7 @@ class ObsidianNeuralLauncher:
 
         subtitle_label = ttk.Label(
             parent,
-            text="Real-time AI Music Generation Control Panel",
+            text="AI Music Generation Control Panel",
             font=("Arial", 12),
         )
         subtitle_label.pack()

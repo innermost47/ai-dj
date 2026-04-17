@@ -10,7 +10,7 @@
 | [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                   |
 | **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3/AU plugin (client)                      |
 
-## 🎵 Real-time AI music generation VST3 plugin for live performance
+## 🎵 AI music generation VST3 plugin designed for live performance
 
 <div align="center">
 
@@ -62,7 +62,7 @@ OBSIDIAN Neural now features **8 specialized AI engines** in a single interface.
 
 ## What OBSIDIAN Neural does
 
-Type words → Get musical loops instantly. No stopping your creative flow.
+Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 - **8-track sampler** with MIDI triggering (C3-B3)
 - **4 pages per track** (A/B/C/D) — Switch variations instantly
@@ -71,7 +71,7 @@ Type words → Get musical loops instantly. No stopping your creative flow.
 - **Quantized page changes** — Seamless transitions locked to measure boundaries
 - **Draw-to-sound** — Sketch your ideas visually and let AI interpret them musically
 - **Perfect DAW sync** — Auto time-stretch to project tempo
-- **Real-time generation** — No pre-recorded samples
+- **Non-blocking generation** — No pre-recorded samples, renders in background
 
 **OBSIDIAN Neural is NOT a song generator** like Suno or Udio. It's a performance tool: you build your track loop by loop, you're the composer, AI is your loop generator.
 
