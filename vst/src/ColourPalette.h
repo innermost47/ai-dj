@@ -77,6 +77,8 @@ public:
 	static const juce::Colour modelBeats;
 	static const juce::Colour modelGluten;
 
+	static const juce::Colour charcoal;
+
 	static const juce::Colour samplePending;
 
 	static juce::Colour getTrackColour(int trackIndex);

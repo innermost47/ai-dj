@@ -43,6 +43,7 @@ constexpr auto COLOR_VU_GREEN = 0xff9BB09B;
 constexpr auto COLOR_VU_ORANGE = 0xffD4A87A;
 constexpr auto COLOR_VU_RED = 0xffB8605C;
 constexpr auto COLOR_PLAY_ACTIVE = 0xff8B4545;
+constexpr auto COLOR_CHARCOAL = 0xff2B2B2B;
 constexpr auto COLOR_SAMPLE_PENDING = COLOR_PLAY_ARMED;
 
 const juce::Colour ColourPalette::track1(COLOR_TRACK1);
@@ -117,6 +118,8 @@ const juce::Colour ColourPalette::modelVocals(COLOR_PLAY_ARMED);
 const juce::Colour ColourPalette::modelInstrumental(COLOR_TEXT_SECONDARY);
 const juce::Colour ColourPalette::modelBeats(COLOR_VU_ORANGE);
 const juce::Colour ColourPalette::modelGluten(COLOR_INACTIVE);
+
+const juce::Colour ColourPalette::charcoal(COLOR_CHARCOAL);
 
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {

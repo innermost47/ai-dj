@@ -309,42 +309,29 @@ void TrackComponent::updateFromTrackData()
 	showWaveformButton.setToggleState(track->showWaveform, juce::dontSendNotification);
 	sequencerToggleButton.setToggleState(track->showSequencer, juce::dontSendNotification);
 	randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(), juce::dontSendNotification);
+
 	drawButton.setEnabled(!audioProcessor.getUseLocalModel());
+
+	bool hasOriginal = false;
+	bool useOriginal = false;
 
 	if (track->usePages.load())
 	{
 		const auto& currentPage = track->getCurrentPage();
-		if (currentPage.hasOriginalVersion.load())
-		{
-			bool useOriginal = currentPage.useOriginalFile.load();
-			originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
-			originalSyncButton.setButtonText(useOriginal ? juce::String::fromUTF8("\xE2\x97\x8F") : juce::String::fromUTF8("\xE2\x97\x8B"));
-			originalSyncButton.setEnabled(true);
-		}
-		else
-		{
-			originalSyncButton.setToggleState(false, juce::dontSendNotification);
-			originalSyncButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x8B"));
-			originalSyncButton.setEnabled(false);
-		}
+		hasOriginal = currentPage.hasOriginalVersion.load();
+		useOriginal = hasOriginal && currentPage.useOriginalFile.load();
 	}
 	else
 	{
-		if (track->hasOriginalVersion.load())
-		{
-			bool useOriginal = track->useOriginalFile.load();
-			originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
-			originalSyncButton.setButtonText(useOriginal ? juce::String::fromUTF8("\xE2\x97\x8F") : juce::String::fromUTF8("\xE2\x97\x8B"));
-			originalSyncButton.setEnabled(true);
-		}
-		else
+		hasOriginal = track->hasOriginalVersion.load();
+		if (!hasOriginal)
 		{
 			track->useOriginalFile = false;
-			originalSyncButton.setToggleState(false, juce::dontSendNotification);
-			originalSyncButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x8B"));
-			originalSyncButton.setEnabled(false);
 		}
+		useOriginal = hasOriginal && track->useOriginalFile.load();
 	}
+
+	originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
 
 	trackNameLabel.setText(track->trackName, juce::dontSendNotification);
 
@@ -366,10 +353,10 @@ void TrackComponent::updateFromTrackData()
 			}
 		}
 	}
+
 	if (waveformDisplay)
 	{
 		bool isCurrentlyPlaying = track->isPlaying.load();
-
 		if (track->numSamples > 0 && track->sampleRate > 0)
 		{
 			double startSample = track->loopStart * track->sampleRate;
@@ -379,15 +366,6 @@ void TrackComponent::updateFromTrackData()
 		}
 	}
 
-	if (track->isPlaying.load() && !isPreviewPlaying)
-	{
-		previewButton.setEnabled(false);
-	}
-	else
-	{
-		previewButton.setEnabled(true);
-	}
-
 	if (!intervalKnob.isMouseButtonDown())
 	{
 		int interval = track->randomRetriggerInterval.load();
@@ -395,21 +373,29 @@ void TrackComponent::updateFromTrackData()
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
 
-	juce::String modelToSet = track->usePages.load() ?
-		track->getCurrentPage().selectedModel :
-		track->selectedModel;
+	juce::String modelToSet = track->usePages.load()
+		? track->getCurrentPage().selectedModel
+		: track->selectedModel;
 
-	if (modelToSet.isEmpty()) {
+	if (modelToSet.isEmpty())
+	{
 		auto& models = AiModelDefinitions::getAvailableModels();
 		modelToSet = models[0];
 	}
 
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
-
 	updateModelUI();
 
 	updateRandomRetriggerButtonColor();
 	updateRandomDurationButtonColor();
+
+	updateButtonsEnabledState();
+
+	if (track->isPlaying.load() && !isPreviewPlaying)
+	{
+		previewButton.setEnabled(false);
+	}
+
 	updateTrackInfo();
 }
 
@@ -527,62 +513,159 @@ void TrackComponent::setSamplePending(bool pending)
 	repaint();
 }
 
+void TrackComponent::layoutPlaybackCluster(juce::Rectangle<int> area)
+{
+	const int gap = 2;
+	int cellW = (area.getWidth() - gap) / 2;
+	int cellH = (area.getHeight() - gap) / 2;
+
+	auto topRow = area.removeFromTop(cellH);
+	originalSyncButton.setBounds(topRow.removeFromLeft(cellW));
+	topRow.removeFromLeft(gap);
+	previewButton.setBounds(topRow.removeFromLeft(cellW));
+
+	area.removeFromTop(gap);
+
+	auto bottomRow = area.removeFromTop(cellH);
+	showWaveformButton.setBounds(bottomRow.removeFromLeft(cellW));
+	bottomRow.removeFromLeft(gap);
+	sequencerToggleButton.setBounds(bottomRow.removeFromLeft(cellW));
+}
+
+void TrackComponent::layoutFxCluster(juce::Rectangle<int> area)
+{
+	const int gap = 2;
+	int cellW = (area.getWidth() - gap) / 2;
+	int topRowHeight = area.getHeight() / 2;
+
+	auto topRow = area.removeFromTop(topRowHeight);
+	randomRetriggerButton.setBounds(topRow.removeFromLeft(cellW));
+	topRow.removeFromLeft(gap);
+	randomDurationToggle.setBounds(topRow.removeFromLeft(cellW));
+
+	area.removeFromTop(gap);
+
+	const int knobDiameter = 22;
+	const int labelHeight = 10;
+
+	intervalKnob.setBounds(
+		area.getX() + (area.getWidth() - knobDiameter) / 2,
+		area.getY(),
+		knobDiameter, knobDiameter);
+
+	intervalLabel.setBounds(
+		area.getX(),
+		area.getY() + knobDiameter + 2,
+		area.getWidth(), labelHeight);
+}
+
 void TrackComponent::resized()
 {
 	auto area = getLocalBounds().reduced(6);
+
 	auto trackNumberArea = area.removeFromLeft(40);
 	trackNumberButton.setBounds(trackNumberArea);
 	area.removeFromLeft(5);
-	auto headerArea = area.removeFromTop(30);
+
+	auto headerArea = area.removeFromTop(ICON_BUTTON_HEIGHT);
+
 
 	if (pagesMode)
 	{
-		auto pagesArea = headerArea.removeFromLeft(40);
+		auto pagesArea = headerArea.removeFromLeft(48);
+		int pagesGridHeight = PAGE_BUTTON_SIZE * 2 + 2;
+		int yOffset = (pagesArea.getHeight() - pagesGridHeight) / 2;
+		pagesArea.removeFromTop(yOffset);
+		pagesArea.setHeight(pagesGridHeight);
 		layoutPagesButtons(pagesArea);
 		headerArea.removeFromLeft(3);
 	}
 	else
 	{
-		togglePagesButton.setBounds(headerArea.removeFromLeft(25));
+		auto toggleArea = headerArea.removeFromLeft(25);
+		int toggleHeight = 25;
+		int yOffset = (toggleArea.getHeight() - toggleHeight) / 2;
+		togglePagesButton.setBounds(toggleArea.getX(), toggleArea.getY() + yOffset,
+			toggleArea.getWidth(), toggleHeight);
 		headerArea.removeFromLeft(3);
 	}
 
-	trackNameLabel.setBounds(headerArea.removeFromLeft(65));
-	int promptWidth = 100;
-	promptPresetSelector.setBounds(headerArea.removeFromLeft(promptWidth).reduced(2));
+	{
+		const int nameWidth = 60;
+		auto nameArea = headerArea.removeFromLeft(nameWidth);
+		int nameHeight = 22;
+		int yOffset = (nameArea.getHeight() - nameHeight) / 2;
+		trackNameLabel.setBounds(nameArea.getX(), nameArea.getY() + yOffset,
+			nameArea.getWidth(), nameHeight);
+	}
 
-	int modelWidth = 80;
-	modelSelector.setBounds(headerArea.removeFromLeft(modelWidth).reduced(2));
+	headerArea.removeFromLeft(4);
 
-	headerArea.removeFromLeft(5);
+	{
+		const int selectorsWidth = 160;
+		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 
-	deleteButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	generateButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	drawButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	originalSyncButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	previewButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	showWaveformButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	sequencerToggleButton.setBounds(headerArea.removeFromRight(35));
+		const int selectorHeight = 22;
+		const int gap = 4;
+		const int totalStackHeight = selectorHeight * 2 + gap;
+		int yOffset = (selectorsArea.getHeight() - totalStackHeight) / 2;
 
-	headerArea.removeFromRight(5);
-	randomRetriggerButton.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
-	randomDurationToggle.setBounds(headerArea.removeFromRight(35));
-	headerArea.removeFromRight(5);
+		promptPresetSelector.setBounds(
+			selectorsArea.getX(),
+			selectorsArea.getY() + yOffset,
+			selectorsArea.getWidth(),
+			selectorHeight);
 
-	auto knobArea = headerArea.removeFromRight(50);
-	auto knobBounds = knobArea.withHeight(55).withY(knobArea.getY() - 8);
+		modelSelector.setBounds(
+			selectorsArea.getX(),
+			selectorsArea.getY() + yOffset + selectorHeight + gap,
+			selectorsArea.getWidth(),
+			selectorHeight);
+	}
 
-	intervalKnob.setBounds(knobBounds.removeFromTop(40));
-	intervalLabel.setBounds(knobBounds.removeFromTop(6));
+	headerArea.removeFromLeft(8);
 
-	headerArea.removeFromRight(5);
+	{
+		const int createButtonWidth = 48;
+		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
+		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+
+		drawButton.setBounds(headerArea.removeFromRight(createButtonWidth));
+	}
+	headerArea.removeFromRight(CLUSTER_GAP);
+
+	{
+		const int playbackBlockWidth = 70;
+		auto playbackArea = headerArea.removeFromRight(playbackBlockWidth);
+		layoutPlaybackCluster(playbackArea);
+	}
+	headerArea.removeFromRight(CLUSTER_GAP);
+
+	randomRetriggerButton.setBounds(headerArea.removeFromRight(ICON_BUTTON_WIDTH));
+	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+
+	randomDurationToggle.setBounds(headerArea.removeFromRight(ICON_BUTTON_WIDTH));
+	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+
+	{
+		auto knobArea = headerArea.removeFromRight(48);
+		const int knobDiameter = 42;
+		const int labelHeight = 10;
+		const int stackHeight = knobDiameter + 2 + labelHeight;
+		int yOffset = (knobArea.getHeight() - stackHeight) / 2;
+		intervalKnob.setBounds(
+			knobArea.getX() + (knobArea.getWidth() - knobDiameter) / 2,
+			knobArea.getY() + yOffset,
+			knobDiameter, knobDiameter);
+		intervalLabel.setBounds(
+			knobArea.getX(),
+			knobArea.getY() + yOffset + knobDiameter + 2,
+			knobArea.getWidth(), labelHeight);
+	}
+
+	headerArea.removeFromRight(CLUSTER_GAP);
+
+	deleteButton.setBounds(headerArea.removeFromRight(ICON_BUTTON_WIDTH));
 
 	if (waveformDisplay && showWaveformButton.getToggleState())
 	{
@@ -594,6 +677,7 @@ void TrackComponent::resized()
 	{
 		waveformDisplay->setVisible(false);
 	}
+
 	if (sequencer && sequencerVisible && sequencerToggleButton.getToggleState())
 	{
 		if (waveformDisplay && waveformDisplay->isVisible())
@@ -1234,93 +1318,14 @@ void TrackComponent::addListener(juce::String name)
 
 void TrackComponent::setupUI()
 {
-	addAndMakeVisible(deleteButton);
-	deleteButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x95"));
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-	deleteButton.setTooltip("Delete this track");
-	deleteButton.onClick = [this]()
+
+	addAndMakeVisible(trackNumberButton);
+	trackNumberButton.setButtonText("--");
+	trackNumberButton.setTooltip("Select this track");
+	trackNumberButton.onClick = [this]()
 		{
-			if (onDeleteTrack)
-			{
-				onDeleteTrack(trackId);
-			}
-		};
-
-	addAndMakeVisible(drawButton);
-	drawButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x8E"));
-	drawButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
-	drawButton.setTooltip("Draw an image for AI generation (unavailable with local TFLite models)");
-	drawButton.onClick = [this]() { openDrawingCanvas(); };
-
-	addAndMakeVisible(generateButton);
-	generateButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x93"));
-	generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-	generateButton.setTooltip("Generate new sample for this track");
-	generateButton.onClick = [this]()
-		{
-			if (onGenerateForTrack)
-			{
-				if (track)
-				{
-					if (track->usePages.load())
-					{
-						auto& currentPage = track->getCurrentPage();
-						currentPage.selectedPrompt = promptPresetSelector.getText();
-						currentPage.generationBpm = audioProcessor.getGlobalBpm();
-						currentPage.generationKey = audioProcessor.getGlobalKey();
-						currentPage.generationDuration = audioProcessor.getGlobalDuration();
-
-						track->syncLegacyProperties();
-					}
-					else
-					{
-						track->selectedPrompt = promptPresetSelector.getText();
-						track->generationBpm = audioProcessor.getGlobalBpm();
-						track->generationKey = audioProcessor.getGlobalKey();
-						track->generationDuration = audioProcessor.getGlobalDuration();
-					}
-				}
-				onGenerateForTrack(trackId);
-				setButtonParameter("Generate");
-			}
-		};
-
-	addAndMakeVisible(sequencerToggleButton);
-	sequencerToggleButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xA6"));
-	sequencerToggleButton.setClickingTogglesState(true);
-	sequencerToggleButton.setTooltip("Show/hide step sequencer");
-	sequencerToggleButton.onClick = [this]()
-		{
-			track->showSequencer = sequencerToggleButton.getToggleState();
-			toggleSequencerDisplay();
-		};
-
-	addAndMakeVisible(originalSyncButton);
-	originalSyncButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x8F"));
-	originalSyncButton.setClickingTogglesState(true);
-	originalSyncButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
-	originalSyncButton.setTooltip("Toggle between original and time-stretched version");
-	originalSyncButton.onClick = [this]()
-		{
-			toggleOriginalSync();
-		};
-
-	addAndMakeVisible(infoLabel);
-	infoLabel.setText("Empty track - Generate your sample!", juce::dontSendNotification);
-	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	infoLabel.setFont(juce::FontOptions(12.0f));
-
-	addAndMakeVisible(showWaveformButton);
-	showWaveformButton.setButtonText(juce::String::fromUTF8("\xE3\x80\x9C"));
-	showWaveformButton.setTooltip("Show/hide waveform display");
-	showWaveformButton.setClickingTogglesState(true);
-	showWaveformButton.onClick = [this]()
-		{
-			if (track)
-			{
-				track->showWaveform = showWaveformButton.getToggleState();
-				toggleWaveformDisplay();
-			}
+			if (onSelectTrack)
+				onSelectTrack(trackId);
 		};
 
 	addAndMakeVisible(trackNameLabel);
@@ -1335,7 +1340,6 @@ void TrackComponent::setupUI()
 				editor->selectAll();
 			}
 		};
-
 	trackNameLabel.onTextChange = [this]()
 		{
 			if (track)
@@ -1351,34 +1355,10 @@ void TrackComponent::setupUI()
 		};
 	trackNameLabel.toFront(false);
 
-	addAndMakeVisible(trackNumberButton);
-	trackNumberButton.setButtonText("--");
-	trackNumberButton.setTooltip("Select this track");
-	trackNumberButton.onClick = [this]()
-		{
-			if (onSelectTrack)
-				onSelectTrack(trackId);
-		};
-
-	addAndMakeVisible(previewButton);
-	previewButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-	previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-	previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
-	previewButton.onClick = [this]()
-		{
-			if (track && onPreviewTrack)
-			{
-				if (isPreviewPlaying)
-				{
-					if (onStopPreview)
-						onStopPreview(trackId);
-				}
-				else
-				{
-					onPreviewTrack(trackId);
-				}
-			}
-		};
+	addAndMakeVisible(infoLabel);
+	infoLabel.setText("Empty track - Generate your sample!", juce::dontSendNotification);
+	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	infoLabel.setFont(juce::FontOptions(12.0f));
 
 	addAndMakeVisible(promptPresetSelector);
 	promptPresetSelector.setTooltip("Select prompt for this track");
@@ -1387,16 +1367,46 @@ void TrackComponent::setupUI()
 			onTrackPresetSelected();
 		};
 
-	randomRetriggerButton.setButtonText(juce::String::fromUTF8("\xE2\x86\xBB"));
-	randomRetriggerButton.setTooltip("Beat Repeat - Loop current section while held");
-	randomRetriggerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
-	randomRetriggerButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonPrimary);
-	randomRetriggerButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
-	randomRetriggerButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
+	addAndMakeVisible(modelSelector);
+	modelSelector.clear();
 
-	addAndMakeVisible(randomRetriggerButton);
-	randomRetriggerButton.onClick = [this]()
-		{ onRandomRetriggerToggled(); };
+	auto& models = AiModelDefinitions::getAvailableModels();
+	for (int i = 0; i < models.size(); ++i)
+	{
+		modelSelector.addItem(models[i], i + 1);
+	}
+
+	int trackNum = trackId.retainCharacters("0123456789").getIntValue();
+	if (trackNum >= 1 && trackNum <= models.size())
+	{
+		modelSelector.setSelectedId(trackNum, juce::dontSendNotification);
+	}
+	else
+	{
+		modelSelector.setSelectedId(1, juce::dontSendNotification);
+	}
+
+	updateModelUI();
+
+	modelSelector.onChange = [this]
+		{
+			auto selectedModel = modelSelector.getText();
+			if (track != nullptr)
+			{
+				if (track->usePages.load())
+				{
+					track->getCurrentPage().selectedModel = selectedModel;
+					track->syncLegacyProperties();
+				}
+				else
+				{
+					track->selectedModel = selectedModel;
+				}
+			}
+			updateModelUI();
+		};
+
+	setupIconButtons();
 
 	addAndMakeVisible(intervalKnob);
 	intervalKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -1415,14 +1425,140 @@ void TrackComponent::setupUI()
 	intervalLabel.setFont(juce::FontOptions(9.0f));
 	intervalLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
+	togglePagesButton.setVisible(false);
+	for (int i = 0; i < 4; ++i)
+	{
+		pageButtons[i].setVisible(true);
+	}
+
+	setupPagesUI();
+}
+
+void TrackComponent::setupIconButtons()
+{
+	auto setupToggleButton = [](IconButton& btn)
+		{
+			btn.setClickingTogglesState(true);
+			btn.setHasAccentBar(true);
+			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonPrimary);
+			btn.setColour(juce::TextButton::textColourOnId, ColourPalette::buttonPrimary);
+		};
+
+	auto setupActionButton = [](IconButton& btn)
+		{
+			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonPrimary);
+		};
+
+	addAndMakeVisible(drawButton);
+	drawButton.setIconPath(TrackButtonIcons::draw());
+	setupActionButton(drawButton);
+	drawButton.setTooltip("Draw a visual prompt to guide AI generation (server mode only)");
+	drawButton.onClick = [this]() { openDrawingCanvas(); };
+
+	addAndMakeVisible(generateButton);
+	generateButton.setIconPath(TrackButtonIcons::generate());
+	generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
+	generateButton.setColour(juce::TextButton::textColourOffId, ColourPalette::backgroundDeep);
+	generateButton.setTooltip("Generate AI audio with current prompt for this track");
+	generateButton.onClick = [this]()
+		{
+			if (onGenerateForTrack)
+			{
+				if (track)
+				{
+					if (track->usePages.load())
+					{
+						auto& currentPage = track->getCurrentPage();
+						currentPage.selectedPrompt = promptPresetSelector.getText();
+						currentPage.generationBpm = audioProcessor.getGlobalBpm();
+						currentPage.generationKey = audioProcessor.getGlobalKey();
+						currentPage.generationDuration = audioProcessor.getGlobalDuration();
+						track->syncLegacyProperties();
+					}
+					else
+					{
+						track->selectedPrompt = promptPresetSelector.getText();
+						track->generationBpm = audioProcessor.getGlobalBpm();
+						track->generationKey = audioProcessor.getGlobalKey();
+						track->generationDuration = audioProcessor.getGlobalDuration();
+					}
+				}
+				onGenerateForTrack(trackId);
+				setButtonParameter("Generate");
+			}
+		};
+
+	addAndMakeVisible(originalSyncButton);
+	originalSyncButton.setIconPath(TrackButtonIcons::sync());
+	originalSyncButton.setCompactMode(true);
+	originalSyncButton.setLabelText("");
+	setupToggleButton(originalSyncButton);
+	originalSyncButton.setTooltip("Play original file (bypass time-stretching). Disabled when no original version exists.");
+	originalSyncButton.onClick = [this]() { toggleOriginalSync(); };
+
+	addAndMakeVisible(previewButton);
+	previewButton.setIconPath(TrackButtonIcons::play());
+	previewButton.setIconPathToggled(TrackButtonIcons::stop());
+	previewButton.setHasToggledIcon(true);
+	previewButton.setCompactMode(true);
+	previewButton.setLabelText("");
+	setupToggleButton(previewButton);
+	previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
+	previewButton.onClick = [this]()
+		{
+			if (track && onPreviewTrack)
+			{
+				if (isPreviewPlaying)
+				{
+					if (onStopPreview) onStopPreview(trackId);
+				}
+				else
+				{
+					onPreviewTrack(trackId);
+				}
+			}
+		};
+
+	addAndMakeVisible(showWaveformButton);
+	showWaveformButton.setIconPath(TrackButtonIcons::waveform());
+	showWaveformButton.setCompactMode(true);
+	showWaveformButton.setLabelText("");
+	setupToggleButton(showWaveformButton);
+	showWaveformButton.setTooltip("Show/hide waveform display and loop points");
+	showWaveformButton.onClick = [this]()
+		{
+			if (track)
+			{
+				track->showWaveform = showWaveformButton.getToggleState();
+				toggleWaveformDisplay();
+			}
+		};
+
+	addAndMakeVisible(sequencerToggleButton);
+	sequencerToggleButton.setIconPath(TrackButtonIcons::sequencer());
+	sequencerToggleButton.setCompactMode(true);
+	sequencerToggleButton.setLabelText("");
+	setupToggleButton(sequencerToggleButton);
+	sequencerToggleButton.setTooltip("Show/hide step sequencer (16 steps per measure)");
+	sequencerToggleButton.onClick = [this]()
+		{
+			track->showSequencer = sequencerToggleButton.getToggleState();
+			toggleSequencerDisplay();
+		};
+
+	addAndMakeVisible(randomRetriggerButton);
+	randomRetriggerButton.setIconPath(TrackButtonIcons::repeat());
+	setupToggleButton(randomRetriggerButton);
+	randomRetriggerButton.setTooltip("Beat repeat - re-trigger current section at interval while ON");
+	randomRetriggerButton.onClick = [this]() { onRandomRetriggerToggled(); };
+
 	addAndMakeVisible(randomDurationToggle);
-	randomDurationToggle.setButtonText("R");
-	randomDurationToggle.setTooltip("Auto-randomize beat repeat duration");
-	randomDurationToggle.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundLight);
-	randomDurationToggle.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonPrimary);
-	randomDurationToggle.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
-	randomDurationToggle.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
-	randomDurationToggle.setClickingTogglesState(true);
+	randomDurationToggle.setIconPath(TrackButtonIcons::random());
+	setupToggleButton(randomDurationToggle);
+	randomDurationToggle.setTooltip("Auto-randomize repeat interval on each trigger");
 	randomDurationToggle.onClick = [this]()
 		{
 			if (track)
@@ -1433,79 +1569,55 @@ void TrackComponent::setupUI()
 			}
 		};
 
-	togglePagesButton.setVisible(false);
-	for (int i = 0; i < 4; ++i)
-	{
-		pageButtons[i].setVisible(true);
-	}
-
-	addAndMakeVisible(modelSelector);
-	modelSelector.clear();
-
-	auto& models = AiModelDefinitions::getAvailableModels();
-
-	for (int i = 0; i < models.size(); ++i)
-	{
-		modelSelector.addItem(models[i], i + 1);
-	}
-
-	int trackNum = trackId.retainCharacters("0123456789").getIntValue();
-
-	if (trackNum >= 1 && trackNum <= models.size())
-	{
-		modelSelector.setSelectedId(trackNum, juce::dontSendNotification);
-	}
-	else
-	{
-		modelSelector.setSelectedId(1, juce::dontSendNotification);
-	}
-
-	updateModelUI();
-
-	modelSelector.onChange = [this] {
-		auto selectedModel = modelSelector.getText();
-		if (track != nullptr)
+	addAndMakeVisible(deleteButton);
+	deleteButton.setIconPath(TrackButtonIcons::trash());
+	setupActionButton(deleteButton);
+	deleteButton.setTooltip("Delete this track. This cannot be undone.");
+	deleteButton.onClick = [this]()
 		{
-			if (track->usePages.load())
-			{
-				track->getCurrentPage().selectedModel = selectedModel;
-				track->syncLegacyProperties();
-			}
-			else
-			{
-				track->selectedModel = selectedModel;
-			}
-		}
-		updateModelUI();
+			if (onDeleteTrack) onDeleteTrack(trackId);
 		};
+}
 
-	setupPagesUI();
+
+void TrackComponent::updateButtonsEnabledState()
+{
+	bool hasAudio = track && track->numSamples > 0;
+
+	bool hasOriginal = false;
+	if (track)
+	{
+		if (track->usePages.load())
+			hasOriginal = track->getCurrentPage().hasOriginalVersion.load();
+		else
+			hasOriginal = track->hasOriginalVersion.load();
+	}
+
+	previewButton.setEnabled(hasAudio);
+	showWaveformButton.setEnabled(hasAudio);
+	sequencerToggleButton.setEnabled(hasAudio);
+	randomRetriggerButton.setEnabled(hasAudio);
+
+	originalSyncButton.setEnabled(hasAudio && hasOriginal);
+
+	randomDurationToggle.setEnabled(hasAudio);
+
+	intervalKnob.setEnabled(hasAudio);
+	intervalLabel.setEnabled(hasAudio);
 }
 
 void TrackComponent::updateRandomRetriggerButtonColor()
 {
 	if (!track) return;
-
-	bool isEnabled = track->randomRetriggerEnabled.load();
-
-	randomRetriggerButton.setColour(juce::TextButton::buttonColourId,
-		isEnabled ? ColourPalette::buttonPrimary : ColourPalette::backgroundLight);
-
-	randomRetriggerButton.repaint();
+	randomRetriggerButton.setToggleState(track->randomRetriggerEnabled.load(),
+		juce::dontSendNotification);
 }
 
 void TrackComponent::updateRandomDurationButtonColor()
 {
-	if (!track) return;
-
-	bool isEnabled = randomDurationToggle.getToggleState();
-
-	randomDurationToggle.setColour(juce::TextButton::buttonColourId,
-		isEnabled ? ColourPalette::buttonPrimary : ColourPalette::backgroundLight);
-	randomDurationToggle.setColour(juce::TextButton::buttonOnColourId,
-		ColourPalette::buttonPrimary);
-
-	randomDurationToggle.repaint();
+	if (!track) return
+		randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(),
+			juce::dontSendNotification);
 }
 
 void TrackComponent::onRandomRetriggerToggled()
@@ -2102,18 +2214,8 @@ void TrackComponent::setPreviewPlaying(bool playing)
 
 void TrackComponent::updatePreviewButton()
 {
-	if (isPreviewPlaying)
-	{
-		previewButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xA0"));
-		previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-		previewButton.setTooltip("Stop preview");
-	}
-	else
-	{
-		previewButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-		previewButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-		previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
-	}
+	previewButton.setToggleState(isPreviewPlaying, juce::dontSendNotification);
+	previewButton.setTooltip(isPreviewPlaying ? "Stop preview" : "Preview sample (independent of ARM/STOP state)");
 }
 
 void TrackComponent::updateModelUI()

@@ -41,7 +41,55 @@ private:
 			.brighter(0.15f);
 	}
 
+	static juce::TextLayout layoutTooltipText(const juce::String& text, juce::Colour colour)
+	{
+		const float tooltipFontSize = 12.0f;
+		const int maxToolTipWidth = 400;
+
+		juce::AttributedString s;
+		s.setJustification(juce::Justification::centredLeft);
+		s.append(text,
+			juce::Font(juce::FontOptions("Courier New", tooltipFontSize, juce::Font::plain)),
+			colour);
+
+		juce::TextLayout tl;
+		tl.createLayoutWithBalancedLineLengths(s, (float)maxToolTipWidth);
+		return tl;
+	}
+
 public:
+
+
+	juce::Rectangle<int> getTooltipBounds(const juce::String& tipText,
+		juce::Point<int> screenPos,
+		juce::Rectangle<int> parentArea) override
+	{
+		const juce::TextLayout tl(layoutTooltipText(tipText, ColourPalette::textPrimary));
+		auto w = (int)(tl.getWidth() + 16.0f);
+		auto h = (int)(tl.getHeight() + 10.0f);
+		return juce::Rectangle<int>(screenPos.x > parentArea.getCentreX() ? screenPos.x - (w + 12) : screenPos.x + 24,
+			screenPos.y > parentArea.getCentreY() ? screenPos.y - (h + 6) : screenPos.y + 6,
+			w, h)
+			.constrainedWithin(parentArea);
+	}
+
+	void drawTooltip(juce::Graphics& g, const juce::String& text, int width, int height) override
+	{
+		juce::Rectangle<float> bounds(0.0f, 0.0f, (float)width, (float)height);
+
+		g.setColour(juce::Colours::black.withAlpha(0.2f));
+		g.fillRoundedRectangle(bounds.translated(0, 2.0f), 4.0f);
+
+		g.setColour(ColourPalette::backgroundDeep);
+		g.fillRoundedRectangle(bounds, 4.0f);
+
+		g.setColour(ColourPalette::textAccent.withAlpha(0.4f));
+		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
+
+		layoutTooltipText(text, ColourPalette::textPrimary)
+			.draw(g, bounds.reduced(8.0f, 4.0f));
+	}
+
 	void drawButtonBackground(juce::Graphics& g,
 		juce::Button& button,
 		const juce::Colour& backgroundColour,
@@ -169,24 +217,19 @@ public:
 		const juce::Rectangle<int>& textArea,
 		juce::TextLayout& textLayout) override
 	{
-		// Fond principal
 		g.fillAll(ColourPalette::backgroundDeep);
 
-		// Bordure subtile
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.4f));
 		g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1.0f), 4.0f, 1.5f);
 
-		// Bande de titre en haut
 		auto titleBar = alert.getLocalBounds().removeFromTop(42).toFloat();
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.15f));
 		g.fillRect(titleBar);
 
-		// Ligne de séparation sous le titre
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
 		g.drawLine(titleBar.getBottomLeft().x, titleBar.getBottom(),
 			titleBar.getBottomRight().x, titleBar.getBottom(), 1.0f);
 
-		// Texte
 		textLayout.draw(g, textArea.toFloat());
 	}
 
@@ -372,6 +415,8 @@ public:
 		g.setColour(soften(ColourPalette::textPrimary));
 		g.fillPath(pointer);
 	}
+
+
 
 	void drawTextEditorOutline(juce::Graphics& g,
 		int width, int height,

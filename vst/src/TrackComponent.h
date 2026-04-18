@@ -4,6 +4,8 @@
 #include "MidiLearnableComponents.h"
 #include "ColourPalette.h"
 #include "DrawingCanvas.h"
+#include "IconButton.h"
+#include "TrackButtonIcons.h"
 
 class WaveformDisplay;
 class SequencerComponent;
@@ -51,13 +53,17 @@ public:
 	void itemDragExit(const SourceDetails& dragSourceDetails) override;
 	void itemDropped(const SourceDetails& dragSourceDetails) override;
 
-	static const int BASE_HEIGHT = 60;
+	static const int BASE_HEIGHT = 80;
 	static const int WAVEFORM_HEIGHT = 100;
 	static const int SEQUENCER_HEIGHT = 100;
-	static const int PAGE_BUTTON_SIZE = 14;
+	static const int PAGE_BUTTON_SIZE = 20;
+	static const int ICON_BUTTON_WIDTH = 42;
+	static const int ICON_BUTTON_HEIGHT = 50;
+	static const int CLUSTER_GAP = 14;
+	static const int INTRA_CLUSTER_GAP = 4;
 
-	juce::TextButton showWaveformButton;
-	juce::TextButton sequencerToggleButton;
+	IconButton showWaveformButton{ "ShowWaveform", "WAVE" };
+	IconButton sequencerToggleButton{ "SequencerToggle", "SEQ" };
 
 	TrackData* getTrack() const { return track; }
 
@@ -98,7 +104,7 @@ public:
 
 	juce::String trackId;
 
-	juce::TextButton* getGenerateButton() { return &generateButton; }
+	IconButton* getGenerateButton() { return &generateButton; }
 	juce::Slider* getBpmOffsetSlider() { return &bpmOffsetSlider; }
 
 	SequencerComponent* getSequencer() const { return sequencer.get(); }
@@ -155,18 +161,24 @@ private:
 	CustomInfoLabelLookAndFeel customLookAndFeel;
 
 	MidiLearnableButton pageButtons[4];
-	MidiLearnableButton generateButton;
-	MidiLearnableButton randomRetriggerButton;
+
+	IconButton drawButton{ "DrawBtn", "DRAW" };
+	IconButton generateButton{ "GenerateBtn", "GEN" };
+
+	IconButton originalSyncButton{ "OriginalSyncBtn", "ORIG" };
+	IconButton previewButton{ "PreviewBtn", "PREVIEW" };
+
+	IconButton randomRetriggerButton{ "RandomRetriggerBtn", "REPEAT" };
+	IconButton randomDurationToggle{ "RandomDurationBtn", "RND" };
+
+	IconButton deleteButton{ "DeleteBtn", "DELETE" };
+
 	MidiLearnableSlider intervalKnob;
 
 	juce::ComboBox modelSelector;
 	juce::StringArray aiModels;
 
 	juce::TextButton trackNumberButton;
-	juce::TextButton previewButton;
-	juce::TextButton originalSyncButton;
-	juce::TextButton deleteButton;
-	juce::TextButton drawButton;
 
 	juce::Slider bpmOffsetSlider;
 
@@ -177,8 +189,6 @@ private:
 	juce::Label bpmOffsetLabel;
 
 	juce::ComboBox timeStretchModeSelector;
-
-	juce::ToggleButton randomDurationToggle;
 
 	std::atomic<bool> isDestroyed{ false };
 
@@ -206,6 +216,8 @@ private:
 	void parameterValueChanged(int parameterIndex, float newValue) override;
 	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
 	void setupUI();
+	void setupIconButtons();
+	void updateButtonsEnabledState();
 	void adjustLoopPointsToTempo();
 	void updateTrackInfo();
 	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
@@ -229,6 +241,8 @@ private:
 	void openDrawingCanvas();
 	void updatePreviewButton();
 	void updateModelUI();
+	void layoutPlaybackCluster(juce::Rectangle<int> area);
+	void layoutFxCluster(juce::Rectangle<int> area);
 
 	float calculateEffectiveBpm();
 
