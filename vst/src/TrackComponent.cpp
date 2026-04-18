@@ -2236,5 +2236,9 @@ void TrackComponent::updateModelUI()
 	trackNumberButton.setColour(juce::TextButton::textColourOffId,
 		modelColour.getBrightness() > 0.6f ? juce::Colours::black : juce::Colours::white);
 
+	generateButton.setColour(juce::TextButton::buttonColourId, modelColour);
+	generateButton.setColour(juce::TextButton::textColourOffId,
+		modelColour.getBrightness() > 0.6f ? juce::Colours::black : juce::Colours::white);
+
 	repaint();
 }

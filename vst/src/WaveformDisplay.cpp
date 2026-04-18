@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 #include "TrackData.h"
 #include "ColourPalette.h" 
+#include "AiModelDefinitions.h"
 
 WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData) : audioProcessor(processor), track(trackData)
 {
@@ -609,11 +610,13 @@ void WaveformDisplay::drawWaveform(juce::Graphics& g)
 
 void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour& waveformColor) const
 {
+	juce::Colour baseColour = getModelAccentColour();
+
 	float deviation = std::abs(stretchRatio - 1.0f);
 
 	if (deviation < 0.005f)
 	{
-		waveformColor = ColourPalette::buttonPrimary;
+		waveformColor = baseColour;
 	}
 	else if (deviation < 0.08f)
 	{
@@ -621,24 +624,22 @@ void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour& waveformCo
 
 		if (stretchRatio > 1.0f)
 		{
-			waveformColor = ColourPalette::buttonPrimary.interpolatedWith(
-				ColourPalette::buttonDangerLight, normalizedDev);
+			waveformColor = baseColour.interpolatedWith(baseColour.brighter(0.4f), normalizedDev);
 		}
 		else
 		{
-			waveformColor = ColourPalette::buttonPrimary.interpolatedWith(
-				ColourPalette::buttonDangerDark, normalizedDev);
+			waveformColor = baseColour.interpolatedWith(baseColour.darker(0.4f), normalizedDev);
 		}
 	}
 	else
 	{
 		if (stretchRatio > 1.0f)
 		{
-			waveformColor = juce::Colour(0xffE6A5A5);
+			waveformColor = baseColour.brighter(0.6f).withSaturation(baseColour.getSaturation() * 0.7f);
 		}
 		else
 		{
-			waveformColor = juce::Colour(0xff6B3535);
+			waveformColor = baseColour.darker(0.6f).withSaturation(baseColour.getSaturation() * 0.7f);
 		}
 	}
 }
@@ -648,7 +649,8 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 	float startX = timeToX(loopStart);
 	float endX = timeToX(loopEnd);
 
-	juce::Colour loopColour = loopPointsLocked ? ColourPalette::textAccent : ColourPalette::buttonPrimary;
+	juce::Colour modelColour = getModelAccentColour();
+	juce::Colour loopColour = loopPointsLocked ? ColourPalette::textAccent : modelColour;
 
 	if (loopPointsLocked)
 	{
@@ -817,6 +819,11 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 	float hostBpm = getHostBpm();
 	if (hostBpm <= 0.0f)
 		return;
+
+	juce::Colour modelColour = getModelAccentColour();  // MODEL
+
+	// ... tout le code de calcul reste identique jusqu'aux setColour ...
+
 	int numerator = audioProcessor.getTimeSignatureNumerator();
 	int denominator = audioProcessor.getTimeSignatureDenominator();
 	double totalDuration = getTotalDuration();
@@ -842,7 +849,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 	extendedStart -= gridOffset;
 	extendedEnd -= gridOffset;
 
-	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.9f));
+	g.setColour(modelColour.withAlpha(0.9f));
 	double firstBarTime = floor(extendedStart / barDuration) * barDuration;
 	for (double time = firstBarTime; time <= extendedEnd; time += barDuration)
 	{
@@ -850,7 +857,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		drawMeasureLine(shiftedTime, g, barDuration, viewDuration);
 	}
 
-	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.6f));
+	g.setColour(modelColour.withAlpha(0.55f));
 	double firstBeatTime = floor(extendedStart / actualBeatDuration) * actualBeatDuration;
 	for (double time = firstBeatTime; time <= extendedEnd; time += actualBeatDuration)
 	{
@@ -861,7 +868,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		}
 	}
 
-	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.5f));
+	g.setColour(modelColour.withAlpha(0.4f));
 	double subdivisionDuration = actualBeatDuration * 0.5f;
 	double firstSubTime = floor(extendedStart / subdivisionDuration) * subdivisionDuration;
 	for (double time = firstSubTime; time <= extendedEnd; time += subdivisionDuration)
@@ -875,7 +882,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 		}
 	}
 
-	g.setColour(ColourPalette::sequencerAccent.withAlpha(0.35f));
+	g.setColour(modelColour.withAlpha(0.25f));
 	subdivisionDuration = actualBeatDuration * 0.25f;
 	firstSubTime = floor(extendedStart / subdivisionDuration) * subdivisionDuration;
 	for (double time = firstSubTime; time <= extendedEnd; time += subdivisionDuration)
@@ -993,4 +1000,24 @@ double WaveformDisplay::getViewEndTime() const
 {
 	return juce::jlimit(viewStartTime, getTotalDuration(),
 		viewStartTime + (getTotalDuration() / zoomFactor));
+}
+
+juce::Colour WaveformDisplay::getModelAccentColour() const
+{
+	juce::String modelName;
+
+	if (track.usePages.load())
+		modelName = track.getCurrentPage().selectedModel;
+	else
+		modelName = track.selectedModel;
+
+	if (modelName.isEmpty())
+		return ColourPalette::buttonPrimary;
+	auto& models = AiModelDefinitions::getAvailableModels();
+	int modelIndex = models.indexOf(modelName);
+
+	if (modelIndex < 0)
+		return ColourPalette::buttonPrimary;
+
+	return ColourPalette::getModelColourByIndex(modelIndex);
 }

@@ -1,50 +1,66 @@
 #include "ColourPalette.h"
 
-constexpr auto COLOR_SUCCESS = 0xffF5F5F5;
-constexpr auto COLOR_WARNING = 0xffFFFFFF;
-constexpr auto COLOR_DANGER = 0xffB8605C;
-constexpr auto COLOR_DANGER_LIGHT = 0xffC97571;
-constexpr auto COLOR_DANGER_DARK = 0xff8B4545;
-constexpr auto COLOR_PRIMARY = 0xffB8605C;
-constexpr auto COLOR_SECONDARY = 0xffB8605C;
-constexpr auto COLOR_BG_DEEP = 0xffFFFFFF;
-constexpr auto COLOR_BG_DARK = 0xffFAFAFA;
-constexpr auto COLOR_BG_MID = 0xffF5F5F5;
-constexpr auto COLOR_BG_LIGHT = 0xffF0F0F0;
-constexpr auto COLOR_TEXT_PRIMARY = 0xff1A1A1A;
-constexpr auto COLOR_TEXT_SECONDARY = 0xff4A4A4A;
-constexpr auto COLOR_TEXT_ACCENT = 0xffB8605C;
-constexpr auto COLOR_INACTIVE = 0xffCCCCCC;
-constexpr auto COLOR_SELECTED = 0xffB8605C;
-constexpr auto COLOR_PLAY_ARMED = 0xffD4A5A0;
-constexpr auto COLOR_SOLO_ACTIVE = 0xffB8605C;
-constexpr auto COLOR_SOLO_TEXT = 0xffFFFFFF;
-constexpr auto COLOR_STOP_ACTIVE = 0xff8B4545;
-constexpr auto COLOR_TRACK1 = 0xffB8605C;
-constexpr auto COLOR_TRACK2 = 0xffB8605C;
-constexpr auto COLOR_TRACK3 = 0xffB8605C;
-constexpr auto COLOR_TRACK4 = 0xffB8605C;
-constexpr auto COLOR_TRACK5 = 0xffB8605C;
-constexpr auto COLOR_TRACK6 = 0xffB8605C;
-constexpr auto COLOR_TRACK7 = 0xffB8605C;
-constexpr auto COLOR_TRACK8 = 0xffB8605C;
-constexpr auto COLOR_SEQUENCER_ACCENT = 0xffB8605C;
-constexpr auto COLOR_SEQUENCER_BEAT = 0xff1A1A1A;
-constexpr auto COLOR_SEQUENCER_SUBBEAT = 0xffCCCCCC;
-constexpr auto COLOR_CREDITS = 0xff4A4A4A;
-constexpr auto COLOR_VIOLET = 0xff8B4545;
-constexpr auto COLOR_EMERALD = 0xffB8605C;
-constexpr auto COLOR_CORAL = 0xffB8605C;
-constexpr auto COLOR_SLATE = 0xff1A1A1A;
-constexpr auto COLOR_INDIGO = 0xff1A1A1A;
-constexpr auto COLOR_TEAL = 0xffB8605C;
-constexpr auto COLOR_AMBER = 0xffF5F5F5;
-constexpr auto COLOR_VU_GREEN = 0xff9BB09B;
-constexpr auto COLOR_VU_ORANGE = 0xffD4A87A;
-constexpr auto COLOR_VU_RED = 0xffB8605C;
-constexpr auto COLOR_PLAY_ACTIVE = 0xff8B4545;
-constexpr auto COLOR_CHARCOAL = 0xff2B2B2B;
+// === CORE BACKGROUNDS — deep obsidian blacks, layered for depth ===
+constexpr auto COLOR_BG_DEEP = 0xff1A1A1C;   // deepest — main window background
+constexpr auto COLOR_BG_DARK = 0xff222225;   // slightly lifted — track rows
+constexpr auto COLOR_BG_MID = 0xff2B2B2F;   // panels / button inactive
+constexpr auto COLOR_BG_LIGHT = 0xff3A3A3F;  // borders / subtle dividers
+
+// === TEXT — warm whites and cool greys ===
+constexpr auto COLOR_TEXT_PRIMARY = 0xffE8E6E1;  // warm off-white (not pure white — less harsh)
+constexpr auto COLOR_TEXT_SECONDARY = 0xff9A9A9E;  // mid grey for labels
+constexpr auto COLOR_TEXT_ACCENT = 0xffD96850;  // brick — for highlights
+constexpr auto COLOR_INACTIVE = 0xff55555A;  // disabled / dimmed
+
+// === BRAND ACCENT — saturated brick red (punches on dark bg) ===
+constexpr auto COLOR_PRIMARY = 0xffD96850;  // main brick accent (saturated)
+constexpr auto COLOR_SECONDARY = 0xffD96850;
+constexpr auto COLOR_DANGER = 0xffE07060;  // slightly warmer for errors
+constexpr auto COLOR_DANGER_LIGHT = 0xffEB8777;
+constexpr auto COLOR_DANGER_DARK = 0xffA04840;  // deeper brick for pressed states
+constexpr auto COLOR_SUCCESS = 0xff6BB38A;  // muted teal-green (not neon)
+constexpr auto COLOR_WARNING = 0xffE8A860;  // warm amber
+
+// === TRACK / SELECTION INDICATORS ===
+constexpr auto COLOR_SELECTED = 0xffD96850;  // brick (selected track border)
+constexpr auto COLOR_PLAY_ARMED = 0xffE8A35E;  // amber (armed state — warm warning)
+constexpr auto COLOR_PLAY_ACTIVE = 0xff6BB38A;  // green (currently playing)
+constexpr auto COLOR_STOP_ACTIVE = 0xffA04840;  // deep brick
+constexpr auto COLOR_SOLO_ACTIVE = 0xffD96850;
+constexpr auto COLOR_SOLO_TEXT = 0xffE8E6E1;
+
+// === SEQUENCER ===
+constexpr auto COLOR_SEQUENCER_ACCENT = 0xffD96850;  // active step — brick
+constexpr auto COLOR_SEQUENCER_BEAT = 0xff3A3A3F;  // beat marker — subtle light
+constexpr auto COLOR_SEQUENCER_SUBBEAT = 0xff2B2B2F;  // sub-beat — mid dark
+
+// === VU METERS — saturated for contrast on dark bg ===
+constexpr auto COLOR_VU_GREEN = 0xff6BB38A;  // lively green
+constexpr auto COLOR_VU_ORANGE = 0xffE8A860;  // warm amber
+constexpr auto COLOR_VU_RED = 0xffE07060;  // saturated brick
+
+// === UTILITY / BRAND ACCENTS (for model palette variety) ===
+constexpr auto COLOR_VIOLET = 0xff8B6AB5;  // purple — distinctive
+constexpr auto COLOR_EMERALD = 0xff4FA88C;  // teal-green
+constexpr auto COLOR_CORAL = 0xffD96850;  // main brick
+constexpr auto COLOR_SLATE = 0xff6B8299;  // cool blue-grey
+constexpr auto COLOR_INDIGO = 0xff5568A0;  // deep blue
+constexpr auto COLOR_TEAL = 0xff4DA3B3;  // cyan teal
+constexpr auto COLOR_AMBER = 0xffD9A54E;  // gold amber
+constexpr auto COLOR_CHARCOAL = 0xff2B2B2F;
+
+constexpr auto COLOR_CREDITS = 0xff9A9A9E;
 constexpr auto COLOR_SAMPLE_PENDING = COLOR_PLAY_ARMED;
+
+// === TRACK COLOURS (8 distinct accents for track identity) ===
+constexpr auto COLOR_TRACK1 = 0xffD96850;  // brick (main)
+constexpr auto COLOR_TRACK2 = 0xff4DA3B3;  // teal
+constexpr auto COLOR_TRACK3 = 0xff8B6AB5;  // violet
+constexpr auto COLOR_TRACK4 = 0xffD9A54E;  // amber
+constexpr auto COLOR_TRACK5 = 0xff6BB38A;  // green
+constexpr auto COLOR_TRACK6 = 0xff5568A0;  // indigo
+constexpr auto COLOR_TRACK7 = 0xffCB7AA8;  // rose
+constexpr auto COLOR_TRACK8 = 0xff6B8299;  // slate
 
 const juce::Colour ColourPalette::track1(COLOR_TRACK1);
 const juce::Colour ColourPalette::track2(COLOR_TRACK2);
@@ -112,12 +128,12 @@ const juce::Colour ColourPalette::samplePending(COLOR_SAMPLE_PENDING);
 
 const juce::Colour ColourPalette::modelStableAudio(COLOR_SLATE);
 const juce::Colour ColourPalette::modelFoundation(COLOR_CORAL);
-const juce::Colour ColourPalette::modelEdm(COLOR_VU_GREEN);
-const juce::Colour ColourPalette::modelPianos(COLOR_DANGER_DARK);
-const juce::Colour ColourPalette::modelVocals(COLOR_PLAY_ARMED);
-const juce::Colour ColourPalette::modelInstrumental(COLOR_TEXT_SECONDARY);
-const juce::Colour ColourPalette::modelBeats(COLOR_VU_ORANGE);
-const juce::Colour ColourPalette::modelGluten(COLOR_INACTIVE);
+const juce::Colour ColourPalette::modelEdm(COLOR_TEAL);
+const juce::Colour ColourPalette::modelPianos(COLOR_AMBER);
+const juce::Colour ColourPalette::modelVocals(COLOR_VIOLET);
+const juce::Colour ColourPalette::modelInstrumental(COLOR_EMERALD);
+const juce::Colour ColourPalette::modelBeats(COLOR_INDIGO);
+const juce::Colour ColourPalette::modelGluten(0xffCB7AA8);
 
 const juce::Colour ColourPalette::charcoal(COLOR_CHARCOAL);
 

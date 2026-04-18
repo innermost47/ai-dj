@@ -79,6 +79,8 @@ private:
 	void mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override;
 	void scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override;
 
+	juce::Colour getModelAccentColour() const;
+
 	double xToTime(float x);
 	double getTotalDuration() const;
 	double getViewStartTime() const;

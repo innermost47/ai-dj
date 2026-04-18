@@ -17,28 +17,28 @@ public:
 		setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 		setColour(juce::ComboBox::outlineColourId, juce::Colours::transparentBlack);
-		setColour(juce::ComboBox::textColourId, juce::Colours::black);
+		setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
 		setColour(juce::ToggleButton::tickColourId, soften(ColourPalette::buttonSuccess));
-		setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDeep);
+		setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
 		setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
 		setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
-		setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::backgroundLight.brighter(0.2f));
-		setColour(juce::TextEditor::highlightColourId, soften(ColourPalette::backgroundLight).brighter(0.3f));
+		setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
+		setColour(juce::TextEditor::highlightColourId, ColourPalette::buttonPrimary.withAlpha(0.3f));
 		setColour(juce::TextEditor::shadowColourId, juce::Colours::transparentBlack);
 		setColour(juce::ScrollBar::thumbColourId, ColourPalette::sliderThumb);
 		setColour(juce::ScrollBar::backgroundColourId, ColourPalette::backgroundDeep);
 		setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
-		setColour(juce::PopupMenu::backgroundColourId, ColourPalette::backgroundDeep);
-		setColour(juce::PopupMenu::textColourId, juce::Colours::black);
-		setColour(juce::PopupMenu::highlightedBackgroundColourId, ColourPalette::buttonSuccess.withAlpha(0.4f));
-		setColour(juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
+		setColour(juce::PopupMenu::backgroundColourId, ColourPalette::backgroundDark);
+		setColour(juce::PopupMenu::textColourId, ColourPalette::textPrimary);
+		setColour(juce::PopupMenu::highlightedBackgroundColourId, ColourPalette::buttonPrimary.withAlpha(0.4f));
+		setColour(juce::PopupMenu::highlightedTextColourId, ColourPalette::textPrimary);
 	}
 
 private:
 	static juce::Colour soften(const juce::Colour& colour)
 	{
-		return colour.withSaturation(colour.getSaturation() * 0.8f)
-			.brighter(0.15f);
+		return colour.withSaturation(colour.getSaturation() * 0.85f)
+			.brighter(0.05f);
 	}
 
 	static juce::TextLayout layoutTooltipText(const juce::String& text, juce::Colour colour)
@@ -59,7 +59,6 @@ private:
 
 public:
 
-
 	juce::Rectangle<int> getTooltipBounds(const juce::String& tipText,
 		juce::Point<int> screenPos,
 		juce::Rectangle<int> parentArea) override
@@ -77,13 +76,13 @@ public:
 	{
 		juce::Rectangle<float> bounds(0.0f, 0.0f, (float)width, (float)height);
 
-		g.setColour(juce::Colours::black.withAlpha(0.2f));
+		g.setColour(juce::Colours::black.withAlpha(0.4f));
 		g.fillRoundedRectangle(bounds.translated(0, 2.0f), 4.0f);
 
-		g.setColour(ColourPalette::backgroundDeep);
+		g.setColour(ColourPalette::backgroundDark);
 		g.fillRoundedRectangle(bounds, 4.0f);
 
-		g.setColour(ColourPalette::textAccent.withAlpha(0.4f));
+		g.setColour(ColourPalette::textAccent.withAlpha(0.5f));
 		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
 
 		layoutTooltipText(text, ColourPalette::textPrimary)
@@ -103,11 +102,11 @@ public:
 		if (shouldDrawButtonAsDown)
 			baseColour = baseColour.darker(0.15f);
 		else if (shouldDrawButtonAsHighlighted)
-			baseColour = baseColour.brighter(0.08f);
+			baseColour = baseColour.brighter(0.12f);
 
 		if (!shouldDrawButtonAsDown)
 		{
-			g.setColour(juce::Colours::black.withAlpha(0.15f));
+			g.setColour(juce::Colours::black.withAlpha(0.3f));
 			g.fillRoundedRectangle(bounds.translated(0, 1.5f), 4.0f);
 		}
 
@@ -116,12 +115,12 @@ public:
 
 		if (!shouldDrawButtonAsDown)
 		{
-			g.setColour(juce::Colours::white.withAlpha(0.08f));
+			g.setColour(juce::Colours::white.withAlpha(0.05f));
 			auto topBounds = bounds.withHeight(bounds.getHeight() * 0.4f);
 			g.fillRoundedRectangle(topBounds, 4.0f);
 		}
 
-		g.setColour(baseColour.darker(0.3f).withAlpha(0.3f));
+		g.setColour(baseColour.brighter(0.2f).withAlpha(0.4f));
 		g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 	}
 
@@ -159,11 +158,11 @@ public:
 		else if (shouldDrawButtonAsDown)
 			bgColour = bgColour.darker(0.15f);
 		else if (shouldDrawButtonAsHighlighted)
-			bgColour = bgColour.brighter(0.08f);
+			bgColour = bgColour.brighter(0.12f);
 
 		if (!shouldDrawButtonAsDown)
 		{
-			g.setColour(juce::Colours::black.withAlpha(0.15f));
+			g.setColour(juce::Colours::black.withAlpha(0.3f));
 			g.fillRoundedRectangle(bounds.translated(0, 1.5f), 4.0f);
 		}
 
@@ -172,12 +171,12 @@ public:
 
 		if (!shouldDrawButtonAsDown)
 		{
-			g.setColour(juce::Colours::white.withAlpha(0.08f));
+			g.setColour(juce::Colours::white.withAlpha(0.05f));
 			auto topBounds = bounds.withHeight(bounds.getHeight() * 0.4f);
 			g.fillRoundedRectangle(topBounds, 4.0f);
 		}
 
-		g.setColour(bgColour.darker(0.3f).withAlpha(0.3f));
+		g.setColour(bgColour.brighter(0.2f).withAlpha(0.4f));
 		g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 
 		auto textColour = button.findColour(button.getToggleState()
@@ -204,7 +203,7 @@ public:
 	{
 		auto* aw = new juce::AlertWindow(title, message, iconType, associatedComponent);
 
-		aw->setColour(juce::AlertWindow::backgroundColourId, ColourPalette::backgroundDeep);
+		aw->setColour(juce::AlertWindow::backgroundColourId, ColourPalette::backgroundDark);
 		aw->setColour(juce::AlertWindow::textColourId, ColourPalette::textPrimary);
 		aw->setColour(juce::AlertWindow::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
 
@@ -217,13 +216,13 @@ public:
 		const juce::Rectangle<int>& textArea,
 		juce::TextLayout& textLayout) override
 	{
-		g.fillAll(ColourPalette::backgroundDeep);
+		g.fillAll(ColourPalette::backgroundDark);
 
-		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.4f));
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
 		g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1.0f), 4.0f, 1.5f);
 
 		auto titleBar = alert.getLocalBounds().removeFromTop(42).toFloat();
-		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.15f));
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.2f));
 		g.fillRect(titleBar);
 
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
@@ -259,17 +258,17 @@ public:
 	{
 		auto bounds = juce::Rectangle<int>(0, 0, width, height).toFloat();
 
-		g.setColour(juce::Colours::black.withAlpha(0.15f));
+		g.setColour(juce::Colours::black.withAlpha(0.3f));
 		g.fillRoundedRectangle(bounds.translated(0, 1.5f), 4.0f);
 
-		g.setColour(ColourPalette::backgroundDark);
+		g.setColour(ColourPalette::backgroundMid);
 		g.fillRoundedRectangle(bounds, 4.0f);
 
-		g.setColour(juce::Colours::white.withAlpha(0.08f));
+		g.setColour(juce::Colours::white.withAlpha(0.05f));
 		auto topBounds = bounds.withHeight(bounds.getHeight() * 0.4f);
 		g.fillRoundedRectangle(topBounds, 4.0f);
 
-		g.setColour(ColourPalette::backgroundDark.darker(0.3f).withAlpha(0.3f));
+		g.setColour(ColourPalette::backgroundLight.withAlpha(0.6f));
 		g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 
 		auto arrowZone = juce::Rectangle<float>((float)buttonX, (float)buttonY, (float)buttonW, (float)buttonH);
@@ -281,7 +280,7 @@ public:
 			arrowBounds.getCentreX() + 3.0f, arrowBounds.getCentreY() - 2.0f,
 			arrowBounds.getCentreX(), arrowBounds.getCentreY() + 2.0f);
 
-		g.setColour(soften(ColourPalette::textSecondary));
+		g.setColour(ColourPalette::textSecondary);
 		g.fillPath(arrow);
 	}
 
@@ -344,10 +343,10 @@ public:
 
 			auto trackRect = juce::Rectangle<float>(startPoint, endPoint).expanded(trackWidth * 0.5f);
 
-			g.setColour(ColourPalette::backgroundDeep);
+			g.setColour(ColourPalette::backgroundMid);
 			g.fillRoundedRectangle(trackRect, trackWidth * 0.5f);
 
-			g.setColour(ColourPalette::backgroundDeep.darker(0.4f).withAlpha(0.4f));
+			g.setColour(ColourPalette::backgroundLight.withAlpha(0.8f));
 			g.drawRoundedRectangle(trackRect, trackWidth * 0.5f, 0.8f);
 
 			float denominator = maxSliderPos - minSliderPos;
@@ -362,7 +361,7 @@ public:
 
 					if (fillRect.isFinite() && !fillRect.isEmpty())
 					{
-						g.setColour(soften(ColourPalette::sliderThumb));
+						g.setColour(ColourPalette::buttonPrimary);
 						g.fillRoundedRectangle(fillRect, trackWidth * 0.5f);
 					}
 				}
@@ -370,12 +369,20 @@ public:
 		}
 
 		auto thumbWidth = 16.0f;
-		g.setColour(soften(ColourPalette::sliderThumb));
+		g.setColour(ColourPalette::buttonPrimary);
 
 		if (style == juce::Slider::LinearVertical)
 			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ (float)x + (float)width * 0.5f, sliderPos }));
 		else
 			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ sliderPos, (float)y + (float)height * 0.5f }));
+
+		g.setColour(juce::Colours::white.withAlpha(0.15f));
+		if (style == juce::Slider::LinearVertical)
+			g.fillEllipse(juce::Rectangle<float>(thumbWidth * 0.5f, thumbWidth * 0.5f)
+				.withCentre({ (float)x + (float)width * 0.5f, sliderPos - thumbWidth * 0.15f }));
+		else
+			g.fillEllipse(juce::Rectangle<float>(thumbWidth * 0.5f, thumbWidth * 0.5f)
+				.withCentre({ sliderPos, (float)y + (float)height * 0.5f - thumbWidth * 0.15f }));
 	}
 
 	void drawRotarySlider(juce::Graphics& g,
@@ -395,7 +402,7 @@ public:
 			arcRadius, arcRadius,
 			0.0f, rotaryStartAngle, rotaryEndAngle, true);
 
-		g.setColour(ColourPalette::backgroundDeep);
+		g.setColour(ColourPalette::backgroundLight);
 		g.strokePath(backgroundArc, juce::PathStrokeType(lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
 		juce::Path valueArc;
@@ -403,7 +410,7 @@ public:
 			arcRadius, arcRadius,
 			0.0f, rotaryStartAngle, toAngle, true);
 
-		g.setColour(soften(ColourPalette::sliderThumb));
+		g.setColour(ColourPalette::buttonPrimary);
 		g.strokePath(valueArc, juce::PathStrokeType(lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
 		juce::Path pointer;
@@ -412,11 +419,9 @@ public:
 		pointer.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
 		pointer.applyTransform(juce::AffineTransform::rotation(toAngle).translated(bounds.getCentreX(), bounds.getCentreY()));
 
-		g.setColour(soften(ColourPalette::textPrimary));
+		g.setColour(ColourPalette::textPrimary);
 		g.fillPath(pointer);
 	}
-
-
 
 	void drawTextEditorOutline(juce::Graphics& g,
 		int width, int height,
@@ -426,7 +431,7 @@ public:
 		{
 			if (textEditor.hasKeyboardFocus(true))
 			{
-				g.setColour(ColourPalette::backgroundLight.brighter(0.2f));
+				g.setColour(ColourPalette::buttonPrimary.withAlpha(0.6f));
 				g.drawRoundedRectangle(0.0f, 0.0f, (float)width, (float)height, 4.0f, 2.0f);
 			}
 			else
@@ -478,10 +483,13 @@ public:
 	{
 		auto area = juce::Rectangle<int>(width, height).toFloat();
 
-		g.setColour(ColourPalette::backgroundDeep);
+		g.setColour(juce::Colours::black.withAlpha(0.4f));
+		g.fillRoundedRectangle(area.translated(0, 2.0f), 4.0f);
+
+		g.setColour(ColourPalette::backgroundDark);
 		g.fillRoundedRectangle(area, 4.0f);
 
-		g.setColour(ColourPalette::textAccent.withAlpha(0.2f));
+		g.setColour(ColourPalette::textAccent.withAlpha(0.4f));
 		g.drawRoundedRectangle(area.reduced(0.5f), 4.0f, 1.0f);
 	}
 
@@ -493,7 +501,7 @@ public:
 		if (isSeparator)
 		{
 			auto r = area.reduced(5, 0);
-			g.setColour(ColourPalette::textAccent.withAlpha(0.1f));
+			g.setColour(ColourPalette::backgroundLight.withAlpha(0.5f));
 			g.drawLine((float)r.getX(), (float)r.getCentreY(), (float)r.getRight(), (float)r.getCentreY(), 0.5f);
 			return;
 		}
@@ -502,13 +510,13 @@ public:
 
 		if (isHighlighted && isActive)
 		{
-			g.setColour(soften(ColourPalette::buttonPrimary).withAlpha(0.4f));
+			g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
 			g.fillRoundedRectangle(itemArea, 3.0f);
 		}
 
 		auto textColour = (textColourToUse != nullptr) ? *textColourToUse : ColourPalette::textPrimary;
 		if (!isActive)
-			textColour = textColour.withAlpha(0.3f);
+			textColour = textColour.withAlpha(0.4f);
 
 		g.setColour(textColour);
 		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
