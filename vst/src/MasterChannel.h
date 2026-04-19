@@ -22,6 +22,8 @@ private:
 	MidiLearnableSlider masterPanKnob;
 	MidiLearnableSlider highKnob, midKnob, lowKnob;
 
+	juce::Rectangle<int> masterVUBounds;
+
 	std::atomic<bool> isDestroyed{ false };
 
 	bool hasRealAudio = false;

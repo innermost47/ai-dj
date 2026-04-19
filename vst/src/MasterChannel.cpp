@@ -275,39 +275,33 @@ void MasterChannel::paint(juce::Graphics& g)
 
 void MasterChannel::drawMasterVUMeterStereo(juce::Graphics& g, juce::Rectangle<int> bounds) const
 {
-	float width = static_cast<float>(bounds.getWidth());
+	if (masterVUBounds.isEmpty())
+		return;
+
 	float meterWidth = 5.0f;
 	float meterSpacing = 2.0f;
 	float totalWidth = meterWidth * 2 + meterSpacing;
-	float startX = width - totalWidth - 5;
 
-	auto vuAreaLeft = juce::Rectangle<float>(
-		startX,
-		50.0f,
-		meterWidth,
-		static_cast<float>(bounds.getHeight() - 60));
+	float startX = masterVUBounds.getX() + (masterVUBounds.getWidth() - totalWidth) / 2.0f;
+	float vuStartY = static_cast<float>(masterVUBounds.getY()) + 4.0f;
+	float vuHeight = static_cast<float>(masterVUBounds.getHeight()) - 4.0f;
 
-	auto vuAreaRight = juce::Rectangle<float>(
-		startX + meterWidth + meterSpacing,
-		50.0f,
-		meterWidth,
-		static_cast<float>(bounds.getHeight() - 60));
+	auto vuAreaLeft = juce::Rectangle<float>(startX, vuStartY, meterWidth, vuHeight);
+	auto vuAreaRight = juce::Rectangle<float>(startX + meterWidth + meterSpacing, vuStartY, meterWidth, vuHeight);
 
 	g.setColour(ColourPalette::backgroundDeep);
 	g.fillRoundedRectangle(vuAreaLeft, 2.0f);
 	g.fillRoundedRectangle(vuAreaRight, 2.0f);
 
-	g.setColour(ColourPalette::playArmed);
+	g.setColour(ColourPalette::backgroundLight);
 	g.drawRoundedRectangle(vuAreaLeft, 2.0f, 0.5f);
 	g.drawRoundedRectangle(vuAreaRight, 2.0f, 0.5f);
 
-	int numSegments = 25;
+	int numSegments = 20;
 	float segmentHeight = (vuAreaLeft.getHeight() - 4) / numSegments;
 
 	for (int i = 0; i < numSegments; ++i)
-	{
 		fillMasterMeterSegment(g, vuAreaLeft, i, segmentHeight, numSegments, masterLevelLeft);
-	}
 
 	if (masterPeakHoldLeft > 0.0f)
 	{
@@ -315,17 +309,13 @@ void MasterChannel::drawMasterVUMeterStereo(juce::Graphics& g, juce::Rectangle<i
 		if (peakSegment < numSegments)
 		{
 			float peakY = vuAreaLeft.getBottom() - 2 - (peakSegment + 1) * segmentHeight;
-			juce::Rectangle<float> peakRect(vuAreaLeft.getX() + 1, peakY,
-				vuAreaLeft.getWidth() - 2, 2);
 			g.setColour(ColourPalette::vuPeak);
-			g.fillRect(peakRect);
+			g.fillRect(juce::Rectangle<float>(vuAreaLeft.getX() + 1, peakY, vuAreaLeft.getWidth() - 2, 2));
 		}
 	}
 
 	for (int i = 0; i < numSegments; ++i)
-	{
 		fillMasterMeterSegment(g, vuAreaRight, i, segmentHeight, numSegments, masterLevelRight);
-	}
 
 	if (masterPeakHoldRight > 0.0f)
 	{
@@ -333,26 +323,19 @@ void MasterChannel::drawMasterVUMeterStereo(juce::Graphics& g, juce::Rectangle<i
 		if (peakSegment < numSegments)
 		{
 			float peakY = vuAreaRight.getBottom() - 2 - (peakSegment + 1) * segmentHeight;
-			juce::Rectangle<float> peakRect(vuAreaRight.getX() + 1, peakY,
-				vuAreaRight.getWidth() - 2, 2);
 			g.setColour(ColourPalette::vuPeak);
-			g.fillRect(peakRect);
+			g.fillRect(juce::Rectangle<float>(vuAreaRight.getX() + 1, peakY, vuAreaRight.getWidth() - 2, 2));
 		}
 	}
 
 	if (masterLevelLeft >= 0.98f || masterLevelRight >= 0.98f)
 	{
 		auto clipRect = juce::Rectangle<float>(
-			startX - 2,
-			vuAreaLeft.getY() - 12,
-			totalWidth + 4,
-			8);
-
+			startX - 2, vuStartY - 12, totalWidth + 4, 8);
 		g.setColour((juce::Time::getCurrentTime().toMilliseconds() % 500 < 250)
 			? ColourPalette::buttonDangerLight
 			: ColourPalette::buttonDangerDark);
 		g.fillRoundedRectangle(clipRect, 4.0f);
-
 		g.setColour(ColourPalette::textPrimary);
 		g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
 		g.drawText("CLIP", clipRect, juce::Justification::centred);
@@ -397,42 +380,42 @@ void MasterChannel::resized()
 	masterLabel.setBounds(area.removeFromTop(20));
 	area.removeFromTop(5);
 
-	int knobSize = 28;
-	int eqColumnWidth = 40;
+	const int colSpacing = 4;
+	const int knobColWidth = (width - colSpacing * 2) / 3;
 
-	auto eqArea = area.removeFromTop(120);
+	auto leftCol = area.removeFromLeft(knobColWidth);
+	area.removeFromLeft(colSpacing);
+	auto rightCol = area.removeFromRight(knobColWidth);
+	area.removeFromRight(colSpacing);
+	auto centerCol = area;
 
-	int eqStartX = (width - eqColumnWidth) / 2;
+	const int knobSize = 28;
+	const int knobSectionH = leftCol.getHeight() / 3;
 
-	highLabel.setBounds(eqStartX, eqArea.getY(), eqColumnWidth, 10);
-	highKnob.setBounds(eqStartX + (eqColumnWidth - knobSize) / 2,
-		eqArea.getY() + 12, knobSize, knobSize);
+	auto placeEqKnob = [&](juce::Rectangle<int> sec, juce::Label& label, juce::Slider& knob)
+		{
+			label.setBounds(sec.removeFromTop(11).withSizeKeepingCentre(knobColWidth, 11));
+			knob.setBounds(sec.withSizeKeepingCentre(knobSize, knobSize));
+		};
 
-	midLabel.setBounds(eqStartX, eqArea.getY() + 45, eqColumnWidth, 10);
-	midKnob.setBounds(eqStartX + (eqColumnWidth - knobSize) / 2,
-		eqArea.getY() + 57, knobSize, knobSize);
+	placeEqKnob(leftCol.removeFromTop(knobSectionH), highLabel, highKnob);
+	placeEqKnob(leftCol.removeFromTop(knobSectionH), midLabel, midKnob);
+	placeEqKnob(leftCol.removeFromTop(knobSectionH), lowLabel, lowKnob);
 
-	lowLabel.setBounds(eqStartX, eqArea.getY() + 90, eqColumnWidth, 10);
-	lowKnob.setBounds(eqStartX + (eqColumnWidth - knobSize) / 2,
-		eqArea.getY() + 102, knobSize, knobSize);
+	int faderWidth = centerCol.getWidth() / 2;
+	int centerX = centerCol.getX() + (centerCol.getWidth() - faderWidth) / 2;
+	masterVolumeSlider.setBounds(centerX, centerCol.getY() + 8,
+		faderWidth, centerCol.getHeight() - 16);
 
-	area.removeFromTop(5);
+	const int panAreaH = 55;
+	auto panArea = rightCol.removeFromBottom(panAreaH);
+	auto vuArea = rightCol;
 
-	auto volumeArea = area.removeFromTop(372);
-	int faderWidth = width / 3;
-	int centerX = (width - faderWidth) / 2;
-	masterVolumeSlider.setBounds(centerX, volumeArea.getY() + 5,
-		faderWidth, volumeArea.getHeight() - 10);
+	panLabel.setBounds(panArea.removeFromTop(12).withSizeKeepingCentre(knobColWidth, 12));
+	int panKnobSize = juce::jmin(36, panArea.getWidth());
+	masterPanKnob.setBounds(panArea.withSizeKeepingCentre(panKnobSize, panKnobSize));
 
-	area.removeFromTop(5);
-
-	auto panArea = area.removeFromTop(60);
-	panLabel.setBounds(panArea.removeFromTop(12));
-
-	int panKnobSize = 40;
-	int panCenterX = (width - panKnobSize) / 2;
-	masterPanKnob.setBounds(panCenterX, panArea.getY(),
-		panKnobSize, panKnobSize);
+	masterVUBounds = vuArea.reduced(vuArea.getWidth() / 4, 8);
 }
 
 inline float linearToDb(float linear)

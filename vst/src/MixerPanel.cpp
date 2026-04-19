@@ -120,7 +120,7 @@ void MixerPanel::refreshMixerChannels()
 	const int channelSpacing = 5;
 	const int numTracks = (int)trackIds.size();
 
-	const int availableWidth = getWidth() - 100 - 10 - 10;
+	const int availableWidth = getWidth() - 120 - 10 - 10;
 	const int channelWidth = numTracks > 0
 		? (availableWidth - (numTracks - 1) * channelSpacing) / numTracks
 		: 100;
@@ -190,7 +190,7 @@ void MixerPanel::paint(juce::Graphics& g)
 void MixerPanel::resized()
 {
 	auto area = getLocalBounds();
-	auto masterArea = area.removeFromRight(100);
+	auto masterArea = area.removeFromRight(120);
 	area.removeFromRight(10);
 	channelsViewport.setBounds(area);
 
