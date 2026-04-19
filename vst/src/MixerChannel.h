@@ -51,6 +51,8 @@ private:
 	bool isBlinking = false;
 	bool blinkState = false;
 
+	juce::Rectangle<int> sliderBounds;
+
 	MidiLearnableButton playButton;
 	juce::TextButton stopButton;
 	MidiLearnableButton muteButton;

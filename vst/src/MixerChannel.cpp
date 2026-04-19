@@ -654,9 +654,9 @@ void MixerChannel::drawVUMeter(juce::Graphics& g, juce::Rectangle<int> bounds)
 	float meterWidth = 5.0f;
 	float meterSpacing = 2.0f;
 	float totalWidth = meterWidth * 2 + meterSpacing;
-	float startX = bounds.getWidth() - totalWidth - 5;
-	float vuStartY = static_cast<float>(bounds.getHeight()) * 0.45f;
-	float vuHeight = static_cast<float>(bounds.getHeight()) * 0.45f;
+	float vuStartY = static_cast<float>(sliderBounds.getY()) + 8.0f;
+	float vuHeight = static_cast<float>(sliderBounds.getHeight()) - 16.0f;
+	float startX = static_cast<float>(sliderBounds.getRight()) + 3.0f;
 
 	auto vuAreaLeft = juce::Rectangle<float>(
 		startX,
@@ -812,16 +812,24 @@ void MixerChannel::resized()
 
 	area.removeFromTop(3);
 
-	const int knobColumnWidth = juce::jmin(40, width / 2);
+	const int knobColumnWidth = juce::jmin(45, width / 3);
 	auto knobsColumn = area.removeFromRight(knobColumnWidth);
-	area.removeFromRight(3);
+	area.removeFromRight(8);
 
-	volumeSlider.setBounds(area.removeFromTop(80).reduced(area.getWidth() / 4, 0));
+	int sliderBottom = getHeight() - 10;
+	int sliderTop = area.getY();
+	sliderBounds = juce::Rectangle<int>(
+		area.getX() + area.getWidth() / 4,
+		sliderTop,
+		area.getWidth() / 2,
+		sliderBottom - sliderTop
+	);
+	volumeSlider.setBounds(sliderBounds);
 
-	const int knobSectionH = 35;
+	const int knobSectionH = 45;
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label& label, juce::Slider& knob)
 		{
-			label.setBounds(secArea.removeFromTop(10));
+			label.setBounds(secArea.removeFromTop(11));
 			knob.setBounds(secArea.reduced(1));
 		};
 

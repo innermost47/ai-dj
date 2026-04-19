@@ -117,8 +117,13 @@ void MixerPanel::refreshMixerChannels()
 		});
 
 	int xPos = 5;
-	const int channelWidth = 90;
 	const int channelSpacing = 5;
+	const int numTracks = (int)trackIds.size();
+
+	const int availableWidth = getWidth() - 100 - 10 - 10;
+	const int channelWidth = numTracks > 0
+		? (availableWidth - (numTracks - 1) * channelSpacing) / numTracks
+		: 100;
 
 	for (const auto& trackId : trackIds)
 	{
