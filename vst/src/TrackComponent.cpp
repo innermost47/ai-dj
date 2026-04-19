@@ -306,8 +306,6 @@ void TrackComponent::updateFromTrackData()
 		}
 	}
 
-	showWaveformButton.setToggleState(track->showWaveform, juce::dontSendNotification);
-	sequencerToggleButton.setToggleState(track->showSequencer, juce::dontSendNotification);
 	randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(), juce::dontSendNotification);
 
 	drawButton.setEnabled(!audioProcessor.getUseLocalModel());
@@ -334,9 +332,6 @@ void TrackComponent::updateFromTrackData()
 	originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
 
 	trackNameLabel.setText(track->trackName, juce::dontSendNotification);
-
-	juce::String noteName = juce::MidiMessage::getMidiNoteName(track->midiNote, true, true, 3);
-	trackNumberButton.setButtonText(noteName);
 	trackNumberButton.setColour(juce::TextButton::buttonColourId,
 		ColourPalette::getTrackColour(track->slotIndex));
 
@@ -563,12 +558,38 @@ void TrackComponent::resized()
 {
 	auto area = getLocalBounds().reduced(6);
 
-	auto trackNumberArea = area.removeFromLeft(40);
-	trackNumberButton.setBounds(trackNumberArea);
+	const int leftColumnWidth = 28;
+	auto leftColumn = area.removeFromLeft(leftColumnWidth);
+
+	const int smallButtonSize = 22;
+	auto noteButtonArea = leftColumn.removeFromTop(smallButtonSize);
+	noteButtonArea = noteButtonArea.withSizeKeepingCentre(smallButtonSize, smallButtonSize);
+	trackNumberButton.setBounds(noteButtonArea);
+
+	leftColumn.removeFromTop(4);
+
+	{
+		const int labelHeight = leftColumn.getHeight();
+		const int labelWidth = leftColumnWidth;
+
+		trackNameLabel.setTransform(juce::AffineTransform::identity);
+		trackNameLabel.setBounds(leftColumn.getX(), leftColumn.getY(), labelHeight, labelWidth);
+
+		auto transform = juce::AffineTransform::rotation(
+			-juce::MathConstants<float>::halfPi,
+			(float)(leftColumn.getX() + labelHeight / 2),
+			(float)(leftColumn.getY() + labelWidth / 2)
+		).translated(
+			(float)(-(labelHeight - labelWidth) / 2),
+			(float)((labelHeight - labelWidth) / 2)
+		);
+		trackNameLabel.setTransform(transform);
+	}
+
 	area.removeFromLeft(5);
 
-	auto headerArea = area.removeFromTop(ICON_BUTTON_HEIGHT);
-
+	const int compactHeaderHeight = 36;
+	auto headerArea = area.removeFromTop(compactHeaderHeight);
 
 	if (pagesMode)
 	{
@@ -591,22 +612,11 @@ void TrackComponent::resized()
 	}
 
 	{
-		const int nameWidth = 60;
-		auto nameArea = headerArea.removeFromLeft(nameWidth);
-		int nameHeight = 22;
-		int yOffset = (nameArea.getHeight() - nameHeight) / 2;
-		trackNameLabel.setBounds(nameArea.getX(), nameArea.getY() + yOffset,
-			nameArea.getWidth(), nameHeight);
-	}
-
-	headerArea.removeFromLeft(4);
-
-	{
-		const int selectorsWidth = 160;
+		const int selectorsWidth = 140;
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 
-		const int selectorHeight = 22;
-		const int gap = 4;
+		const int selectorHeight = 18;
+		const int gap = 2;
 		const int totalStackHeight = selectorHeight * 2 + gap;
 		int yOffset = (selectorsArea.getHeight() - totalStackHeight) / 2;
 
@@ -626,7 +636,7 @@ void TrackComponent::resized()
 	headerArea.removeFromLeft(8);
 
 	{
-		const int createButtonWidth = 48;
+		const int createButtonWidth = 36;
 		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
@@ -635,21 +645,23 @@ void TrackComponent::resized()
 	headerArea.removeFromRight(CLUSTER_GAP);
 
 	{
-		const int playbackBlockWidth = 70;
-		auto playbackArea = headerArea.removeFromRight(playbackBlockWidth);
-		layoutPlaybackCluster(playbackArea);
+		const int labelledButtonWidth = 48;
+		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
+		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 	}
 	headerArea.removeFromRight(CLUSTER_GAP);
 
-	randomRetriggerButton.setBounds(headerArea.removeFromRight(ICON_BUTTON_WIDTH));
+	const int iconBtnWidth = 32;
+	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
-	randomDurationToggle.setBounds(headerArea.removeFromRight(ICON_BUTTON_WIDTH));
+	randomDurationToggle.setBounds(headerArea.removeFromRight(iconBtnWidth));
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
 	{
-		auto knobArea = headerArea.removeFromRight(48);
-		const int knobDiameter = 42;
+		auto knobArea = headerArea.removeFromRight(38);
+		const int knobDiameter = 30;
 		const int labelHeight = 10;
 		const int stackHeight = knobDiameter + 2 + labelHeight;
 		int yOffset = (knobArea.getHeight() - stackHeight) / 2;
@@ -663,35 +675,64 @@ void TrackComponent::resized()
 			knobArea.getWidth(), labelHeight);
 	}
 
-	headerArea.removeFromRight(CLUSTER_GAP);
 
-	deleteButton.setBounds(headerArea.removeFromRight(ICON_BUTTON_WIDTH));
-
-	if (waveformDisplay && showWaveformButton.getToggleState())
+	if (!waveformDisplay)
 	{
-		area.removeFromTop(15);
+		if (track != nullptr)
+		{
+			waveformDisplay = std::make_unique<WaveformDisplay>(audioProcessor, *track);
+			waveformDisplay->onLoopPointsChanged = [this](double start, double end)
+				{
+					if (track)
+					{
+						if (track->usePages.load())
+						{
+							auto& currentPage = track->getCurrentPage();
+							currentPage.loopStart = start;
+							currentPage.loopEnd = end;
+							track->syncLegacyProperties();
+						}
+						else
+						{
+							track->loopStart = start;
+							track->loopEnd = end;
+						}
+						waveformDisplay->setLoopPoints(start, end);
+						if (track->isPlaying.load())
+						{
+							track->readPosition = 0.0;
+						}
+					}
+				};
+			addAndMakeVisible(*waveformDisplay);
+			if (track->numSamples > 0)
+			{
+				waveformDisplay->setAudioData(track->audioBuffer, track->sampleRate);
+				waveformDisplay->setLoopPoints(track->loopStart, track->loopEnd);
+				calculateHostBasedDisplay();
+			}
+		}
+	}
+
+	if (waveformDisplay)
+	{
+		area.removeFromTop(8);
 		waveformDisplay->setBounds(area.removeFromTop(WAVEFORM_HEIGHT));
 		waveformDisplay->setVisible(true);
 	}
-	else if (waveformDisplay)
+
+	if (!sequencer)
 	{
-		waveformDisplay->setVisible(false);
+		sequencer = std::make_unique<SequencerComponent>(trackId, audioProcessor);
+		addAndMakeVisible(*sequencer);
+		sequencerVisible = true;
 	}
 
-	if (sequencer && sequencerVisible && sequencerToggleButton.getToggleState())
+	if (sequencer)
 	{
-		if (waveformDisplay && waveformDisplay->isVisible())
-			area.removeFromTop(5);
-		else
-			area.removeFromTop(15);
-
-		auto sequencerArea = area.removeFromTop(SEQUENCER_HEIGHT);
-		sequencer->setBounds(sequencerArea);
+		area.removeFromTop(5);
+		sequencer->setBounds(area.removeFromTop(SEQUENCER_HEIGHT));
 		sequencer->setVisible(true);
-	}
-	else if (sequencer)
-	{
-		sequencer->setVisible(false);
 	}
 }
 
@@ -1320,7 +1361,7 @@ void TrackComponent::setupUI()
 {
 
 	addAndMakeVisible(trackNumberButton);
-	trackNumberButton.setButtonText("--");
+	trackNumberButton.setButtonText("");
 	trackNumberButton.setTooltip("Select this track");
 	trackNumberButton.onClick = [this]()
 		{
@@ -1491,20 +1532,12 @@ void TrackComponent::setupIconButtons()
 			}
 		};
 
-	addAndMakeVisible(originalSyncButton);
-	originalSyncButton.setIconPath(TrackButtonIcons::sync());
-	originalSyncButton.setCompactMode(true);
-	originalSyncButton.setLabelText("");
-	setupToggleButton(originalSyncButton);
-	originalSyncButton.setTooltip("Play original file (bypass time-stretching). Disabled when no original version exists.");
-	originalSyncButton.onClick = [this]() { toggleOriginalSync(); };
-
+	// Preview : avec label visible
 	addAndMakeVisible(previewButton);
 	previewButton.setIconPath(TrackButtonIcons::play());
 	previewButton.setIconPathToggled(TrackButtonIcons::stop());
 	previewButton.setHasToggledIcon(true);
-	previewButton.setCompactMode(true);
-	previewButton.setLabelText("");
+	previewButton.setLabelText("Preview");
 	setupToggleButton(previewButton);
 	previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
 	previewButton.onClick = [this]()
@@ -1522,32 +1555,13 @@ void TrackComponent::setupIconButtons()
 			}
 		};
 
-	addAndMakeVisible(showWaveformButton);
-	showWaveformButton.setIconPath(TrackButtonIcons::waveform());
-	showWaveformButton.setCompactMode(true);
-	showWaveformButton.setLabelText("");
-	setupToggleButton(showWaveformButton);
-	showWaveformButton.setTooltip("Show/hide waveform display and loop points");
-	showWaveformButton.onClick = [this]()
-		{
-			if (track)
-			{
-				track->showWaveform = showWaveformButton.getToggleState();
-				toggleWaveformDisplay();
-			}
-		};
-
-	addAndMakeVisible(sequencerToggleButton);
-	sequencerToggleButton.setIconPath(TrackButtonIcons::sequencer());
-	sequencerToggleButton.setCompactMode(true);
-	sequencerToggleButton.setLabelText("");
-	setupToggleButton(sequencerToggleButton);
-	sequencerToggleButton.setTooltip("Show/hide step sequencer (16 steps per measure)");
-	sequencerToggleButton.onClick = [this]()
-		{
-			track->showSequencer = sequencerToggleButton.getToggleState();
-			toggleSequencerDisplay();
-		};
+	// Original/Sync : avec label visible
+	addAndMakeVisible(originalSyncButton);
+	originalSyncButton.setIconPath(TrackButtonIcons::sync());
+	originalSyncButton.setLabelText("Original");
+	setupToggleButton(originalSyncButton);
+	originalSyncButton.setTooltip("Play original file (bypass time-stretching). Disabled when no original version exists.");
+	originalSyncButton.onClick = [this]() { toggleOriginalSync(); };
 
 	addAndMakeVisible(randomRetriggerButton);
 	randomRetriggerButton.setIconPath(TrackButtonIcons::repeat());
@@ -1568,17 +1582,7 @@ void TrackComponent::setupIconButtons()
 				statusCallback("Auto-random duration: " + juce::String(track->randomRetriggerDurationEnabled.load() ? "ON" : "OFF"));
 			}
 		};
-
-	addAndMakeVisible(deleteButton);
-	deleteButton.setIconPath(TrackButtonIcons::trash());
-	setupActionButton(deleteButton);
-	deleteButton.setTooltip("Delete this track. This cannot be undone.");
-	deleteButton.onClick = [this]()
-		{
-			if (onDeleteTrack) onDeleteTrack(trackId);
-		};
 }
-
 
 void TrackComponent::updateButtonsEnabledState()
 {
@@ -1594,8 +1598,6 @@ void TrackComponent::updateButtonsEnabledState()
 	}
 
 	previewButton.setEnabled(hasAudio);
-	showWaveformButton.setEnabled(hasAudio);
-	sequencerToggleButton.setEnabled(hasAudio);
 	randomRetriggerButton.setEnabled(hasAudio);
 
 	originalSyncButton.setEnabled(hasAudio && hasOriginal);

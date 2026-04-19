@@ -543,13 +543,17 @@ void MixerChannel::updateVUMeters()
 	if (isDestroyed.load())
 		return;
 
-	updateVUMeter();
+	if (juce::MessageManager::getInstanceWithoutCreating() == nullptr)
+		return;
 
-	juce::MessageManager::callAsync([this]()
+	juce::MessageManager::callAsync([safeThis = juce::Component::SafePointer<MixerChannel>(this)]()
 		{
-			if (!isDestroyed.load()) {
-				repaint();
-			} });
+			if (safeThis != nullptr && !safeThis->isDestroyed.load())
+			{
+				safeThis->updateVUMeter();
+				safeThis->repaint();
+			}
+		});
 }
 
 void MixerChannel::updateFromTrackData()
@@ -792,41 +796,44 @@ void MixerChannel::fillMeters(juce::Rectangle<float>& vuArea, int i, float segme
 void MixerChannel::resized()
 {
 	auto area = getLocalBounds().reduced(4);
-	int width = area.getWidth();
+	const int width = area.getWidth();
+	const int smallGap = 4;
 
-	trackNameLabel.setBounds(area.removeFromTop(20));
-	area.removeFromTop(5);
+	const int labelH = 20;
+	const int transportRowH = 26;
 
-	auto transportArea = area.removeFromTop(60);
-	auto topRow = transportArea.removeFromTop(30);
-	auto bottomRow = transportArea.removeFromTop(30);
+	trackNameLabel.setBounds(area.removeFromTop(labelH));
+	area.removeFromTop(smallGap);
 
+	auto topRow = area.removeFromTop(transportRowH);
 	playButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
 	stopButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
+
+	auto bottomRow = area.removeFromTop(transportRowH);
 	muteButton.setBounds(bottomRow.removeFromLeft(width / 2 - 2).reduced(2));
 	soloButton.setBounds(bottomRow.removeFromLeft(width / 2 - 2).reduced(2));
 
-	area.removeFromTop(5);
+	area.removeFromTop(smallGap);
 
-	auto volumeArea = area.removeFromTop(320);
-	volumeSlider.setBounds(volumeArea.reduced(width / 4, 0));
+	const int knobColumnWidth = juce::jmin(40, width / 2);
+	auto knobsColumn = area.removeFromRight(knobColumnWidth);
+	area.removeFromRight(smallGap);
 
-	area.removeFromTop(5);
+	volumeSlider.setBounds(area.reduced(area.getWidth() / 4, 0));
 
-	auto knobsArea = area.removeFromTop(170);
+	const int numKnobs = 3;
+	const int knobSectionH = knobsColumn.getHeight() / numKnobs;
 
-	auto pitchArea = knobsArea.removeFromTop(50);
-	pitchLabel.setBounds(pitchArea.removeFromTop(12));
-	pitchKnob.setBounds(pitchArea.reduced(2));
+	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label& label, juce::Slider& knob)
+		{
+			const int labelH2 = 11;
+			label.setBounds(secArea.removeFromTop(labelH2));
+			knob.setBounds(secArea.reduced(1));
+		};
 
-	auto fineArea = knobsArea.removeFromTop(50);
-	fineLabel.setBounds(fineArea.removeFromTop(12));
-	fineKnob.setBounds(fineArea.reduced(2));
-
-	area.removeFromTop(5);
-	auto panArea = knobsArea.removeFromTop(50);
-	panLabel.setBounds(panArea.removeFromTop(12));
-	panKnob.setBounds(panArea.reduced(2));
+	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), pitchLabel, pitchKnob);
+	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), fineLabel, fineKnob);
+	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), panLabel, panKnob);
 }
 
 void MixerChannel::updateVUMeter()

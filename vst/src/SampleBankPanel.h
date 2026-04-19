@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "JuceHeader.h"
 #include "SampleBank.h"
 #include "ColourPalette.h"
@@ -24,12 +24,12 @@ public:
 	int getRequiredHeight();
 
 	SampleBankEntry* getSampleEntry() const { return sampleEntry; }
+	bool isPlayingState() const { return isPlaying; }  // ← ajouté
 
 	std::function<void(const juce::String&)> onDeleteRequested;
 	std::function<void(SampleBankEntry*)> onPreviewRequested;
 	std::function<void()> onStopRequested;
 	std::function<void(SampleBankEntry*, const std::vector<juce::String>&)> onCategoriesChanged;
-
 	std::function<std::vector<juce::String>()> getCategoriesList;
 
 private:
@@ -54,9 +54,7 @@ private:
 	double sampleRate = 48000.0;
 	float playbackPosition = 0.0f;
 	double lastTimerCall = 0.0;
-
 	bool isPlaying = false;
-
 	bool isSelected = false;
 	bool isDragging = false;
 
@@ -78,26 +76,9 @@ private:
 
 enum class SampleCategory
 {
-	All = 0,
-	Drums,
-	Bass,
-	Melody,
-	Ambient,
-	Percussion,
-	Vocal,
-	FX,
-	Loop,
-	OneShot,
-	House,
-	Techno,
-	HipHop,
-	Jazz,
-	Rock,
-	Electronic,
-	Piano,
-	Guitar,
-	Synth,
-	Custom
+	All = 0, Drums, Bass, Melody, Ambient, Percussion,
+	Vocal, FX, Loop, OneShot, House, Techno, HipHop,
+	Jazz, Rock, Electronic, Piano, Guitar, Synth, Custom
 };
 
 struct CategoryInfo
@@ -107,85 +88,56 @@ struct CategoryInfo
 };
 
 class SampleBankPanel : public juce::Component,
-	public juce::Timer
+	public juce::Timer,
+	public juce::ListBoxModel
 {
 public:
 	SampleBankPanel(DjIaVstProcessor& processor);
 	~SampleBankPanel() override;
-
 	void paint(juce::Graphics& g) override;
 	void resized() override;
 	void timerCallback() override;
 	void refreshSampleList();
 	void setVisible(bool shouldBeVisible) override;
-
+	int getNumRows() override;
+	void paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected) override {}
+	juce::Component* refreshComponentForRow(int rowNumber, bool isRowSelected, juce::Component* existingComponentToUpdate) override;
+	void listBoxItemClicked(int row, const juce::MouseEvent&) override {}
 	std::function<void(const juce::String&, const juce::String&)> onSampleDroppedToTrack;
 
 private:
 	DjIaVstProcessor& audioProcessor;
-
 	juce::Label titleLabel;
 	juce::TextButton cleanupButton;
-	juce::Viewport samplesViewport;
-	juce::Component samplesContainer;
 	juce::Label infoLabel;
 	juce::ComboBox sortMenu;
-
+	juce::ListBox sampleListBox;
 	juce::TextEditor categoryInput;
 	juce::TextButton addCategoryButton;
 	juce::TextButton editCategoryButton;
 	juce::TextButton deleteCategoryButton;
-
 	std::atomic<bool> isLoading{ false };
 	std::atomic<bool> hasEverLoaded{ false };
-
 	float loadingAngle = 0.0f;
-
 	int currentCategoryId = 0;
 	std::vector<CategoryInfo> categoryInfos = {
-		{0, "All Samples"},
-		{1, "Drums"},
-		{2, "Bass"},
-		{3, "Melody"},
-		{4, "Ambient"},
-		{5, "Percussion"},
-		{6, "Vocal"},
-		{7, "FX"},
-		{8, "Loops"},
-		{9, "One-shots"},
-		{10, "House"},
-		{11, "Techno"},
-		{12, "Hip-Hop"},
-		{13, "Jazz"},
-		{14, "Rock"},
-		{15, "Electronic"},
-		{16, "Piano"},
-		{17, "Guitar"},
-		{18, "Synth"} };
-
+		{0, "All Samples"}, {1, "Drums"}, {2, "Bass"}, {3, "Melody"},
+		{4, "Ambient"}, {5, "Percussion"}, {6, "Vocal"}, {7, "FX"},
+		{8, "Loops"}, {9, "One-shots"}, {10, "House"}, {11, "Techno"},
+		{12, "Hip-Hop"}, {13, "Jazz"}, {14, "Rock"}, {15, "Electronic"},
+		{16, "Piano"}, {17, "Guitar"}, {18, "Synth"} };
 	juce::ComboBox categoryFilter;
 	SampleCategory currentCategory = SampleCategory::All;
 	std::map<SampleCategory, juce::String> categoryNames;
 	bool isCategoryEditable(int categoryId) const;
 	void rebuildCategoryFilter();
-
-	enum SortType
-	{
-		Time = 1,
-		Prompt = 2,
-		Usage = 3,
-		BPM = 4,
-		Duration = 5
-	};
+	enum SortType { Time = 1, Prompt = 2, Usage = 3, BPM = 4, Duration = 5 };
 	SortType currentSortType = SortType::Prompt;
-
-	std::vector<std::unique_ptr<SampleBankItem>> sampleItems;
-
+	std::vector<SampleBankEntry*> filteredSamples;
 	SampleBankEntry* currentPreviewEntry = nullptr;
 	SampleBankItem* currentPreviewItem = nullptr;
-
 	void setupUI();
-	void createSampleItems(const std::vector<SampleBankEntry*>& samples);
+	void applyFiltersAndSort();
 	void playPreview(SampleBankEntry* entry);
 	void stopPreview();
 	void deleteSample(const juce::String& sampleId);
@@ -199,6 +151,5 @@ private:
 	int getNextCategoryId();
 	void drawLoader(juce::Graphics& g);
 	void drawEmptyState(juce::Graphics& g);
-
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBankPanel)
 };

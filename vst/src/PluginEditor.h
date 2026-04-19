@@ -6,6 +6,7 @@
 #include "SampleBankPanel.h"
 #include "CustomLookAndFeel.h"
 #include "MidiMappingEditorWindow.h"
+#include "LCDScreen.h"
 
 class SequencerComponent;
 
@@ -32,6 +33,8 @@ public:
 
 	TrackComponent* getTrackComponent(const juce::String& trackId);
 
+	LCDScreen lcdScreen;
+
 	void paint(juce::Graphics&) override;
 	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
 	void layoutConfigSection(juce::Rectangle<int> area, int reducing);
@@ -55,6 +58,7 @@ public:
 	void toggleSampleBank();
 	void onSampleLoaded(const juce::String& trackId);
 	void reEnableCanvasForTrack();
+	void updateLCD();
 
 	bool keyStateChanged(bool isKeyDown) override;
 
@@ -108,6 +112,8 @@ private:
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
 	void checkForUpdates();
+	void layoutControlPanel(juce::Rectangle<int> area, int spacing);
+	void layoutTracksGrid();
 
 	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
 	bool keyPressed(const juce::KeyPress& key) override;

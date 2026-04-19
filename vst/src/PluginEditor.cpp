@@ -13,8 +13,9 @@
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 	: AudioProcessorEditor(&p), audioProcessor(p)
 {
-	setResizable(false, false);
-	setSize(1300, 800);
+	setResizable(true, true);
+	setResizeLimits(1100, 800, 2400, 1600);
+	setSize(1460, 820);
 	setScaleFactor(1.0f);
 	setLookAndFeel(&customLookAndFeel);
 	ObsidianAlertManager::initialize();
@@ -44,6 +45,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 				generateButton.setEnabled(false);
 				setAllGenerateButtonsEnabled(false);
 				statusLabel.setText("Generation in progress...", juce::dontSendNotification);
+				updateLCD();
 				juce::String generatingId = audioProcessor.getGeneratingTrackId();
 				for (auto& trackComp : trackComponents)
 				{
@@ -201,6 +203,7 @@ void DjIaVstEditor::onGenerationComplete(const juce::String& trackId, const juce
 	if (isShowing())
 	{
 		statusLabel.setText(message, juce::dontSendNotification);
+		void updateLCD();
 
 		if (isError)
 		{
@@ -210,6 +213,7 @@ void DjIaVstEditor::onGenerationComplete(const juce::String& trackId, const juce
 					if (isShowing())
 					{
 						statusLabel.setText("Ready", juce::dontSendNotification);
+						void updateLCD();
 						statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 					} });
 		}
@@ -221,6 +225,7 @@ void DjIaVstEditor::onGenerationComplete(const juce::String& trackId, const juce
 					if (isShowing())
 					{
 						statusLabel.setText("Ready", juce::dontSendNotification);
+						void updateLCD();
 						statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 					} });
 		}
@@ -393,6 +398,7 @@ void DjIaVstEditor::showOnboardingStep(int step)
 						statusLabel.setText(
 							juce::String::fromUTF8("Ready - select a prompt and hit [>] to generate your first loop!"),
 							juce::dontSendNotification);
+						void updateLCD();
 						statusLabel.setColour(juce::Label::textColourId,
 							ColourPalette::violet);
 					}
@@ -465,6 +471,7 @@ void DjIaVstEditor::checkLocalModelsAndNotify()
 	if (modelsPresent)
 	{
 		statusLabel.setText("Local models found! Configuration saved.", juce::dontSendNotification);
+		void updateLCD();
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 	}
 	else
@@ -481,6 +488,7 @@ void DjIaVstEditor::checkLocalModelsAndNotify()
 			});
 
 		statusLabel.setText("Local mode selected - Models setup required", juce::dontSendNotification);
+		void updateLCD();
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
 	}
 }
@@ -754,19 +762,6 @@ void DjIaVstEditor::setupUI()
 	configButton.onClick = [this]()
 		{ showConfigDialog(); };
 
-	addAndMakeVisible(creditsLabel);
-	creditsLabel.setText("Credits: --", juce::dontSendNotification);
-	creditsLabel.setFont(juce::FontOptions(14.0f));
-	creditsLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	creditsLabel.setTooltip(
-		"Available generation credits\n"
-		"\n"
-		"Cost per generation:\n"
-		"  - 1 credit)");
-
-	addAndMakeVisible(statusLabel);
-	statusLabel.setText("Ready", juce::dontSendNotification);
-	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
 	addAndMakeVisible(autoLoadButton);
 	autoLoadButton.setButtonText("Auto-Load Mode");
@@ -778,13 +773,6 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(loadSampleButton);
 	loadSampleButton.setButtonText("Load Sample");
 	loadSampleButton.setEnabled(!audioProcessor.getAutoLoadEnabled());
-
-	addAndMakeVisible(midiIndicator);
-	midiIndicator.setText("MIDI: Waiting...", juce::dontSendNotification);
-	midiIndicator.setColour(juce::Label::backgroundColourId, juce::Colours::white);
-	midiIndicator.setColour(juce::Label::textColourId, juce::Colours::black);
-	midiIndicator.setJustificationType(juce::Justification::left);
-	midiIndicator.setFont(juce::FontOptions(12.0f, juce::Font::bold));
 
 	addAndMakeVisible(tracksLabel);
 	tracksLabel.setText("Tracks:", juce::dontSendNotification);
@@ -894,6 +882,7 @@ void DjIaVstEditor::addEventListeners()
 			toggleWaveFormButtonOnTrack();
 			toggleSEQButtonOnTrack();
 			statusLabel.setText("UI Reset - Ready", juce::dontSendNotification);
+			updateLCD();
 			for (auto& trackComp : trackComponents)
 			{
 				trackComp->stopGeneratingAnimation();
@@ -904,6 +893,7 @@ void DjIaVstEditor::addEventListeners()
 	promptPresetSelector.onMidiLearn = [this]()
 		{
 			statusLabel.setText("Learning MIDI for prompt selector...", juce::dontSendNotification);
+			updateLCD();
 			audioProcessor.getMidiLearnManager().startLearning(
 				"promptPresetSelector",
 				&audioProcessor,
@@ -956,6 +946,7 @@ void DjIaVstEditor::addEventListeners()
 				}
 
 				statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
+				updateLCD();
 			}
 			grabKeyboardFocus();
 		};
@@ -969,6 +960,7 @@ void DjIaVstEditor::addEventListeners()
 			{
 				bypassSequencerButton.setButtonText("Composition Mode");
 				statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
+				updateLCD();
 				bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
 					ColourPalette::buttonWarning.darker(0.3f));
 			}
@@ -976,6 +968,7 @@ void DjIaVstEditor::addEventListeners()
 			{
 				bypassSequencerButton.setButtonText("Sequencer Mode");
 				statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
+				updateLCD();
 				bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
 					ColourPalette::buttonPrimary);
 			}
@@ -984,6 +977,7 @@ void DjIaVstEditor::addEventListeners()
 	nextTrackButton.onMidiLearn = [this]()
 		{
 			statusLabel.setText("Learning MIDI for next track button...", juce::dontSendNotification);
+			updateLCD();
 			audioProcessor.getMidiLearnManager().startLearning(
 				"nextTrack",
 				&audioProcessor,
@@ -1004,6 +998,7 @@ void DjIaVstEditor::addEventListeners()
 	prevTrackButton.onMidiLearn = [this]()
 		{
 			statusLabel.setText("Learning MIDI for previous track button...", juce::dontSendNotification);
+			updateLCD();
 			audioProcessor.getMidiLearnManager().startLearning(
 				"prevTrack",
 				&audioProcessor,
@@ -1024,6 +1019,7 @@ void DjIaVstEditor::addEventListeners()
 	generateButton.onMidiLearn = [this]()
 		{
 			statusLabel.setText("Learning MIDI for generate button...", juce::dontSendNotification);
+			updateLCD();
 			audioProcessor.getMidiLearnManager().startLearning(
 				"generate",
 				&audioProcessor,
@@ -1199,9 +1195,7 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
 	promptPresetSelector.setBounds(row1.removeFromLeft(area.getWidth() - saveButtonWidth - spacing));
 	row1.removeFromLeft(spacing);
 	savePresetButton.setBounds(row1.removeFromLeft(saveButtonWidth));
-
 	area.removeFromTop(spacing);
-
 	auto row2 = area.removeFromTop(35);
 	int generateButtonWidth = 50;
 	promptInput.setBounds(row2.removeFromLeft(row2.getWidth() - generateButtonWidth - spacing));
@@ -1211,36 +1205,45 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
 
 void DjIaVstEditor::layoutConfigSection(juce::Rectangle<int> area, int reducing)
 {
-	auto creditsRow = area.removeFromTop(35);
-	creditsLabel.setBounds(creditsRow.reduced(reducing));
-	auto controlRow = area.removeFromTop(40);
-	auto controlWidth = controlRow.getWidth() / 2;
-	keySelector.setBounds(controlRow.removeFromLeft(controlWidth).reduced(reducing));
-	durationSlider.setBounds(controlRow.removeFromLeft(controlWidth).reduced(reducing));
+	auto durationRow = area.removeFromTop(35);
+	durationSlider.setBounds(durationRow.reduced(reducing));
+
+	auto keyRow = area.removeFromTop(35);
+	keySelector.setBounds(keyRow.reduced(reducing));
 }
 
 void DjIaVstEditor::resized()
 {
 	static bool resizing = false;
-	const int spacing = 5;
-	const int padding = 10;
-	const int reducing = 2;
 	if (resizing)
 		return;
 	resizing = true;
-	auto bottomArea = getLocalBounds().removeFromBottom(45);
-	auto area = getLocalBounds();
 
-	area = area.reduced(padding);
+	const int spacing = 5;
+	const int padding = 10;
+	const int reducing = 2;
 
-	auto topArea = area.removeFromTop(80);
+	auto fullBounds = getLocalBounds();
+
+	const int bankWidth = juce::jmax(300, fullBounds.getWidth() / 5);
+	if (sampleBankPanel)
+	{
+		auto bankArea = fullBounds.removeFromLeft(bankWidth);
+		sampleBankPanel->setBounds(bankArea);
+		sampleBankPanel->setVisible(true);
+	}
+
+	auto area = fullBounds.reduced(padding);
+
+	const int bannerHeight = 80;
+	auto topArea = area.removeFromTop(bannerHeight);
 	this->bannerArea = topArea;
 
-	auto column1 = topArea.removeFromLeft(330);
-
+	const int column1Width = juce::jmax(280, topArea.getWidth() / 5);
+	auto column1 = topArea.removeFromLeft(column1Width);
 	auto logoSpace = column1.removeFromLeft(80);
 
-	auto nameArea = column1.removeFromLeft(250);
+	auto nameArea = column1;
 	auto titleArea = nameArea.removeFromTop(30);
 	auto devArea = nameArea.removeFromTop(10);
 	auto partnerArea = nameArea.removeFromTop(25);
@@ -1250,65 +1253,128 @@ void DjIaVstEditor::resized()
 
 	topArea.removeFromLeft(spacing * 2);
 
-	auto column2 = topArea.removeFromLeft(490);
+	const int column2Width = static_cast<int>(topArea.getWidth() * 0.55f);
+	auto column2 = topArea.removeFromLeft(column2Width);
 	layoutPromptSection(column2, spacing);
 
 	topArea.removeFromLeft(spacing * 2);
 
-	auto column3 = topArea.removeFromLeft(370);
+	auto column3 = topArea;
 	layoutConfigSection(column3, reducing);
-
-	topArea.removeFromLeft(spacing * 2);
-
-	auto column4 = topArea;
-
-	auto configButtonArea = column4.removeFromTop(35);
-	configButton.setBounds(configButtonArea.reduced(2));
 
 	area.removeFromTop(spacing);
 
-	auto tracksAndMixerArea = area.removeFromTop(area.getHeight() - 70);
-	int tracksWidth = static_cast<int>(tracksAndMixerArea.getWidth() * 0.6f);
-	auto tracksMainArea = tracksAndMixerArea.removeFromLeft(tracksWidth);
-	tracksViewport.setBounds(tracksMainArea);
-	tracksAndMixerArea.removeFromLeft(5);
+	const int totalHeight = area.getHeight();
+	const int minTracksHeight = 480;
+	const int minMixerHeight = 280;
+
+	int tracksHeight = static_cast<int>(totalHeight * 0.60f);
+	int mixerHeight = totalHeight - tracksHeight - spacing;
+
+	if (tracksHeight < minTracksHeight && totalHeight >= minTracksHeight + minMixerHeight + spacing)
+	{
+		tracksHeight = minTracksHeight;
+		mixerHeight = totalHeight - tracksHeight - spacing;
+	}
+
+	auto tracksArea = area.removeFromTop(tracksHeight);
+	tracksViewport.setBounds(tracksArea);
+	tracksViewport.setViewedComponent(&tracksContainer, false);
+	tracksViewport.setScrollBarsShown(true, false);
+	layoutTracksGrid();
+
+	area.removeFromTop(spacing);
+
+	auto bottomRow = area;
+	const int controlPanelWidth = juce::jmax(150, juce::jmin(200, bottomRow.getWidth() / 8));
+	auto controlPanelArea = bottomRow.removeFromRight(controlPanelWidth);
+	bottomRow.removeFromRight(spacing);
 
 	if (mixerPanel)
 	{
-		mixerPanel->setBounds(tracksAndMixerArea);
+		mixerPanel->setBounds(bottomRow);
 		mixerPanel->setVisible(true);
 	}
 
-	auto buttonsRow = area.removeFromTop(40);
-	auto buttonWidth = buttonsRow.getWidth() / 9;
-	bypassSequencerButton.setBounds(buttonsRow.removeFromLeft(buttonWidth).reduced(5));
-	autoLoadButton.setBounds(buttonsRow.removeFromLeft(buttonWidth).reduced(5));
-	addTrackButton.setBounds(buttonsRow.removeFromLeft(buttonWidth).reduced(5));
-	loadSampleButton.setBounds(buttonsRow.removeFromLeft(buttonWidth).reduced(5));
-	showSampleBankButton.setBounds(buttonsRow.removeFromLeft(buttonWidth).reduced(5));
-	openMidiEditorButton.setBounds(buttonsRow.removeFromLeft(buttonWidth).reduced(5));
-	auto trackNavArea = buttonsRow.removeFromRight(buttonWidth * 2);
-	prevTrackButton.setBounds(trackNavArea.removeFromLeft(buttonWidth).reduced(5));
-	nextTrackButton.setBounds(trackNavArea.reduced(5));
-	resetUIButton.setBounds(buttonsRow.reduced(5));
+	layoutControlPanel(controlPanelArea, spacing);
 
-	bottomArea.removeFromTop(spacing);
-
-	auto statusRow = bottomArea.removeFromTop(20);
-	statusRow.removeFromLeft(10);
-	statusLabel.setBounds(statusRow);
-
-	auto midiRow = bottomArea.removeFromTop(20);
-	midiRow.removeFromLeft(10);
-	midiRow.removeFromRight(10);
-	midiIndicator.setBounds(midiRow);
-
-	if (sampleBankPanel && sampleBankVisible)
-	{
-		auto bankArea = getLocalBounds().removeFromRight(400);
-		sampleBankPanel->setBounds(bankArea);
-	}
 	resizing = false;
+}
+
+void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
+{
+	const int lcdHeight = juce::jlimit(60, 90, area.getHeight() / 3);
+	auto lcdArea = area.removeFromTop(lcdHeight);
+	area.removeFromTop(spacing);
+
+	lcdScreen.setBounds(lcdArea);
+
+	const int cols = 2;
+	const int rows = 3;
+	const int btnSpacing = 4;
+	const int maxBtnW = 75;
+	const int maxBtnH = 42;
+
+	const int cellW = juce::jmin(maxBtnW, (area.getWidth() - btnSpacing * (cols - 1)) / cols);
+	const int cellH = juce::jmin(maxBtnH, (area.getHeight() - btnSpacing * (rows - 1)) / rows);
+
+	const int gridW = cellW * cols + btnSpacing * (cols - 1);
+	const int offsetX = (area.getWidth() - gridW) / 2;
+
+	auto placeButton = [&](juce::Component& comp, int col, int row)
+		{
+			int x = area.getX() + offsetX + col * (cellW + btnSpacing);
+			int y = area.getY() + row * (cellH + btnSpacing);
+			comp.setBounds(x, y, cellW, cellH);
+		};
+
+	placeButton(bypassSequencerButton, 0, 0);
+	placeButton(autoLoadButton, 1, 0);
+	placeButton(loadSampleButton, 0, 1);
+	placeButton(openMidiEditorButton, 1, 1);
+	placeButton(configButton, 0, 2);
+}
+
+void DjIaVstEditor::updateLCD()
+{
+	lcdScreen.setLines(
+		creditsLabel.getText(),
+		statusLabel.getText(),
+		midiIndicator.getText()
+	);
+}
+
+void DjIaVstEditor::layoutTracksGrid()
+{
+	const int cols = 2;
+	const int rows = 4;
+	const int spacing = 5;
+	const int minRowHeight = 220;
+
+	auto viewportBounds = tracksViewport.getBounds();
+	if (viewportBounds.isEmpty())
+		return;
+
+	const int scrollbarAllowance = 12;
+	const int availableWidth = viewportBounds.getWidth() - scrollbarAllowance;
+
+	const int cellW = (availableWidth - spacing * (cols - 1)) / cols;
+
+	const int cellFromViewport = (viewportBounds.getHeight() - spacing * (rows - 1)) / rows;
+	const int cellH = juce::jmax(minRowHeight, cellFromViewport);
+
+	const int totalWidth = availableWidth;
+	const int totalHeight = cellH * rows + spacing * (rows - 1);
+	tracksContainer.setSize(totalWidth, totalHeight);
+
+	for (int i = 0; i < (int)trackComponents.size(); ++i)
+	{
+		int col = i % cols;
+		int row = i / cols;
+		int x = col * (cellW + spacing);
+		int y = row * (cellH + spacing);
+		trackComponents[i]->setBounds(x, y, cellW, cellH);
+	}
 }
 
 void DjIaVstEditor::openMidiMappingEditor()
@@ -1364,6 +1430,7 @@ void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
 	generateButton.setEnabled(false);
 	setAllGenerateButtonsEnabled(false);
 	statusLabel.setText("Connecting to server...", juce::dontSendNotification);
+	updateLCD();
 
 	for (auto& trackComp : trackComponents)
 	{
@@ -1385,6 +1452,7 @@ void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
 			{
 				statusLabel.setText("Generating loop (this may take a few minutes)...",
 					juce::dontSendNotification);
+				updateLCD();
 			} });
 }
 
@@ -1406,10 +1474,12 @@ void DjIaVstEditor::stopGenerationUI(const juce::String& trackId, bool success, 
 				if (audioProcessor.getAutoLoadEnabled())
 				{
 					statusLabel.setText("Sample ready - Loading automatically...", juce::dontSendNotification);
+					updateLCD();
 				}
 				else
 				{
 					statusLabel.setText("Sample ready - Click 'Load Sample' to use it", juce::dontSendNotification);
+					updateLCD();
 				}
 			}
 
@@ -1431,6 +1501,7 @@ void DjIaVstEditor::stopGenerationUI(const juce::String& trackId, bool success, 
 	if (!success && !errorMessage.isEmpty())
 	{
 		statusLabel.setText("Error: " + errorMessage, juce::dontSendNotification);
+		updateLCD();
 	}
 }
 
@@ -1455,6 +1526,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	if (serverUrl.isEmpty())
 	{
 		statusLabel.setText("Error: Server URL is required", juce::dontSendNotification);
+		updateLCD();
 		return;
 	}
 	bool isLocalServer = serverUrl.contains("localhost") ||
@@ -1462,12 +1534,14 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	if (apiKey.isEmpty() && !isLocalServer)
 	{
 		statusLabel.setText("Error: API Key is required", juce::dontSendNotification);
+		updateLCD();
 		return;
 	}
 	juce::String currentPrompt = promptInput.getText().trim();
 	if (currentPrompt.isEmpty())
 	{
 		statusLabel.setText("Error: Prompt cannot be empty", juce::dontSendNotification);
+		updateLCD();
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
 		return;
 	}
@@ -1480,6 +1554,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	if (!track)
 	{
 		statusLabel.setText("Error: No track selected", juce::dontSendNotification);
+		updateLCD();
 		return;
 	}
 
@@ -1516,6 +1591,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 				juce::MessageManager::callAsync([this]() {
 					statusLabel.setText("Generating loop (this may take a few minutes)...",
 						juce::dontSendNotification);
+					updateLCD();
 					});
 
 				audioProcessor.setServerUrl(audioProcessor.getServerUrl());
@@ -1686,11 +1762,13 @@ void DjIaVstEditor::onPresetSelected()
 	{
 		promptInput.setText(selectedPrompt);
 		statusLabel.setText("Preset loaded: " + selectedPrompt, juce::dontSendNotification);
+		updateLCD();
 	}
 	else
 	{
 		promptInput.clear();
 		statusLabel.setText("Custom prompt mode", juce::dontSendNotification);
+		updateLCD();
 	}
 }
 
@@ -1713,10 +1791,12 @@ void DjIaVstEditor::onSavePreset()
 		}
 
 		statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
+		updateLCD();
 	}
 	else
 	{
 		statusLabel.setText("Enter a prompt first!", juce::dontSendNotification);
+		updateLCD();
 	}
 }
 
@@ -1729,6 +1809,7 @@ void DjIaVstEditor::onAutoLoadToggled()
 	{
 		autoLoadButton.setButtonText("Auto-Load Mode");
 		statusLabel.setText("Auto-load enabled - samples load automatically", juce::dontSendNotification);
+		updateLCD();
 		loadSampleButton.setButtonText("Load Sample");
 		loadSampleButton.setEnabled(false);
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
@@ -1738,6 +1819,7 @@ void DjIaVstEditor::onAutoLoadToggled()
 	{
 		autoLoadButton.setButtonText("Manual Mode");
 		statusLabel.setText("Manual mode - click Load Sample when ready", juce::dontSendNotification);
+		updateLCD();
 		loadSampleButton.setEnabled(true);
 		updateLoadButtonState();
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
@@ -1753,6 +1835,7 @@ void DjIaVstEditor::onLoadSampleClicked()
 
 		audioProcessor.loadPendingSample();
 		statusLabel.setText("Sample loaded manually!", juce::dontSendNotification);
+		updateLCD();
 
 		onSampleLoaded(trackId);
 		updateLoadButtonState();
@@ -1760,6 +1843,7 @@ void DjIaVstEditor::onLoadSampleClicked()
 	else
 	{
 		statusLabel.setText("Generate a loop first", juce::dontSendNotification);
+		updateLCD();
 	}
 }
 
@@ -1801,6 +1885,7 @@ void DjIaVstEditor::refreshTrackComponents()
 
 			return trackA->slotIndex < trackB->slotIndex;
 		});
+
 	if (trackComponents.size() == trackIds.size())
 	{
 		bool allVisible = true;
@@ -1838,7 +1923,6 @@ void DjIaVstEditor::refreshTrackComponents()
 
 	trackComponents.clear();
 	tracksContainer.removeAllChildren();
-	int yPos = 5;
 
 	for (const auto& trackId : trackIds)
 	{
@@ -1858,23 +1942,14 @@ void DjIaVstEditor::refreshTrackComponents()
 				{
 					trackCompPtr->updatePromptPresets(getAllPrompts());
 				} });
+
 				trackComp->onSelectTrack = [this](const juce::String& id)
 					{
 						audioProcessor.selectTrack(id);
 						updateSelectedTrack();
 					};
 
-				trackComp->onDeleteTrack = [this](const juce::String& id)
-					{
-						if (audioProcessor.getAllTrackIds().size() > 1)
-						{
-							audioProcessor.deleteTrack(id);
-							juce::Timer::callAfterDelay(10, [this]()
-								{
-									refreshTrackComponents();
-									refreshWavevormsAndSequencers(); });
-						}
-					};
+				// onDeleteTrack : SUPPRIMÉ (on reste sur 8 tracks fixes)
 
 				trackComp->onGenerateWithImage = [this](const juce::String& trackId, const juce::String& image, const juce::StringArray& keywords)
 					{
@@ -1922,9 +1997,6 @@ void DjIaVstEditor::refreshTrackComponents()
 						audioProcessor.stopTrackPreview(trackId);
 					};
 
-				int fullWidth = tracksContainer.getWidth() - 4;
-				trackComp->setBounds(2, yPos, fullWidth, 60);
-
 				if (trackId == audioProcessor.getSelectedTrackId())
 				{
 					trackComp->setSelected(true);
@@ -1933,13 +2005,13 @@ void DjIaVstEditor::refreshTrackComponents()
 				{
 					trackComp->startGeneratingAnimation();
 				}
+
 				tracksContainer.addAndMakeVisible(trackComp.get());
 				trackComponents.push_back(std::move(trackComp));
-
-				yPos += 85;
 	}
 
-	tracksContainer.setSize(tracksViewport.getWidth() - 20, yPos + 5);
+	layoutTracksGrid();
+
 	if (mixerPanel)
 	{
 		mixerPanel->refreshMixerChannels();
@@ -1965,6 +2037,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String& trackId)
 	if (!track)
 	{
 		statusLabel.setText("Error: Track not found", juce::dontSendNotification);
+		updateLCD();
 		audioProcessor.setIsGenerating(false);
 		return;
 	}
@@ -1972,6 +2045,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String& trackId)
 	if (track->selectedPrompt.isEmpty())
 	{
 		statusLabel.setText("Error: No prompt selected for this track", juce::dontSendNotification);
+		updateLCD();
 		audioProcessor.setIsGenerating(false);
 		return;
 	}
@@ -2085,10 +2159,15 @@ void DjIaVstEditor::toggleSEQButtonOnTrack()
 void DjIaVstEditor::setStatusWithTimeout(const juce::String& message, int timeoutMs)
 {
 	statusLabel.setText(message, juce::dontSendNotification);
+	updateLCD();
 	juce::Timer::callAfterDelay(timeoutMs, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 		{
 			if (auto* editor = safeThis.getComponent())
-				editor->statusLabel.setText("Ready", juce::dontSendNotification); });
+			{
+				editor->statusLabel.setText("Ready", juce::dontSendNotification);
+				editor->updateLCD();
+			}
+		});
 }
 
 void DjIaVstEditor::onAddTrack()

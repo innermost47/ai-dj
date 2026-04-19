@@ -268,8 +268,8 @@ void MasterChannel::paint(juce::Graphics& g)
 	auto bounds = getLocalBounds();
 	g.setColour(ColourPalette::backgroundMid);
 	g.fillRoundedRectangle(bounds.toFloat(), 8.0f);
-	g.setColour(ColourPalette::playArmed);
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 8.0f, 2.0f);
+	g.setColour(ColourPalette::sliderTrack);
+	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 8.0f, 1.0f);
 	drawMasterVUMeterStereo(g, bounds);
 }
 
