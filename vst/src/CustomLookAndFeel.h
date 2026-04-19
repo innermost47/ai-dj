@@ -139,9 +139,12 @@ public:
 		g.setColour(textColour);
 		g.setFont(juce::FontOptions(14.0f));
 
-		g.drawText(button.getButtonText(),
+		g.drawFittedText(button.getButtonText(),
 			button.getLocalBounds(),
-			juce::Justification::centred);
+			juce::Justification::centred,
+			2,
+			0.8f
+		);
 	}
 
 	void drawToggleButton(juce::Graphics& g,

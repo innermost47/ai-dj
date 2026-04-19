@@ -743,7 +743,7 @@ void DjIaVstEditor::setupUI()
 	durationSlider.setColour(juce::Slider::backgroundColourId, juce::Colours::black);
 	durationSlider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
 	durationSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
-	durationSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+	durationSlider.setColour(juce::Slider::textBoxTextColourId, ColourPalette::textPrimary);
 	durationSlider.setColour(juce::Slider::textBoxBackgroundColourId, ColourPalette::backgroundDark);
 	durationSlider.setColour(juce::Slider::textBoxOutlineColourId, ColourPalette::backgroundDark.darker(0.3f).withAlpha(0.3f));
 	durationSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 50, 20);
@@ -757,14 +757,14 @@ void DjIaVstEditor::setupUI()
 	generateButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
 
 	addAndMakeVisible(configButton);
-	configButton.setButtonText(juce::String::fromUTF8("\xE2\x9B\xAD"));
+	configButton.setButtonText("Settings");
 	configButton.setTooltip("Configure settings globally");
 	configButton.onClick = [this]()
 		{ showConfigDialog(); };
 
 
 	addAndMakeVisible(autoLoadButton);
-	autoLoadButton.setButtonText("Auto-Load Mode");
+	autoLoadButton.setButtonText("Auto-Load\nMode");
 	autoLoadButton.setClickingTogglesState(true);
 	autoLoadButton.setToggleState(audioProcessor.getAutoLoadEnabled(), juce::dontSendNotification);
 	autoLoadButton.setTooltip("Toggle between automatic and manual sample loading");
@@ -802,7 +802,7 @@ void DjIaVstEditor::setupUI()
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
 	addAndMakeVisible(bypassSequencerButton);
-	bypassSequencerButton.setButtonText("Sequencer Mode");
+	bypassSequencerButton.setButtonText("Sequencer\nMode");
 	bypassSequencerButton.setClickingTogglesState(true);
 	bypassSequencerButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
 	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
@@ -827,7 +827,7 @@ void DjIaVstEditor::setupUI()
 		sampleBankPanel->setVisible(false);
 	}
 
-	openMidiEditorButton.setButtonText("Edit Mappings");
+	openMidiEditorButton.setButtonText("Edit\nMappings");
 	openMidiEditorButton.setTooltip("Open MIDI mappings editor");
 	addAndMakeVisible(openMidiEditorButton);
 
@@ -1810,14 +1810,14 @@ void DjIaVstEditor::onAutoLoadToggled()
 		autoLoadButton.setButtonText("Auto-Load Mode");
 		statusLabel.setText("Auto-load enabled - samples load automatically", juce::dontSendNotification);
 		updateLCD();
-		loadSampleButton.setButtonText("Load Sample");
+		loadSampleButton.setButtonText("Load\nSample");
 		loadSampleButton.setEnabled(false);
 		autoLoadButton.setColour(juce::TextButton::buttonColourId,
 			ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
-		autoLoadButton.setButtonText("Manual Mode");
+		autoLoadButton.setButtonText("Manual\nMode");
 		statusLabel.setText("Manual mode - click Load Sample when ready", juce::dontSendNotification);
 		updateLCD();
 		loadSampleButton.setEnabled(true);
