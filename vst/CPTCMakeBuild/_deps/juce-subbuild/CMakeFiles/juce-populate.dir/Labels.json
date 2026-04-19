@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/juce-populate"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/fe5115e828f4c718171ef9aeb5d6e3ad/juce-populate.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/a4c5df300b868ccbf68ebc303375a742/juce-populate-complete.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-build.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-configure.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-download.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-install.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-mkdir.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-patch.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-test.rule"
+		},
+		{
+			"file" : "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/9974dd0577c1ef8277711f7cda5d7398/juce-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"juce-populate"
+		],
+		"name" : "juce-populate"
+	}
+}

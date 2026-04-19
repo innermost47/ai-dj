@@ -15,7 +15,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 {
 	setResizable(true, true);
 	setResizeLimits(1100, 800, 2400, 1600);
-	setSize(1460, 820);
+	setSize(1480, 820);
 	setScaleFactor(1.0f);
 	setLookAndFeel(&customLookAndFeel);
 	ObsidianAlertManager::initialize();
@@ -1266,9 +1266,9 @@ void DjIaVstEditor::resized()
 
 	const int totalHeight = area.getHeight();
 	const int minTracksHeight = 480;
-	const int minMixerHeight = 280;
+	const int minMixerHeight = 215;
 
-	int tracksHeight = static_cast<int>(totalHeight * 0.60f);
+	int tracksHeight = static_cast<int>(totalHeight * 0.65f);
 	int mixerHeight = totalHeight - tracksHeight - spacing;
 
 	if (tracksHeight < minTracksHeight && totalHeight >= minTracksHeight + minMixerHeight + spacing)

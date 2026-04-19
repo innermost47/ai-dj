@@ -1,0 +1,10 @@
+^C:\USERS\ANTHO\DOCUMENTS\PROJETS-IA\AI-DJ\VST\CPTCMAKEBUILD\_DEPS\JUCE-SUBBUILD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild -BC:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild --check-stamp-file C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-subbuild/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

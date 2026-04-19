@@ -1,4 +1,4 @@
-#include "MixerPanel.h"
+﻿#include "MixerPanel.h"
 #include "ColourPalette.h"
 #include "MixerChannel.h"
 #include "MasterChannel.h"
@@ -143,7 +143,7 @@ void MixerPanel::refreshMixerChannels()
 
 void MixerPanel::displayChannelsContainer(int xPos)
 {
-	int finalHeight = std::max(400, getHeight() - 10);
+	int finalHeight = getHeight() - 10;
 	channelsContainer.setSize(xPos, finalHeight);
 	channelsContainer.setVisible(true);
 	channelsContainer.repaint();
@@ -152,12 +152,10 @@ void MixerPanel::displayChannelsContainer(int xPos)
 void MixerPanel::positionMixer(std::unique_ptr<MixerChannel>& mixerChannel, int& xPos,
 	const int channelWidth, const int channelSpacing)
 {
-	int containerHeight = std::max(400, channelsContainer.getHeight());
+	int containerHeight = channelsContainer.getHeight();
 	mixerChannel->setBounds(xPos, 0, channelWidth, containerHeight);
-
 	channelsContainer.addAndMakeVisible(mixerChannel.get());
 	mixerChannels.push_back(std::move(mixerChannel));
-
 	xPos += channelWidth + channelSpacing;
 }
 
@@ -191,28 +189,25 @@ void MixerPanel::resized()
 	area.removeFromRight(10);
 	channelsViewport.setBounds(area);
 
-	const int viewportW = channelsViewport.getMaximumVisibleWidth();
-	const int viewportH = channelsViewport.getMaximumVisibleHeight();
-
+	const int channelHeight = getHeight() - 10;
 	const int channelWidth = 90;
 	const int channelSpacing = 5;
 	const int numChannels = (int)mixerChannels.size();
-
 	const int totalChannelsWidth = numChannels * channelWidth
 		+ (numChannels - 1) * channelSpacing
 		+ 10;
 
-	channelsContainer.setSize(totalChannelsWidth, viewportH);
+	channelsContainer.setSize(totalChannelsWidth, channelHeight);
 
 	masterChannel->setBounds(masterArea.getX() + 5,
 		masterArea.getY(),
 		masterArea.getWidth() - 10,
-		viewportH);
+		channelHeight);
 
 	int xPos = 5;
 	for (auto& channel : mixerChannels)
 	{
-		channel->setBounds(xPos, 0, channelWidth, viewportH);
+		channel->setBounds(xPos, 0, channelWidth, channelHeight);
 		xPos += channelWidth + channelSpacing;
 	}
 }

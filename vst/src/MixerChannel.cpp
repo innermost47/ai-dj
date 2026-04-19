@@ -1,4 +1,4 @@
-#include "JuceHeader.h"
+﻿#include "JuceHeader.h"
 #include "MixerChannel.h"
 #include <string>
 #include "PluginEditor.h"
@@ -655,18 +655,19 @@ void MixerChannel::drawVUMeter(juce::Graphics& g, juce::Rectangle<int> bounds)
 	float meterSpacing = 2.0f;
 	float totalWidth = meterWidth * 2 + meterSpacing;
 	float startX = bounds.getWidth() - totalWidth - 5;
+	float vuStartY = static_cast<float>(bounds.getHeight()) * 0.45f;
+	float vuHeight = static_cast<float>(bounds.getHeight()) * 0.45f;
 
 	auto vuAreaLeft = juce::Rectangle<float>(
 		startX,
-		110.0f,
+		vuStartY,
 		meterWidth,
-		static_cast<float>(bounds.getHeight() - 120));
-
+		vuHeight);
 	auto vuAreaRight = juce::Rectangle<float>(
 		startX + meterWidth + meterSpacing,
-		110.0f,
+		vuStartY,
 		meterWidth,
-		static_cast<float>(bounds.getHeight() - 120));
+		vuHeight);
 
 	g.setColour(ColourPalette::backgroundDeep);
 	g.fillRoundedRectangle(vuAreaLeft, 2.0f);
@@ -797,37 +798,30 @@ void MixerChannel::resized()
 {
 	auto area = getLocalBounds().reduced(4);
 	const int width = area.getWidth();
-	const int smallGap = 4;
 
-	const int labelH = 20;
-	const int transportRowH = 26;
+	trackNameLabel.setBounds(area.removeFromTop(16));
+	area.removeFromTop(3);
 
-	trackNameLabel.setBounds(area.removeFromTop(labelH));
-	area.removeFromTop(smallGap);
-
-	auto topRow = area.removeFromTop(transportRowH);
+	auto topRow = area.removeFromTop(20);
 	playButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
 	stopButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
 
-	auto bottomRow = area.removeFromTop(transportRowH);
+	auto bottomRow = area.removeFromTop(20);
 	muteButton.setBounds(bottomRow.removeFromLeft(width / 2 - 2).reduced(2));
 	soloButton.setBounds(bottomRow.removeFromLeft(width / 2 - 2).reduced(2));
 
-	area.removeFromTop(smallGap);
+	area.removeFromTop(3);
 
 	const int knobColumnWidth = juce::jmin(40, width / 2);
 	auto knobsColumn = area.removeFromRight(knobColumnWidth);
-	area.removeFromRight(smallGap);
+	area.removeFromRight(3);
 
-	volumeSlider.setBounds(area.reduced(area.getWidth() / 4, 0));
+	volumeSlider.setBounds(area.removeFromTop(80).reduced(area.getWidth() / 4, 0));
 
-	const int numKnobs = 3;
-	const int knobSectionH = knobsColumn.getHeight() / numKnobs;
-
+	const int knobSectionH = 35;
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label& label, juce::Slider& knob)
 		{
-			const int labelH2 = 11;
-			label.setBounds(secArea.removeFromTop(labelH2));
+			label.setBounds(secArea.removeFromTop(10));
 			knob.setBounds(secArea.reduced(1));
 		};
 
@@ -835,6 +829,7 @@ void MixerChannel::resized()
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), fineLabel, fineKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), panLabel, panKnob);
 }
+
 
 void MixerChannel::updateVUMeter()
 {

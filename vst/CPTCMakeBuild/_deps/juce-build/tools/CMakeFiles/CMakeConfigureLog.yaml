@@ -1,0 +1,302 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake:233 (message)"
+      - "CMakeLists.txt:35 (project)"
+    message: |
+      The system is: Windows - 10.0.26200 - AMD64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCCompiler.cmake:123 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:35 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler:  
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      Microsoft (R) Build Engine version 16.11.6+a918ceb31 pour .NET Framework
+      Copyright (C) Microsoft Corporation. Tous droits réservés.
+      
+      La génération a démarré 19/04/2026 19:51:30.
+      Projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdC\\CompilerIdC.vcxproj" sur le noud 1 (cibles par défaut).
+      PrepareForBuild:
+        Création du répertoire "Debug\\".
+        Création du répertoire "Debug\\CompilerIdC.tlog\\".
+      InitializeBuildStatus:
+        Création de "Debug\\CompilerIdC.tlog\\unsuccessfulbuild", car "AlwaysCreate" a été spécifié.
+      VcpkgTripletSelection:
+        Using triplet "x64-windows" from "C:\\dev\\vcpkg\\installed\\x64-windows\\"
+        Using normalized configuration "Release"
+      ClCompile:
+        C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc142.pdb" /external:W0 /Gd /TC /FC /errorReport:queue CMakeCCompilerId.c
+        CMakeCCompilerId.c
+      Link:
+        C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdC.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib" /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib "C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdC.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdC.lib" /MACHINE:X64 Debug\\CMakeCCompilerId.obj
+        CompilerIdC.vcxproj -> C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdC\\CompilerIdC.exe
+      AppLocalFromInstalled:
+        pwsh.exe -ExecutionPolicy Bypass -noprofile -File "C:\\dev\\vcpkg\\scripts\\buildsystems\\msbuild\\applocal.ps1" "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdC\\CompilerIdC.exe" "C:\\dev\\vcpkg\\installed\\x64-windows\\bin" "Debug\\CompilerIdC.tlog\\CompilerIdC.write.1u.tlog" "Debug\\vcpkg.applocal.log"
+      PostBuildEvent:
+        for %%i in (cl.exe) do @echo CMAKE_C_COMPILER=%%~$PATH:i
+        :VCEnd
+        CMAKE_C_COMPILER=C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64\\cl.exe
+      FinalizeBuildStatus:
+        Suppression du fichier "Debug\\CompilerIdC.tlog\\unsuccessfulbuild".
+        Mise à jour de l'horodatage "Debug\\CompilerIdC.tlog\\CompilerIdC.lastbuildstate".
+      Génération du projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdC\\CompilerIdC.vcxproj" terminée (cibles par défaut).
+      
+      La génération a réussi.
+          0 Avertissement(s)
+          0 Erreur(s)
+      
+      Temps écoulé 00:00:01.36
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.vcxproj"
+      
+      The C compiler identification is MSVC, found in:
+        C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/3.28.1/CompilerIdC/CompilerIdC.exe
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:35 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler:  
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      Microsoft (R) Build Engine version 16.11.6+a918ceb31 pour .NET Framework
+      Copyright (C) Microsoft Corporation. Tous droits réservés.
+      
+      La génération a démarré 19/04/2026 19:51:31.
+      Projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdCXX\\CompilerIdCXX.vcxproj" sur le noud 1 (cibles par défaut).
+      PrepareForBuild:
+        Création du répertoire "Debug\\".
+        Création du répertoire "Debug\\CompilerIdCXX.tlog\\".
+      InitializeBuildStatus:
+        Création de "Debug\\CompilerIdCXX.tlog\\unsuccessfulbuild", car "AlwaysCreate" a été spécifié.
+      VcpkgTripletSelection:
+        Using triplet "x64-windows" from "C:\\dev\\vcpkg\\installed\\x64-windows\\"
+        Using normalized configuration "Release"
+      ClCompile:
+        C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /nologo /W0 /WX- /diagnostics:column /Od /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\\\" /Fd"Debug\\vc142.pdb" /external:W0 /Gd /TP /FC /errorReport:queue CMakeCXXCompilerId.cpp
+        CMakeCXXCompilerId.cpp
+      Link:
+        C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCXX.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib" /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib "C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCXX.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCXX.lib" /MACHINE:X64 Debug\\CMakeCXXCompilerId.obj
+        CompilerIdCXX.vcxproj -> C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdCXX\\CompilerIdCXX.exe
+      AppLocalFromInstalled:
+        pwsh.exe -ExecutionPolicy Bypass -noprofile -File "C:\\dev\\vcpkg\\scripts\\buildsystems\\msbuild\\applocal.ps1" "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdCXX\\CompilerIdCXX.exe" "C:\\dev\\vcpkg\\installed\\x64-windows\\bin" "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.write.1u.tlog" "Debug\\vcpkg.applocal.log"
+      PostBuildEvent:
+        for %%i in (cl.exe) do @echo CMAKE_CXX_COMPILER=%%~$PATH:i
+        :VCEnd
+        CMAKE_CXX_COMPILER=C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\Hostx64\\x64\\cl.exe
+      FinalizeBuildStatus:
+        Suppression du fichier "Debug\\CompilerIdCXX.tlog\\unsuccessfulbuild".
+        Mise à jour de l'horodatage "Debug\\CompilerIdCXX.tlog\\CompilerIdCXX.lastbuildstate".
+      Génération du projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\3.28.1\\CompilerIdCXX\\CompilerIdCXX.vcxproj" terminée (cibles par défaut).
+      
+      La génération a réussi.
+          0 Avertissement(s)
+          0 Erreur(s)
+      
+      Temps écoulé 00:00:01.26
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.vcxproj"
+      
+      The CXX compiler identification is MSVC, found in:
+        C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/3.28.1/CompilerIdCXX/CompilerIdCXX.exe
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:35 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-e4329q"
+      binary: "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-e4329q"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-e4329q'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/MSBuild/Current/Bin/MSBuild.exe" cmTC_5d0f1.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Microsoft (R) Build Engine version 16.11.6+a918ceb31 pour .NET Framework
+        Copyright (C) Microsoft Corporation. Tous droits réservés.
+        
+        La génération a démarré 19/04/2026 19:51:33.
+        Projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-e4329q\\cmTC_5d0f1.vcxproj" sur le noud 1 (cibles par défaut).
+        PrepareForBuild:
+          Création du répertoire "cmTC_5d0f1.dir\\Debug\\".
+          Création du répertoire "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-e4329q\\Debug\\".
+          Création du répertoire "cmTC_5d0f1.dir\\Debug\\cmTC_5d0f1.tlog\\".
+        InitializeBuildStatus:
+          Création de "cmTC_5d0f1.dir\\Debug\\cmTC_5d0f1.tlog\\unsuccessfulbuild", car "AlwaysCreate" a été spécifié.
+        VcpkgTripletSelection:
+          Using triplet "x64-windows" from "C:\\dev\\vcpkg\\installed\\x64-windows\\"
+          Using normalized configuration "Release"
+        ClCompile:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5d0f1.dir\\Debug\\\\" /Fd"cmTC_5d0f1.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCCompilerABI.c"
+          Compilateur d'optimisation Microsoft (R) C/C++ version 19.29.30159 pour x64
+          CMakeCCompilerABI.c
+          Copyright (C) Microsoft Corporation. Tous droits réservés.
+          cl /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5d0f1.dir\\Debug\\\\" /Fd"cmTC_5d0f1.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCCompilerABI.c"
+        Link:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-e4329q\\Debug\\cmTC_5d0f1.exe" /INCREMENTAL /ILK:"cmTC_5d0f1.dir\\Debug\\cmTC_5d0f1.ilk" /NOLOGO /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib" /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib "C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-e4329q/Debug/cmTC_5d0f1.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-e4329q/Debug/cmTC_5d0f1.lib" /MACHINE:X64  /machine:x64 cmTC_5d0f1.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_5d0f1.vcxproj -> C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-e4329q\\Debug\\cmTC_5d0f1.exe
+        AppLocalFromInstalled:
+          pwsh.exe -ExecutionPolicy Bypass -noprofile -File "C:\\dev\\vcpkg\\scripts\\buildsystems\\msbuild\\applocal.ps1" "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-e4329q\\Debug\\cmTC_5d0f1.exe" "C:\\dev\\vcpkg\\installed\\x64-windows\\bin" "cmTC_5d0f1.dir\\Debug\\cmTC_5d0f1.tlog\\cmTC_5d0f1.write.1u.tlog" "cmTC_5d0f1.dir\\Debug\\vcpkg.applocal.log"
+        FinalizeBuildStatus:
+          Suppression du fichier "cmTC_5d0f1.dir\\Debug\\cmTC_5d0f1.tlog\\unsuccessfulbuild".
+          Mise à jour de l'horodatage "cmTC_5d0f1.dir\\Debug\\cmTC_5d0f1.tlog\\cmTC_5d0f1.lastbuildstate".
+        Génération du projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-e4329q\\cmTC_5d0f1.vcxproj" terminée (cibles par défaut).
+        
+        La génération a réussi.
+            0 Avertissement(s)
+            0 Erreur(s)
+        
+        Temps écoulé 00:00:01.22
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "C:/Program Files/CMake/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:35 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-55lg8g"
+      binary: "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-55lg8g"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
+      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-55lg8g'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/MSBuild/Current/Bin/MSBuild.exe" cmTC_e16ba.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Microsoft (R) Build Engine version 16.11.6+a918ceb31 pour .NET Framework
+        Copyright (C) Microsoft Corporation. Tous droits réservés.
+        
+        La génération a démarré 19/04/2026 19:51:34.
+        Projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-55lg8g\\cmTC_e16ba.vcxproj" sur le noud 1 (cibles par défaut).
+        PrepareForBuild:
+          Création du répertoire "cmTC_e16ba.dir\\Debug\\".
+          Création du répertoire "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-55lg8g\\Debug\\".
+          Création du répertoire "cmTC_e16ba.dir\\Debug\\cmTC_e16ba.tlog\\".
+        InitializeBuildStatus:
+          Création de "cmTC_e16ba.dir\\Debug\\cmTC_e16ba.tlog\\unsuccessfulbuild", car "AlwaysCreate" a été spécifié.
+        VcpkgTripletSelection:
+          Using triplet "x64-windows" from "C:\\dev\\vcpkg\\installed\\x64-windows\\"
+          Using normalized configuration "Release"
+        ClCompile:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_e16ba.dir\\Debug\\\\" /Fd"cmTC_e16ba.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCXXCompilerABI.cpp"
+          Compilateur d'optimisation Microsoft (R) C/C++ version 19.29.30159 pour x64
+          CMakeCXXCompilerABI.cpp
+          Copyright (C) Microsoft Corporation. Tous droits réservés.
+          cl /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_e16ba.dir\\Debug\\\\" /Fd"cmTC_e16ba.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Program Files\\CMake\\share\\cmake-3.28\\Modules\\CMakeCXXCompilerABI.cpp"
+        Link:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-55lg8g\\Debug\\cmTC_e16ba.exe" /INCREMENTAL /ILK:"cmTC_e16ba.dir\\Debug\\cmTC_e16ba.ilk" /NOLOGO /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib" /LIBPATH:"C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\manual-link" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib "C:\\dev\\vcpkg\\installed\\x64-windows\\lib\\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-55lg8g/Debug/cmTC_e16ba.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeScratch/TryCompile-55lg8g/Debug/cmTC_e16ba.lib" /MACHINE:X64  /machine:x64 cmTC_e16ba.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_e16ba.vcxproj -> C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-55lg8g\\Debug\\cmTC_e16ba.exe
+        AppLocalFromInstalled:
+          pwsh.exe -ExecutionPolicy Bypass -noprofile -File "C:\\dev\\vcpkg\\scripts\\buildsystems\\msbuild\\applocal.ps1" "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-55lg8g\\Debug\\cmTC_e16ba.exe" "C:\\dev\\vcpkg\\installed\\x64-windows\\bin" "cmTC_e16ba.dir\\Debug\\cmTC_e16ba.tlog\\cmTC_e16ba.write.1u.tlog" "cmTC_e16ba.dir\\Debug\\vcpkg.applocal.log"
+        FinalizeBuildStatus:
+          Suppression du fichier "cmTC_e16ba.dir\\Debug\\cmTC_e16ba.tlog\\unsuccessfulbuild".
+          Mise à jour de l'horodatage "cmTC_e16ba.dir\\Debug\\cmTC_e16ba.tlog\\cmTC_e16ba.lastbuildstate".
+        Génération du projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeScratch\\TryCompile-55lg8g\\cmTC_e16ba.vcxproj" terminée (cibles par défaut).
+        
+        La génération a réussi.
+            0 Avertissement(s)
+            0 Erreur(s)
+        
+        Temps écoulé 00:00:01.27
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "extras/Build/CMake/JUCEModuleSupport.cmake:63 (try_compile)"
+      - "extras/Build/CMake/JUCEModuleSupport.cmake:75 (_juce_find_target_architecture)"
+      - "CMakeLists.txt:50 (include)"
+    directories:
+      source: "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeTmp"
+      binary: "C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
+      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+    buildResult:
+      variable: "compile_result"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/antho/Documents/projets-ia/ai-dj/vst/CPTCMakeBuild/_deps/juce-build/tools/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/MSBuild/Current/Bin/MSBuild.exe" cmTC_267a3.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Microsoft (R) Build Engine version 16.11.6+a918ceb31 pour .NET Framework
+        Copyright (C) Microsoft Corporation. Tous droits réservés.
+        
+        La génération a démarré 19/04/2026 19:51:36.
+        Projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeTmp\\cmTC_267a3.vcxproj" sur le noud 1 (cibles par défaut).
+        PrepareForBuild:
+          Création du répertoire "cmTC_267a3.dir\\Debug\\".
+          Création du répertoire "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeTmp\\Debug\\".
+          Création du répertoire "cmTC_267a3.dir\\Debug\\cmTC_267a3.tlog\\".
+        InitializeBuildStatus:
+          Création de "cmTC_267a3.dir\\Debug\\cmTC_267a3.tlog\\unsuccessfulbuild", car "AlwaysCreate" a été spécifié.
+        VcpkgTripletSelection:
+          Using triplet "x64-windows" from "C:\\dev\\vcpkg\\installed\\x64-windows\\"
+          Using normalized configuration "Release"
+        ClCompile:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_267a3.dir\\Debug\\\\" /Fd"cmTC_267a3.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-src\\extras\\Build\\CMake\\juce_runtime_arch_detection.cpp"
+          Compilateur d'optimisation Microsoft (R) C/C++ version 19.29.30159 pour x64
+          juce_runtime_arch_detection.cpp
+          Copyright (C) Microsoft Corporation. Tous droits réservés.
+          cl /c /I"C:\\dev\\vcpkg\\installed\\x64-windows\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_267a3.dir\\Debug\\\\" /Fd"cmTC_267a3.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-src\\extras\\Build\\CMake\\juce_runtime_arch_detection.cpp"
+        C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-src\\extras\\Build\\CMake\\juce_runtime_arch_detection.cpp(56,1): fatal error C1189: #error:  JUCE_ARCH x86_64 [C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeTmp\\cmTC_267a3.vcxproj]
+        Génération du projet "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeTmp\\cmTC_267a3.vcxproj" terminée (cibles par défaut) -- ÉCHEC.
+        
+        ÉCHEC de la build.
+        
+        "C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeTmp\\cmTC_267a3.vcxproj" (cible par défaut) (1) ->
+        (ClCompile cible) -> 
+          C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-src\\extras\\Build\\CMake\\juce_runtime_arch_detection.cpp(56,1): fatal error C1189: #error:  JUCE_ARCH x86_64 [C:\\Users\\antho\\Documents\\projets-ia\\ai-dj\\vst\\CPTCMakeBuild\\_deps\\juce-build\\tools\\CMakeFiles\\CMakeTmp\\cmTC_267a3.vcxproj]
+        
+            0 Avertissement(s)
+            1 Erreur(s)
+        
+        Temps écoulé 00:00:00.47
+        
+      exitCode: 1
+...

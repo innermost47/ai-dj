@@ -25,3 +25,4 @@ testfiles/*
 !testfiles/.gitkeep
 launch.bat
 vst/deps
+vst/CPTCMakeBuild/

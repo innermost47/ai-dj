@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\antho\Documents\projets-ia\ai-dj\vst\CPTCMakeBuild\_deps\juce-build\tools\CMakeFiles\01fe14dda0f75c8ed71c0eb19cc736b3\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{1245DF26-4DB2-33EB-9A9F-97D4717DF3D6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
