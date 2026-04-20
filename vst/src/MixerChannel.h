@@ -30,6 +30,11 @@ public:
 	void stopGeneratingAnimation();
 	float getCurrentAudioLevelLeft() const { return currentAudioLevelLeft; }
 	float getCurrentAudioLevelRight() const { return currentAudioLevelRight; }
+	void setSamplePending(bool pending)
+	{
+		hasSamplePending = pending;
+		repaint();
+	}
 
 private:
 	DjIaVstProcessor& audioProcessor;
@@ -38,6 +43,7 @@ private:
 
 	bool isGenerating = false;
 	bool stopBlinkState = false;
+	bool hasSamplePending = false;
 
 	bool isSelected = false;
 	int bypassMidiFrames = 0;

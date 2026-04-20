@@ -448,56 +448,44 @@ void TrackComponent::setSelected(bool selected)
 void TrackComponent::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds();
-	juce::Colour bgColour;
 
+	juce::Colour bgColour;
 	if (isDragOver)
-	{
 		bgColour = ColourPalette::buttonSuccess.withAlpha(0.4f);
-	}
 	else if (hasSamplePending && !isGenerating)
-	{
-		bgColour = ColourPalette::samplePending.withAlpha(0.6f);
-	}
-	else if (isGenerating && blinkState)
-	{
-		bgColour = blinkState ? ColourPalette::buttonDangerLight.withAlpha(0.3f)
-			: ColourPalette::buttonDangerDark.withAlpha(0.3f);
-	}
+		bgColour = ColourPalette::samplePending.withAlpha(0.15f);
 	else
-	{
 		bgColour = ColourPalette::backgroundDark.withAlpha(0.8f);
-	}
 
 	g.setColour(bgColour);
 	g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
 
 	juce::Colour borderColour;
-	if (hasSamplePending && !isGenerating)
-	{
-		borderColour = ColourPalette::buttonWarning;
-	}
-	else if (isGenerating)
+	float borderWidth;
+
+	if (isGenerating)
 	{
 		borderColour = blinkState ? ColourPalette::buttonDangerLight : ColourPalette::buttonDangerDark;
+		borderWidth = 3.0f;
+	}
+	else if (hasSamplePending)
+	{
+		borderColour = ColourPalette::samplePending;
+		borderWidth = 2.0f;
 	}
 	else if (isSelected)
 	{
 		borderColour = ColourPalette::trackSelected;
+		borderWidth = 2.0f;
 	}
 	else
 	{
 		borderColour = ColourPalette::backgroundLight;
+		borderWidth = 1.0f;
 	}
 
 	g.setColour(borderColour);
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 6.0f,
-		hasSamplePending && !isGenerating ? 2.0f : (isGenerating ? 3.0f : (isSelected ? 2.0f : 1.0f)));
-
-	if (isSelected)
-	{
-		g.setColour(borderColour.withAlpha(0.3f));
-		g.drawRoundedRectangle(bounds.toFloat().expanded(1), 8.0f, 1.0f);
-	}
+	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 6.0f, borderWidth);
 }
 
 void TrackComponent::setSamplePending(bool pending)
@@ -1522,7 +1510,7 @@ void TrackComponent::setupIconButtons()
 	previewButton.setIconPath(TrackButtonIcons::play());
 	previewButton.setIconPathToggled(TrackButtonIcons::stop());
 	previewButton.setHasToggledIcon(true);
-	previewButton.setLabelText("Preview");
+	previewButton.setLabelText("PREV");
 	setupToggleButton(previewButton);
 	previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
 	previewButton.onClick = [this]()
@@ -1543,7 +1531,7 @@ void TrackComponent::setupIconButtons()
 
 	addAndMakeVisible(originalSyncButton);
 	originalSyncButton.setIconPath(TrackButtonIcons::sync());
-	originalSyncButton.setLabelText("Original");
+	originalSyncButton.setLabelText("ORIG");
 	setupToggleButton(originalSyncButton);
 	originalSyncButton.setTooltip("Play original file (bypass time-stretching). Disabled when no original version exists.");
 	originalSyncButton.onClick = [this]()

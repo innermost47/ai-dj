@@ -21,14 +21,6 @@ constexpr auto COLOR_DANGER_DARK = 0xffA04840;  // deeper brick for pressed stat
 constexpr auto COLOR_SUCCESS = 0xff6BB38A;  // muted teal-green (not neon)
 constexpr auto COLOR_WARNING = 0xffE8A860;  // warm amber
 
-// === TRACK / SELECTION INDICATORS ===
-constexpr auto COLOR_SELECTED = 0xffD96850;  // brick (selected track border)
-constexpr auto COLOR_PLAY_ARMED = 0xffE8A35E;  // amber (armed state — warm warning)
-constexpr auto COLOR_PLAY_ACTIVE = 0xff6BB38A;  // green (currently playing)
-constexpr auto COLOR_STOP_ACTIVE = 0xffA04840;  // deep brick
-constexpr auto COLOR_SOLO_ACTIVE = 0xffD96850;
-constexpr auto COLOR_SOLO_TEXT = 0xffE8E6E1;
-
 // === SEQUENCER ===
 constexpr auto COLOR_SEQUENCER_ACCENT = 0xffD96850;  // active step — brick
 constexpr auto COLOR_SEQUENCER_BEAT = 0xff3A3A3F;  // beat marker — subtle light
@@ -46,11 +38,19 @@ constexpr auto COLOR_CORAL = 0xffD96850;  // main brick
 constexpr auto COLOR_SLATE = 0xff6B8299;  // cool blue-grey
 constexpr auto COLOR_INDIGO = 0xff5568A0;  // deep blue
 constexpr auto COLOR_TEAL = 0xff4DA3B3;  // cyan teal
-constexpr auto COLOR_AMBER = 0xffD9A54E;  // gold amber
+constexpr auto COLOR_AMBER = 0xffD9A54E;  // gold amber	
 constexpr auto COLOR_CHARCOAL = 0xff2B2B2F;
 
+// === TRACK / SELECTION INDICATORS ===
+constexpr auto COLOR_SELECTED = 0xff8B6AB5;    // purple (selected track border)
+constexpr auto COLOR_PLAY_ARMED = 0xffE8A35E;  // amber (armed state — warm warning)
+constexpr auto COLOR_PLAY_ACTIVE = 0xff6BB38A;  // green (currently playing)
+constexpr auto COLOR_STOP_ACTIVE = 0xffA04840;  // deep brick
+constexpr auto COLOR_SOLO_ACTIVE = 0xffD96850;
+constexpr auto COLOR_SOLO_TEXT = 0xffE8E6E1;
+
 constexpr auto COLOR_CREDITS = 0xff9A9A9E;
-constexpr auto COLOR_SAMPLE_PENDING = COLOR_PLAY_ARMED;
+constexpr auto COLOR_SAMPLE_PENDING = COLOR_TEAL;
 
 // === TRACK COLOURS (8 distinct accents for track identity) ===
 constexpr auto COLOR_TRACK1 = 0xffD96850;  // brick (main)

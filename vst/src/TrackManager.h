@@ -646,6 +646,23 @@ public:
 			tracks[stdId] = std::move(track);
 			trackOrder.push_back(stdId);
 		}
+		int trackCount = static_cast<int>(tracks.size());
+		for (int i = trackCount; i < 8; ++i)
+		{
+			auto track = std::make_unique<TrackData>();
+			track->trackName = "Track " + juce::String(i + 1);
+			track->bpmOffset = 0.0;
+			track->midiNote = 60 + i;
+			track->slotIndex = findFreeSlot();
+			track->selectedModel = "stable-audio-open-1.0";
+
+			if (track->slotIndex >= 0 && track->slotIndex < 8)
+				usedSlots[track->slotIndex] = true;
+
+			std::string stdId = track->trackId.toStdString();
+			trackOrder.push_back(stdId);
+			tracks[stdId] = std::move(track);
+		}
 	}
 
 	std::array<bool, 8> usedSlots{ false };

@@ -29,6 +29,7 @@ public:
 	void resized() override;
 	void startGeneratingAnimationForTrack(const juce::String& trackId);
 	void stopGeneratingAnimationForTrack(const juce::String& trackId);
+	void clearSamplePending(const juce::String& trackId);
 
 private:
 	DjIaVstProcessor& audioProcessor;

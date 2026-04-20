@@ -37,7 +37,7 @@ public:
 
 	void paint(juce::Graphics&) override;
 	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
-	void layoutConfigSection(juce::Rectangle<int> area, int reducing);
+	void layoutConfigSection(juce::Rectangle<int> area, int reducing, int spacing);
 	void resized() override;
 	void timerCallback() override;
 	void refreshTrackComponents();
@@ -66,6 +66,7 @@ private:
 	DjIaVstProcessor& audioProcessor;
 	CustomLookAndFeel customLookAndFeel;
 	juce::Image logoImage;
+	juce::ImageComponent logoComponent;
 	juce::Image bannerImage;
 	juce::Rectangle<int> bannerArea;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;

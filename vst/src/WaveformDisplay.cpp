@@ -79,8 +79,19 @@ void WaveformDisplay::setLoopPoints(double startTime, double endTime)
 {
 	loopStart = startTime;
 	loopEnd = endTime;
-	juce::MessageManager::callAsync([this]()
-		{ repaint(); });
+
+	if (juce::MessageManager::getInstance()->isThisTheMessageThread())
+	{
+		repaint();
+	}
+	else
+	{
+		juce::MessageManager::callAsync([this]()
+			{
+				if (isShowing())  
+					repaint();
+			});
+	}
 }
 
 void WaveformDisplay::lockLoopPoints(bool locked)

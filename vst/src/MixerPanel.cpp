@@ -229,6 +229,18 @@ void MixerPanel::startGeneratingAnimationForTrack(const juce::String& trackId)
 	}
 }
 
+void MixerPanel::clearSamplePending(const juce::String& trackId)
+{
+	for (auto& channel : mixerChannels)
+	{
+		if (channel->getTrackId() == trackId)
+		{
+			channel->setSamplePending(false);
+			break;
+		}
+	}
+}
+
 void MixerPanel::stopGeneratingAnimationForTrack(const juce::String& trackId)
 {
 	for (auto& channel : mixerChannels)
@@ -236,6 +248,7 @@ void MixerPanel::stopGeneratingAnimationForTrack(const juce::String& trackId)
 		if (channel->getTrackId() == trackId)
 		{
 			channel->stopGeneratingAnimation();
+			channel->setSamplePending(true);
 			break;
 		}
 	}
