@@ -1228,7 +1228,7 @@ void DjIaVstEditor::resized()
 	const int bankWidth = juce::jmax(300, fullBounds.getWidth() / 5);
 	if (sampleBankPanel)
 	{
-		auto bankArea = fullBounds.removeFromRight(bankWidth);
+		auto bankArea = fullBounds.removeFromLeft(bankWidth);
 		sampleBankPanel->setBounds(bankArea);
 		sampleBankPanel->setVisible(true);
 	}
@@ -1946,8 +1946,6 @@ void DjIaVstEditor::refreshTrackComponents()
 						audioProcessor.selectTrack(id);
 						updateSelectedTrack();
 					};
-
-				// onDeleteTrack : SUPPRIMÉ (on reste sur 8 tracks fixes)
 
 				trackComp->onGenerateWithImage = [this](const juce::String& trackId, const juce::String& image, const juce::StringArray& keywords)
 					{

@@ -62,6 +62,10 @@ constexpr auto COLOR_TRACK6 = 0xff5568A0;  // indigo
 constexpr auto COLOR_TRACK7 = 0xffCB7AA8;  // rose
 constexpr auto COLOR_TRACK8 = 0xff6B8299;  // slate
 
+constexpr auto COLOR_LIME = 0xff8BBF5A;
+constexpr auto COLOR_ROSE = 0xffCB7AA8;
+constexpr auto COLOR_CYAN = 0xff4DC4D4;
+
 const juce::Colour ColourPalette::track1(COLOR_TRACK1);
 const juce::Colour ColourPalette::track2(COLOR_TRACK2);
 const juce::Colour ColourPalette::track3(COLOR_TRACK3);
@@ -136,6 +140,9 @@ const juce::Colour ColourPalette::modelBeats(COLOR_INDIGO);
 const juce::Colour ColourPalette::modelGluten(0xffCB7AA8);
 
 const juce::Colour ColourPalette::charcoal(COLOR_CHARCOAL);
+
+const juce::Colour ColourPalette::lime(COLOR_LIME);
+const juce::Colour ColourPalette::cyan(COLOR_CYAN);
 
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {

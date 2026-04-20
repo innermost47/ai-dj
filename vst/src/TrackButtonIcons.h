@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 
 class TrackButtonIcons
@@ -161,3 +161,4 @@ public:
 		return p;
 	}
 };
+
