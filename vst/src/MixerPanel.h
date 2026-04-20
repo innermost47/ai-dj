@@ -31,10 +31,6 @@ public:
 	void stopGeneratingAnimationForTrack(const juce::String& trackId);
 
 private:
-	void displayChannelsContainer(int xPos);
-	void positionMixer(std::unique_ptr<MixerChannel>& mixerChannel, int& xPos,
-		const int channelWidth, const int channelSpacing);
-
 	DjIaVstProcessor& audioProcessor;
 
 	std::unique_ptr<MasterChannel> masterChannel;

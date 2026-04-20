@@ -98,10 +98,9 @@ void MixerPanel::calculateMasterLevel()
 void MixerPanel::refreshMixerChannels()
 {
 	for (auto& mixerChannel : mixerChannels)
-	{
 		if (mixerChannel)
 			mixerChannel->cleanup();
-	}
+
 	channelsContainer.removeAllChildren();
 	mixerChannels.clear();
 
@@ -111,80 +110,38 @@ void MixerPanel::refreshMixerChannels()
 		{
 			TrackData* trackA = audioProcessor.getTrack(a);
 			TrackData* trackB = audioProcessor.getTrack(b);
-			if (!trackA || !trackB)
-				return false;
+			if (!trackA || !trackB) return false;
 			return trackA->slotIndex < trackB->slotIndex;
 		});
-
-	int xPos = 5;
-	const int channelSpacing = 5;
-	const int numTracks = (int)trackIds.size();
-
-	const int availableWidth = getWidth() - 120 - 10 - 10;
-	const int channelWidth = numTracks > 0
-		? (availableWidth - (numTracks - 1) * channelSpacing) / numTracks
-		: 100;
 
 	for (const auto& trackId : trackIds)
 	{
 		TrackData* trackData = audioProcessor.getTrack(trackId);
-		if (!trackData)
-			continue;
-
-		auto mixerChannel = std::make_unique<MixerChannel>(trackId, audioProcessor,
-			static_cast<TrackData*>(trackData));
-		positionMixer(mixerChannel, xPos, channelWidth, channelSpacing);
+		if (!trackData) continue;
+		auto mixerChannel = std::make_unique<MixerChannel>(
+			trackId, audioProcessor, static_cast<TrackData*>(trackData));
+		channelsContainer.addAndMakeVisible(mixerChannel.get());
+		mixerChannels.push_back(std::move(mixerChannel));
 	}
+
 	for (auto& channel : mixerChannels)
 	{
-		juce::String trackId = channel->getTrackId();
-		if (audioProcessor.getGeneratingTrackId() == trackId && audioProcessor.getIsGenerating())
-		{
+		if (audioProcessor.getGeneratingTrackId() == channel->getTrackId()
+			&& audioProcessor.getIsGenerating())
 			channel->startGeneratingAnimation();
-		}
 	}
-	displayChannelsContainer(xPos);
-}
 
-void MixerPanel::displayChannelsContainer(int xPos)
-{
-	int finalHeight = getHeight() - 10;
-	channelsContainer.setSize(xPos, finalHeight);
 	channelsContainer.setVisible(true);
-	channelsContainer.repaint();
-}
-
-void MixerPanel::positionMixer(std::unique_ptr<MixerChannel>& mixerChannel, int& xPos,
-	const int channelWidth, const int channelSpacing)
-{
-	int containerHeight = channelsContainer.getHeight();
-	mixerChannel->setBounds(xPos, 0, channelWidth, containerHeight);
-	channelsContainer.addAndMakeVisible(mixerChannel.get());
-	mixerChannels.push_back(std::move(mixerChannel));
-	xPos += channelWidth + channelSpacing;
+	resized();
 }
 
 void MixerPanel::paint(juce::Graphics& g)
 {
-	auto bounds = getLocalBounds();
-	float height = static_cast<float>(getHeight());
-	juce::ColourGradient gradient(
-		ColourPalette::backgroundDeep, 0.0f, 0.0f,
-		ColourPalette::backgroundDark, 0.0f, height,
-		false);
-	g.setGradientFill(gradient);
-	g.fillAll();
-
-	g.setColour(ColourPalette::backgroundMid);
-	for (int i = 0; i < getWidth(); i += 2)
-	{
-		g.drawVerticalLine(i, 0.0f, static_cast<float>(getHeight()));
-		g.setOpacity(0.1f);
-	}
-
 	int masterX = getWidth() - 100;
 	g.setColour(ColourPalette::backgroundLight);
-	g.drawLine(static_cast<float>(masterX - 5), 10.0f, static_cast<float>(masterX - 5), static_cast<float>(getHeight() - 10), 2.0f);
+	g.drawLine(static_cast<float>(masterX - 5), 10.0f,
+		static_cast<float>(masterX - 5),
+		static_cast<float>(getHeight() - 10), 2.0f);
 }
 
 void MixerPanel::resized()
@@ -195,9 +152,18 @@ void MixerPanel::resized()
 	channelsViewport.setBounds(area);
 
 	const int channelHeight = getHeight() - 10;
-	const int channelWidth = 90;
 	const int channelSpacing = 5;
 	const int numChannels = (int)mixerChannels.size();
+
+	const int availableWidth = area.getWidth() - 10;
+	const int minChannelWidth = 60;
+	const int maxChannelWidth = 120;
+
+	const int channelWidth = numChannels > 0
+		? juce::jlimit(minChannelWidth, maxChannelWidth,
+			(availableWidth - (numChannels - 1) * channelSpacing) / numChannels)
+		: minChannelWidth;
+
 	const int totalChannelsWidth = numChannels * channelWidth
 		+ (numChannels - 1) * channelSpacing
 		+ 10;
