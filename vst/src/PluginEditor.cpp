@@ -115,20 +115,15 @@ void DjIaVstEditor::updateMidiIndicator(const juce::String& noteInfo)
 	lastMidiNote = noteInfo;
 	juce::MessageManager::callAsync([this, noteInfo]()
 		{
-			if (midiIndicator.isShowing())
-			{
-				midiIndicator.setText(noteInfo, juce::dontSendNotification);
-				midiIndicator.setColour(juce::Label::textColourId, juce::Colours::black);
-				auto redWithOpacity = ColourPalette::buttonPrimary.withAlpha(0.3f);
-				juce::Timer::callAfterDelay(200, [this]()
-					{
-						if (midiIndicator.isShowing())
-						{
-							midiIndicator.setColour(juce::Label::backgroundColourId, juce::Colours::white);
-							updateLCD();
-						}
-					});
-			} });
+			midiIndicator.setText(noteInfo, juce::dontSendNotification);
+			updateLCD();
+
+			juce::Timer::callAfterDelay(800, [this]()
+				{
+					midiIndicator.setText("", juce::dontSendNotification);
+					updateLCD();
+				});
+		});
 }
 
 void DjIaVstEditor::updateUIComponents()

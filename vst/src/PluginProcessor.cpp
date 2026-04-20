@@ -912,12 +912,14 @@ void DjIaVstProcessor::updateMidiIndicatorWithActiveNotes(double hostBpm, const 
 
 	if (currentPlayingTracks.size() > 0)
 	{
-		juce::String displayText = "Last played: " + currentPlayingTracks.joinIntoString(" + ") + " - BPM:" + juce::String(hostBpm, 0);
+		juce::String displayText = currentPlayingTracks.size() > 1
+			? currentPlayingTracks[0] + "+" + juce::String(currentPlayingTracks.size() - 1) + " " + juce::String(hostBpm, 0)
+			: currentPlayingTracks[0] + " " + juce::String(hostBpm, 0);
 		midiIndicatorCallback(displayText);
 	}
 	else
 	{
-		midiIndicatorCallback("MIDI: Ready - BPM:" + juce::String(hostBpm, 0));
+		midiIndicatorCallback("BPM:" + juce::String(hostBpm, 0));
 	}
 }
 

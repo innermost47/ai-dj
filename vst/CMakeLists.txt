@@ -8,7 +8,9 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-project(OBSIDIAN-Neural VERSION 1.3.0)
+project(OBSIDIAN-Neural VERSION 2.0.0)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(MSVC)
 
@@ -128,7 +130,7 @@ endif()
 
 
 juce_add_plugin(ObsidianNeuralVST
-    VERSION "1.3.0"
+    VERSION "2.0.0"
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
     COMPANY_NAME "InnerMost47"

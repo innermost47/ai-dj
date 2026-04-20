@@ -26,45 +26,34 @@ public:
 	{
 		auto bounds = getLocalBounds().toFloat();
 
-		g.setColour(juce::Colour::fromRGB(8, 18, 12));
+		g.setColour(ColourPalette::backgroundDeep);
 		g.fillRoundedRectangle(bounds, 4.0f);
 
-		juce::ColourGradient gradient(
-			juce::Colour::fromRGB(0, 8, 4), bounds.getX(), bounds.getY(),
-			juce::Colour::fromRGB(15, 30, 20), bounds.getX(), bounds.getBottom(),
-			false);
-		g.setGradientFill(gradient);
+		g.setColour(ColourPalette::backgroundDark);
 		g.fillRoundedRectangle(bounds.reduced(2.0f), 3.0f);
 
-		g.setColour(juce::Colour::fromRGB(30, 50, 35));
+		g.setColour(ColourPalette::backgroundLight);
 		g.drawRoundedRectangle(bounds.reduced(1.0f), 4.0f, 1.0f);
 
-		g.setColour(juce::Colour::fromRGBA(0, 0, 0, 40));
+		g.setColour(juce::Colour::fromRGBA(0, 0, 0, 20));
 		for (int y = (int)bounds.getY(); y < (int)bounds.getBottom(); y += 2)
-		{
 			g.drawHorizontalLine(y, bounds.getX(), bounds.getRight());
-		}
-
-		const auto lcdGreen = juce::Colour::fromRGB(130, 220, 140);
-		const auto lcdGreenDim = juce::Colour::fromRGB(90, 170, 100);
-
-		g.setColour(lcdGreen);
-		g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
 
 		auto textArea = getLocalBounds().reduced(6, 4);
 		const int lineH = textArea.getHeight() / 3;
 
-		g.setColour(lcdGreenDim);
+		g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
+		g.setColour(ColourPalette::textSecondary);
 		g.drawText(lineTop, textArea.removeFromTop(lineH),
 			juce::Justification::centredLeft, true);
 
-		g.setColour(lcdGreen);
 		g.setFont(juce::FontOptions("Courier New", 12.0f, juce::Font::bold));
+		g.setColour(ColourPalette::textPrimary);
 		g.drawText(lineMid, textArea.removeFromTop(lineH),
 			juce::Justification::centredLeft, true);
 
 		g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
-		g.setColour(lcdGreenDim);
+		g.setColour(ColourPalette::textAccent);
 		g.drawText(lineBot, textArea,
 			juce::Justification::centredLeft, true);
 	}
