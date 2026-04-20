@@ -72,11 +72,6 @@ int SampleBankItem::getRequiredHeight()
 	const int margins = 16;
 	const int baseHeight = labelsHeight + waveformHeight + margins;
 
-	if (sampleEntry && !sampleEntry->categories.empty())
-	{
-		return baseHeight + 25;
-	}
-
 	return baseHeight;
 }
 
@@ -175,58 +170,32 @@ void SampleBankItem::paint(juce::Graphics& g)
 	g.setColour(bgColour);
 	g.fillRoundedRectangle(bounds.toFloat(), 4.0f);
 
+	drawMiniWaveform(g);
+
+	if (sampleEntry && !sampleEntry->categories.empty())
+	{
+		juce::Colour bandColour = getCategoryColor(sampleEntry->categories[0]);
+
+		const float strokeThickness = isDragging ? 2.0f : 1.0f;
+		const float inset = strokeThickness * 0.5f + 0.5f;
+		const float cornerRadius = 4.0f - inset;
+		const float bandWidth = 4.0f;
+		auto floatBounds = bounds.toFloat().reduced(inset);
+
+		juce::Path bandPath;
+		bandPath.addRoundedRectangle(
+			floatBounds.getX(), floatBounds.getY(),
+			bandWidth, floatBounds.getHeight(),
+			cornerRadius, cornerRadius,
+			true, false, true, false);
+
+		g.setColour(bandColour);
+		g.fillPath(bandPath);
+	}
+
 	g.setColour(isDragging ? ColourPalette::buttonWarning : ColourPalette::backgroundLight);
 	g.drawRoundedRectangle(bounds.toFloat().reduced(0.5f), 4.0f,
 		isDragging ? 2.0f : 1.0f);
-	drawMiniWaveform(g);
-	if (!sampleEntry->categories.empty())
-	{
-		drawCategoryBadges(g);
-	}
-}
-
-void SampleBankItem::drawCategoryBadges(juce::Graphics& g)
-{
-	const int badgeHeight = 18;
-	const int badgeMargin = 3;
-	const int badgePadding = 6;
-	const int startY = waveformBounds.getBottom() + 5;
-
-	juce::FontOptions badgeFont(12.0f);
-	g.setFont(badgeFont);
-
-	int currentX = 10;
-
-	for (int i = 0; i < std::min(maxVisibleBadges, (int)sampleEntry->categories.size()); ++i)
-	{
-		const auto& category = sampleEntry->categories[i];
-
-		juce::GlyphArrangement glyphs;
-		glyphs.addLineOfText(badgeFont, category, 0.0f, 0.0f);
-		int textWidth = (int)glyphs.getBoundingBox(0, -1, true).getWidth();
-		int badgeWidth = textWidth + (badgePadding * 2);
-		if (currentX + badgeWidth > getWidth() - 5)
-			break;
-
-		juce::Colour badgeColor = getCategoryColor(category);
-
-		g.setColour(badgeColor);
-		g.fillRoundedRectangle(static_cast<float>(currentX), static_cast<float>(startY),
-			static_cast<float>(badgeWidth), static_cast<float>(badgeHeight), 9.0f);
-
-		g.setColour(ColourPalette::textPrimary.withAlpha(0.3f));
-		g.drawRoundedRectangle(static_cast<float>(currentX), static_cast<float>(startY),
-			static_cast<float>(badgeWidth), static_cast<float>(badgeHeight),
-			9.0f, 0.35f);
-
-		float brightness = badgeColor.getBrightness();
-		juce::Colour textColor = brightness > 0.5f ? ColourPalette::textPrimary : juce::Colours::white;
-
-		g.setColour(textColor);
-		g.drawText(category, currentX, startY, badgeWidth, badgeHeight, juce::Justification::centred);
-
-		currentX += badgeWidth + badgeMargin;
-	}
 }
 
 juce::Colour SampleBankItem::getCategoryColor(const juce::String& category)
@@ -267,24 +236,23 @@ void SampleBankItem::setPlaybackPosition(float positionInSeconds)
 void SampleBankItem::resized()
 {
 	auto area = getLocalBounds().reduced(8);
-	auto buttonArea = area.removeFromRight(65);
+	auto buttonArea = area.removeFromRight(32);
 
 	int buttonSize = 28;
-	int buttonY = 8;
 
-	playButton.setBounds(juce::Rectangle<int>(buttonArea.getX(), buttonY, buttonSize, buttonSize));
-	deleteButton.setBounds(juce::Rectangle<int>(buttonArea.getX() + buttonSize + 5, buttonY, buttonSize, buttonSize));
+	playButton.setBounds(buttonArea.removeFromTop(buttonSize));
+	deleteButton.setBounds(buttonArea.removeFromBottom(buttonSize));
 
-	area.removeFromRight(10);
+	area.removeFromRight(8);
 
 	auto topRow = area.removeFromTop(16);
-	nameLabel.setBounds(topRow.removeFromLeft(200));
+	nameLabel.setBounds(topRow);
 
 	auto bottomRow = area.removeFromTop(16);
-	durationLabel.setBounds(bottomRow.removeFromLeft(60));
-	bottomRow.removeFromLeft(10);
-	bpmLabel.setBounds(bottomRow.removeFromLeft(60));
-	bottomRow.removeFromLeft(10);
+	durationLabel.setBounds(bottomRow.removeFromLeft(55));
+	bottomRow.removeFromLeft(8);
+	bpmLabel.setBounds(bottomRow.removeFromLeft(75));
+	bottomRow.removeFromLeft(8);
 	usageLabel.setBounds(bottomRow);
 
 	area.removeFromTop(4);
@@ -332,29 +300,28 @@ int SampleBankPanel::getNumRows()
 }
 
 
-juce::Component* SampleBankPanel::refreshComponentForRow(int rowNumber, bool /*isRowSelected*/, juce::Component* existingComponentToUpdate)
+juce::Component* SampleBankPanel::refreshComponentForRow(int rowNumber, bool, juce::Component* existingComponentToUpdate)
 {
-	auto* item = dynamic_cast<SampleBankItem*>(existingComponentToUpdate);
+	auto* wrapper = dynamic_cast<SampleBankItemWrapper*>(existingComponentToUpdate);
 
 	if (rowNumber < 0 || rowNumber >= (int)filteredSamples.size())
 	{
-		delete item;
+		delete wrapper;
 		return nullptr;
 	}
 
 	auto* entry = filteredSamples[rowNumber];
+	SampleBankItem* item = nullptr;
 
-	if (item == nullptr)
+	if (wrapper == nullptr || wrapper->getItem()->getSampleEntry() != entry)
 	{
+		delete wrapper;
 		item = new SampleBankItem(entry, audioProcessor);
+		wrapper = new SampleBankItemWrapper(item);
 	}
 	else
 	{
-		if (item->getSampleEntry() != entry)
-		{
-			delete item;
-			item = new SampleBankItem(entry, audioProcessor);
-		}
+		item = wrapper->getItem();
 	}
 
 	item->onPreviewRequested = [this](SampleBankEntry* e) { playPreview(e); };
@@ -380,19 +347,15 @@ juce::Component* SampleBankPanel::refreshComponentForRow(int rowNumber, bool /*i
 		};
 
 	bool isThisPlaying = (currentPreviewEntry == entry);
-	if (item->getSampleEntry() == entry)
-	{
-		if (isThisPlaying && !item->isPlayingState())
-			item->setIsPlaying(true);
-		else if (!isThisPlaying && item->isPlayingState())
-			item->setIsPlaying(false);
-	}
+	if (isThisPlaying && !item->isPlayingState())
+		item->setIsPlaying(true);
+	else if (!isThisPlaying && item->isPlayingState())
+		item->setIsPlaying(false);
 
 	item->loadAudioDataIfNeeded();
 
-	return item;
+	return wrapper;
 }
-
 
 
 void SampleBankItem::updateBadgeLayout()
@@ -595,11 +558,6 @@ void SampleBankItem::drawMiniWaveform(juce::Graphics& g)
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
 	g.drawLine(static_cast<float>(waveformBounds.getX()), threeQuarterY,
 		static_cast<float>(waveformBounds.getRight()), threeQuarterY, 0.5f);
-
-	g.setColour(ColourPalette::textSecondary.withAlpha(0.5f));
-	g.setFont(juce::FontOptions(8.0f));
-	g.drawText("L", waveformBounds.getX() + 2, waveformBounds.getY() + 2, 10, 10, juce::Justification::centred);
-	g.drawText("R", waveformBounds.getX() + 2, static_cast<int>(centerY) + 2, 10, 10, juce::Justification::centred);
 
 	if (isPlaying && sampleEntry)
 	{

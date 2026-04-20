@@ -24,7 +24,7 @@ public:
 	int getRequiredHeight();
 
 	SampleBankEntry* getSampleEntry() const { return sampleEntry; }
-	bool isPlayingState() const { return isPlaying; }  // ← ajouté
+	bool isPlayingState() const { return isPlaying; }
 
 	std::function<void(const juce::String&)> onDeleteRequested;
 	std::function<void(SampleBankEntry*)> onPreviewRequested;
@@ -152,4 +152,25 @@ private:
 	void drawLoader(juce::Graphics& g);
 	void drawEmptyState(juce::Graphics& g);
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBankPanel)
+};
+
+class SampleBankItemWrapper : public juce::Component
+{
+public:
+	SampleBankItemWrapper(SampleBankItem* itemToOwn)
+		: item(itemToOwn)
+	{
+		addAndMakeVisible(item.get());
+	}
+
+	void resized() override
+	{
+		item->setBounds(getLocalBounds().reduced(0, 2));
+	}
+
+	SampleBankItem* getItem() const { return item.get(); }
+
+private:
+	std::unique_ptr<SampleBankItem> item;
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBankItemWrapper)
 };
