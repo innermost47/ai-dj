@@ -333,6 +333,7 @@ void TrackComponent::updateFromTrackData()
 	originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
 
 	trackNameLabel.setText(track->trackName, juce::dontSendNotification);
+	trackNumberButton.setButtonText(juce::String(track->slotIndex + 1));
 	trackNumberButton.setColour(juce::TextButton::buttonColourId,
 		ColourPalette::getTrackColour(track->slotIndex));
 
