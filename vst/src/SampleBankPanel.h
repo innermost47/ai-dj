@@ -165,7 +165,9 @@ public:
 
 	void resized() override
 	{
-		item->setBounds(getLocalBounds().reduced(0, 2));
+		auto bounds = getLocalBounds().reduced(0, 2);
+		bounds.removeFromRight(4);
+		item->setBounds(bounds);
 	}
 
 	SampleBankItem* getItem() const { return item.get(); }
