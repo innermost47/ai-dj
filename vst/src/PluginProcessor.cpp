@@ -47,6 +47,14 @@ DjIaVstProcessor::DjIaVstProcessor()
 	midiLearnManager.loadDefaultMappings(this);
 	initDummySynth();
 
+	trackManager.onPreviewEnded = [this](const juce::String& trackId)
+		{
+			juce::MessageManager::callAsync([this, trackId]()
+				{
+					stopTrackPreview(trackId);
+				});
+		};
+
 	juce::Timer::callAfterDelay(200, [this]()
 		{
 			if (trackManager.getAllTrackIds().empty())
@@ -500,7 +508,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	updateTimeStretchRatios(hostBpm);
 	trackManager.renderAllTracks(mainOutput, individualOutputBuffers, hostBpm);
 	copyTracksToIndividualOutputs(buffer);
-	handlePreviewPlaying(buffer);
 	applyMasterEffects(mainOutput);
 	checkIfUIUpdateNeeded(midiMessages);
 }
@@ -511,39 +518,6 @@ void DjIaVstProcessor::clearMasterChannel(juce::AudioSampleBuffer& mainOutput)
 	if (isMultiOutputActive)
 	{
 		mainOutput.clear();
-	}
-}
-
-void DjIaVstProcessor::handlePreviewPlaying(juce::AudioSampleBuffer& buffer)
-{
-	if (isPreviewPlaying.load())
-	{
-		juce::ScopedLock lock(previewLock);
-		if (previewBuffer.getNumSamples() > 0)
-		{
-			double currentPos = previewPosition.load();
-			double ratio = previewSampleRate.load() / hostSampleRate;
-
-			const int previewBusIndex = 9;
-			auto previewOutput = getBusBuffer(buffer, false, previewBusIndex);
-
-			for (int i = 0; i < buffer.getNumSamples(); ++i)
-			{
-				int sampleIndex = (int)currentPos;
-				if (sampleIndex >= previewBuffer.getNumSamples())
-				{
-					isPreviewPlaying = false;
-					break;
-				}
-				for (int ch = 0; ch < std::min(previewOutput.getNumChannels(), 2); ++ch)
-				{
-					float sample = previewBuffer.getSample(ch, sampleIndex) * 0.7f;
-					previewOutput.addSample(ch, i, sample);
-				}
-				currentPos += ratio;
-			}
-			previewPosition.store(currentPos);
-		}
 	}
 }
 
@@ -879,6 +853,8 @@ void DjIaVstProcessor::previewTrack(const juce::String& trackId)
 	{
 		track->readPosition = 0.0;
 		track->isPlaying.store(true);
+		track->isPreviewMode.store(true);
+		track->previewEndPending.store(false);
 		needsUIUpdate = true;
 
 		currentPreviewTrackId = trackId;
@@ -4192,11 +4168,9 @@ juce::File DjIaVstProcessor::exportSampleForDragDrop(const juce::File& originalF
 
 	if (originalFile.copyFileTo(exportFile))
 	{
-		DBG("Sample exported for drag&drop: " + exportFile.getFullPathName());
 		return exportFile;
 	}
 
-	DBG("Failed to export sample for drag&drop");
 	return juce::File();
 }
 
@@ -4207,6 +4181,8 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 	{
 		track->isPlaying.store(false);
 		track->readPosition = 0.0;
+		track->isPreviewMode.store(false);
+		track->previewEndPending.store(false);
 	}
 
 	if (currentPreviewTrackId == trackId)

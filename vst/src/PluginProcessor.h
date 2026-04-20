@@ -107,7 +107,6 @@ public:
 	void parameterChanged(const juce::String& parameterID, float newValue) override;
 	void releaseResources() override;
 	void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-	void handlePreviewPlaying(juce::AudioSampleBuffer& buffer);
 	void checkIfUIUpdateNeeded(juce::MidiBuffer& midiMessages);
 	void applyMasterEffects(juce::AudioSampleBuffer& mainOutput);
 	void copyTracksToIndividualOutputs(juce::AudioSampleBuffer& buffer);

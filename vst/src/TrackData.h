@@ -192,6 +192,8 @@ struct TrackData
 	std::atomic<bool> randomRetriggerDurationEnabled{ false };
 	std::atomic<bool> pageChangePending{ false };
 	std::atomic<bool> lastFeedbackBeatRepeat{ false };
+	std::atomic<bool> isPreviewMode{ false };
+	std::atomic<bool> previewEndPending{ false };
 
 	std::atomic<double> cachedPlaybackRatio{ 1.0 };
 	std::atomic<double> stagingSampleRate{ 48000.0 };

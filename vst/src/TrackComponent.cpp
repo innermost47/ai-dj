@@ -1165,8 +1165,6 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File& audioFil
 					}
 				}
 				updatePagesDisplay(); });
-
-		DBG("Page " << (char)('A' + pageIndex) << " loaded successfully: " << numSamples << " samples");
 	}
 	catch (const std::exception& /*e*/)
 	{
@@ -1332,21 +1330,14 @@ void TrackComponent::addListener(juce::String name)
 {
 	if (!track || track->slotIndex == -1)
 	{
-		DBG("addListener FAILED: track is null or slotIndex is -1");
 		return;
 	}
 	juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + name;
-	DBG("Adding listener for: " + paramName);
 
 	auto* param = audioProcessor.getParameterTreeState().getParameter(paramName);
 	if (param)
 	{
 		param->addListener(this);
-		DBG("SUCCESS: Listener added for " + paramName);
-	}
-	else
-	{
-		DBG("FAILED: Parameter NOT FOUND: " + paramName);
 	}
 }
 
@@ -1526,7 +1517,6 @@ void TrackComponent::setupIconButtons()
 			}
 		};
 
-	// Preview : avec label visible
 	addAndMakeVisible(previewButton);
 	previewButton.setIconPath(TrackButtonIcons::play());
 	previewButton.setIconPathToggled(TrackButtonIcons::stop());
@@ -1550,7 +1540,6 @@ void TrackComponent::setupIconButtons()
 			}
 		};
 
-	// Original/Sync : avec label visible
 	addAndMakeVisible(originalSyncButton);
 	originalSyncButton.setIconPath(TrackButtonIcons::sync());
 	originalSyncButton.setLabelText("Original");

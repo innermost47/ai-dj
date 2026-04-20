@@ -9,6 +9,7 @@ public:
 	TrackManager() = default;
 
 	std::function<void(int slot, TrackData* track)> parameterUpdateCallback;
+	std::function<void(const juce::String&)> onPreviewEnded;
 
 	juce::String createTrack(const juce::String& name = "Track")
 	{
@@ -97,6 +98,7 @@ public:
 		}
 		return ids;
 	}
+
 	void renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 		std::vector<juce::AudioBuffer<float>>& individualOutputs,
 		double hostBpm)
@@ -533,8 +535,6 @@ public:
 										}
 									}
 								}
-
-								DBG("Loading page " << (char)('A' + pageIndex) << " from: " << fileToLoad.getFullPathName());
 								loadAudioFileForPage(track.get(), pageIndex, fileToLoad);
 							}
 						}
@@ -542,16 +542,13 @@ public:
 					else
 					{
 						track->pages[pageIndex].selectedModel = track->selectedModel;
-						DBG("Page " << pageIndex << " state not found - empty page");
 					}
 				}
 
 				track->syncLegacyProperties();
-				DBG("Track " << track->trackName << " loaded in pages mode - current page: " << (char)('A' + track->currentPageIndex) << " with " << track->numSamples << " samples");
 			}
 			else
 			{
-				DBG("Loading track " << track->trackName << " in legacy mode");
 				juce::String audioFilePath = trackState.getProperty("audioFilePath", "");
 				if (audioFilePath.isNotEmpty())
 				{
@@ -607,8 +604,6 @@ public:
 					}
 				}
 
-				DBG("Found legacy Sequencer data - migrating to new system");
-
 				if (track->usePages.load())
 				{
 					auto& currentPage = track->pages[track->currentPageIndex];
@@ -629,18 +624,12 @@ public:
 					if (isEmpty)
 					{
 						seq = tempSeqData;
-						DBG("Migrated legacy sequencer to page " << (char)('A' + track->currentPageIndex) << " sequence 0");
-					}
-					else
-					{
-						DBG("Skipped migration - sequence 0 already has data from new format");
 					}
 				}
 				else
 				{
 					auto& seq = track->pages[0].sequences[0];
 					seq = tempSeqData;
-					DBG("Migrated legacy sequencer to page 0 sequence 0 (legacy mode)");
 				}
 			}
 
@@ -665,13 +654,10 @@ public:
 	{
 		if (!track || pageIndex < 0 || pageIndex >= 4)
 		{
-			DBG("loadAudioFileForPage: Invalid parameters - track=" << (track ? "valid" : "null") << ", pageIndex=" << pageIndex);
 			return;
 		}
 
 		auto& page = track->pages[pageIndex];
-
-		DBG("loadAudioFileForPage: Attempting to load page " << (char)('A' + pageIndex) << " from: " << audioFile.getFullPathName());
 
 		static juce::AudioFormatManager formatManager;
 		static bool initialized = false;
@@ -684,7 +670,6 @@ public:
 		std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
 		if (!reader)
 		{
-			DBG("loadAudioFileForPage: Failed to create reader for page " << pageIndex << ": " << audioFile.getFullPathName());
 			page.numSamples = 0;
 			page.isLoaded = false;
 			page.audioBuffer.setSize(0, 0);
@@ -694,11 +679,8 @@ public:
 		int numChannels = reader->numChannels;
 		int numSamples = static_cast<int>(reader->lengthInSamples);
 
-		DBG("loadAudioFileForPage: File info - channels=" << numChannels << ", samples=" << numSamples << ", sampleRate=" << reader->sampleRate);
-
 		if (numSamples <= 0)
 		{
-			DBG("loadAudioFileForPage: No samples in file for page " << pageIndex);
 			page.numSamples = 0;
 			page.isLoaded = false;
 			page.audioBuffer.setSize(0, 0);
@@ -708,11 +690,8 @@ public:
 		page.audioBuffer.setSize(2, numSamples, false, true, true);
 		page.audioBuffer.clear();
 
-		DBG("loadAudioFileForPage: Buffer allocated - channels=" << page.audioBuffer.getNumChannels() << ", samples=" << page.audioBuffer.getNumSamples());
-
 		if (!reader->read(&page.audioBuffer, 0, numSamples, 0, true, true))
 		{
-			DBG("loadAudioFileForPage: Failed to read samples for page " << pageIndex);
 			page.numSamples = 0;
 			page.isLoaded = false;
 			page.audioBuffer.setSize(0, 0);
@@ -722,15 +701,12 @@ public:
 		if (numChannels == 1)
 		{
 			page.audioBuffer.copyFrom(1, 0, page.audioBuffer, 0, 0, numSamples);
-			DBG("loadAudioFileForPage: Converted mono to stereo");
 		}
 
 		page.numSamples = numSamples;
 		page.sampleRate = reader->sampleRate;
 		page.isLoaded = true;
 		page.isLoading = false;
-
-		DBG("loadAudioFileForPage: SUCCESS - Page " << (char)('A' + pageIndex) << " loaded with " << page.numSamples << " samples, buffer has " << page.audioBuffer.getNumSamples() << " samples");
 
 		float maxSample = 0.0f;
 		for (int ch = 0; ch < page.audioBuffer.getNumChannels(); ++ch)
@@ -741,7 +717,6 @@ public:
 				maxSample = std::max(maxSample, std::abs(channelData[i]));
 			}
 		}
-		DBG("loadAudioFileForPage: Max sample amplitude: " << maxSample);
 	}
 
 	void loadAudioFileForTrack(TrackData* track, const juce::File& audioFile)
@@ -772,15 +747,7 @@ public:
 			track->numSamples = track->audioBuffer.getNumSamples();
 			track->sampleRate = reader->sampleRate;
 
-			DBG("Loaded audio file: " + audioFile.getFullPathName() +
-				" (" + juce::String(numSamples) + " samples, " +
-				juce::String(track->sampleRate) + " Hz)");
-
 			reader.reset();
-		}
-		else
-		{
-			DBG("Failed to load audio file: " + audioFile.getFullPathName());
 		}
 	}
 
@@ -791,13 +758,6 @@ private:
 
 	int findFreeSlot()
 	{
-		DBG("Finding free slot - Current usedSlots state:");
-		for (int i = 0; i < 8; ++i)
-		{
-			DBG("  Slot " << i << ": " << (usedSlots[i] ? "USED" : "FREE"));
-		}
-
-		DBG("Actual slot usage from tracks:");
 		std::vector<bool> actualUsage(8, false);
 		for (const auto& pair : tracks)
 		{
@@ -805,15 +765,6 @@ private:
 			if (track->slotIndex >= 0 && track->slotIndex < 8)
 			{
 				actualUsage[track->slotIndex] = true;
-				DBG("  Slot " << track->slotIndex << ": USED by " << track->trackName);
-			}
-		}
-
-		for (int i = 0; i < 8; ++i)
-		{
-			if (usedSlots[i] != actualUsage[i])
-			{
-				DBG("INCONSISTENCY: Slot " << i << " - usedSlots[" << i << "]=" << (usedSlots[i] ? "USED" : "FREE") << " but actually " << (actualUsage[i] ? "USED" : "FREE"));
 			}
 		}
 
@@ -821,12 +772,10 @@ private:
 		{
 			if (!usedSlots[i])
 			{
-				DBG("Found free slot: " << i);
 				return i;
 			}
 		}
 
-		DBG("No free slots available!");
 		return -1;
 	}
 
@@ -843,6 +792,15 @@ private:
 				parameterUpdateCallback(slot, &track);
 			}
 		}
+
+		auto handleEndOfPreview = [this, &track]()
+			{
+				if (track.isPreviewMode.load() && !track.previewEndPending.exchange(true))
+				{
+					if (onPreviewEnded)
+						onPreviewEnded(track.trackId);
+				}
+			};
 
 		const juce::AudioSampleBuffer* bufferToUse = nullptr;
 		int numSamplesToUse = 0;
@@ -970,6 +928,7 @@ private:
 			{
 				track.readPosition = 0.0;
 				track.isPlaying = false;
+				handleEndOfPreview();
 				return;
 			}
 
@@ -983,6 +942,7 @@ private:
 			if (sampleIndex >= bufferSize)
 			{
 				track.isPlaying = false;
+				handleEndOfPreview();
 				break;
 			}
 
