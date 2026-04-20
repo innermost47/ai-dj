@@ -17,12 +17,11 @@ MidiLearnManager::~MidiLearnManager()
 	isLearning = false;
 }
 
-
-void MidiLearnManager::startLearning(const juce::String& parameterName,
-	DjIaVstProcessor* processor,
-	std::function<void(float)> uiCallback,
-	const juce::String& description,
-	MidiLearnableBase* component)
+void MidiLearnManager::startLearning(const juce::String &parameterName,
+									 DjIaVstProcessor *processor,
+									 std::function<void(float)> uiCallback,
+									 const juce::String &description,
+									 MidiLearnableBase *component)
 {
 	const juce::ScopedLock lock(learnLock);
 	if (isLearning)
@@ -61,7 +60,7 @@ void MidiLearnManager::stopLearning()
 	{
 		if (learningProcessor != nullptr)
 		{
-			auto* param = learningProcessor->getParameters().getParameter(learningParameter);
+			auto *param = learningProcessor->getParameters().getParameter(learningParameter);
 			if (param != nullptr)
 			{
 				float currentValue = param->getValue();
@@ -86,22 +85,23 @@ void MidiLearnManager::timerCallback()
 		stopLearning();
 
 		juce::MessageManager::callAsync([this]()
-			{
+										{
 				if (learningProcessor && learningProcessor->getActiveEditor())
 				{
 					if (auto* editor = dynamic_cast<DjIaVstEditor*>(learningProcessor->getActiveEditor()))
 					{
 						editor->statusLabel.setText("MIDI Learn timeout - no controller received", juce::dontSendNotification);
+						editor->updateLCD();
 						juce::Timer::callAfterDelay(2000, [editor]()
 							{
 								if (editor)
 								{
 									editor->statusLabel.setText("Ready", juce::dontSendNotification);
+									editor->updateLCD();
 								}
 							});
 					}
-				}
-			});
+				} });
 
 		return;
 	}
@@ -158,12 +158,12 @@ void MidiLearnManager::moveMappingsFromSlotToSlot(int fromSlot, int toSlot)
 		}
 	}
 
-	for (const auto& mapping : mappingsToMove)
+	for (const auto &mapping : mappingsToMove)
 	{
 		mappings.push_back(mapping);
 	}
 }
-bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage& message)
+bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 {
 	if (!isLearning)
 	{
@@ -234,27 +234,29 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage& message)
 	juce::String fullMessage = "MIDI mapping created: " + midiDescription + " >> " + learningDescription;
 	DBG(fullMessage);
 	juce::MessageManager::callAsync([mapping, fullMessage]()
-		{
+									{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 			{
 				editor->statusLabel.setText(fullMessage, juce::dontSendNotification);
+				editor->updateLCD();
 				juce::Timer::callAfterDelay(2000, [mapping]() {
 					if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 						editor->statusLabel.setText("Ready", juce::dontSendNotification);
+						editor->updateLCD();
 					}
 					});
 			} });
 
-			stopLearning();
+	stopLearning();
 
-			return true;
+	return true;
 }
 
-void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
+void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 {
 	int midiChannel = message.getChannel() - 1;
 	bool isWarning = false;
-	for (auto& mapping : mappings)
+	for (auto &mapping : mappings)
 	{
 		bool matches = false;
 		float value = 0.0f;
@@ -276,7 +278,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 
 				if (message.isNoteOn() && isBooleanParameter(mapping.parameterName))
 				{
-					auto* param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
+					auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 					if (param)
 					{
 						if (mapping.parameterName.contains("Generate"))
@@ -317,17 +319,19 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 				matches = true;
 				value = message.getControllerValue() / 127.0f;
 				statusMessage = "CC" + juce::String(mapping.midiNumber) + " >> " + mapping.parameterName +
-					" (" + juce::String(message.getControllerValue()) + ")";
+								" (" + juce::String(message.getControllerValue()) + ")";
 				int ccVal = message.getControllerValue();
 				if (mapping.parameterName.endsWith("Page") && matches)
 				{
 					int ccVal = message.getControllerValue();
 					int slotNum = mapping.parameterName.substring(4, 5).getIntValue();
 
-					juce::String suffix = (ccVal >= 96) ? "D" : (ccVal >= 64) ? "C" : (ccVal >= 32) ? "B" : "A";
+					juce::String suffix = (ccVal >= 96) ? "D" : (ccVal >= 64) ? "C"
+															: (ccVal >= 32)	  ? "B"
+																			  : "A";
 					juce::String realParam = "slot" + juce::String(slotNum) + "Page" + suffix;
 
-					if (auto* p = mapping.processor->getParameterTreeState().getParameter(realParam))
+					if (auto *p = mapping.processor->getParameterTreeState().getParameter(realParam))
 					{
 						p->setValueNotifyingHost(1.0f);
 						showStatus(mapping, "Slot " + juce::String(slotNum) + " -> Page " + suffix, false);
@@ -337,10 +341,11 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 				if (mapping.parameterName.endsWith("Seq"))
 				{
 					int seqIdx = (ccVal / 16) + 1;
-					if (seqIdx > 8) seqIdx = 8;
+					if (seqIdx > 8)
+						seqIdx = 8;
 					juce::String targetParam = mapping.parameterName + juce::String(seqIdx);
 
-					if (auto* p = mapping.processor->getParameterTreeState().getParameter(targetParam))
+					if (auto *p = mapping.processor->getParameterTreeState().getParameter(targetParam))
 					{
 						p->setValueNotifyingHost(1.0f);
 						statusMessage = "Slot Seq -> " + juce::String(seqIdx);
@@ -355,7 +360,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 			matches = true;
 			value = (message.getPitchWheelValue() + 8192) / 16383.0f;
 			statusMessage = "Pitch Wheel >> " + mapping.parameterName +
-				" (" + juce::String(message.getPitchWheelValue()) + ")";
+							" (" + juce::String(message.getPitchWheelValue()) + ")";
 		}
 
 		if (matches && mapping.processor)
@@ -367,16 +372,18 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 					mapping.uiCallback(value);
 
 					juce::MessageManager::callAsync([mapping, statusMessage]()
-						{
+													{
 							if (mapping.processor->getActiveEditor())
 							{
 								if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 								{
 									editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+									editor->updateLCD();
 									juce::Timer::callAfterDelay(2000, [mapping]() {
 										if (mapping.processor->getActiveEditor()) {
 											if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 												editor->statusLabel.setText("Ready", juce::dontSendNotification);
+												editor->updateLCD();
 											}
 										}
 										});
@@ -392,16 +399,18 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 					mapping.uiCallback(value);
 
 					juce::MessageManager::callAsync([mapping, statusMessage]()
-						{
+													{
 							if (mapping.processor->getActiveEditor())
 							{
 								if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 								{
 									editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+									editor->updateLCD();
 									juce::Timer::callAfterDelay(2000, [mapping]() {
 										if (mapping.processor->getActiveEditor()) {
 											if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 												editor->statusLabel.setText("Ready", juce::dontSendNotification);
+												editor->updateLCD();
 											}
 										}
 										});
@@ -426,13 +435,15 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 					}
 
 					juce::MessageManager::callAsync([mapping, statusMessage]()
-						{
+													{
 							if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 							{
 								editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+								editor->updateLCD();
 								juce::Timer::callAfterDelay(2000, [mapping]() {
 									if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 										editor->statusLabel.setText("Ready", juce::dontSendNotification);
+										editor->updateLCD();
 									}
 									});
 							} });
@@ -448,14 +459,18 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 					int slotNumber = slotStr.getIntValue();
 
 					int pageIndex = -1;
-					if (mapping.parameterName.contains("PageA")) pageIndex = 0;
-					else if (mapping.parameterName.contains("PageB")) pageIndex = 1;
-					else if (mapping.parameterName.contains("PageC")) pageIndex = 2;
-					else if (mapping.parameterName.contains("PageD")) pageIndex = 3;
+					if (mapping.parameterName.contains("PageA"))
+						pageIndex = 0;
+					else if (mapping.parameterName.contains("PageB"))
+						pageIndex = 1;
+					else if (mapping.parameterName.contains("PageC"))
+						pageIndex = 2;
+					else if (mapping.parameterName.contains("PageD"))
+						pageIndex = 3;
 
 					if (slotNumber >= 1 && slotNumber <= 8 && pageIndex >= 0)
 					{
-						auto* param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
+						auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 						if (param)
 						{
 							param->setValueNotifyingHost(1.0f);
@@ -463,17 +478,18 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 							statusMessage += " (Page " + juce::String((char)('A' + pageIndex)) + " triggered)";
 
 							juce::MessageManager::callAsync([mapping, statusMessage]()
-								{
+															{
 									if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 									{
 										editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+										editor->updateLCD();
 										juce::Timer::callAfterDelay(2000, [mapping]() {
 											if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 												editor->statusLabel.setText("Ready", juce::dontSendNotification);
+												editor->updateLCD();
 											}
 											});
-									}
-								});
+									} });
 						}
 					}
 				}
@@ -484,7 +500,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 			{
 				if (message.isNoteOn())
 				{
-					auto* param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
+					auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 					if (param)
 					{
 						param->setValueNotifyingHost(1.0f);
@@ -495,17 +511,18 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 						statusMessage += " (Sequence " + seqStr + " selected)";
 
 						juce::MessageManager::callAsync([mapping, statusMessage]()
-							{
+														{
 								if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 								{
 									editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+									editor->updateLCD();
 									juce::Timer::callAfterDelay(2000, [mapping]() {
 										if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 											editor->statusLabel.setText("Ready", juce::dontSendNotification);
+											editor->updateLCD();
 										}
 										});
-								}
-							});
+								} });
 					}
 				}
 				continue;
@@ -526,10 +543,11 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 					}
 
 					juce::MessageManager::callAsync([mapping, statusMessage, isWarning]()
-						{
+													{
 							if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 							{
 								editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+								editor->updateLCD();
 								if (isWarning) {
 									editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
 								}
@@ -537,22 +555,23 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 									if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 										editor->statusLabel.setText("Ready", juce::dontSendNotification);
 										editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+										editor->updateLCD();
 									}
 									});
 							} });
 				}
 				continue;
 			}
-			auto* param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
+			auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 			if (param)
 			{
 				if (mapping.parameterName.startsWith("slot"))
 				{
 					juce::String slotPart = mapping.parameterName.substring(0, 5);
 					auto trackIds = mapping.processor->getAllTrackIds();
-					for (const auto& trackId : trackIds)
+					for (const auto &trackId : trackIds)
 					{
-						TrackData* track = mapping.processor->getTrack(trackId);
+						TrackData *track = mapping.processor->getTrack(trackId);
 						if (track)
 						{
 							juce::String expectedSlot = "slot" + juce::String(track->slotIndex + 1);
@@ -565,10 +584,11 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 				}
 				param->setValueNotifyingHost(value);
 				juce::MessageManager::callAsync([mapping, statusMessage, isWarning]()
-					{
+												{
 						if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
 						{
 							editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+							editor->updateLCD();
 							if (isWarning) {
 								editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
 							}
@@ -576,62 +596,64 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage& message)
 								if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 									editor->statusLabel.setText("Ready", juce::dontSendNotification);
 									editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+									editor->updateLCD();
 								}
 								});
 						} });
 
-						if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Play"))
-						{
-							juce::String slotStr = mapping.parameterName.substring(4, 5);
-							int slotNumber = slotStr.getIntValue();
-							if (slotNumber >= 1 && slotNumber <= 8)
-							{
-								changedPlaySlotIndex.store(slotNumber - 1);
-								mustCheckForMidiEvent.store(true);
-							}
+				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Play"))
+				{
+					juce::String slotStr = mapping.parameterName.substring(4, 5);
+					int slotNumber = slotStr.getIntValue();
+					if (slotNumber >= 1 && slotNumber <= 8)
+					{
+						changedPlaySlotIndex.store(slotNumber - 1);
+						mustCheckForMidiEvent.store(true);
+					}
+				}
+				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Generate"))
+				{
+					if (mapping.processor->getIsGenerating())
+						return;
+					juce::String slotStr = mapping.parameterName.substring(4, 5);
+					int slotNumber = slotStr.getIntValue();
+					if (slotNumber >= 1 && slotNumber <= 8)
+					{
+						changedGenerateSlotIndex.store(slotNumber - 1);
+						mustCheckForMidiEvent.store(true);
+					}
+				}
+				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("RandomRetrigger"))
+				{
+					juce::String slotStr = mapping.parameterName.substring(4, 5);
+					int slotNumber = slotStr.getIntValue();
+					if (slotNumber >= 1 && slotNumber <= 8)
+					{
+						mustCheckForMidiEvent.store(true);
+					}
+				}
 
-						}
-						if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Generate"))
-						{
-							if (mapping.processor->getIsGenerating())
-								return;
-							juce::String slotStr = mapping.parameterName.substring(4, 5);
-							int slotNumber = slotStr.getIntValue();
-							if (slotNumber >= 1 && slotNumber <= 8)
-							{
-								changedGenerateSlotIndex.store(slotNumber - 1);
-								mustCheckForMidiEvent.store(true);
-							}
-						}
-						if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("RandomRetrigger"))
-						{
-							juce::String slotStr = mapping.parameterName.substring(4, 5);
-							int slotNumber = slotStr.getIntValue();
-							if (slotNumber >= 1 && slotNumber <= 8)
-							{
-								mustCheckForMidiEvent.store(true);
-							}
-						}
-
-						if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("RetriggerInterval"))
-						{
-							juce::String slotStr = mapping.parameterName.substring(4, 5);
-							int slotNumber = slotStr.getIntValue();
-							if (slotNumber >= 1 && slotNumber <= 8)
-							{
-								mustCheckForMidiEvent.store(true);
-							}
-						}
+				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("RetriggerInterval"))
+				{
+					juce::String slotStr = mapping.parameterName.substring(4, 5);
+					int slotNumber = slotStr.getIntValue();
+					if (slotNumber >= 1 && slotNumber <= 8)
+					{
+						mustCheckForMidiEvent.store(true);
+					}
+				}
 			}
 		}
 	}
 }
 
-void MidiLearnManager::showStatus(const MidiMapping& mapping, const juce::String& text, bool isWarning)
+void MidiLearnManager::showStatus(const MidiMapping &mapping, const juce::String &text, bool isWarning)
 {
-	juce::MessageManager::callAsync([mapping, text, isWarning]() {
+	juce::MessageManager::callAsync([mapping, text, isWarning]()
+									{
 		if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 			editor->statusLabel.setText(text, juce::dontSendNotification);
+			editor->updateLCD();
 			if (isWarning)
 				editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
 
@@ -639,40 +661,40 @@ void MidiLearnManager::showStatus(const MidiMapping& mapping, const juce::String
 				if (auto* ed = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor())) {
 					ed->statusLabel.setText("Ready", juce::dontSendNotification);
 					ed->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+					ed->updateLCD();
 				}
 				});
-		}
-		});
+		} });
 }
 
-bool MidiLearnManager::isBooleanParameter(const juce::String& parameterName)
+bool MidiLearnManager::isBooleanParameter(const juce::String &parameterName)
 {
 	return parameterName.contains("Play") ||
-		parameterName.contains("Stop") ||
-		parameterName.contains("Mute") ||
-		parameterName.contains("Solo") ||
-		parameterName.contains("Generate") ||
-		parameterName.contains("RandomRetrigger") ||
-		parameterName == "nextTrack" ||
-		parameterName == "prevTrack" ||
-		parameterName == "generate";
+		   parameterName.contains("Stop") ||
+		   parameterName.contains("Mute") ||
+		   parameterName.contains("Solo") ||
+		   parameterName.contains("Generate") ||
+		   parameterName.contains("RandomRetrigger") ||
+		   parameterName == "nextTrack" ||
+		   parameterName == "prevTrack" ||
+		   parameterName == "generate";
 }
 
 void MidiLearnManager::clearUICallbacks()
 {
 	registeredUICallbacks.clear();
-	for (auto& mapping : mappings)
+	for (auto &mapping : mappings)
 	{
 		mapping.uiCallback = nullptr;
 	}
 	DBG("UI callbacks cleared");
 }
 
-void MidiLearnManager::registerUICallback(const juce::String& parameterName,
-	std::function<void(float)> callback)
+void MidiLearnManager::registerUICallback(const juce::String &parameterName,
+										  std::function<void(float)> callback)
 {
 	registeredUICallbacks[parameterName] = callback;
-	for (auto& mapping : mappings)
+	for (auto &mapping : mappings)
 	{
 		if (mapping.parameterName == parameterName)
 		{
@@ -685,7 +707,7 @@ void MidiLearnManager::registerUICallback(const juce::String& parameterName,
 
 void MidiLearnManager::restoreUICallbacks()
 {
-	for (auto& mapping : mappings)
+	for (auto &mapping : mappings)
 	{
 		auto it = registeredUICallbacks.find(mapping.parameterName);
 		if (it != registeredUICallbacks.end())
@@ -695,7 +717,7 @@ void MidiLearnManager::restoreUICallbacks()
 	}
 }
 
-void MidiLearnManager::addMapping(const MidiMapping& midiMapping)
+void MidiLearnManager::addMapping(const MidiMapping &midiMapping)
 {
 	mappings.push_back(midiMapping);
 }
@@ -704,10 +726,10 @@ void MidiLearnManager::removeMapping(juce::String parameterName)
 {
 	mappings.erase(
 		std::remove_if(mappings.begin(), mappings.end(),
-			[parameterName](const MidiMapping& mapping)
-			{
-				return mapping.parameterName == parameterName;
-			}),
+					   [parameterName](const MidiMapping &mapping)
+					   {
+						   return mapping.parameterName == parameterName;
+					   }),
 		mappings.end());
 }
 
@@ -717,56 +739,58 @@ void MidiLearnManager::clearAllMappings()
 	DBG("All MIDI mappings cleared");
 }
 
-bool MidiLearnManager::removeMappingForParameter(const juce::String& parameterName)
+bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterName)
 {
 	auto mappingIt = std::find_if(mappings.begin(), mappings.end(),
-		[parameterName](const MidiMapping& mapping)
-		{
-			return mapping.parameterName == parameterName;
-		});
+								  [parameterName](const MidiMapping &mapping)
+								  {
+									  return mapping.parameterName == parameterName;
+								  });
 
 	if (mappingIt == mappings.end())
 	{
 		return false;
 	}
 
-	DjIaVstProcessor* processor = mappingIt->processor;
+	DjIaVstProcessor *processor = mappingIt->processor;
 	juce::String description = mappingIt->description;
 
 	mappings.erase(mappingIt);
 	juce::String statusMessage = "MIDI mapping removed: " + description;
 	DBG(statusMessage);
 	juce::MessageManager::callAsync([processor, statusMessage]()
-		{
+									{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(processor->getActiveEditor()))
 			{
 				editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
+				editor->updateLCD();
 				juce::Timer::callAfterDelay(2000, [processor]() {
 					if (auto* editor = dynamic_cast<DjIaVstEditor*>(processor->getActiveEditor())) {
 						editor->statusLabel.setText("Ready", juce::dontSendNotification);
+						editor->updateLCD();
 					}
 					});
 			} });
 
-			return true;
+	return true;
 }
 
-bool MidiLearnManager::hasMappingForParameter(const juce::String& parameterName) const
+bool MidiLearnManager::hasMappingForParameter(const juce::String &parameterName) const
 {
 	return std::any_of(mappings.begin(), mappings.end(),
-		[parameterName](const MidiMapping& mapping)
-		{
-			return mapping.parameterName == parameterName;
-		});
+					   [parameterName](const MidiMapping &mapping)
+					   {
+						   return mapping.parameterName == parameterName;
+					   });
 }
 
-juce::String MidiLearnManager::getMappingDescription(const juce::String& parameterName) const
+juce::String MidiLearnManager::getMappingDescription(const juce::String &parameterName) const
 {
 	auto it = std::find_if(mappings.begin(), mappings.end(),
-		[parameterName](const MidiMapping& mapping)
-		{
-			return mapping.parameterName == parameterName;
-		});
+						   [parameterName](const MidiMapping &mapping)
+						   {
+							   return mapping.parameterName == parameterName;
+						   });
 
 	if (it != mappings.end())
 	{
@@ -788,34 +812,34 @@ juce::String MidiLearnManager::getMappingDescription(const juce::String& paramet
 
 	return juce::String();
 }
-void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor* processor)
+void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 {
 	if (!mappings.empty())
 		return;
 
-	auto addNote = [&](const juce::String& param, int note, const juce::String& desc)
-		{
-			MidiMapping m;
-			m.midiType = 0;
-			m.midiNumber = note;
-			m.midiChannel = 0;
-			m.processor = processor;
-			m.parameterName = param;
-			m.description = desc;
-			mappings.push_back(m);
-		};
+	auto addNote = [&](const juce::String &param, int note, const juce::String &desc)
+	{
+		MidiMapping m;
+		m.midiType = 0;
+		m.midiNumber = note;
+		m.midiChannel = 0;
+		m.processor = processor;
+		m.parameterName = param;
+		m.description = desc;
+		mappings.push_back(m);
+	};
 
-	auto addCC = [&](const juce::String& param, int cc, const juce::String& desc)
-		{
-			MidiMapping m;
-			m.midiType = 1;
-			m.midiNumber = cc;
-			m.midiChannel = 0;
-			m.processor = processor;
-			m.parameterName = param;
-			m.description = desc;
-			mappings.push_back(m);
-		};
+	auto addCC = [&](const juce::String &param, int cc, const juce::String &desc)
+	{
+		MidiMapping m;
+		m.midiType = 1;
+		m.midiNumber = cc;
+		m.midiChannel = 0;
+		m.processor = processor;
+		m.parameterName = param;
+		m.description = desc;
+		mappings.push_back(m);
+	};
 
 	addCC("masterVolume", 7, "Master Volume");
 	addCC("masterPan", 10, "Master Pan");
@@ -841,4 +865,3 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor* processor)
 
 	DBG("Default MIDI mappings loaded (" + juce::String(mappings.size()) + " mappings)");
 }
-
