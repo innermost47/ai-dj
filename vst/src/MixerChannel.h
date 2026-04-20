@@ -35,6 +35,8 @@ public:
 		hasSamplePending = pending;
 		repaint();
 	}
+	void setTrackName(const juce::String& name);
+	std::function<void(const juce::String&)> onTrackRenamed;
 
 private:
 	DjIaVstProcessor& audioProcessor;

@@ -793,6 +793,18 @@ void DjIaVstEditor::setupUI()
 	{
 		mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
 		addAndMakeVisible(*mixerPanel);
+		mixerPanel->onTrackRenamedFromMixer = [this](const juce::String& trackId,
+			const juce::String& newName)
+			{
+				for (auto& trackComp : trackComponents)
+				{
+					if (trackComp->getTrackId() == trackId)
+					{
+						trackComp->syncTrackName(newName);
+						break;
+					}
+				}
+			};
 	}
 
 	addAndMakeVisible(showSampleBankButton);

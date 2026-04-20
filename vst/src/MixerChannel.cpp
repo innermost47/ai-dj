@@ -956,6 +956,12 @@ void MixerChannel::setupUI()
 	trackNameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	trackNameLabel.setJustificationType(juce::Justification::centred);
 	trackNameLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+	trackNameLabel.setEditable(false, true);
+	trackNameLabel.onTextChange = [this]()
+		{
+			if (onTrackRenamed)
+				onTrackRenamed(trackNameLabel.getText());
+		};
 
 	addAndMakeVisible(playButton);
 	playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
@@ -1031,6 +1037,11 @@ void MixerChannel::setupUI()
 	pitchKnob.setTooltip("Pitch adjustment (-12 to +12 semitones)");
 	fineKnob.setTooltip("Fine pitch adjustment (-50 to +50 cents)");
 	panKnob.setTooltip("Pan position (left/right balance)");
+}
+
+void MixerChannel::setTrackName(const juce::String& name)
+{
+	trackNameLabel.setText(name, juce::dontSendNotification);
 }
 
 void MixerChannel::updateButtonColors()

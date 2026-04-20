@@ -120,6 +120,19 @@ void MixerPanel::refreshMixerChannels()
 		if (!trackData) continue;
 		auto mixerChannel = std::make_unique<MixerChannel>(
 			trackId, audioProcessor, static_cast<TrackData*>(trackData));
+
+		mixerChannel->setTrackName(trackData->trackName);
+
+		mixerChannel->onTrackRenamed = [this, trackId](const juce::String& newName)
+			{
+				if (auto* track = audioProcessor.getTrack(trackId))
+				{
+					track->trackName = newName;
+					if (onTrackRenamedFromMixer)
+						onTrackRenamedFromMixer(trackId, newName);
+				}
+			};
+
 		channelsContainer.addAndMakeVisible(mixerChannel.get());
 		mixerChannels.push_back(std::move(mixerChannel));
 	}

@@ -978,6 +978,7 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	updatePagesDisplay();
 	updateFromTrackData();
+	updateModelUI();
 
 	if (sequencer)
 	{
@@ -1015,14 +1016,54 @@ void TrackComponent::updatePagesDisplay()
 {
 	if (!track || !pagesMode) return;
 
-	int pendingPage = track->pageChangePending.load() ? track->pendingPageIndex.load() : -1;
+	juce::String currentModel = modelSelector.getText();
+	if (currentModel.isEmpty()) currentModel = track->selectedModel;
+	auto modelColour = AiModelDefinitions::getColourForModel(currentModel);
+	bool darkText = modelColour.getBrightness() > 0.6f;
+	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
+
+	int pendingPage = track->pageChangePending.load()
+		? track->pendingPageIndex.load() : -1;
 
 	for (int i = 0; i < 4; ++i)
 	{
-		pageButtons[i].setToggleState(i == track->currentPageIndex, juce::dontSendNotification);
-		if (i == pendingPage) continue;
+		bool isActive = (i == track->currentPageIndex);
+		bool isPending = (i == pendingPage);
+		bool hasAudio = track->pages[i].numSamples > 0;
+
+		if (isPending)
+		{
+			auto blinkOn = modelColour.withAlpha(0.95f);
+			auto blinkOff = modelColour.darker(0.5f).withAlpha(0.35f);
+
+			pageButtons[i].setColour(juce::TextButton::buttonColourId,
+				pageBlinkState ? blinkOn : blinkOff);
+			pageButtons[i].setColour(juce::TextButton::textColourOffId,
+				pageBlinkState ? textColour : modelColour.brighter(0.5f));
+		}
+		else if (isActive)
+		{
+			pageButtons[i].setColour(juce::TextButton::buttonOnColourId, modelColour);
+			pageButtons[i].setColour(juce::TextButton::textColourOnId, textColour);
+		}
+		else if (hasAudio)
+		{
+			pageButtons[i].setColour(juce::TextButton::buttonColourId,
+				modelColour.withAlpha(0.3f));
+			pageButtons[i].setColour(juce::TextButton::textColourOffId,
+				modelColour.brighter(0.5f));
+		}
+		else
+		{
+			pageButtons[i].setColour(juce::TextButton::buttonColourId,
+				ColourPalette::backgroundDark);
+			pageButtons[i].setColour(juce::TextButton::textColourOffId,
+				ColourPalette::textSecondary);
+		}
+
+		pageButtons[i].setToggleState(isActive, juce::dontSendNotification);
+		pageButtons[i].repaint();
 	}
-	updateModelUI();
 }
 
 void TrackComponent::loadPageIfNeeded(int pageIndex)
@@ -1179,20 +1220,11 @@ void TrackComponent::timerCallback()
 	if (track && track->pageChangePending.load())
 	{
 		pageBlinkState = !pageBlinkState;
-		int pendingPage = track->pendingPageIndex.load();
-		if (pendingPage >= 0 && pendingPage < 4)
-		{
-			pageButtons[pendingPage].setColour(
-				juce::TextButton::buttonColourId,
-				pageBlinkState ? ColourPalette::buttonDanger : ColourPalette::backgroundDeep);
-			pageButtons[pendingPage].repaint();
-		}
+		updatePagesDisplay();
 	}
 
 	if (!isGenerating && (!track || !track->pageChangePending.load()))
-	{
 		stopTimer();
-	}
 }
 
 void TrackComponent::refreshWaveformDisplay()
@@ -1390,6 +1422,11 @@ void TrackComponent::setupUI()
 	}
 
 	setupPagesUI();
+}
+
+void TrackComponent::syncTrackName(const juce::String& name)
+{
+	if (track) track->trackName = name;
 }
 
 void TrackComponent::setupIconButtons()
@@ -2144,30 +2181,6 @@ void TrackComponent::updateModelUI()
 	randomRetriggerButton.setColour(juce::TextButton::textColourOffId, modelColour);
 	randomDurationToggle.setColour(juce::TextButton::textColourOffId, modelColour);
 	drawButton.setColour(juce::TextButton::textColourOffId, modelColour);
-
-	for (int i = 0; i < 4; ++i)
-	{
-		pageButtons[i].setColour(juce::TextButton::textColourOnId, textColour);
-
-		pageButtons[i].setColour(juce::TextButton::buttonOnColourId, modelColour);
-
-		if (track && i < 4 && track->pages[i].numSamples > 0)
-		{
-			pageButtons[i].setColour(juce::TextButton::buttonColourId,
-				modelColour.withAlpha(0.3f));
-			pageButtons[i].setColour(juce::TextButton::textColourOffId,
-				modelColour.brighter(0.5f));
-		}
-		else
-		{
-			pageButtons[i].setColour(juce::TextButton::buttonColourId,
-				ColourPalette::backgroundDark);
-			pageButtons[i].setColour(juce::TextButton::textColourOffId,
-				ColourPalette::textSecondary);
-		}
-
-		pageButtons[i].repaint();
-	}
 
 	if (sequencer)
 		sequencer->setAccentColour(modelColour);

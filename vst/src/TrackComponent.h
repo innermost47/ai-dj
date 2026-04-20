@@ -92,6 +92,7 @@ public:
 	void setSamplePending(bool pending);
 	bool isSamplePending() const { return hasSamplePending; }
 	void setPreviewPlaying(bool playing);
+	void syncTrackName(const juce::String& name);
 
 	juce::String getSelectedModel() const { return modelSelector.getText(); }
 

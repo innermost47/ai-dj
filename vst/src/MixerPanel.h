@@ -31,6 +31,8 @@ public:
 	void stopGeneratingAnimationForTrack(const juce::String& trackId);
 	void clearSamplePending(const juce::String& trackId);
 
+	std::function<void(const juce::String& trackId, const juce::String& newName)> onTrackRenamedFromMixer;
+
 private:
 	DjIaVstProcessor& audioProcessor;
 

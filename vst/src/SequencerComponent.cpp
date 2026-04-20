@@ -323,9 +323,18 @@ void SequencerComponent::paint(juce::Graphics& g)
 
 		if (i == currentStep && isPlaying && isVisible && currentMeasure == playingMeasure)
 		{
-			float pulseIntensity = 0.8f + 0.2f * std::sin(juce::Time::getMillisecondCounter() * 0.01f);
-			stepColour = ColourPalette::textPrimary.withAlpha(pulseIntensity);
-			borderColour = ColourPalette::textPrimary;
+			float pulseIntensity = 0.7f + 0.3f * std::sin(juce::Time::getMillisecondCounter() * 0.01f);
+
+			if (seqData.steps[safeMeasure][i])
+			{
+				stepColour = accentColour.brighter(0.6f).withAlpha(pulseIntensity);
+				borderColour = accentColour.brighter(0.9f);
+			}
+			else
+			{
+				stepColour = accentColour.withAlpha(0.35f * pulseIntensity);
+				borderColour = accentColour.withAlpha(0.7f);
+			}
 		}
 
 		g.setColour(stepColour);
