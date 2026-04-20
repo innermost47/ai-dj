@@ -19,6 +19,7 @@ public:
 	void setCurrentMeasure(int measure);
 	void updateSequenceButtonsDisplay();
 	void updateFromTrackData();
+	void setAccentColour(juce::Colour colour);
 
 	bool isSequencerPlaying() const { return isPlaying; }
 
@@ -40,6 +41,7 @@ private:
 	juce::Slider measureSlider;
 	juce::Slider timeSignatureSlider;
 	std::array<MidiLearnableButton, 8> sequenceButtons;
+	juce::Colour accentColour = ColourPalette::buttonDanger;
 
 	juce::Timer* editingTimer = nullptr;
 

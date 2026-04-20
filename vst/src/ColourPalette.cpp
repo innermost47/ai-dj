@@ -22,9 +22,9 @@ constexpr auto COLOR_SUCCESS = 0xff6BB38A;  // muted teal-green (not neon)
 constexpr auto COLOR_WARNING = 0xffE8A860;  // warm amber
 
 // === SEQUENCER ===
-constexpr auto COLOR_SEQUENCER_ACCENT = 0xffD96850;  // active step — brick
-constexpr auto COLOR_SEQUENCER_BEAT = 0xff3A3A3F;  // beat marker — subtle light
-constexpr auto COLOR_SEQUENCER_SUBBEAT = 0xff2B2B2F;  // sub-beat — mid dark
+constexpr auto COLOR_SEQUENCER_ACCENT = 0xffD96850;
+constexpr auto COLOR_SEQUENCER_BEAT = 0xff4A4A50;
+constexpr auto COLOR_SEQUENCER_SUBBEAT = 0xff32323A;
 
 // === VU METERS — saturated for contrast on dark bg ===
 constexpr auto COLOR_VU_GREEN = 0xff6BB38A;  // lively green

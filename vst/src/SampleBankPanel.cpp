@@ -166,6 +166,7 @@ DetailPanel::~DetailPanel()
 	destroyed.store(true);
 	validity->store(false);
 	stopTimer();
+	removeAllChildren();
 }
 
 void DetailPanel::setEntry(SampleBankEntry* e)

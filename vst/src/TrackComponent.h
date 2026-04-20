@@ -56,7 +56,7 @@ public:
 	static const int BASE_HEIGHT = 80;
 	static const int WAVEFORM_HEIGHT = 65;
 	static const int SEQUENCER_HEIGHT = 90;
-	static const int PAGE_BUTTON_SIZE = 20;
+	static const int PAGE_BUTTON_SIZE = 18;
 	static const int ICON_BUTTON_WIDTH = 42;
 	static const int ICON_BUTTON_HEIGHT = 50;
 	static const int CLUSTER_GAP = 14;
@@ -243,6 +243,7 @@ private:
 	void updateModelUI();
 	void layoutPlaybackCluster(juce::Rectangle<int> area);
 	void layoutFxCluster(juce::Rectangle<int> area);
+	void mouseDown(const juce::MouseEvent& event) override;
 
 	float calculateEffectiveBpm();
 

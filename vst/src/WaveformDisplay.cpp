@@ -26,8 +26,12 @@ void WaveformDisplay::setSampleBpm(float bpm)
 {
 	sampleBpm = bpm;
 	calculateStretchRatio();
-	juce::MessageManager::callAsync([this]()
-									{ repaint(); });
+	juce::MessageManager::callAsync(
+		[safeThis = juce::Component::SafePointer<WaveformDisplay>(this)]()
+		{
+			if (safeThis != nullptr)
+				safeThis->repaint();
+		});
 }
 
 void WaveformDisplay::setOriginalBpm(float bpm)

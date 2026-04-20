@@ -195,15 +195,9 @@ void SequencerComponent::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds();
 
-	float height = static_cast<float>(bounds.getHeight());
-	juce::ColourGradient gradient(
-		ColourPalette::backgroundDeep, 0.0f, 0.0f,
-		ColourPalette::backgroundMid, 0.0f, height,
-		false);
-	g.setGradientFill(gradient);
+	g.setColour(accentColour.withAlpha(0.08f));
 	g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
 
-	juce::Colour accentColour = ColourPalette::sequencerAccent;
 	juce::Colour beatColour = ColourPalette::sequencerBeat;
 	juce::Colour subBeatColour = ColourPalette::sequencerSubBeat;
 
@@ -217,7 +211,6 @@ void SequencerComponent::paint(juce::Graphics& g)
 
 	int numerator = audioProcessor.getTimeSignatureNumerator();
 	int denominator = audioProcessor.getTimeSignatureDenominator();
-	juce::Colour trackColour = ColourPalette::getTrackColour(track->slotIndex);
 
 	int stepsPerBeat;
 	if (denominator == 8)
@@ -287,25 +280,25 @@ void SequencerComponent::paint(juce::Graphics& g)
 		}
 		else if (seqData.steps[safeMeasure][i])
 		{
-			stepColour = trackColour;
-			borderColour = trackColour.brighter(0.4f);
+			stepColour = accentColour;
+			borderColour = accentColour.brighter(0.4f);
 		}
 		else
 		{
 			if (isStrongBeat)
 			{
-				stepColour = accentColour.withAlpha(0.3f);
-				borderColour = accentColour;
+				stepColour = ColourPalette::backgroundLight;
+				borderColour = ColourPalette::backgroundLight.brighter(0.3f);
 			}
 			else if (isBeat)
 			{
-				stepColour = beatColour.withAlpha(0.3f);
-				borderColour = beatColour;
+				stepColour = ColourPalette::sequencerBeat;
+				borderColour = ColourPalette::backgroundLight.withAlpha(0.5f);
 			}
 			else
 			{
-				stepColour = subBeatColour.withAlpha(0.3f);
-				borderColour = subBeatColour;
+				stepColour = ColourPalette::sequencerSubBeat;
+				borderColour = ColourPalette::backgroundMid.withAlpha(0.8f);
 			}
 		}
 
@@ -328,6 +321,16 @@ void SequencerComponent::paint(juce::Graphics& g)
 			g.drawText(juce::String(i + 1), stepBounds, juce::Justification::centred);
 		}
 	}
+}
+
+void SequencerComponent::setAccentColour(juce::Colour colour)
+{
+	accentColour = colour;
+
+	for (int i = 0; i < 8; ++i)
+		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, colour.brighter(0.8f));
+
+	repaint();
 }
 
 juce::Rectangle<int> SequencerComponent::getStepBounds(int step)
