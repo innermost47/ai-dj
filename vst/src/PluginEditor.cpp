@@ -1236,32 +1236,31 @@ void DjIaVstEditor::resized()
 	auto area = fullBounds.reduced(padding);
 
 	const int bannerHeight = 80;
+
 	auto topArea = area.removeFromTop(bannerHeight);
-	this->bannerArea = topArea;
 
-	const int column1Width = juce::jmax(280, topArea.getWidth() / 5);
+	const int column1Width = static_cast<int>(topArea.getWidth() * 0.50f);
 	auto column1 = topArea.removeFromLeft(column1Width);
-	auto logoSpace = column1.removeFromLeft(80);
-	logoComponent.setBounds(logoSpace);
+	layoutPromptSection(column1, spacing);
 
-	auto nameArea = column1;
+	topArea.removeFromLeft(spacing * 2);
+
+	const int column2Width = static_cast<int>(topArea.getWidth() * 0.45f);
+	auto column2 = topArea.removeFromLeft(column2Width);
+	layoutConfigSection(column2, reducing, spacing);
+
+	topArea.removeFromLeft(spacing * 2);
+
+	auto column3 = topArea;
+	auto logoSpace = column3.removeFromLeft(80);
+	logoComponent.setBounds(logoSpace);
+	auto nameArea = column3;
 	auto titleArea = nameArea.removeFromTop(30);
 	auto devArea = nameArea.removeFromTop(10);
 	auto partnerArea = nameArea.removeFromTop(25);
 	pluginNameLabel.setBounds(titleArea);
 	developerLabel.setBounds(devArea);
 	stabilityLabel.setBounds(partnerArea);
-
-	topArea.removeFromLeft(spacing * 2);
-
-	const int column2Width = static_cast<int>(topArea.getWidth() * 0.55f);
-	auto column2 = topArea.removeFromLeft(column2Width);
-	layoutPromptSection(column2, spacing);
-
-	topArea.removeFromLeft(spacing * 2);
-
-	auto column3 = topArea;
-	layoutConfigSection(column3, reducing, spacing);
 
 	area.removeFromTop(spacing);
 
