@@ -10,6 +10,12 @@ SequencerComponent::SequencerComponent(const juce::String& trackId, DjIaVstProce
 	setupSequenceButtons();
 }
 
+SequencerComponent::~SequencerComponent()
+{
+	prevMeasureButton.setLookAndFeel(nullptr);
+	nextMeasureButton.setLookAndFeel(nullptr);
+}
+
 void SequencerComponent::setupUI()
 {
 	addAndMakeVisible(measureSlider);
@@ -36,6 +42,8 @@ void SequencerComponent::setupUI()
 
 	addAndMakeVisible(prevMeasureButton);
 	prevMeasureButton.setButtonText("<");
+	prevMeasureButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
+	prevMeasureButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 	prevMeasureButton.onClick = [this]()
 		{
 			isEditing = true;
@@ -49,6 +57,8 @@ void SequencerComponent::setupUI()
 
 	addAndMakeVisible(nextMeasureButton);
 	nextMeasureButton.setButtonText(">");
+	nextMeasureButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
+	nextMeasureButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 	nextMeasureButton.onClick = [this]()
 		{
 			isEditing = true;
@@ -59,7 +69,8 @@ void SequencerComponent::setupUI()
 			juce::Timer::callAfterDelay(500, [this]()
 				{ isEditing = false; });
 		};
-
+	prevMeasureButton.setLookAndFeel(&flatLF);
+	nextMeasureButton.setLookAndFeel(&flatLF);
 	addAndMakeVisible(measureLabel);
 	measureLabel.setText("1/1", juce::dontSendNotification);
 	measureLabel.setJustificationType(juce::Justification::centred);
@@ -93,8 +104,16 @@ void SequencerComponent::setupSequenceButtons()
 		sequenceButtons[i].setTooltip("Select sequence " + juce::String(i + 1) +
 			" - Each page has 8 independent sequences you can switch between");
 
-		sequenceButtons[i].setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive.brighter(0.8f));
-		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, ColourPalette::playActive.brighter(0.8f));
+		sequenceButtons[i].setColour(juce::TextButton::buttonColourId,
+			ColourPalette::backgroundDeep);
+		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId,
+			accentColour);
+		sequenceButtons[i].setColour(juce::TextButton::textColourOffId,
+			ColourPalette::textSecondary);
+		sequenceButtons[i].setColour(juce::TextButton::textColourOnId,
+			accentColour.getBrightness() > 0.6f
+			? juce::Colours::black
+			: juce::Colours::white);
 
 		sequenceButtons[i].onClick = [this, i]()
 			{
@@ -434,7 +453,7 @@ void SequencerComponent::resized()
 	bounds.removeFromLeft(13);
 	auto controlsArea = bounds.removeFromBottom(40);
 	controlsArea = controlsArea.reduced(3);
-	controlsArea.removeFromBottom(5);
+	controlsArea.removeFromBottom(4);
 	auto controlArea = controlsArea.removeFromLeft(juce::jmin(controlsWidth, controlsArea.getWidth() / 2));
 
 	auto pageArea = controlArea.removeFromLeft(120);

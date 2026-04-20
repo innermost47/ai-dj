@@ -160,5 +160,25 @@ public:
 		p.lineTo(14.0f, 17.0f);
 		return p;
 	}
+
+	static juce::Path prev()
+	{
+		juce::Path p;
+		p.startNewSubPath(15.0f, 5.0f);
+		p.lineTo(7.0f, 12.0f);
+		p.lineTo(15.0f, 19.0f);
+		p.closeSubPath();
+		return p;
+	}
+
+	static juce::Path next()
+	{
+		juce::Path p;
+		p.startNewSubPath(9.0f, 5.0f);
+		p.lineTo(17.0f, 12.0f);
+		p.lineTo(9.0f, 19.0f);
+		p.closeSubPath();
+		return p;
+	}
 };
 

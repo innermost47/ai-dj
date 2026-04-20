@@ -1,6 +1,7 @@
 #pragma once
 #include "JuceHeader.h"
 #include "MidiLearnableComponents.h"
+#include "CustomLookAndFeel.h"
 
 class DjIaVstProcessor;
 
@@ -8,6 +9,7 @@ class SequencerComponent : public juce::Component
 {
 public:
 	SequencerComponent(const juce::String& trackId, DjIaVstProcessor& processor);
+	~SequencerComponent();
 
 	void paint(juce::Graphics& g) override;
 	void resized() override;
@@ -24,6 +26,19 @@ public:
 	bool isSequencerPlaying() const { return isPlaying; }
 
 private:
+	struct FlatButtonLF : public CustomLookAndFeel
+	{
+		void drawButtonText(juce::Graphics& g, juce::TextButton& btn,
+			bool, bool) override
+		{
+			g.setColour(btn.findColour(juce::TextButton::textColourOffId));
+			g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+			g.drawText(btn.getButtonText(), btn.getLocalBounds(),
+				juce::Justification::centred, false);
+		}
+	};
+
+	FlatButtonLF flatLF;
 	juce::String trackId;
 	DjIaVstProcessor& audioProcessor;
 
