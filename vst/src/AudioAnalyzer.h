@@ -6,7 +6,7 @@
 class AudioAnalyzer
 {
 public:
-	static float detectBPM(const juce::AudioBuffer<float>& buffer, double sampleRate)
+	static float detectBPM(const juce::AudioBuffer<float> &buffer, double sampleRate)
 	{
 		if (buffer.getNumSamples() == 0)
 			return 0.0f;
@@ -32,22 +32,18 @@ public:
 
 			if (detectedBPM >= 30.0f && detectedBPM <= 300.0f)
 			{
-				DBG("BPM detected: " << detectedBPM);
 				return detectedBPM;
 			}
-
-			DBG("BPM detection failed, returning 0");
 			return 0.0f;
 		}
-		catch (const std::exception& e)
+		catch (const std::exception &e)
 		{
-			DBG("BPM detection error: " << e.what());
 			return 0.0f;
 		}
 	}
 	static float returnDetectedBPMorFallback(float detectedBPM,
-		const juce::AudioSampleBuffer& /*buffer*/,
-		double /*sampleRate*/)
+											 const juce::AudioSampleBuffer & /*buffer*/,
+											 double /*sampleRate*/)
 	{
 		if (detectedBPM >= 30.0f && detectedBPM <= 300.0f)
 		{
@@ -56,7 +52,7 @@ public:
 		return 0.0f;
 	}
 
-	static void chunkAnalysis(std::vector<float>& monoData, soundtouch::BPMDetect& bpmDetect)
+	static void chunkAnalysis(std::vector<float> &monoData, soundtouch::BPMDetect &bpmDetect)
 	{
 		const int chunkSize = 4096;
 
@@ -67,15 +63,15 @@ public:
 		}
 	}
 
-	static float normalizeAudio(const juce::AudioSampleBuffer& buffer,
-		std::vector<float>& monoData,
-		bool& retFlag,
-		int maxSamples = -1)
+	static float normalizeAudio(const juce::AudioSampleBuffer &buffer,
+								std::vector<float> &monoData,
+								bool &retFlag,
+								int maxSamples = -1)
 	{
 		retFlag = true;
 
 		int samplesToProcess = (maxSamples > 0) ? std::min(maxSamples, buffer.getNumSamples())
-			: buffer.getNumSamples();
+												: buffer.getNumSamples();
 
 		float maxLevel = 0.0f;
 		for (int i = 0; i < samplesToProcess; ++i)
@@ -96,7 +92,7 @@ public:
 		}
 
 		float normalizeGain = 0.5f / maxLevel;
-		for (auto& sample : monoData)
+		for (auto &sample : monoData)
 		{
 			sample *= normalizeGain;
 		}
@@ -105,24 +101,24 @@ public:
 		return 0.0f;
 	}
 
-	static void timeStretchBufferFast(juce::AudioBuffer<float>& buffer,
-		double ratio,
-		double sampleRate)
+	static void timeStretchBufferFast(juce::AudioBuffer<float> &buffer,
+									  double ratio,
+									  double sampleRate)
 	{
 		timeStretchBuffer(buffer, ratio, sampleRate, false);
 	}
 
-	static void timeStretchBufferHQ(juce::AudioBuffer<float>& buffer,
-		double ratio,
-		double sampleRate)
+	static void timeStretchBufferHQ(juce::AudioBuffer<float> &buffer,
+									double ratio,
+									double sampleRate)
 	{
 		timeStretchBuffer(buffer, ratio, sampleRate, true);
 	}
 
-	static void timeStretchBuffer(juce::AudioBuffer<float>& buffer,
-		double ratio,
-		double sampleRate,
-		bool highQuality = false)
+	static void timeStretchBuffer(juce::AudioBuffer<float> &buffer,
+								  double ratio,
+								  double sampleRate,
+								  bool highQuality = false)
 	{
 		if (std::abs(ratio - 1.0) < 0.001 || buffer.getNumSamples() == 0)
 			return;
@@ -153,11 +149,6 @@ public:
 			}
 
 			double clampedRatio = juce::jlimit(0.5, 2.0, ratio);
-			if (clampedRatio != ratio)
-			{
-				DBG("Warning: Ratio clamped from " << ratio << " to " << clampedRatio);
-			}
-
 			soundTouch.setTempoChange((clampedRatio - 1.0) * 100.0);
 
 			if (buffer.getNumChannels() == 1)
@@ -200,14 +191,10 @@ public:
 						buffer.setSample(1, i, interleavedOutput[i * 2 + 1]);
 					}
 				}
-
-				DBG("Time stretch completed: " << clampedRatio << "x ("
-					<< buffer.getNumSamples() << " -> " << outputSamples << " samples)");
 			}
 		}
-		catch (const std::exception& e)
+		catch (const std::exception &e)
 		{
-			DBG("Time stretch error: " << e.what());
 		}
 	}
 };

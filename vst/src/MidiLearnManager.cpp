@@ -73,15 +73,12 @@ void MidiLearnManager::stopLearning()
 	stopTimer();
 	learningUiCallback = nullptr;
 	learningDescription.clear();
-	DBG("MIDI Learn stopped");
 }
 
 void MidiLearnManager::timerCallback()
 {
 	if (juce::Time::currentTimeMillis() - learnStartTime > LEARN_TIMEOUT_MS)
 	{
-		DBG("MIDI Learn timeout");
-
 		stopLearning();
 
 		juce::MessageManager::callAsync([this]()
@@ -127,10 +124,7 @@ void MidiLearnManager::moveMappingsFromSlotToSlot(int fromSlot, int toSlot)
 	juce::String fromPrefix = "slot" + juce::String(fromSlot);
 	juce::String toPrefix = "slot" + juce::String(toSlot);
 
-	DBG("Moving MIDI mappings from " << fromPrefix << " to " << toPrefix);
-
 	removeMappingsForSlot(toSlot);
-	DBG("Cleared existing mappings for slot " << toSlot);
 
 	std::vector<MidiMapping> mappingsToMove;
 
@@ -149,8 +143,6 @@ void MidiLearnManager::moveMappingsFromSlotToSlot(int fromSlot, int toSlot)
 
 			mappingsToMove.push_back(movedMapping);
 			it = mappings.erase(it);
-
-			DBG("Moved mapping: " << movedMapping.parameterName);
 		}
 		else
 		{
@@ -169,7 +161,6 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 	{
 		return false;
 	}
-	DBG("MIDI received: " + message.getDescription());
 	int midiType = -1;
 	int midiNumber = 0;
 	int midiChannel = message.getChannel() - 1;
@@ -232,7 +223,6 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 	}
 
 	juce::String fullMessage = "MIDI mapping created: " + midiDescription + " >> " + learningDescription;
-	DBG(fullMessage);
 	juce::MessageManager::callAsync([mapping, fullMessage]()
 									{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(mapping.processor->getActiveEditor()))
@@ -687,7 +677,6 @@ void MidiLearnManager::clearUICallbacks()
 	{
 		mapping.uiCallback = nullptr;
 	}
-	DBG("UI callbacks cleared");
 }
 
 void MidiLearnManager::registerUICallback(const juce::String &parameterName,
@@ -699,7 +688,6 @@ void MidiLearnManager::registerUICallback(const juce::String &parameterName,
 		if (mapping.parameterName == parameterName)
 		{
 			mapping.uiCallback = callback;
-			DBG("Immediately restored callback for existing mapping: " + parameterName);
 			break;
 		}
 	}
@@ -736,7 +724,6 @@ void MidiLearnManager::removeMapping(juce::String parameterName)
 void MidiLearnManager::clearAllMappings()
 {
 	mappings.clear();
-	DBG("All MIDI mappings cleared");
 }
 
 bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterName)
@@ -757,7 +744,6 @@ bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterNa
 
 	mappings.erase(mappingIt);
 	juce::String statusMessage = "MIDI mapping removed: " + description;
-	DBG(statusMessage);
 	juce::MessageManager::callAsync([processor, statusMessage]()
 									{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(processor->getActiveEditor()))
@@ -812,6 +798,7 @@ juce::String MidiLearnManager::getMappingDescription(const juce::String &paramet
 
 	return juce::String();
 }
+
 void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 {
 	if (!mappings.empty())
@@ -862,6 +849,4 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 		addCC(s + "Page", 89 + i, "Slot " + juce::String(i) + " Page");
 		addCC(s + "Seq", 15 + i, "Slot " + juce::String(i) + " Seq");
 	}
-
-	DBG("Default MIDI mappings loaded (" + juce::String(mappings.size()) + " mappings)");
 }

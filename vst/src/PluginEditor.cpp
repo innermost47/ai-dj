@@ -1738,9 +1738,6 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress &key)
 							}
 							else
 							{
-								DBG("Global shortcut: slot " << (slotIndex + 1) << " page " << (char)('A' + page) << " [" << (layout == AZERTY ? "AZERTY" : layout == QWERTZ ? "QWERTZ"
-																																											 : "QWERTY")
-															 << "]");
 								trackComp->onPageSelected(page);
 								return true;
 							}
@@ -2066,8 +2063,6 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String &trackId)
 			currentPage.selectedModel = "stable-audio-open-1.0";
 
 		track->syncLegacyProperties();
-
-		DBG("Track generation for page " << (char)('A' + track->currentPageIndex) << " - Prompt: " << currentPage.selectedPrompt);
 	}
 	else
 	{

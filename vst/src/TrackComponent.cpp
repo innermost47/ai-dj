@@ -51,7 +51,7 @@ void TrackComponent::setTrackData(TrackData* trackData)
 
 bool TrackComponent::isWaveformVisible() const
 {
-	return showWaveformButton.getToggleState() && waveformDisplay && waveformDisplay->isVisible();
+	return waveformDisplay && waveformDisplay->isVisible();
 }
 
 void TrackComponent::updateWaveformWithTimeStretch()
@@ -2187,7 +2187,6 @@ void TrackComponent::itemDropped(const SourceDetails& dragSourceDetails)
 					{
 						promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
 						track->selectedPrompt = sampleEntry->originalPrompt;
-						DBG("Updated prompt selector to: " + sampleEntry->originalPrompt);
 						break;
 					}
 				}

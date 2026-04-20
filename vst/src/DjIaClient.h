@@ -18,12 +18,12 @@ public:
 
 		LoopRequest()
 			: prompt(""),
-			model(""),
-			generationDuration(6.0f),
-			bpm(120.0f),
-			key(""),
-			useImage(false),
-			imageBase64("")
+			  model(""),
+			  generationDuration(6.0f),
+			  bpm(120.0f),
+			  key(""),
+			  useImage(false),
+			  imageBase64("")
 		{
 		}
 	};
@@ -57,16 +57,15 @@ public:
 		juce::String errorMessage = "";
 	};
 
-	DjIaClient(const juce::String& apiKey = "", const juce::String& baseUrl = "http://localhost:8000")
+	DjIaClient(const juce::String &apiKey = "", const juce::String &baseUrl = "http://localhost:8000")
 		: apiKey(apiKey), baseUrl(baseUrl + "/api/v1")
 	{
 	}
 
-	void setApiKey(const juce::String& newApiKey)
+	void setApiKey(const juce::String &newApiKey)
 	{
 		std::lock_guard<std::mutex> lock(mutex);
 		apiKey = newApiKey;
-		DBG("DjIaClient: API key updated");
 	}
 
 	juce::String getApiKey() const
@@ -81,7 +80,7 @@ public:
 		return baseUrl;
 	}
 
-	void setBaseUrl(const juce::String& newBaseUrl)
+	void setBaseUrl(const juce::String &newBaseUrl)
 	{
 		std::lock_guard<std::mutex> lock(mutex);
 		if (newBaseUrl.endsWith("/"))
@@ -92,7 +91,6 @@ public:
 		{
 			baseUrl = newBaseUrl + "/api/v1";
 		}
-		DBG("DjIaClient: Base URL updated to: " + baseUrl);
 	}
 
 	CreditsInfo checkCredits(int timeoutMS = 10000)
@@ -126,10 +124,10 @@ public:
 
 			auto url = juce::URL(currentBaseUrl + "/auth/credits/check/vst");
 			auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-				.withStatusCode(&statusCode)
-				.withResponseHeaders(&responseHeaders)
-				.withExtraHeaders(headerString)
-				.withConnectionTimeoutMs(timeoutMS);
+							   .withStatusCode(&statusCode)
+							   .withResponseHeaders(&responseHeaders)
+							   .withExtraHeaders(headerString)
+							   .withConnectionTimeoutMs(timeoutMS);
 
 			auto response = url.createInputStream(options);
 
@@ -162,7 +160,7 @@ public:
 				throw std::runtime_error("Invalid JSON response");
 			}
 		}
-		catch (const std::exception& e)
+		catch (const std::exception &e)
 		{
 			result.success = false;
 			result.errorMessage = e.what();
@@ -171,7 +169,7 @@ public:
 		return result;
 	}
 
-	LoopResponse generateLoop(const LoopRequest& request, double sampleRate, int requestTimeoutMS)
+	LoopResponse generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS)
 	{
 		try
 		{
@@ -196,7 +194,7 @@ public:
 			if (request.keywords.size() > 0)
 			{
 				juce::Array<juce::var> keywordsArray;
-				for (const auto& keyword : request.keywords)
+				for (const auto &keyword : request.keywords)
 				{
 					keywordsArray.add(juce::var(keyword));
 				}
@@ -222,71 +220,60 @@ public:
 
 			if (currentBaseUrl.isEmpty())
 			{
-				DBG("ERROR: Base URL is empty!");
 				throw std::runtime_error("Server URL not configured. Please set server URL in settings.");
 			}
 
 			if (!currentBaseUrl.startsWithIgnoreCase("http"))
 			{
-				DBG("ERROR: Invalid URL format: " + currentBaseUrl);
 				throw std::runtime_error("Invalid server URL format. Must start with http:// or https://");
 			}
 
 			int statusCode = 0;
 			juce::StringPairArray responseHeaders;
 			auto url = juce::URL(currentBaseUrl + "/generate")
-				.withPOSTData(jsonString);
+						   .withPOSTData(jsonString);
 			auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inPostData)
-				.withStatusCode(&statusCode)
-				.withResponseHeaders(&responseHeaders)
-				.withExtraHeaders(headerString)
-				.withConnectionTimeoutMs(requestTimeoutMS);
+							   .withStatusCode(&statusCode)
+							   .withResponseHeaders(&responseHeaders)
+							   .withExtraHeaders(headerString)
+							   .withConnectionTimeoutMs(requestTimeoutMS);
 
 			auto response = url.createInputStream(options);
 			if (!response)
 			{
-				DBG("ERROR: Failed to connect to server");
 				throw std::runtime_error(("Cannot connect to server at " + currentBaseUrl +
-					". Please check: Server is running, URL is correct, Network connection")
-					.toStdString());
+										  ". Please check: Server is running, URL is correct, Network connection")
+											 .toStdString());
 			}
-
-			DBG("HTTP Status Code: " + juce::String(statusCode));
 
 			if (statusCode == 403)
 			{
-				DBG("ERROR: HTTP 403 Forbidden");
 				throw std::runtime_error("Authentication failed: Invalid or expired API key. Please check your credentials.");
 			}
 			else if (statusCode == 401)
 			{
-				DBG("ERROR: HTTP 401 Unauthorized");
 				throw std::runtime_error("Authentication failed: API key required or invalid.");
 			}
 			else if (statusCode == 422)
 			{
-				DBG("ERROR: HTTP 422 Unprocessable Entity");
+
 				throw std::runtime_error("Invalid request: The server could not process your request. Please check your prompt and parameters.");
 			}
 			else if (statusCode == 500)
 			{
-				DBG("ERROR: HTTP 500 Internal Server Error");
 				throw std::runtime_error("Server error: The audio generation service is temporarily unavailable. Please try again later.");
 			}
 			else if (statusCode == 503)
 			{
-				DBG("ERROR: HTTP 503 Service Unavailable");
 				throw std::runtime_error("Service unavailable: All GPU providers are currently busy. Please try again in a few moments.");
 			}
 			else if (statusCode != 200)
 			{
-				DBG("ERROR: HTTP " + juce::String(statusCode));
 				throw std::runtime_error("HTTP Error " + std::to_string(statusCode) + ": Request failed.");
 			}
 
 			if (response->isExhausted())
 			{
-				DBG("ERROR: Empty response from server");
 				throw std::runtime_error("Server returned empty response. Server may be overloaded or misconfigured.");
 			}
 
@@ -299,7 +286,6 @@ public:
 			}
 			else
 			{
-				DBG("ERROR: Cannot create temp file");
 				throw std::runtime_error("Cannot create temporary file for audio data.");
 			}
 			result.duration = request.generationDuration;
@@ -325,21 +311,12 @@ public:
 			if (detectedBpmStr.isNotEmpty())
 			{
 				result.detectedBpm = detectedBpmStr.getFloatValue();
-				DBG("BPM detected server: " + juce::String(result.detectedBpm));
 			}
-			else
-			{
-				DBG("No X-Detected-BPM header from server");
-			}
-
-			DBG("WAV file created: " + result.audioData.getFullPathName() +
-				" (" + juce::String(result.audioData.getSize()) + " bytes)");
 
 			return result;
 		}
-		catch (const std::exception& e)
+		catch (const std::exception &e)
 		{
-			DBG("API Error: " + juce::String(e.what()));
 			LoopResponse emptyResponse;
 			emptyResponse.errorMessage = e.what();
 			return emptyResponse;

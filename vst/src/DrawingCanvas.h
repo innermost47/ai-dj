@@ -561,11 +561,8 @@ public:
 
 	void setState(const CanvasState &state)
 	{
-		DBG("setState called");
-
 		if (!state.imageBase64.isEmpty())
 		{
-			DBG("Restoring image from state");
 			loadFromBase64(state.imageBase64);
 		}
 		resetHistory();
@@ -609,11 +606,6 @@ public:
 		}
 
 		repaint();
-
-		DBG("State restored - brush type: " << state.brushType
-											<< ", size: " << state.brushSize
-											<< ", color: " << state.brushColor.toString()
-											<< ", keywords: " << selectedKeywords.joinIntoString(", "));
 	}
 
 	std::function<void(const juce::String &)> onGenerate;
@@ -839,15 +831,11 @@ private:
 		if (selectedKeywords.contains(keyword))
 		{
 			selectedKeywords.removeString(keyword);
-			DBG("Keyword deselected: " + keyword);
 		}
 		else
 		{
 			selectedKeywords.add(keyword);
-			DBG("Keyword selected: " + keyword);
 		}
-
-		DBG("Selected keywords: " + selectedKeywords.joinIntoString(", "));
 	}
 
 	bool isKeywordValid(const juce::String &keyword) const
@@ -900,8 +888,6 @@ private:
 		keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonSuccess);
 		juce::Timer::callAfterDelay(500, [this]()
 									{ keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
-
-		DBG("Custom keyword added: " + newKeyword);
 	}
 
 	bool isGenerating = false;
@@ -924,14 +910,8 @@ private:
 				swatch->setToggleState(true, juce::dontSendNotification);
 				selectedColorSwatch = swatch;
 				colorFound = true;
-				DBG("Color swatch selected: " << currentColor.toString());
 				break;
 			}
-		}
-
-		if (!colorFound)
-		{
-			DBG("Warning: No matching color swatch found for " << currentColor.toString());
 		}
 
 		for (auto *swatch : colorSwatches)
@@ -1077,7 +1057,6 @@ private:
 			b->onClick = [this, c]()
 			{
 				currentColor = c;
-				DBG("Color changed to: " << c.toString());
 			};
 
 			colorSwatches.add(b);

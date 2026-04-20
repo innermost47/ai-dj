@@ -47,11 +47,8 @@ public:
 		stableAudioEngine = std::make_unique<StableAudioEngine>();
 		if (!stableAudioEngine->initialize(stableAudioDir.getFullPathName()))
 		{
-			DBG("Failed to initialize Stable Audio engine");
 			return false;
 		}
-
-		DBG("OBSIDIAN Neural engines ready!");
 		return true;
 	}
 
@@ -93,7 +90,6 @@ private:
 				response.bpm = request.bpm;
 				response.optimizedPrompt = optimizedPrompt;
 				response.stemsUsed = request.preferredStems;
-				DBG("Generation successful! Duration: " << response.actualDuration << "s");
 			}
 			else
 			{
