@@ -843,30 +843,30 @@ void DjIaVstProcessor::sendFullStateFeedback()
 
 void DjIaVstProcessor::previewTrack(const juce::String& trackId)
 {
-	if (!currentPreviewTrackId.isEmpty() && currentPreviewTrackId != trackId)
+	TrackData* track = trackManager.getTrack(trackId);
+	if (!track || track->numSamples <= 0)
+		return;
+
+	if (track->isPreviewMode.load())
+		return;
+
+	if (track->isPlaying.load())
 	{
-		stopTrackPreview(currentPreviewTrackId);
+		return;
 	}
 
-	TrackData* track = trackManager.getTrack(trackId);
-	if (track && track->numSamples > 0)
+
+	track->readPosition = 0.0;
+	track->isPlaying.store(true);
+	track->isPreviewMode.store(true);
+	track->previewEndPending.store(false);
+	needsUIUpdate = true;
+
+	if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 	{
-		track->readPosition = 0.0;
-		track->isPlaying.store(true);
-		track->isPreviewMode.store(true);
-		track->previewEndPending.store(false);
-		needsUIUpdate = true;
-
-		currentPreviewTrackId = trackId;
-
-		if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
-		{
-			auto* trackComp = editor->getTrackComponent(trackId);
-			if (trackComp)
-			{
-				trackComp->setPreviewPlaying(true);
-			}
-		}
+		auto* trackComp = editor->getTrackComponent(trackId);
+		if (trackComp)
+			trackComp->setPreviewPlaying(true);
 	}
 }
 
@@ -4185,24 +4185,16 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 		track->previewEndPending.store(false);
 	}
 
-	if (currentPreviewTrackId == trackId)
-	{
-		currentPreviewTrackId = "";
-	}
-
 	if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
 	{
 		auto* trackComp = editor->getTrackComponent(trackId);
 		if (trackComp)
-		{
 			trackComp->setPreviewPlaying(false);
-		}
 	}
 }
 
 void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
 {
-	DBG("FEEDBACK OUT -> CC: " << cc << " | Val: " << value);
 	juce::ScopedLock lock(feedbackMidiLock);
 	feedbackMidiBuffer.addEvent(
 		juce::MidiMessage::controllerEvent(MidiMapping::feedbackChannel + 1, cc, value),
