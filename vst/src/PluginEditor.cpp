@@ -858,9 +858,10 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(logoComponent);
 
 	addAndMakeVisible(masterWaveformDisplay);
-	audioProcessor.onMasterOutput = [this](const float* l, const float* r, int n)
+	audioProcessor.onMasterOutput = [this](const float* l, const float* r, int n, double ppq)
 		{
 			masterWaveformDisplay.pushSamples(l, r, n);
+			masterWaveformDisplay.setPositionInBeats(ppq);
 		};
 
 	auto setupControlBtn = [](IconButtonSimple& btn)

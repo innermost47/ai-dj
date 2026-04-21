@@ -524,9 +524,21 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 		}
 	}
 	if (onMasterOutput)
+	{
+		double ppq = 0.0;
+		if (auto* ph = getPlayHead())
+		{
+			if (auto info = ph->getPosition())
+			{
+				if (auto p = info->getPpqPosition())
+					ppq = *p;
+			}
+		}
 		onMasterOutput(buffer.getReadPointer(0),
 			buffer.getNumChannels() > 1 ? buffer.getReadPointer(1) : nullptr,
-			buffer.getNumSamples());
+			buffer.getNumSamples(),
+			ppq);
+	}
 	checkIfUIUpdateNeeded(midiMessages);
 }
 
