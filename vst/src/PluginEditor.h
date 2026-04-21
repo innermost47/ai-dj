@@ -8,6 +8,7 @@
 #include "MidiMappingEditorWindow.h"
 #include "LCDScreen.h"
 #include "IconButton.h"
+#include "MasterWaveformDisplay.h"
 
 class SequencerComponent;
 
@@ -74,6 +75,7 @@ public:
 private:
 	DjIaVstProcessor& audioProcessor;
 	CustomLookAndFeel customLookAndFeel;
+	MasterWaveformDisplay masterWaveformDisplay;
 	juce::Image logoImage;
 	juce::ImageComponent logoComponent;
 	juce::Image bannerImage;
@@ -89,7 +91,6 @@ private:
 		QWERTZ
 	};
 	KeyboardLayout detectKeyboardLayout();
-	juce::TextButton openMidiEditorButton;
 	MidiMappingEditorWindow* midiEditorWindow = nullptr;
 
 	void visibilityChanged() override;
@@ -124,7 +125,6 @@ private:
 	void checkForUpdates();
 	void layoutControlPanel(juce::Rectangle<int> area, int spacing);
 	void layoutTracksGrid();
-
 	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
 	bool keyPressed(const juce::KeyPress& key) override;
 
@@ -135,6 +135,12 @@ private:
 	std::atomic<bool> isGenerating{ false };
 	std::atomic<bool> wasGenerating{ false };
 	std::atomic<bool> isInitialized{ false };
+
+	IconButtonSimple autoLoadButton{ "AutoLoad", "" };
+	IconButtonSimple loadSampleButton{ "LoadSample", "" };
+	IconButtonSimple bypassSequencerButton{ "BypassSeq", "" };
+	IconButtonSimple configButton{ "Config", "" };
+	IconButtonSimple openMidiEditorButton{ "MidiEditor", "" };
 
 	juce::String generatingTrackId;
 	juce::String originalButtonText;
@@ -164,7 +170,6 @@ private:
 	juce::Label bpmLabel;
 	juce::ComboBox keySelector;
 	IconButton generateButton{ "GenerateBtn", "GEN" };
-	juce::TextButton configButton;
 	juce::TextButton resetUIButton;
 	juce::Label serverUrlLabel;
 	juce::TextEditor serverUrlInput;
@@ -173,8 +178,6 @@ private:
 	juce::TextButton playButton;
 	juce::Slider durationSlider;
 	juce::Label durationLabel;
-	juce::TextButton  autoLoadButton;
-	juce::TextButton loadSampleButton;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::TextButton testMidiButton;
@@ -182,7 +185,7 @@ private:
 	juce::Component tracksContainer;
 	juce::TextButton addTrackButton;
 	juce::Label tracksLabel;
-	juce::TextButton  bypassSequencerButton;
+
 
 	MidiLearnableButton nextTrackButton;
 	MidiLearnableButton prevTrackButton;

@@ -95,6 +95,7 @@ DjIaVstEditor::~DjIaVstEditor()
 {
 	isBeingDestroyed.store(true);
 	stopTimer();
+	audioProcessor.onMasterOutput = nullptr;
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
 	audioProcessor.setGenerationListener(nullptr);
@@ -765,21 +766,21 @@ void DjIaVstEditor::setupUI()
 	generateButton.loadIcon(BinaryData::zap_svg, BinaryData::zap_svgSize);
 
 	addAndMakeVisible(configButton);
-	configButton.setButtonText("Settings");
+	configButton.loadIcon(BinaryData::gear_svg, BinaryData::gear_svgSize);
 	configButton.setTooltip("Configure settings globally");
-	configButton.onClick = [this]()
-		{ showConfigDialog(); };
+	configButton.onClick = [this]() { showConfigDialog(); };
 
 	addAndMakeVisible(autoLoadButton);
-	autoLoadButton.setButtonText("Auto-Load\nMode");
+	autoLoadButton.loadIcon(BinaryData::refresh_svg, BinaryData::refresh_svgSize);
 	autoLoadButton.setClickingTogglesState(true);
 	autoLoadButton.setToggleState(audioProcessor.getAutoLoadEnabled(), juce::dontSendNotification);
 	autoLoadButton.setTooltip("Toggle between automatic and manual sample loading");
-	autoLoadButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonWarning.darker(0.3f));
 
 	addAndMakeVisible(loadSampleButton);
-	loadSampleButton.setButtonText("Load\nSample");
+	loadSampleButton.loadIcon(BinaryData::upload_svg, BinaryData::upload_svgSize);
 	loadSampleButton.setEnabled(!audioProcessor.getAutoLoadEnabled());
+	loadSampleButton.setTooltip("Manually load pending generated sample");
+
 
 	addAndMakeVisible(tracksLabel);
 	tracksLabel.setText("Tracks:", juce::dontSendNotification);
@@ -821,11 +822,10 @@ void DjIaVstEditor::setupUI()
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
 	addAndMakeVisible(bypassSequencerButton);
-	bypassSequencerButton.setButtonText("Sequencer\nMode");
+	bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
 	bypassSequencerButton.setClickingTogglesState(true);
 	bypassSequencerButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
 	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
-	bypassSequencerButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
 
 	promptPresetSelector.setTooltip("Select a preset prompt (Right-click for MIDI learn, Ctrl+Right-click to edit custom prompts)");
 	promptInput.setTooltip("Enter your custom prompt for audio generation");
@@ -846,15 +846,37 @@ void DjIaVstEditor::setupUI()
 		sampleBankPanel->setVisible(false);
 	}
 
-	openMidiEditorButton.setButtonText("Edit\nMappings");
-	openMidiEditorButton.setTooltip("Open MIDI mappings editor");
 	addAndMakeVisible(openMidiEditorButton);
+	openMidiEditorButton.loadIcon(BinaryData::piano_svg, BinaryData::piano_svgSize);
+	openMidiEditorButton.setTooltip("Open MIDI mappings editor");
+
 	addAndMakeVisible(lcdScreen);
 
 	logoComponent.setImage(logoImage);
 	logoComponent.setImagePlacement(
 		juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
 	addAndMakeVisible(logoComponent);
+
+	addAndMakeVisible(masterWaveformDisplay);
+	audioProcessor.onMasterOutput = [this](const float* l, const float* r, int n)
+		{
+			masterWaveformDisplay.pushSamples(l, r, n);
+		};
+
+	auto setupControlBtn = [](IconButtonSimple& btn)
+		{
+			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+			btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
+			btn.setHasAccentBar(true);
+		};
+
+	setupControlBtn(bypassSequencerButton);
+	setupControlBtn(autoLoadButton);
+	setupControlBtn(loadSampleButton);
+	setupControlBtn(openMidiEditorButton);
+	setupControlBtn(configButton);
 
 	refreshTrackComponents();
 	addEventListeners();
@@ -986,16 +1008,12 @@ void DjIaVstEditor::addEventListeners()
 				bypassSequencerButton.setButtonText("Composition Mode");
 				statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
 				updateLCD();
-				bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-					ColourPalette::buttonWarning.darker(0.3f));
 			}
 			else
 			{
 				bypassSequencerButton.setButtonText("Sequencer Mode");
 				statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
 				updateLCD();
-				bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-					ColourPalette::buttonPrimary);
 			}
 		};
 
@@ -1162,14 +1180,10 @@ void DjIaVstEditor::updateUIFromProcessor()
 	if (autoLoadOn)
 	{
 		autoLoadButton.setButtonText("Auto-Load Mode");
-		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
 		autoLoadButton.setButtonText("Manual Mode");
-		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonPrimary);
 	}
 
 	bool bypassOn = audioProcessor.getBypassSequencer();
@@ -1178,14 +1192,10 @@ void DjIaVstEditor::updateUIFromProcessor()
 	if (bypassOn)
 	{
 		bypassSequencerButton.setButtonText("Composition Mode");
-		bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
 		bypassSequencerButton.setButtonText("Sequencer Mode");
-		bypassSequencerButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonPrimary);
 	}
 
 	int presetIndex = audioProcessor.getLastPresetIndex();
@@ -1321,36 +1331,26 @@ void DjIaVstEditor::resized()
 
 void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
 {
-	const int lcdHeight = juce::jlimit(60, 90, area.getHeight() / 3);
-	auto lcdArea = area.removeFromTop(lcdHeight);
+	auto waveArea = area.removeFromTop(area.getHeight() - 75 - spacing - 30);
+	masterWaveformDisplay.setBounds(waveArea);
+
 	area.removeFromTop(spacing);
 
+	auto lcdArea = area.removeFromTop(60);
 	lcdScreen.setBounds(lcdArea);
 
-	const int cols = 2;
-	const int rows = 3;
-	const int btnSpacing = 4;
-	const int maxBtnW = 75;
-	const int maxBtnH = 42;
-
-	const int cellW = juce::jmin(maxBtnW, (area.getWidth() - btnSpacing * (cols - 1)) / cols);
-	const int cellH = juce::jmin(maxBtnH, (area.getHeight() - btnSpacing * (rows - 1)) / rows);
-
-	const int gridW = cellW * cols + btnSpacing * (cols - 1);
-	const int offsetX = (area.getWidth() - gridW) / 2;
-
-	auto placeButton = [&](juce::Component& comp, int col, int row)
-		{
-			int x = area.getX() + offsetX + col * (cellW + btnSpacing);
-			int y = area.getY() + row * (cellH + btnSpacing);
-			comp.setBounds(x, y, cellW, cellH);
-		};
-
-	placeButton(bypassSequencerButton, 0, 0);
-	placeButton(autoLoadButton, 1, 0);
-	placeButton(loadSampleButton, 0, 1);
-	placeButton(openMidiEditorButton, 1, 1);
-	placeButton(configButton, 0, 2);
+	area.removeFromBottom(10);
+	int btnW = (area.getWidth() - spacing * 4) / 5;
+	auto btnRow = area.removeFromBottom(32);
+	bypassSequencerButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
+	btnRow.removeFromLeft(spacing);
+	autoLoadButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
+	btnRow.removeFromLeft(spacing);
+	loadSampleButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
+	btnRow.removeFromLeft(spacing);
+	openMidiEditorButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
+	btnRow.removeFromLeft(spacing);
+	configButton.setBounds(btnRow.reduced(1));
 }
 
 void DjIaVstEditor::updateLCD()
@@ -1828,8 +1828,6 @@ void DjIaVstEditor::onAutoLoadToggled()
 		updateLCD();
 		loadSampleButton.setButtonText("Load\nSample");
 		loadSampleButton.setEnabled(false);
-		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonWarning.darker(0.3f));
 	}
 	else
 	{
@@ -1838,8 +1836,6 @@ void DjIaVstEditor::onAutoLoadToggled()
 		updateLCD();
 		loadSampleButton.setEnabled(true);
 		updateLoadButtonState();
-		autoLoadButton.setColour(juce::TextButton::buttonColourId,
-			ColourPalette::buttonPrimary);
 	}
 }
 

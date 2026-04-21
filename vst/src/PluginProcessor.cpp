@@ -523,6 +523,10 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 				isPreviewPlaying = false;
 		}
 	}
+	if (onMasterOutput)
+		onMasterOutput(buffer.getReadPointer(0),
+			buffer.getNumChannels() > 1 ? buffer.getReadPointer(1) : nullptr,
+			buffer.getNumSamples());
 	checkIfUIUpdateNeeded(midiMessages);
 }
 

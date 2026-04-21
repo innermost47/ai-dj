@@ -31,6 +31,7 @@ public:
 
 	std::function<void()> onUIUpdateNeeded;
 	std::function<void(double)> onHostBpmChanged = nullptr;
+	std::function<void(const float*, const float*, int)> onMasterOutput;
 
 	juce::AudioProcessorEditor* createEditor() override;
 	juce::AudioFormatManager sharedFormatManager;
