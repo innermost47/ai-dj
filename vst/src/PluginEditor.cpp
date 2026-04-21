@@ -15,7 +15,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 {
 	setResizable(true, true);
 	setResizeLimits(1100, 800, 2400, 1600);
-	setSize(1480, 800);
+	setSize(1500, 800);
 	setScaleFactor(1.0f);
 	setLookAndFeel(&customLookAndFeel);
 	ObsidianAlertManager::initialize();

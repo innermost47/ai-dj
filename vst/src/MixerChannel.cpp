@@ -798,16 +798,16 @@ void MixerChannel::resized()
 
 	area.removeFromTop(3);
 
-	const int knobColumnWidth = juce::jmin(45, width / 3);
+	const int knobColumnWidth = juce::jmin(60, width * 2 / 5);
 	auto knobsColumn = area.removeFromRight(knobColumnWidth);
 	area.removeFromRight(8);
 
 	int sliderBottom = getHeight() - 10;
 	int sliderTop = area.getY();
 	sliderBounds = juce::Rectangle<int>(
-		area.getX() + area.getWidth() / 4,
+		area.getX(),
 		sliderTop,
-		area.getWidth() / 2,
+		area.getWidth() * 3 / 4,
 		sliderBottom - sliderTop);
 	volumeSlider.setBounds(sliderBounds);
 
@@ -817,7 +817,7 @@ void MixerChannel::resized()
 			label.setBounds(secArea.removeFromTop(11));
 			knob.setBounds(secArea.reduced(1));
 		};
-
+	knobsColumn.removeFromTop(5);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), pitchLabel, pitchKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), fineLabel, fineKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), panLabel, panKnob);

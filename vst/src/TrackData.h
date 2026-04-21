@@ -56,27 +56,29 @@ struct TrackPage
 	std::atomic<bool> isLoaded{ false };
 	std::atomic<bool> isLoading{ false };
 
-	TrackPage() = default;
+	TrackPage() : generationBpm(126.0f) {}
 
 	TrackPage(const TrackPage& other)
+		: audioBuffer(other.audioBuffer)
+		, audioFilePath(other.audioFilePath)
+		, prompt(other.prompt)
+		, selectedPrompt(other.selectedPrompt)
+		, generationPrompt(other.generationPrompt)
+		, generationKey(other.generationKey)
+		, selectedModel(other.selectedModel)
+		, numSamples(other.numSamples)
+		, generationDuration(other.generationDuration)
+		, sampleRate(other.sampleRate)
+		, loopStart(other.loopStart)
+		, loopEnd(other.loopEnd)
+		, stagingOriginalBpm(other.stagingOriginalBpm)
+		, bpm(other.bpm)
+		, originalBpm(other.originalBpm)
+		, generationBpm(other.generationBpm)
+		, originalStagingBuffer(other.originalStagingBuffer)
 	{
-		audioBuffer = other.audioBuffer;
-		audioFilePath = other.audioFilePath;
-		numSamples = other.numSamples;
-		sampleRate = other.sampleRate;
-		originalBpm = other.originalBpm;
-		prompt = other.prompt;
-		selectedPrompt = other.selectedPrompt;
-		generationPrompt = other.generationPrompt;
-		generationBpm = other.generationBpm;
-		generationKey = other.generationKey;
-		generationDuration = other.generationDuration;
-		selectedModel = other.selectedModel;
-		loopStart = other.loopStart;
-		loopEnd = other.loopEnd;
 		useOriginalFile = other.useOriginalFile.load();
 		hasOriginalVersion = other.hasOriginalVersion.load();
-		originalStagingBuffer = other.originalStagingBuffer;
 		isLoaded = other.isLoaded.load();
 		isLoading = other.isLoading.load();
 	}
@@ -258,18 +260,18 @@ struct TrackData
 		}
 	}
 
-	TrackData() : trackId(juce::Uuid().toString())
+	TrackData()
+		: trackId(juce::Uuid().toString())
+		, generationDuration(6)
+		, generationBpm(126.0f)
+		, volume(0.8f)
+		, pan(0.0f)
+		, readPosition(0.0)
+		, bpmOffset(0.0)
+		, onPlayStateChanged(nullptr)
 	{
-		volume = 0.8f;
-		pan = 0.0f;
-		readPosition = 0.0;
-		bpmOffset = 0.0;
-		onPlayStateChanged = nullptr;
-
 		for (int i = 0; i < 4; ++i)
-		{
 			pages[i].reset();
-		}
 	}
 
 	~TrackData()
