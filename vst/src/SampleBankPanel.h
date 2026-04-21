@@ -1,11 +1,11 @@
 ﻿#pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 #include "SampleBank.h"
 #include "ColourPalette.h"
 
 class DjIaVstProcessor;
 
-class SampleBankItem : public juce::Component, public juce::DragAndDropContainer
+class SampleBankItem : public ObsidianComponent, public juce::DragAndDropContainer
 {
 public:
 	SampleBankItem(SampleBankEntry* entry, DjIaVstProcessor& processor);

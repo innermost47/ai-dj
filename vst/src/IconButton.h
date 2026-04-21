@@ -12,6 +12,12 @@ public:
 	{
 		setName(name);
 		setButtonText(label);
+		setAccessible(false);
+	}
+
+	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+	{
+		return createIgnoredAccessibilityHandler(*this);
 	}
 
 	void setIconPath(const juce::Path& path) { iconPath = path; repaint(); }

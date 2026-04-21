@@ -1,10 +1,10 @@
 #pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 
 class DjIaVstProcessor;
 struct TrackData;
 
-class WaveformDisplay : public juce::Component, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
+class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
 {
 public:
 	WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData);

@@ -183,7 +183,7 @@ target_compile_definitions(ObsidianNeuralVST
         JUCE_ENABLE_DPI_AWARENESS=1     
         JUCE_DIRECTWRITE=1             
         JUCE_SUPPORT_RETINA=1           
-        JUCE_USE_DIRECTWRITE=1        
+        JUCE_USE_DIRECTWRITE=1
         
     PUBLIC
         JUCE_WEB_BROWSER=0

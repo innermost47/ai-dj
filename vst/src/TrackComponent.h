@@ -1,5 +1,5 @@
 #pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 #include "TrackManager.h"
 #include "MidiLearnableComponents.h"
 #include "ColourPalette.h"
@@ -28,12 +28,12 @@ public:
 	}
 };
 
-class TrackComponent : public juce::Component, public juce::Timer, public juce::AudioProcessorParameter::Listener, public juce::DragAndDropTarget
+class TrackComponent : public ObsidianComponent, public juce::Timer, public juce::AudioProcessorParameter::Listener, public juce::DragAndDropTarget
 {
 public:
 	TrackComponent(const juce::String& trackId, DjIaVstProcessor& processor);
 	~TrackComponent();
-	juce::String getTrackId() const
+	const juce::String& getTrackId() const
 	{
 		return trackId;
 	}

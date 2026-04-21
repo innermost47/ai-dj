@@ -1,9 +1,9 @@
 #pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 #include "PluginProcessor.h"
 #include "MidiLearnableComponents.h"
 
-class MasterChannel : public juce::Component, public juce::AudioProcessorParameter::Listener
+class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParameter::Listener
 {
 public:
 	MasterChannel(DjIaVstProcessor& processor);

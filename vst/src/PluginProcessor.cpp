@@ -3779,13 +3779,11 @@ void DjIaVstProcessor::updateSequencers(bool hostIsPlaying)
 				juce::Component::SafePointer<DjIaVstEditor> safeEditor(editor);
 				juce::MessageManager::callAsync([safeEditor, trackId]()
 					{
-						if (safeEditor.getComponent() != nullptr)
-						{
-							if (auto* sequencer = static_cast<SequencerComponent*>(safeEditor->getSequencerForTrack(trackId)))
-							{
-								sequencer->updateFromTrackData();
-							}
-						} });
+						if (safeEditor.getComponent() == nullptr) return;
+						if (safeEditor->isBeingDestroyed.load()) return;
+						if (auto* sequencer = static_cast<SequencerComponent*>(safeEditor->getSequencerForTrack(trackId)))
+							sequencer->updateFromTrackData();
+					});
 			}
 		}
 	}
@@ -3831,6 +3829,7 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 					{
 						for (auto& trackComp : editor->getTrackComponents())
 						{
+							if (editor->isBeingDestroyed.load()) return;
 							if (trackComp->getTrackId() == trackId)
 							{
 								trackComp->performPageChange(targetPage);
@@ -3846,7 +3845,6 @@ void DjIaVstProcessor::handleAdvanceStep(TrackData* track, bool hostIsPlaying)
 							t->setCurrentPage(targetPage);
 							t->pageChangePending = false;
 							t->pendingPageIndex = -1;
-							DBG("Page changed without UI at measure boundary: " << (char)('A' + targetPage));
 						}
 					}
 					notifyPageChangedFeedback(slotNumber, targetPage); });

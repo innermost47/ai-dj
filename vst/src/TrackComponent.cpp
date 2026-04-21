@@ -15,14 +15,41 @@ TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& pr
 
 TrackComponent::~TrackComponent()
 {
+	setVisible(false);
+	isDestroyed.store(true);
+	stopTimer();
+
+	for (int i = 0; i < 4; ++i)
+	{
+		pageButtons[i].setLookAndFeel(nullptr);
+		pageButtons[i].onClick = nullptr;
+		pageButtons[i].onMidiLearn = nullptr;
+		pageButtons[i].onMidiRemove = nullptr;
+	}
+
+	drawButton.setLookAndFeel(nullptr);
+	generateButton.setLookAndFeel(nullptr);
+	previewButton.setLookAndFeel(nullptr);
+	originalSyncButton.setLookAndFeel(nullptr);
+	randomRetriggerButton.setLookAndFeel(nullptr);
+	randomDurationToggle.setLookAndFeel(nullptr);
+	intervalKnob.setLookAndFeel(nullptr);
+	trackNumberButton.setLookAndFeel(nullptr);
+	promptPresetSelector.setLookAndFeel(nullptr);
+
+	sequencer.reset();
+	waveformDisplay.reset();
+	drawingCanvas.reset();
+
+	removeAllChildren();
+
 	if (track && track->slotIndex != -1)
 	{
 		removeListener("Generate");
 		removeListener("RandomRetrigger");
 		removeListener("RetriggerInterval");
 	}
-	isDestroyed.store(true);
-	stopTimer();
+
 	track = nullptr;
 }
 

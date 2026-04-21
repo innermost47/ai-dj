@@ -519,7 +519,10 @@ SampleBankPanel::SampleBankPanel(DjIaVstProcessor& processor)
 
 SampleBankPanel::~SampleBankPanel()
 {
+	stopTimer();
 	stopPreview();
+	sampleListBox.setVisible(false);
+	sampleListBox.setModel(nullptr);
 	if (auto* bank = audioProcessor.getSampleBank())
 		bank->onBankChanged = nullptr;
 }

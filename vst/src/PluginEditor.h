@@ -13,6 +13,12 @@ class SequencerComponent;
 class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::Timer, public DjIaVstProcessor::GenerationListener, public juce::DragAndDropContainer
 {
 public:
+
+	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+	{
+		return createIgnoredAccessibilityHandler(*this);
+	}
+
 	explicit DjIaVstEditor(DjIaVstProcessor&);
 
 	~DjIaVstEditor() override;
@@ -30,6 +36,8 @@ public:
 	juce::StringArray getBuiltInPrompts() const { return promptPresets; }
 
 	juce::Label statusLabel;
+
+	std::atomic<bool> isBeingDestroyed{ false };
 
 	TrackComponent* getTrackComponent(const juce::String& trackId);
 

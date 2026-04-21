@@ -1,11 +1,11 @@
 #pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 #include "MidiLearnableComponents.h"
 #include "CustomLookAndFeel.h"
 
 class DjIaVstProcessor;
 
-class SequencerComponent : public juce::Component
+class SequencerComponent : public ObsidianComponent
 {
 public:
 	SequencerComponent(const juce::String& trackId, DjIaVstProcessor& processor);

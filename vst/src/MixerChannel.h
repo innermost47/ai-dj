@@ -1,5 +1,5 @@
 #pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 #include "PluginProcessor.h"
 #include "MidiLearnableComponents.h"
 
@@ -9,7 +9,7 @@ struct StereoLevel
 	float right;
 };
 
-class MixerChannel : public juce::Component, public juce::Timer, public juce::AudioProcessorParameter::Listener
+class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::AudioProcessorParameter::Listener
 {
 public:
 	MixerChannel(const juce::String& trackId, DjIaVstProcessor& processor, TrackData* trackData);

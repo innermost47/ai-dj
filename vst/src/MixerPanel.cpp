@@ -18,6 +18,12 @@ MixerPanel::MixerPanel(DjIaVstProcessor& processor) : audioProcessor(processor)
 
 MixerPanel::~MixerPanel()
 {
+	for (auto& channel : mixerChannels)
+		if (channel) channel->setVisible(false);
+	mixerChannels.clear();
+
+	if (masterChannel)
+		masterChannel->setVisible(false);
 }
 
 void MixerPanel::updateTrackName(const juce::String& trackId, const juce::String& newName)

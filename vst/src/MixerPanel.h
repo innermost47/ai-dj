@@ -1,11 +1,11 @@
 #pragma once
-#include "JuceHeader.h"
+#include "ObsidianBase.h"
 
 class MixerChannel;
 class DjIaVstProcessor;
 class MasterChannel;
 
-class MixerPanel : public juce::Component
+class MixerPanel : public ObsidianComponent
 {
 public:
 	MixerPanel(DjIaVstProcessor& processor);

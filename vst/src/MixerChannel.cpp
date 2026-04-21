@@ -17,6 +17,7 @@ MixerChannel::MixerChannel(const juce::String& trackId, DjIaVstProcessor& proces
 
 void MixerChannel::cleanup()
 {
+	setVisible(false);
 	isDestroyed.store(true);
 
 	isGenerating = false;

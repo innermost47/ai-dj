@@ -12,9 +12,23 @@ SequencerComponent::SequencerComponent(const juce::String& trackId, DjIaVstProce
 
 SequencerComponent::~SequencerComponent()
 {
+	setVisible(false);
+
+	removeChildComponent(&measureSlider);
+	removeChildComponent(&prevMeasureButton);
+	removeChildComponent(&nextMeasureButton);
+	removeChildComponent(&measureLabel);
+	removeChildComponent(&currentPlayingMeasureLabel);
+	for (int i = 0; i < 8; ++i)
+		removeChildComponent(&sequenceButtons[i]);
+
+	measureSlider.setLookAndFeel(nullptr);
 	prevMeasureButton.setLookAndFeel(nullptr);
 	nextMeasureButton.setLookAndFeel(nullptr);
 	currentPlayingMeasureLabel.setLookAndFeel(nullptr);
+
+	for (int i = 0; i < 8; ++i)
+		sequenceButtons[i].setLookAndFeel(nullptr);
 }
 
 void SequencerComponent::setupUI()
@@ -37,8 +51,12 @@ void SequencerComponent::setupUI()
 		{
 			isEditing = true;
 			setNumMeasures((int)measureSlider.getValue());
-			juce::Timer::callAfterDelay(500, [this]()
-				{ isEditing = false; });
+			auto safe = juce::Component::SafePointer<SequencerComponent>(this);
+			juce::Timer::callAfterDelay(500, [safe]() mutable
+				{
+					if (safe != nullptr)
+						safe->isEditing = false;
+				});
 		};
 
 	addAndMakeVisible(prevMeasureButton);

@@ -8,7 +8,7 @@
 WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData) : audioProcessor(processor), track(trackData)
 {
 	setSize(400, 80);
-
+	setAccessible(false);
 	zoomFactor = 1.0;
 	viewStartTime = 0.0;
 	sampleRate = 48000.0;
@@ -20,6 +20,7 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackDa
 
 WaveformDisplay::~WaveformDisplay()
 {
+	setVisible(false);
 }
 
 void WaveformDisplay::setSampleBpm(float bpm)
