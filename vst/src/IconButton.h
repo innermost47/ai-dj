@@ -32,8 +32,10 @@ protected:
 
 	static std::unique_ptr<juce::Drawable> loadSVG(const char* data, size_t size)
 	{
-		juce::MemoryInputStream stream(data, size, false);
-		if (auto xml = juce::XmlDocument::parse(juce::String::fromUTF8(data, (int)size)))
+		auto svgString = juce::String::fromUTF8(data, (int)size);
+		svgString = svgString.replace("currentColor", "#000000");
+		auto xml = juce::parseXML(svgString);
+		if (xml != nullptr)
 			return juce::Drawable::createFromSVG(*xml);
 		return nullptr;
 	}
@@ -108,6 +110,9 @@ protected:
 			auto iconBounds = contentArea.reduced(contentArea.getWidth() * marginH,
 				contentArea.getHeight() * marginV);
 			float side = std::min(iconBounds.getWidth(), iconBounds.getHeight());
+
+			if (isCompact) side = std::min(side, 9.0f);
+
 			juce::Rectangle<float> square(iconBounds.getCentreX() - side * 0.5f,
 				iconBounds.getCentreY() - side * 0.5f,
 				side, side);
@@ -131,13 +136,19 @@ protected:
 				for (int i = 0; i < dc->getNumChildComponents(); ++i)
 					if (auto* child = dynamic_cast<juce::DrawablePath*>(dc->getChildComponent(i)))
 					{
-						child->setFill(iconColour);
+						if (child->getFill().isInvisible() || child->getFill().colour.isTransparent())
+							child->setFill(juce::FillType(juce::Colours::transparentBlack));
+						else
+							child->setFill(iconColour);
 						child->setStrokeFill(iconColour);
 					}
 			}
 			if (auto* dp = dynamic_cast<juce::DrawablePath*>(copy.get()))
 			{
-				dp->setFill(juce::FillType(juce::Colours::transparentBlack));
+				if (dp->getFill().isInvisible() || dp->getFill().colour.isTransparent())
+					dp->setFill(juce::FillType(juce::Colours::transparentBlack));
+				else
+					dp->setFill(iconColour);
 				dp->setStrokeFill(iconColour);
 			}
 

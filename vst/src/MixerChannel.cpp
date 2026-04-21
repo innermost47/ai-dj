@@ -4,6 +4,7 @@
 #include "PluginEditor.h"
 #include "ColourPalette.h"
 #include "AiModelDefinitions.h"
+#include "BinaryData.h"
 
 MixerChannel::MixerChannel(const juce::String& trackId, DjIaVstProcessor& processor, TrackData* trackData)
 	: trackId(trackId), audioProcessor(processor), track(nullptr)
@@ -256,7 +257,6 @@ void MixerChannel::updateUIFromParameter(const juce::String& paramName,
 		if (newValue < 0.5 && !track->isCurrentlyPlaying.load())
 		{
 			playButton.setToggleState(false, juce::dontSendNotification);
-			playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
 			playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
 			stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
 		}
@@ -283,7 +283,6 @@ void MixerChannel::updateUIFromParameter(const juce::String& paramName,
 				track->pendingAction = TrackData::PendingAction::None;
 			}
 			playButton.setToggleState(true, juce::dontSendNotification);
-			playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
 			playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::playArmed);
 			stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::stopActive);
 		}
@@ -501,9 +500,10 @@ void MixerChannel::stopTrackImmediatly()
 	track->isPlaying = false;
 	track->isCurrentlyPlaying = false;
 	playButton.setToggleState(false, juce::dontSendNotification);
-	playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
 	playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
 	stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
+	playButton.repaint();
+	stopButton.repaint();
 }
 
 void MixerChannel::timerCallback()
@@ -809,21 +809,21 @@ void MixerChannel::resized()
 	trackNameLabel.setBounds(area.removeFromTop(16));
 	area.removeFromTop(3);
 
-	auto topRow = area.removeFromTop(20);
-	playButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
-	stopButton.setBounds(topRow.removeFromLeft(width / 2 - 2).reduced(2));
+	auto bottomRow2 = area.removeFromBottom(28);
+	muteButton.setBounds(bottomRow2.removeFromLeft(width / 2 - 2).reduced(1));
+	soloButton.setBounds(bottomRow2.removeFromLeft(width / 2 - 2).reduced(1));
 
-	auto bottomRow = area.removeFromTop(20);
-	muteButton.setBounds(bottomRow.removeFromLeft(width / 2 - 2).reduced(2));
-	soloButton.setBounds(bottomRow.removeFromLeft(width / 2 - 2).reduced(2));
+	auto bottomRow1 = area.removeFromBottom(28);
+	playButton.setBounds(bottomRow1.removeFromLeft(width / 2 - 2).reduced(1));
+	stopButton.setBounds(bottomRow1.removeFromLeft(width / 2 - 2).reduced(1));
 
-	area.removeFromTop(3);
+	area.removeFromBottom(3);
 
 	const int knobColumnWidth = juce::jmin(60, width * 2 / 5);
 	auto knobsColumn = area.removeFromRight(knobColumnWidth);
 	area.removeFromRight(8);
 
-	int sliderBottom = getHeight() - 10;
+	int sliderBottom = area.getBottom();
 	int sliderTop = area.getY();
 	sliderBounds = juce::Rectangle<int>(
 		area.getX(),
@@ -985,20 +985,33 @@ void MixerChannel::setupUI()
 		};
 
 	addAndMakeVisible(playButton);
-	playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
+	playButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
+	playButton.loadIconToggled(BinaryData::pause_svg, BinaryData::pause_svgSize);
+	playButton.setHasToggledIcon(true);
+	playButton.setLabelText("");
 	playButton.setClickingTogglesState(true);
 
 	addAndMakeVisible(stopButton);
-	stopButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xA0"));
+	stopButton.loadIcon(BinaryData::square_svg, BinaryData::square_svgSize);
+	stopButton.setLabelText("");
 	stopButton.setClickingTogglesState(false);
 
 	addAndMakeVisible(muteButton);
-	muteButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x95"));
+	muteButton.loadIcon(BinaryData::volume_svg, BinaryData::volume_svgSize);
+	muteButton.loadIconToggled(BinaryData::mute_svg, BinaryData::mute_svgSize);
+	muteButton.setHasToggledIcon(true);
+	muteButton.setLabelText("");
 	muteButton.setClickingTogglesState(true);
 
 	addAndMakeVisible(soloButton);
-	soloButton.setButtonText(juce::String::fromUTF8("\xE2\x97\x8F"));
+	soloButton.loadIcon(BinaryData::headphones_svg, BinaryData::headphones_svgSize);
+	soloButton.setLabelText("");
 	soloButton.setClickingTogglesState(true);
+
+	playButton.setCompactMode(true);
+	stopButton.setCompactMode(true);
+	muteButton.setCompactMode(true);
+	soloButton.setCompactMode(true);
 
 	addAndMakeVisible(volumeSlider);
 	volumeSlider.setRange(0.0, 1.0, 0.01);
@@ -1067,10 +1080,7 @@ void MixerChannel::setTrackName(const juce::String& name)
 
 void MixerChannel::updateButtonColors()
 {
-	if (!track)
-	{
-		return;
-	}
+	if (!track) return;
 
 	bool isArmed = track->isArmed.load();
 	bool isPlaying = track->isCurrentlyPlaying.load();
@@ -1078,37 +1088,32 @@ void MixerChannel::updateButtonColors()
 	bool isSolo = track->isSolo.load();
 
 	playButton.setToggleState(isArmed || isPlaying, juce::dontSendNotification);
-
 	if (isPlaying)
-	{
 		playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::playActive);
-		playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-	}
 	else if (isArmed)
-	{
 		playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::playArmed);
-		playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-	}
 	else
-	{
 		playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
-		playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
-	}
-
-	muteButton.setToggleState(isMuted, juce::dontSendNotification);
-	muteButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::muteActive);
-	muteButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
-	muteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
-	muteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-
-	soloButton.setToggleState(isSolo, juce::dontSendNotification);
-	soloButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::soloActive);
-	soloButton.setColour(juce::TextButton::textColourOnId, ColourPalette::soloText);
-	soloButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
-	soloButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	playButton.repaint();
 
 	stopButton.setColour(juce::TextButton::buttonColourId,
 		(isArmed || isPlaying) ? ColourPalette::stopActive : ColourPalette::buttonInactive);
+	stopButton.repaint();
+
+	muteButton.setToggleState(isMuted, juce::dontSendNotification);
+	muteButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::amber);
+	muteButton.setColour(juce::TextButton::textColourOnId, juce::Colours::black);
+	muteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
+	muteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+
+	muteButton.repaint();
+
+	soloButton.setToggleState(isSolo, juce::dontSendNotification);
+	soloButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::emerald);
+	soloButton.setColour(juce::TextButton::textColourOnId, juce::Colours::black);
+	soloButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
+	soloButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	soloButton.repaint();
 }
 
 void MixerChannel::startGeneratingAnimation()

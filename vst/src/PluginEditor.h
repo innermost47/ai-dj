@@ -136,10 +136,8 @@ private:
 	std::atomic<bool> wasGenerating{ false };
 	std::atomic<bool> isInitialized{ false };
 
-	bool isButtonBlinking = false;
 	juce::String generatingTrackId;
 	juce::String originalButtonText;
-	int blinkCounter = 0;
 
 	juce::StringArray promptPresets = {
 		"Techno kick rhythm",

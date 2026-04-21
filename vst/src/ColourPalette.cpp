@@ -50,7 +50,7 @@ constexpr auto COLOR_SOLO_ACTIVE = 0xffD96850;
 constexpr auto COLOR_SOLO_TEXT = 0xffE8E6E1;
 
 constexpr auto COLOR_CREDITS = 0xff9A9A9E;
-constexpr auto COLOR_SAMPLE_PENDING = COLOR_TEAL;
+constexpr auto COLOR_SAMPLE_PENDING = 0x40aaaaaa;
 
 // === TRACK COLOURS (8 distinct accents for track identity) ===
 constexpr auto COLOR_TRACK1 = 0xffD96850;  // brick (main)

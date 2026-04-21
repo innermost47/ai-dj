@@ -2,6 +2,7 @@
 #include "PluginProcessor.h"
 #include "CategoryWindow.h"
 #include "ObsidianAlertManager.h"
+#include "BinaryData.h"
 
 SampleBankItem::SampleBankItem(SampleBankEntry* entry, DjIaVstProcessor& processor)
 	: sampleEntry(entry), audioProcessor(processor)
@@ -142,6 +143,10 @@ DetailPanel::DetailPanel()
 	metaLabel.setFont(juce::FontOptions(11.0f));
 
 	addAndMakeVisible(playButton);
+	playButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
+	playButton.loadIconToggled(BinaryData::square_svg, BinaryData::square_svgSize);
+	playButton.setHasToggledIcon(true);
+	playButton.setClickingTogglesState(false);
 	playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 	playButton.onClick = [this]()
 		{
@@ -151,13 +156,14 @@ DetailPanel::DetailPanel()
 		};
 
 	addAndMakeVisible(deleteButton);
-	deleteButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x95"));
+	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 	deleteButton.onClick = [this]()
 		{
 			if (entry && onDeleteRequested) onDeleteRequested(entry->id);
 		};
-
+	playButton.setCompactMode(true);
+	deleteButton.setCompactMode(true);
 	setVisible(false);
 }
 
@@ -442,14 +448,15 @@ void DetailPanel::updatePlayButton()
 {
 	if (isPlaying)
 	{
-		playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xA0"));
+		playButton.setToggleState(true, juce::dontSendNotification);
 		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 	}
 	else
 	{
-		playButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
+		playButton.setToggleState(false, juce::dontSendNotification);
 		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 	}
+	playButton.repaint();
 }
 
 juce::String DetailPanel::formatDuration(float s)
@@ -542,8 +549,9 @@ void SampleBankPanel::setupUI()
 	infoLabel.setJustificationType(juce::Justification::centredLeft);
 
 	addAndMakeVisible(cleanupButton);
-	cleanupButton.setButtonText("Clean Unused");
+	cleanupButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	cleanupButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+	cleanupButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	cleanupButton.onClick = [this]() { cleanupUnusedSamples(); };
 
 	addAndMakeVisible(sortMenu);
@@ -583,21 +591,30 @@ void SampleBankPanel::setupUI()
 	categoryInput.setTextToShowWhenEmpty("New category name...", ColourPalette::textSecondary);
 
 	addAndMakeVisible(addCategoryButton);
-	addCategoryButton.setButtonText("+");
+	addCategoryButton.loadIcon(BinaryData::plus_svg, BinaryData::plus_svgSize);
 	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::emerald);
+	addCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+
 	addCategoryButton.onClick = [this]() { addCategory(); };
 
 	addAndMakeVisible(editCategoryButton);
-	editCategoryButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x8E"));
+	editCategoryButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
 	editCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::amber);
+	editCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	editCategoryButton.onClick = [this]() { editCategory(); };
 	editCategoryButton.setEnabled(false);
 
 	addAndMakeVisible(deleteCategoryButton);
-	deleteCategoryButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x95"));
+	deleteCategoryButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	deleteCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+	deleteCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	deleteCategoryButton.onClick = [this]() { deleteCategory(); };
 	deleteCategoryButton.setEnabled(false);
+
+	deleteCategoryButton.setCompactMode(true);
+	editCategoryButton.setCompactMode(true);
+	addCategoryButton.setCompactMode(true);
+	cleanupButton.setCompactMode(true);
 
 	addAndMakeVisible(detailPanel);
 
@@ -622,7 +639,7 @@ void SampleBankPanel::resized()
 
 	auto hdr = area.removeFromTop(28);
 	titleLabel.setBounds(hdr.removeFromLeft(160));
-	cleanupButton.setBounds(hdr.removeFromRight(110).reduced(2));
+	cleanupButton.setBounds(hdr.removeFromRight(34).reduced(2));
 
 	area.removeFromTop(4);
 

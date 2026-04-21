@@ -2,6 +2,7 @@
 #include "ObsidianBase.h"
 #include "SampleBank.h"
 #include "ColourPalette.h"
+#include "IconButton.h"
 
 class DjIaVstProcessor;
 
@@ -78,8 +79,8 @@ private:
 
 	juce::Label nameLabel;
 	juce::Label metaLabel;
-	juce::TextButton playButton{ juce::String::fromUTF8("\xE2\x96\xB6") };
-	juce::TextButton deleteButton{ juce::String::fromUTF8("\xE2\x9C\x95") };
+	IconButtonSimple playButton{ "Play", "" };
+	IconButtonSimple deleteButton{ "Delete", "" };
 
 	juce::Rectangle<int> waveformBounds;
 	std::vector<float> thumbL, thumbR;
@@ -128,15 +129,15 @@ private:
 	DjIaVstProcessor& audioProcessor;
 
 	juce::Label       titleLabel;
-	juce::TextButton  cleanupButton;
+	IconButtonSimple cleanupButton{ "Cleanup", "" };
 	juce::Label       infoLabel;
 	juce::ComboBox    sortMenu;
 
 	juce::ComboBox    categoryFilter;
 	juce::TextEditor  categoryInput;
-	juce::TextButton  addCategoryButton;
-	juce::TextButton  editCategoryButton;
-	juce::TextButton  deleteCategoryButton;
+	IconButtonSimple addCategoryButton{ "AddCategory", "" };
+	IconButtonSimple editCategoryButton{ "EditCategory", "" };
+	IconButtonSimple deleteCategoryButton{ "DeleteCategory", "" };
 
 	juce::ListBox     sampleListBox;
 	static constexpr int ROW_HEIGHT = 28;

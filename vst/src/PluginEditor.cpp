@@ -543,7 +543,6 @@ void DjIaVstEditor::timerCallback()
 			initUI();
 		}
 		bool anyTrackPlaying = false;
-
 		for (auto& trackComp : trackComponents)
 		{
 			if (trackComp->isShowing())
@@ -556,7 +555,6 @@ void DjIaVstEditor::timerCallback()
 				}
 			}
 		}
-
 		if (!anyTrackPlaying)
 		{
 			static int skipFrames = 0;
@@ -565,10 +563,8 @@ void DjIaVstEditor::timerCallback()
 				return;
 			skipFrames = 0;
 		}
-
 		static double lastHostBpm = 0.0;
 		double currentHostBpm = audioProcessor.getHostBpm();
-
 		if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
 		{
 			lastHostBpm = currentHostBpm;
@@ -576,24 +572,7 @@ void DjIaVstEditor::timerCallback()
 			{
 				TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
 				if (track && (track->timeStretchMode == 3 || track->timeStretchMode == 4))
-				{
 					trackComp->updateWaveformWithTimeStretch();
-				}
-			}
-		}
-	}
-	else
-	{
-		if (isButtonBlinking)
-		{
-			blinkCounter++;
-			if (blinkCounter % 3 == 0)
-			{
-				auto currentColor = generateButton.findColour(juce::TextButton::buttonColourId);
-				bool isWarning = (currentColor == ColourPalette::buttonPrimary);
-
-				generateButton.setColour(juce::TextButton::buttonColourId,
-					isWarning ? ColourPalette::buttonSuccess : ColourPalette::buttonPrimary);
 			}
 		}
 	}
@@ -601,24 +580,13 @@ void DjIaVstEditor::timerCallback()
 
 void DjIaVstEditor::startGenerationButtonAnimation()
 {
-	if (!isButtonBlinking)
-	{
-		generateButton.setEnabled(false);
-		generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonWarning);
-		isButtonBlinking = true;
-		blinkCounter = 0;
-	}
+	generateButton.setEnabled(false);
 }
 
 void DjIaVstEditor::stopGenerationButtonAnimation()
 {
-	if (isButtonBlinking)
-	{
-		generateButton.setEnabled(true);
-		generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-		isButtonBlinking = false;
-		generatingTrackId.clear();
-	}
+	generateButton.setEnabled(true);
+	generatingTrackId.clear();
 }
 
 void DjIaVstEditor::setupUI()

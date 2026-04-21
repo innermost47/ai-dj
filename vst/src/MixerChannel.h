@@ -2,6 +2,7 @@
 #include "ObsidianBase.h"
 #include "PluginProcessor.h"
 #include "MidiLearnableComponents.h"
+#include "IconButton.h"
 
 struct StereoLevel
 {
@@ -62,10 +63,10 @@ private:
 
 	juce::Rectangle<int> sliderBounds;
 
-	MidiLearnableButton playButton;
-	juce::TextButton stopButton;
-	MidiLearnableButton muteButton;
-	MidiLearnableButton soloButton;
+	IconButton playButton{ "Play", "PLAY" };
+	IconButtonSimple stopButton{ "Stop", "STOP" };
+	IconButton muteButton{ "Mute", "MUTE" };
+	IconButton soloButton{ "Solo", "SOLO" };
 
 	MidiLearnableSlider volumeSlider;
 

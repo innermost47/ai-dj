@@ -74,17 +74,11 @@ public:
 
 	void drawTooltip(juce::Graphics& g, const juce::String& text, int width, int height) override
 	{
-		juce::Rectangle<float> bounds(0.0f, 0.0f, (float)width, (float)height);
-
-		g.setColour(juce::Colours::black.withAlpha(0.4f));
-		g.fillRoundedRectangle(bounds.translated(0, 2.0f), 4.0f);
-
+		juce::Rectangle<float> bounds(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
 		g.setColour(ColourPalette::backgroundDark);
 		g.fillRoundedRectangle(bounds, 4.0f);
-
-		g.setColour(ColourPalette::textAccent.withAlpha(0.5f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
-
+		g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
+		g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
 		layoutTooltipText(text, ColourPalette::textPrimary)
 			.draw(g, bounds.reduced(8.0f, 4.0f));
 	}
@@ -259,50 +253,58 @@ public:
 		int buttonW, int buttonH,
 		juce::ComboBox& /*box*/) override
 	{
-		auto bounds = juce::Rectangle<int>(0, 0, width, height).toFloat();
-
-		g.setColour(juce::Colours::black.withAlpha(0.3f));
-		g.fillRoundedRectangle(bounds.translated(0, 1.5f), 4.0f);
-
+		auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
 		g.setColour(ColourPalette::backgroundMid);
 		g.fillRoundedRectangle(bounds, 4.0f);
-
-		g.setColour(juce::Colours::white.withAlpha(0.05f));
-		auto topBounds = bounds.withHeight(bounds.getHeight() * 0.4f);
-		g.fillRoundedRectangle(topBounds, 4.0f);
-
-		g.setColour(ColourPalette::backgroundLight.withAlpha(0.6f));
+		g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
 		g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 
 		auto arrowZone = juce::Rectangle<float>((float)buttonX, (float)buttonY, (float)buttonW, (float)buttonH);
 		auto arrowBounds = arrowZone.reduced(4.0f);
-
 		juce::Path arrow;
 		arrow.addTriangle(
 			arrowBounds.getCentreX() - 3.0f, arrowBounds.getCentreY() - 2.0f,
 			arrowBounds.getCentreX() + 3.0f, arrowBounds.getCentreY() - 2.0f,
 			arrowBounds.getCentreX(), arrowBounds.getCentreY() + 2.0f);
-
 		g.setColour(ColourPalette::textSecondary);
 		g.fillPath(arrow);
 	}
 
 	void drawLabel(juce::Graphics& g, juce::Label& label) override
 	{
-		g.fillAll(label.findColour(juce::Label::backgroundColourId));
+		bool isSliderTextBox = (dynamic_cast<juce::Slider*>(label.getParentComponent()) != nullptr);
 
+		if (isSliderTextBox)
+		{
+			auto bounds = label.getLocalBounds().toFloat();
+			g.setColour(ColourPalette::backgroundDark);
+			g.fillRoundedRectangle(bounds, 3.0f);
+			g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
+			g.drawRoundedRectangle(bounds.reduced(0.5f), 3.0f, 0.8f);
+
+			if (!label.isBeingEdited())
+			{
+				auto alpha = label.isEnabled() ? 1.0f : 0.5f;
+				g.setColour(label.findColour(juce::Label::textColourId).withMultipliedAlpha(alpha));
+				g.setFont(label.getFont());
+				auto textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
+				g.drawFittedText(label.getText(), textArea,
+					label.getJustificationType(),
+					juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())),
+					1.0f);
+			}
+			return;
+		}
+
+		g.fillAll(label.findColour(juce::Label::backgroundColourId));
 		if (!label.isBeingEdited())
 		{
 			auto alpha = label.isEnabled() ? 1.0f : 0.5f;
 			auto textColour = label.findColour(juce::Label::textColourId).withMultipliedAlpha(alpha);
-
 			g.setColour(textColour);
 			g.setFont(label.getFont());
-
 			auto textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
-
-			g.drawFittedText(label.getText(),
-				textArea,
+			g.drawFittedText(label.getText(), textArea,
 				label.getJustificationType(),
 				juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())),
 				1.0f);
@@ -382,14 +384,6 @@ public:
 			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ (float)x + (float)width * 0.5f, sliderPos }));
 		else
 			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ sliderPos, (float)y + (float)height * 0.5f }));
-
-		g.setColour(juce::Colours::white.withAlpha(0.15f));
-		if (style == juce::Slider::LinearVertical)
-			g.fillEllipse(juce::Rectangle<float>(thumbWidth * 0.5f, thumbWidth * 0.5f)
-				.withCentre({ (float)x + (float)width * 0.5f, sliderPos - thumbWidth * 0.15f }));
-		else
-			g.fillEllipse(juce::Rectangle<float>(thumbWidth * 0.5f, thumbWidth * 0.5f)
-				.withCentre({ sliderPos, (float)y + (float)height * 0.5f - thumbWidth * 0.15f }));
 	}
 
 	void drawRotarySlider(juce::Graphics& g,
@@ -492,16 +486,10 @@ public:
 
 	void drawPopupMenuBackground(juce::Graphics& g, int width, int height) override
 	{
-		auto area = juce::Rectangle<int>(width, height).toFloat();
-
-		g.setColour(juce::Colours::black.withAlpha(0.4f));
-		g.fillRoundedRectangle(area.translated(0, 2.0f), 4.0f);
-
 		g.setColour(ColourPalette::backgroundDark);
-		g.fillRoundedRectangle(area, 4.0f);
-
-		g.setColour(ColourPalette::textAccent.withAlpha(0.4f));
-		g.drawRoundedRectangle(area.reduced(0.5f), 4.0f, 1.0f);
+		g.fillRect(0, 0, width, height);
+		g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
+		g.drawRect(0, 0, width, height, 1);
 	}
 
 	void drawPopupMenuItem(juce::Graphics& g, const juce::Rectangle<int>& area,
@@ -517,27 +505,23 @@ public:
 			return;
 		}
 
-		auto itemArea = area.toFloat().reduced(2.0f);
-
 		if (isHighlighted && isActive)
 		{
-			g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
-			g.fillRoundedRectangle(itemArea, 3.0f);
+			g.setColour(ColourPalette::trackSelected.withAlpha(0.15f));
+			g.fillRect(area);
 		}
 
 		auto textColour = (textColourToUse != nullptr) ? *textColourToUse : ColourPalette::textPrimary;
 		if (!isActive)
 			textColour = textColour.withAlpha(0.4f);
 
-		g.setColour(textColour);
 		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
 
 		auto r = area.reduced(10, 0);
-
 		if (isTicked)
 		{
 			auto tickArea = r.removeFromLeft(15).toFloat();
-			g.setColour(ColourPalette::buttonPrimary);
+			g.setColour(ColourPalette::trackSelected);
 			g.fillEllipse(tickArea.withSizeKeepingCentre(6, 6));
 		}
 
