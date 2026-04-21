@@ -2,6 +2,7 @@
 #include "ObsidianBase.h"
 #include "MidiLearnableComponents.h"
 #include "CustomLookAndFeel.h"
+#include "IconButton.h"
 
 class DjIaVstProcessor;
 
@@ -26,17 +27,6 @@ public:
 	bool isSequencerPlaying() const { return isPlaying; }
 
 private:
-	struct FlatButtonLF : public CustomLookAndFeel
-	{
-		void drawButtonText(juce::Graphics& g, juce::TextButton& btn,
-			bool, bool) override
-		{
-			g.setColour(btn.findColour(juce::TextButton::textColourOffId));
-			g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
-			g.drawText(btn.getButtonText(), btn.getLocalBounds(),
-				juce::Justification::centred, false);
-		}
-	};
 	struct RoundedLabelLF : public juce::LookAndFeel_V4
 	{
 		float radius = 4.0f;
@@ -51,7 +41,6 @@ private:
 		}
 	};
 	RoundedLabelLF roundedLabelLF;
-	FlatButtonLF flatLF;
 	juce::String trackId;
 	DjIaVstProcessor& audioProcessor;
 
@@ -73,7 +62,8 @@ private:
 
 	juce::Timer* editingTimer = nullptr;
 
-	juce::TextButton prevMeasureButton, nextMeasureButton;
+	IconButtonSimple prevMeasureButton{ "PrevMeasure", "" };
+	IconButtonSimple nextMeasureButton{ "NextMeasure", "" };
 
 	juce::Label measureLabel;
 	juce::Label currentPlayingMeasureLabel;

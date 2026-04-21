@@ -7,6 +7,7 @@
 #include "CustomLookAndFeel.h"
 #include "MidiMappingEditorWindow.h"
 #include "LCDScreen.h"
+#include "IconButton.h"
 
 class SequencerComponent;
 
@@ -159,12 +160,12 @@ private:
 	juce::Label stabilityLabel;
 	juce::Typeface::Ptr customFont;
 	MidiLearnableComboBox promptPresetSelector;
-	juce::TextButton savePresetButton;
+	IconButtonSimple savePresetButton{ "SavePreset", "SAVE" };
 	juce::TextEditor promptInput;
 	juce::ComboBox styleSelector;
 	juce::Label bpmLabel;
 	juce::ComboBox keySelector;
-	MidiLearnableButton generateButton;
+	IconButton generateButton{ "GenerateBtn", "GEN" };
 	juce::TextButton configButton;
 	juce::TextButton resetUIButton;
 	juce::Label serverUrlLabel;

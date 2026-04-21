@@ -5,6 +5,7 @@
 #include "PluginEditor.h"
 #include "ColourPalette.h"
 #include "AiModelDefinitions.h"
+#include "BinaryData.h"
 
 TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& processor)
 	: trackId(trackId), track(nullptr), audioProcessor(processor)
@@ -597,7 +598,7 @@ void TrackComponent::resized()
 	}
 
 	{
-		const int selectorsWidth = 180;
+		const int selectorsWidth = 200;
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 
 		const int selectorHeight = 18;
@@ -623,21 +624,21 @@ void TrackComponent::resized()
 	{
 		const int createButtonWidth = 36;
 		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
-		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+		headerArea.removeFromRight(6);
 
 		drawButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
 	headerArea.removeFromRight(CLUSTER_GAP);
 
 	{
-		const int labelledButtonWidth = 48;
+		const int labelledButtonWidth = 38;
 		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 	}
-	headerArea.removeFromRight(CLUSTER_GAP);
+	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
-	const int iconBtnWidth = 36;
+	const int iconBtnWidth = 38;
 	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
@@ -1467,7 +1468,6 @@ void TrackComponent::setupIconButtons()
 			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonPrimary);
 			btn.setColour(juce::TextButton::textColourOnId, ColourPalette::buttonPrimary);
 		};
-
 	auto setupActionButton = [](IconButton& btn)
 		{
 			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
@@ -1475,14 +1475,14 @@ void TrackComponent::setupIconButtons()
 		};
 
 	addAndMakeVisible(drawButton);
-	drawButton.setIconPath(TrackButtonIcons::draw());
+	drawButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
+	drawButton.setShowBackground(false);
 	setupActionButton(drawButton);
 	drawButton.setTooltip("Draw a visual prompt to guide AI generation (server mode only)");
-	drawButton.onClick = [this]()
-		{ openDrawingCanvas(); };
+	drawButton.onClick = [this]() { openDrawingCanvas(); };
 
 	addAndMakeVisible(generateButton);
-	generateButton.setIconPath(TrackButtonIcons::generate());
+	generateButton.loadIcon(BinaryData::zap_svg, BinaryData::zap_svgSize);
 	generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
 	generateButton.setColour(juce::TextButton::textColourOffId, ColourPalette::backgroundDeep);
 	generateButton.setTooltip("Generate AI audio with current prompt for this track");
@@ -1515,45 +1515,40 @@ void TrackComponent::setupIconButtons()
 		};
 
 	addAndMakeVisible(previewButton);
-	previewButton.setIconPath(TrackButtonIcons::play());
-	previewButton.setIconPathToggled(TrackButtonIcons::stop());
+	previewButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
+	previewButton.loadIconToggled(BinaryData::square_svg, BinaryData::square_svgSize);
 	previewButton.setHasToggledIcon(true);
 	previewButton.setLabelText("PREV");
+	previewButton.setShowBackground(false);
 	setupToggleButton(previewButton);
 	previewButton.setTooltip("Preview sample (independent of ARM/STOP state)");
 	previewButton.onClick = [this]()
 		{
 			if (track && onPreviewTrack)
 			{
-				if (isPreviewPlaying)
-				{
-					if (onStopPreview)
-						onStopPreview(trackId);
-				}
-				else
-				{
-					onPreviewTrack(trackId);
-				}
+				if (isPreviewPlaying) { if (onStopPreview) onStopPreview(trackId); }
+				else                  onPreviewTrack(trackId);
 			}
 		};
 
 	addAndMakeVisible(originalSyncButton);
-	originalSyncButton.setIconPath(TrackButtonIcons::sync());
+	originalSyncButton.loadIcon(BinaryData::anchor_svg, BinaryData::anchor_svgSize);
 	originalSyncButton.setLabelText("ORIG");
+	originalSyncButton.setShowBackground(false);
 	setupToggleButton(originalSyncButton);
 	originalSyncButton.setTooltip("Play original file (bypass time-stretching). Disabled when no original version exists.");
-	originalSyncButton.onClick = [this]()
-		{ toggleOriginalSync(); };
+	originalSyncButton.onClick = [this]() { toggleOriginalSync(); };
 
 	addAndMakeVisible(randomRetriggerButton);
-	randomRetriggerButton.setIconPath(TrackButtonIcons::repeat());
+	randomRetriggerButton.loadIcon(BinaryData::repeat_svg, BinaryData::repeat_svgSize);
+	randomRetriggerButton.setShowBackground(false);
 	setupToggleButton(randomRetriggerButton);
 	randomRetriggerButton.setTooltip("Beat repeat - re-trigger current section at interval while ON");
-	randomRetriggerButton.onClick = [this]()
-		{ onRandomRetriggerToggled(); };
+	randomRetriggerButton.onClick = [this]() { onRandomRetriggerToggled(); };
 
 	addAndMakeVisible(randomDurationToggle);
-	randomDurationToggle.setIconPath(TrackButtonIcons::random());
+	randomDurationToggle.loadIcon(BinaryData::shuffle_svg, BinaryData::shuffle_svgSize);
+	randomDurationToggle.setShowBackground(false);
 	setupToggleButton(randomDurationToggle);
 	randomDurationToggle.setTooltip("Auto-randomize repeat interval on each trigger");
 	randomDurationToggle.onClick = [this]()
@@ -1562,7 +1557,8 @@ void TrackComponent::setupIconButtons()
 			{
 				track->randomRetriggerDurationEnabled = randomDurationToggle.getToggleState();
 				updateRandomDurationButtonColor();
-				statusCallback("Auto-random duration: " + juce::String(track->randomRetriggerDurationEnabled.load() ? "ON" : "OFF"));
+				statusCallback("Auto-random duration: "
+					+ juce::String(track->randomRetriggerDurationEnabled.load() ? "ON" : "OFF"));
 			}
 		};
 }

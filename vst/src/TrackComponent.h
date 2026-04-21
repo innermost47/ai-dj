@@ -5,7 +5,6 @@
 #include "ColourPalette.h"
 #include "DrawingCanvas.h"
 #include "IconButton.h"
-#include "TrackButtonIcons.h"
 
 class WaveformDisplay;
 class SequencerComponent;

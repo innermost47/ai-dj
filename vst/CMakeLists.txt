@@ -144,10 +144,26 @@ juce_add_plugin(ObsidianNeuralVST
     NEEDS_CURL TRUE
 )
 
+juce_add_binary_data(ObsidianBinaryData
+    SOURCES
+        src/assets/logo.png   
+        src/assets/icons/pencil.svg
+        src/assets/icons/zap.svg
+        src/assets/icons/play.svg
+        src/assets/icons/square.svg
+        src/assets/icons/anchor.svg
+        src/assets/icons/repeat.svg
+        src/assets/icons/shuffle.svg
+        src/assets/icons/activity.svg
+        src/assets/icons/grid.svg
+        src/assets/icons/save.svg
+        src/assets/icons/left.svg
+        src/assets/icons/right.svg
+)
+
 target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
-    src/BinaryData.cpp  
     src/PluginEntry.cpp
     src/MidiLearnManager.cpp
     src/MixerChannel.cpp
@@ -191,12 +207,14 @@ target_compile_definitions(ObsidianNeuralVST
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-target_link_libraries(ObsidianNeuralVST PRIVATE
-    juce::juce_audio_utils
-    juce::juce_audio_processors
-    juce::juce_gui_extra
-    SoundTouch
-    nlohmann_json::nlohmann_json
+target_link_libraries(ObsidianNeuralVST 
+    PRIVATE
+        ObsidianBinaryData
+        juce::juce_audio_utils
+        juce::juce_audio_processors
+        juce::juce_gui_extra
+        SoundTouch
+        nlohmann_json::nlohmann_json
     
     PUBLIC
         juce::juce_recommended_config_flags

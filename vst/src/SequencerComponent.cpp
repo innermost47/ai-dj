@@ -1,6 +1,7 @@
 ﻿#include "SequencerComponent.h"
 #include "PluginProcessor.h"
 #include "ColourPalette.h"
+#include "BinaryData.h"
 
 SequencerComponent::SequencerComponent(const juce::String& trackId, DjIaVstProcessor& processor)
 	: trackId(trackId), audioProcessor(processor)
@@ -60,9 +61,8 @@ void SequencerComponent::setupUI()
 		};
 
 	addAndMakeVisible(prevMeasureButton);
-	prevMeasureButton.setButtonText("<");
-	prevMeasureButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
-	prevMeasureButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
+	prevMeasureButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+	prevMeasureButton.setColour(juce::TextButton::textColourOffId, accentColour);
 	prevMeasureButton.onClick = [this]()
 		{
 			isEditing = true;
@@ -75,9 +75,8 @@ void SequencerComponent::setupUI()
 		};
 
 	addAndMakeVisible(nextMeasureButton);
-	nextMeasureButton.setButtonText(">");
-	nextMeasureButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
-	nextMeasureButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
+	nextMeasureButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+	nextMeasureButton.setColour(juce::TextButton::textColourOffId, accentColour);
 	nextMeasureButton.onClick = [this]()
 		{
 			isEditing = true;
@@ -88,8 +87,10 @@ void SequencerComponent::setupUI()
 			juce::Timer::callAfterDelay(500, [this]()
 				{ isEditing = false; });
 		};
-	prevMeasureButton.setLookAndFeel(&flatLF);
-	nextMeasureButton.setLookAndFeel(&flatLF);
+	prevMeasureButton.loadIcon(BinaryData::left_svg, BinaryData::left_svgSize);
+	nextMeasureButton.loadIcon(BinaryData::right_svg, BinaryData::right_svgSize);
+	prevMeasureButton.setShowBackground(false);
+	nextMeasureButton.setShowBackground(false);
 	addAndMakeVisible(measureLabel);
 	measureLabel.setText("1/1", juce::dontSendNotification);
 	measureLabel.setJustificationType(juce::Justification::centred);
@@ -378,6 +379,11 @@ void SequencerComponent::setAccentColour(juce::Colour colour)
 
 	for (int i = 0; i < 8; ++i)
 		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, colour.brighter(0.8f));
+
+	prevMeasureButton.setColour(juce::TextButton::textColourOffId, colour);
+	nextMeasureButton.setColour(juce::TextButton::textColourOffId, colour);
+	prevMeasureButton.repaint();
+	nextMeasureButton.repaint();
 
 	measureSlider.setColour(juce::Slider::thumbColourId, colour);
 

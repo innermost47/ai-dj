@@ -654,7 +654,7 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(promptPresetSelector);
 
 	addAndMakeVisible(savePresetButton);
-	savePresetButton.setButtonText(juce::String::fromUTF8("\xE2\x9C\x93"));
+	savePresetButton.loadIcon(BinaryData::save_svg, BinaryData::save_svgSize);
 
 	addAndMakeVisible(promptInput);
 	promptInput.setMultiLine(false);
@@ -794,7 +794,7 @@ void DjIaVstEditor::setupUI()
 	durationLabel.setText("Duration", juce::dontSendNotification);
 
 	addAndMakeVisible(generateButton);
-	generateButton.setButtonText(juce::String::fromUTF8("\xE2\x96\xB6"));
+	generateButton.loadIcon(BinaryData::zap_svg, BinaryData::zap_svgSize);
 
 	addAndMakeVisible(configButton);
 	configButton.setButtonText("Settings");

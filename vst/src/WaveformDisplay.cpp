@@ -122,8 +122,11 @@ void WaveformDisplay::setPlaybackPosition(double timeInSeconds, bool isPlaying)
 	playbackPosition = timeInSeconds;
 	isCurrentlyPlaying = isPlaying;
 
-	juce::MessageManager::callAsync([this]()
-		{ repaint(); });
+	juce::MessageManager::callAsync([safe = juce::Component::SafePointer<WaveformDisplay>(this)]()
+		{
+			if (safe != nullptr)
+				safe->repaint();
+		});
 }
 
 void WaveformDisplay::paint(juce::Graphics& g)
