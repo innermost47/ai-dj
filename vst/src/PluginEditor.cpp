@@ -13,9 +13,6 @@
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 	: AudioProcessorEditor(&p), audioProcessor(p)
 {
-#ifdef _DEBUG
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF);
-#endif
 	setResizable(true, true);
 	setResizeLimits(1100, 800, 2400, 1600);
 	setSize(1500, 800);
@@ -1278,7 +1275,7 @@ void DjIaVstEditor::resized()
 
 	auto fullBounds = getLocalBounds();
 
-	const int bankWidth = juce::jmax(300, fullBounds.getWidth() / 5);
+	const int bankWidth = juce::jmax(290, fullBounds.getWidth() / 6);
 	if (sampleBankPanel)
 	{
 		auto bankArea = fullBounds.removeFromLeft(bankWidth);

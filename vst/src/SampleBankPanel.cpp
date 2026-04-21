@@ -704,7 +704,7 @@ juce::Component* SampleBankPanel::refreshComponentForRow(
 		{
 			if (auto* bank = audioProcessor.getSampleBank())
 				bank->saveBankData();
-			refreshSampleList();
+			refreshSampleListSilent();
 		};
 
 	item->getCategoriesList = [this]() -> std::vector<juce::String>
@@ -847,10 +847,28 @@ void SampleBankPanel::refreshSampleList()
 			hasEverLoaded.store(true);
 			if (selectedEntry == nullptr && !filteredSamples.empty())
 				selectEntry(filteredSamples[0]);
-
 			if (!currentPreviewEntry) stopTimer();
 			repaint();
 		});
+}
+
+void SampleBankPanel::refreshSampleListSilent()
+{
+	auto* bank = audioProcessor.getSampleBank();
+	if (!bank) { filteredSamples.clear(); sampleListBox.updateContent(); repaint(); return; }
+
+	applyFiltersAndSort();
+
+	if (selectedEntry != nullptr)
+	{
+		auto it = std::find(filteredSamples.begin(), filteredSamples.end(), selectedEntry);
+		if (it == filteredSamples.end())
+			selectEntry(filteredSamples.empty() ? nullptr : filteredSamples[0]);
+	}
+
+	sampleListBox.updateContent();
+	hasEverLoaded.store(true);
+	repaint();
 }
 
 void SampleBankPanel::applyFiltersAndSort()

@@ -114,6 +114,7 @@ public:
 	void resized() override;
 	void timerCallback() override;
 	void refreshSampleList();
+	void refreshSampleListSilent();
 	void setVisible(bool shouldBeVisible) override;
 
 	int  getNumRows() override;
