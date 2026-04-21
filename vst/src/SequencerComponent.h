@@ -37,7 +37,20 @@ private:
 				juce::Justification::centred, false);
 		}
 	};
-
+	struct RoundedLabelLF : public juce::LookAndFeel_V4
+	{
+		float radius = 4.0f;
+		void drawLabel(juce::Graphics& g, juce::Label& label) override
+		{
+			g.setColour(label.findColour(juce::Label::backgroundColourId));
+			g.fillRoundedRectangle(label.getLocalBounds().toFloat(), radius);
+			g.setColour(label.findColour(juce::Label::textColourId));
+			g.setFont(label.getFont());
+			g.drawFittedText(label.getText(), label.getLocalBounds().reduced(1),
+				label.getJustificationType(), 1);
+		}
+	};
+	RoundedLabelLF roundedLabelLF;
 	FlatButtonLF flatLF;
 	juce::String trackId;
 	DjIaVstProcessor& audioProcessor;

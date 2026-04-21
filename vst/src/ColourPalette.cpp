@@ -42,7 +42,7 @@ constexpr auto COLOR_AMBER = 0xffD9A54E;  // gold amber
 constexpr auto COLOR_CHARCOAL = 0xff2B2B2F;
 
 // === TRACK / SELECTION INDICATORS ===
-constexpr auto COLOR_SELECTED = 0xff8B6AB5;    // purple (selected track border)
+constexpr auto COLOR_SELECTED = 0xff9A9A9A;
 constexpr auto COLOR_PLAY_ARMED = 0xffE8A35E;  // amber (armed state — warm warning)
 constexpr auto COLOR_PLAY_ACTIVE = 0xff6BB38A;  // green (currently playing)
 constexpr auto COLOR_STOP_ACTIVE = 0xffA04840;  // deep brick

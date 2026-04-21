@@ -323,8 +323,12 @@ public:
 		float sliderPos,
 		float minSliderPos, float maxSliderPos,
 		const juce::Slider::SliderStyle style,
-		juce::Slider& /* slider */) override
+		juce::Slider& slider) override
 	{
+		auto accentColour = slider.isColourSpecified(juce::Slider::thumbColourId)
+			? slider.findColour(juce::Slider::thumbColourId)
+			: ColourPalette::buttonPrimary;
+
 		if (style == juce::Slider::LinearVertical || style == juce::Slider::LinearHorizontal)
 		{
 			auto trackWidth = juce::jmin(6.0f, (float)(style == juce::Slider::LinearVertical ? width : height) * 0.25f);
@@ -364,7 +368,7 @@ public:
 
 					if (fillRect.isFinite() && !fillRect.isEmpty())
 					{
-						g.setColour(ColourPalette::buttonPrimary);
+						g.setColour(accentColour);
 						g.fillRoundedRectangle(fillRect, trackWidth * 0.5f);
 					}
 				}
@@ -372,7 +376,7 @@ public:
 		}
 
 		auto thumbWidth = 16.0f;
-		g.setColour(ColourPalette::buttonPrimary);
+		g.setColour(accentColour);
 
 		if (style == juce::Slider::LinearVertical)
 			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ (float)x + (float)width * 0.5f, sliderPos }));
@@ -392,8 +396,12 @@ public:
 		int x, int y, int width, int height,
 		float sliderPosProportional,
 		float rotaryStartAngle, float rotaryEndAngle,
-		juce::Slider& /* slider */) override
+		juce::Slider& slider) override
 	{
+		auto accentColour = slider.isColourSpecified(juce::Slider::rotarySliderFillColourId)
+			? slider.findColour(juce::Slider::rotarySliderFillColourId)
+			: ColourPalette::buttonPrimary;
+
 		auto bounds = juce::Rectangle<float>((float)x, (float)y, (float)width, (float)height).reduced(8.0f);
 		auto radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) / 2.0f;
 		auto toAngle = rotaryStartAngle + sliderPosProportional * (rotaryEndAngle - rotaryStartAngle);
@@ -413,7 +421,7 @@ public:
 			arcRadius, arcRadius,
 			0.0f, rotaryStartAngle, toAngle, true);
 
-		g.setColour(ColourPalette::buttonPrimary);
+		g.setColour(accentColour);
 		g.strokePath(valueArc, juce::PathStrokeType(lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
 		juce::Path pointer;
@@ -422,7 +430,7 @@ public:
 		pointer.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
 		pointer.applyTransform(juce::AffineTransform::rotation(toAngle).translated(bounds.getCentreX(), bounds.getCentreY()));
 
-		g.setColour(ColourPalette::textPrimary);
+		g.setColour(accentColour);
 		g.fillPath(pointer);
 	}
 

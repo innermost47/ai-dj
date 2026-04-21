@@ -69,7 +69,7 @@ public:
 					barArea.getY(),
 					barArea.getWidth() - 2.0f * barInset,
 					accentBarSlot);
-				g.setColour(ColourPalette::buttonPrimary);
+				g.setColour(findColour(juce::TextButton::textColourOnId));
 				g.fillRoundedRectangle(barRect, accentBarSlot * 0.5f);
 			}
 			contentArea.removeFromBottom(accentGap);

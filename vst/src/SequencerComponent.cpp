@@ -14,6 +14,7 @@ SequencerComponent::~SequencerComponent()
 {
 	prevMeasureButton.setLookAndFeel(nullptr);
 	nextMeasureButton.setLookAndFeel(nullptr);
+	currentPlayingMeasureLabel.setLookAndFeel(nullptr);
 }
 
 void SequencerComponent::setupUI()
@@ -85,6 +86,8 @@ void SequencerComponent::setupUI()
 
 	prevMeasureButton.setTooltip("Previous measure - Navigate to edit earlier patterns");
 	nextMeasureButton.setTooltip("Next measure - Navigate to edit later patterns");
+
+	currentPlayingMeasureLabel.setLookAndFeel(&roundedLabelLF);
 }
 
 void SequencerComponent::setupSequenceButtons()
@@ -358,6 +361,12 @@ void SequencerComponent::setAccentColour(juce::Colour colour)
 	for (int i = 0; i < 8; ++i)
 		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, colour.brighter(0.8f));
 
+	measureSlider.setColour(juce::Slider::thumbColourId, colour);
+
+	currentPlayingMeasureLabel.setColour(juce::Label::backgroundColourId, colour.brighter(0.2f));
+	currentPlayingMeasureLabel.setColour(juce::Label::textColourId,
+		colour.getBrightness() > 0.5f ? juce::Colours::black : juce::Colours::white);
+
 	repaint();
 }
 
@@ -472,7 +481,10 @@ void SequencerComponent::resized()
 
 	if (controlsArea.getWidth() > 50)
 	{
-		currentPlayingMeasureLabel.setBounds(controlsArea.removeFromLeft(50));
+		auto labelBounds = controlsArea.removeFromLeft(36);
+		int labelH = 28;
+		currentPlayingMeasureLabel.setBounds(
+			labelBounds.removeFromTop(labelH));
 	}
 
 	controlsArea.removeFromLeft(10);

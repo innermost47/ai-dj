@@ -1966,6 +1966,14 @@ void DjIaVstEditor::refreshTrackComponents()
 						}
 					};
 
+				trackComp->onModelChanged = [this](const juce::String& id)
+					{
+						if (mixerPanel)
+						{
+							mixerPanel->updateModelUI(id);
+						}
+					};
+
 				trackComp->onGenerateForTrack = [this](const juce::String& id)
 					{
 						audioProcessor.selectTrack(id);

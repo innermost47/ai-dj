@@ -46,6 +46,7 @@ public:
 	std::function<void(const juce::String&)> onStatusMessage;
 	std::function<void(const juce::String&, const juce::String&, const juce::StringArray&)> onGenerateWithImage;
 	std::function<void(const juce::String&)> onStopPreview;
+	std::function<void(const juce::String& trackId)> onModelChanged;
 
 	bool isInterestedInDragSource(const SourceDetails& dragSourceDetails) override;
 	void itemDragEnter(const SourceDetails& dragSourceDetails) override;

@@ -24,7 +24,7 @@ public:
 	void trackAdded(const juce::String& trackId);
 	void trackRemoved(const juce::String& trackId);
 	void trackSelected(const juce::String& trackId);
-
+	void updateModelUI(const juce::String& trackId);
 	void paint(juce::Graphics& g) override;
 	void resized() override;
 	void startGeneratingAnimationForTrack(const juce::String& trackId);

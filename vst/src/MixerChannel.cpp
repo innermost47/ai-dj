@@ -3,6 +3,7 @@
 #include <string>
 #include "PluginEditor.h"
 #include "ColourPalette.h"
+#include "AiModelDefinitions.h"
 
 MixerChannel::MixerChannel(const juce::String& trackId, DjIaVstProcessor& processor, TrackData* trackData)
 	: trackId(trackId), audioProcessor(processor), track(nullptr)
@@ -590,6 +591,24 @@ void MixerChannel::updateFromTrackData()
 	soloButton.setToggleState(track->isSolo.load(), juce::dontSendNotification);
 
 	updateButtonColors();
+	updateModelUI();
+}
+
+void MixerChannel::updateModelUI()
+{
+	if (!track) return;
+
+	auto modelColour = AiModelDefinitions::getColourForModel(track->selectedModel);
+	bool darkText = modelColour.getBrightness() > 0.6f;
+	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
+
+	volumeSlider.setColour(juce::Slider::thumbColourId, modelColour);
+
+	pitchKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	fineKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	panKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+
+	repaint();
 }
 
 void MixerChannel::paint(juce::Graphics& g)
@@ -610,7 +629,8 @@ void MixerChannel::paint(juce::Graphics& g)
 
 	if (isGenerating)
 	{
-		borderColour = blinkState ? ColourPalette::buttonDangerLight : ColourPalette::buttonDangerDark;
+		auto modelColour = AiModelDefinitions::getColourForModel(track->selectedModel);
+		borderColour = blinkState ? modelColour.brighter(0.4f) : modelColour.darker(0.4f);
 		borderWidth = 3.0f;
 	}
 	else if (hasSamplePending)

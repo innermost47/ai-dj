@@ -470,7 +470,8 @@ void TrackComponent::paint(juce::Graphics& g)
 
 	if (isGenerating)
 	{
-		borderColour = blinkState ? ColourPalette::buttonDangerLight : ColourPalette::buttonDangerDark;
+		auto modelColour = AiModelDefinitions::getColourForModel(track->selectedModel);
+		borderColour = blinkState ? modelColour.brighter(0.4f) : modelColour.darker(0.4f);
 		borderWidth = 3.0f;
 	}
 	else if (hasSamplePending)
@@ -609,7 +610,7 @@ void TrackComponent::resized()
 	}
 	headerArea.removeFromRight(CLUSTER_GAP);
 
-	const int iconBtnWidth = 32;
+	const int iconBtnWidth = 36;
 	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
@@ -1394,6 +1395,8 @@ void TrackComponent::setupUI()
 				}
 			}
 			updateModelUI();
+			if (onModelChanged)
+				onModelChanged(trackId);
 		};
 
 	setupIconButtons();
@@ -1404,9 +1407,6 @@ void TrackComponent::setupUI()
 	intervalKnob.setSize(40, 40);
 	intervalKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	intervalKnob.setTooltip("Beat repeat duration: 4 Beats, 2 Beats, 1 Beat, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128");
-	intervalKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
-	intervalKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
-	intervalKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::sliderTrack);
 	intervalKnob.onValueChange = [this]()
 		{ onIntervalChanged(); };
 
@@ -2173,6 +2173,9 @@ void TrackComponent::updateModelUI()
 	trackNumberButton.setColour(juce::TextButton::buttonColourId, modelColour);
 	trackNumberButton.setColour(juce::TextButton::textColourOffId, textColour);
 
+	intervalKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	intervalKnob.setColour(juce::Slider::thumbColourId, modelColour);
+
 	generateButton.setColour(juce::TextButton::buttonColourId, modelColour);
 	generateButton.setColour(juce::TextButton::textColourOffId, textColour);
 
@@ -2181,6 +2184,18 @@ void TrackComponent::updateModelUI()
 	randomRetriggerButton.setColour(juce::TextButton::textColourOffId, modelColour);
 	randomDurationToggle.setColour(juce::TextButton::textColourOffId, modelColour);
 	drawButton.setColour(juce::TextButton::textColourOffId, modelColour);
+
+	auto setupToggleColours = [&](IconButton& btn)
+		{
+			btn.setColour(juce::TextButton::textColourOffId, modelColour);
+			btn.setColour(juce::TextButton::textColourOnId, modelColour);
+		};
+
+	setupToggleColours(previewButton);
+	setupToggleColours(originalSyncButton);
+	setupToggleColours(randomRetriggerButton);
+	setupToggleColours(randomDurationToggle);
+	setupToggleColours(drawButton);
 
 	if (sequencer)
 		sequencer->setAccentColour(modelColour);

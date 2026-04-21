@@ -21,6 +21,7 @@ public:
 	float getPeakLevel() const { return peakHold; }
 	void setSelected(bool selected);
 	void updateFromTrackData();
+	void updateModelUI();
 	void updateVUMeters();
 	void setTrackData(TrackData* trackData);
 	void updateButtonColors();
@@ -98,7 +99,6 @@ private:
 	void setupUI();
 	void parameterValueChanged(int parameterIndex, float newValue) override;
 	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
-
 	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
 	void removeListener(juce::String name);
 	void addListener(juce::String name);
