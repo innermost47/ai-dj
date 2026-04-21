@@ -113,15 +113,17 @@ bool DjIaVstEditor::keyStateChanged(bool isKeyDown)
 void DjIaVstEditor::updateMidiIndicator(const juce::String& noteInfo)
 {
 	lastMidiNote = noteInfo;
-	juce::MessageManager::callAsync([this, noteInfo]()
+	juce::Component::SafePointer<DjIaVstEditor> safeThis(this);
+	juce::MessageManager::callAsync([safeThis, noteInfo]()
 		{
-			midiIndicator.setText(noteInfo, juce::dontSendNotification);
-			updateLCD();
-
-			juce::Timer::callAfterDelay(800, [this]()
+			if (!safeThis) return;
+			safeThis->midiIndicator.setText(noteInfo, juce::dontSendNotification);
+			safeThis->updateLCD();
+			juce::Timer::callAfterDelay(800, [safeThis]()
 				{
-					midiIndicator.setText("", juce::dontSendNotification);
-					updateLCD();
+					if (!safeThis) return;
+					safeThis->midiIndicator.setText("", juce::dontSendNotification);
+					safeThis->updateLCD();
 				});
 		});
 }
