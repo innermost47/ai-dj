@@ -651,6 +651,8 @@ void SampleBankPanel::resized()
 
 void SampleBankPanel::selectEntry(SampleBankEntry* entry)
 {
+	if (currentPreviewEntry != nullptr)
+		stopPreview();
 	selectedEntry = entry;
 	sampleListBox.updateContent();
 	if (entry)

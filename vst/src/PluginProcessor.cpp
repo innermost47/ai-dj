@@ -30,7 +30,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 	{
 		buffer.setSize(2, 512);
 	}
-
+	previewBuffer.setSize(2, 512);
 	midiLearnManager.setProcessor(this);
 	projectId = "legacy";
 	loadGlobalConfig();
@@ -116,11 +116,9 @@ void DjIaVstProcessor::performMigrationIfNeeded()
 		{
 			auto newLocation = newProjectDir.getChildFile(file.getFileName());
 			file.moveFileTo(newLocation);
-			DBG("Migrated: " + file.getFileName() + " to project folder");
 		}
 
 		updateTrackPathsAfterMigration();
-		DBG("Migration completed for " + juce::String(filesToMigrate.size()) + " files");
 	}
 	else if (projectId == "legacy")
 	{
@@ -150,13 +148,10 @@ void DjIaVstProcessor::updateTrackPathsAfterMigration()
 void DjIaVstProcessor::loadGlobalConfig()
 {
 	auto configFile = getGlobalConfigFile();
-	DBG("Config file path: " + configFile.getFullPathName());
 
 	if (configFile.existsAsFile())
 	{
 		auto configJson = juce::JSON::parse(configFile);
-		DBG("JSON parsed successfully: " + juce::String(configJson.isVoid() ? "false" : "true"));
-		DBG("Full JSON object: " + juce::JSON::toString(configJson));
 		if (auto* object = configJson.getDynamicObject())
 		{
 			apiKey = object->getProperty("apiKey").toString();
@@ -172,21 +167,15 @@ void DjIaVstProcessor::loadGlobalConfig()
 			}
 
 			auto promptsVar = object->getProperty("customPrompts");
-			DBG("Prompts property exists: " + juce::String(!promptsVar.isVoid() ? "false" : "true"));
-			DBG("Prompts is array: " + juce::String(promptsVar.isArray() ? "false" : "true"));
 
 			if (promptsVar.isArray())
 			{
 				customPrompts.clear();
 				auto* promptsArray = promptsVar.getArray();
-				DBG("Prompts array size: " + juce::String(promptsArray->size()));
-
-				DBG("Raw promptsVar: " + juce::JSON::toString(promptsVar));
 
 				for (int i = 0; i < promptsArray->size(); ++i)
 				{
 					juce::String prompt = promptsArray->getUnchecked(i).toString();
-					DBG("Adding prompt " + juce::String(i) + ": '" + prompt + "'");
 					customPrompts.add(prompt);
 				}
 			}
@@ -205,7 +194,6 @@ void DjIaVstProcessor::loadGlobalConfig()
 			setServerUrl(serverUrl);
 		}
 	}
-	DBG("Final customPrompts size: " + juce::String(customPrompts.size()));
 }
 
 void DjIaVstProcessor::saveGlobalConfig()
@@ -506,9 +494,35 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	auto mainOutput = getBusBuffer(buffer, false, 0);
 	mainOutput.clear();
 	updateTimeStretchRatios(hostBpm);
-	trackManager.renderAllTracks(mainOutput, individualOutputBuffers, hostBpm);
+	auto previewBus = getBusBuffer(buffer, false, getBusCount(false) - 1);
+	previewBus.clear();
+	trackManager.renderAllTracks(mainOutput, individualOutputBuffers, previewBus, hostBpm);
 	copyTracksToIndividualOutputs(buffer);
 	applyMasterEffects(mainOutput);
+
+	{
+		juce::ScopedLock lock(previewLock);
+		if (isPreviewPlaying && previewBuffer.getNumSamples() > 0)
+		{
+			int numSamples = buffer.getNumSamples();
+			double ratio = previewSampleRate / getSampleRate();
+			bool multiOutputActive = false;
+			for (int i = 1; i < getBusCount(false); ++i)
+				if (getBus(false, i)->isEnabled()) { multiOutputActive = true; break; }
+
+			auto& target = multiOutputActive ? previewBus : mainOutput;
+			for (int s = 0; s < numSamples; ++s)
+			{
+				int pos = (int)(previewPosition.load() + s * ratio);
+				if (pos < previewBuffer.getNumSamples())
+					for (int ch = 0; ch < target.getNumChannels(); ++ch)
+						target.addSample(ch, s, previewBuffer.getSample(ch % 2, pos));
+			}
+			previewPosition.store(previewPosition.load() + numSamples * ratio);
+			if ((int)previewPosition.load() >= previewBuffer.getNumSamples())
+				isPreviewPlaying = false;
+		}
+	}
 	checkIfUIUpdateNeeded(midiMessages);
 }
 
@@ -1430,7 +1444,6 @@ void DjIaVstProcessor::checkBeatRepeatWithSampleCounter()
 				track->lastRetriggerTime.store(-1.0);
 				track->readPosition.store(track->originalReadPosition.load());
 				track->pendingStopBeatNumber.store(-1);
-				DBG("Beat repeat stopped at sample: " << currentSample);
 			}
 		}
 	}
@@ -1703,8 +1716,6 @@ void DjIaVstProcessor::reassignTrackOutputsAndMidi()
 					savedMappings[newSlotNumber].push_back(newMapping);
 				}
 			}
-
-			DBG("Track moving from slot " << oldSlotNumber << " to slot " << newSlotNumber);
 		}
 	}
 
@@ -1740,7 +1751,6 @@ void DjIaVstProcessor::reassignTrackOutputsAndMidi()
 		for (const auto& mapping : pair.second)
 		{
 			getMidiLearnManager().addMapping(mapping);
-			DBG("Restored mapping: " << mapping.parameterName);
 		}
 	}
 
@@ -1878,7 +1888,6 @@ void DjIaVstProcessor::loadSampleFromBank(const juce::String& sampleId, const ju
 	if (!track->currentSampleId.isEmpty() && track->currentSampleId != sampleId)
 	{
 		sampleBank->markSampleAsUnused(track->currentSampleId, projectId);
-		DBG("Marked previous sample as unused: " + track->currentSampleId);
 	}
 
 	isLoadingFromBank = true;
@@ -2199,7 +2208,6 @@ void DjIaVstProcessor::checkAndSwapStagingBuffers()
 
 void DjIaVstProcessor::performAtomicSwap(TrackData* track, const juce::String& trackId)
 {
-	DBG("Swapping buffer for track: " << trackId << " - New samples: " << track->stagingNumSamples.load());
 
 	if (track->usePages.load())
 	{
@@ -2342,16 +2350,13 @@ void DjIaVstProcessor::loadAudioFileAsync(const juce::String& trackId, const juc
 		}
 		permanentFile.getParentDirectory().createDirectory();
 
-		DBG("Saving buffer(s) with " << track->stagingBuffer.getNumSamples() << " samples");
 		if (track->nextHasOriginalVersion.load())
 		{
 			saveOriginalAndStretchedBuffers(track->originalStagingBuffer, track->stagingBuffer, trackId, track->stagingSampleRate);
-			DBG("Both files saved for track: " << trackId);
 		}
 		else
 		{
 			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate);
-			DBG("File saved to: " << permanentFile.getFullPathName());
 		}
 
 		if (track->usePages.load())
@@ -2444,11 +2449,8 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String& trackId, bool 
 		}
 	}
 
-	DBG("reloadTrackWithVersion: Loading file: " << fileToLoad.getFullPathName() << " - Exists: " << (fileToLoad.existsAsFile() ? "YES" : "NO"));
-
 	if (!fileToLoad.existsAsFile())
 	{
-		DBG("File not found, trying legacy naming...");
 		if (track->usePages.load())
 		{
 			int asciiCode = 'A' + track->currentPageIndex;
@@ -2467,7 +2469,6 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String& trackId, bool 
 			{
 				fileToLoad = audioDir.getChildFile(trackId + "_" + juce::String(asciiCode) + ".wav");
 			}
-			DBG("Trying legacy naming: " << fileToLoad.getFullPathName());
 		}
 
 		if (!fileToLoad.existsAsFile())
@@ -2666,7 +2667,6 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 
 		if (filename.contains("_original"))
 		{
-			DBG("Skipping original file for bank: " + filename);
 			return;
 		}
 
@@ -2678,7 +2678,6 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 			if (trackId.endsWith(pageSuffix))
 			{
 				trackId = trackId.dropLastCharacters(2);
-				DBG("Removed new format page suffix: " + pageSuffix);
 				break;
 			}
 		}
@@ -2689,23 +2688,18 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 			if (trackId.endsWith(asciiSuffix))
 			{
 				trackId = trackId.dropLastCharacters(asciiSuffix.length());
-				DBG("Removed legacy ASCII page suffix: " + asciiSuffix);
 				break;
 			}
 		}
 
-		DBG("Extracted trackId: " + trackId + " from filename: " + filename);
-
 		if (trackId == currentBankLoadTrackId)
 		{
-			DBG("Skipping bank save - loading from bank: " + trackId);
 			return;
 		}
 
 		TrackData* track = trackManager.getTrack(trackId);
 		if (!track)
 		{
-			DBG("Track not found for ID: " + trackId);
 			return;
 		}
 
@@ -2721,9 +2715,6 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 				prompt = currentPage.selectedPrompt;
 			bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : currentPage.originalBpm;
 			key = currentPage.generationKey.isEmpty() ? "Unknown" : currentPage.generationKey;
-
-			DBG("Using pages - Page " + juce::String((char)('A' + track->currentPageIndex)) +
-				" - Prompt: " + prompt + " - BPM: " + juce::String(bpm));
 		}
 		else
 		{
@@ -2732,20 +2723,16 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 				prompt = track->selectedPrompt;
 			bpm = track->generationBpm > 0 ? track->generationBpm : track->originalBpm;
 			key = track->generationKey.isEmpty() ? "Unknown" : track->generationKey;
-
-			DBG("Not using pages - Prompt: " + prompt + " - BPM: " + juce::String(bpm));
 		}
 
 		if (prompt.isEmpty())
 		{
-			DBG("No prompt found for track: " + trackId);
 			return;
 		}
 
 		if (!track->currentSampleId.isEmpty())
 		{
 			sampleBank->markSampleAsUnused(track->currentSampleId, projectId);
-			DBG("Marked previous sample as unused: " + track->currentSampleId);
 		}
 
 		juce::String sampleId = sampleBank->addSample(prompt, outputFile, bpm, key);
@@ -2754,7 +2741,6 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 		{
 			sampleBank->markSampleAsUsed(sampleId, projectId);
 			track->currentSampleId = sampleId;
-			DBG("Sample added to bank: " + sampleId + " for prompt: " + prompt);
 
 			if (track->usePages.load())
 			{
@@ -2764,10 +2750,6 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 			{
 				track->generationPrompt = "";
 			}
-		}
-		else
-		{
-			DBG("Failed to add sample to bank");
 		}
 	}
 }
@@ -2817,24 +2799,18 @@ void DjIaVstProcessor::processAudioBPMAndSync(TrackData* track)
 			if (directDiff <= directTolerance)
 			{
 				correctedServerBpm = serverDetectedBpm;
-				DBG("Server BPM is close enough: " + juce::String(serverDetectedBpm, 2));
 			}
 			else if (halfDiff < directDiff && halfDiff <= halfDoubleTolerance)
 			{
 				correctedServerBpm = serverDetectedBpm * 2.0f;
-				DBG("Server BPM corrected for half tempo: " + juce::String(serverDetectedBpm, 2) +
-					" -> " + juce::String(correctedServerBpm, 2));
 			}
 			else if (doubleDiff < directDiff && doubleDiff <= halfDoubleTolerance)
 			{
 				correctedServerBpm = serverDetectedBpm / 2.0f;
-				DBG("Server BPM corrected for double tempo: " + juce::String(serverDetectedBpm, 2) +
-					" -> " + juce::String(correctedServerBpm, 2));
 			}
 			else
 			{
 				correctedServerBpm = serverDetectedBpm;
-				DBG("Server BPM used as-is (no good match): " + juce::String(serverDetectedBpm, 2));
 			}
 		}
 
@@ -2847,24 +2823,18 @@ void DjIaVstProcessor::processAudioBPMAndSync(TrackData* track)
 			if (directDiff <= directTolerance)
 			{
 				correctedSoundTouchBpm = soundTouchDetectedBpm;
-				DBG("SoundTouch BPM is close enough: " + juce::String(soundTouchDetectedBpm, 2));
 			}
 			else if (halfDiff < directDiff && halfDiff <= halfDoubleTolerance)
 			{
 				correctedSoundTouchBpm = soundTouchDetectedBpm * 2.0f;
-				DBG("SoundTouch BPM corrected for half tempo: " + juce::String(soundTouchDetectedBpm, 2) +
-					" -> " + juce::String(correctedSoundTouchBpm, 2));
 			}
 			else if (doubleDiff < directDiff && doubleDiff <= halfDoubleTolerance)
 			{
 				correctedSoundTouchBpm = soundTouchDetectedBpm / 2.0f;
-				DBG("SoundTouch BPM corrected for double tempo: " + juce::String(soundTouchDetectedBpm, 2) +
-					" -> " + juce::String(correctedSoundTouchBpm, 2));
 			}
 			else
 			{
 				correctedSoundTouchBpm = soundTouchDetectedBpm;
-				DBG("SoundTouch BPM used as-is (no good match): " + juce::String(soundTouchDetectedBpm, 2));
 			}
 		}
 	}
@@ -2874,12 +2844,10 @@ void DjIaVstProcessor::processAudioBPMAndSync(TrackData* track)
 	if (serverDetectedBpm > 0.0f)
 	{
 		detectedBPM = correctedServerBpm;
-		DBG("Using server-detected BPM: " + juce::String(detectedBPM, 2));
 	}
 	else
 	{
 		detectedBPM = correctedSoundTouchBpm;
-		DBG("Using SoundTouch-detected BPM (server unavailable): " + juce::String(detectedBPM, 2));
 	}
 
 	pendingDetectedBpm.store(-1.0f);
@@ -2900,26 +2868,12 @@ void DjIaVstProcessor::processAudioBPMAndSync(TrackData* track)
 		track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
 		track->stagingOriginalBpm = static_cast<float>(hostBpm);
 		track->nextHasOriginalVersion.store(true);
-
-		DBG("Time-stretched from " + juce::String(detectedBPM, 2) +
-			" to " + juce::String(hostBpm, 2) + " BPM (ratio: " + juce::String(stretchRatio, 3) + ")");
 	}
 	else
 	{
 		track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
 		track->stagingOriginalBpm = static_cast<float>(hostBpm);
 		track->nextHasOriginalVersion.store(false);
-
-		if (bpmDifferenceSignificant)
-		{
-			DBG("BPM difference (" + juce::String(bpmDifference, 2) +
-				") is significant but outside stretch range (0.01-5.0), using as-is");
-		}
-		else
-		{
-			DBG("BPM is close enough (" + juce::String(bpmDifference, 2) +
-				" diff), no time-stretch needed");
-		}
 	}
 }
 
@@ -3212,13 +3166,11 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 				TrackData* track = trackManager.getTrack(trackId);
 				if (track) {
 					if (track->usePages.load()) {
-						DBG("setStateInformation: Track " << track->trackName << " uses pages - skipping legacy reload");
 						continue;
 					}
 					if (track->numSamples == 0 && !track->audioFilePath.isEmpty()) {
 						juce::File audioFile(track->audioFilePath);
 						if (audioFile.existsAsFile()) {
-							DBG("setStateInformation: Reloading legacy track " << track->trackName);
 							trackManager.loadAudioFileForTrack(track, audioFile);
 						}
 					}
@@ -3424,7 +3376,6 @@ void DjIaVstProcessor::handleSequenceChange(const juce::String& parameterID)
 			auto& currentPage = track->getCurrentPage();
 			currentPage.currentSequenceIndex = seqNumber - 1;
 			sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber), seqNumber - 1);
-			DBG("Switched to sequence " << seqNumber << " for slot " << slotNumber);
 			juce::MessageManager::callAsync([this]()
 				{
 					if (onUIUpdateNeeded)
@@ -3474,7 +3425,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 								}
 							} });
 				}
-				DBG("Page change immediate (empty page): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 				return;
 			}
 			bool isPlaying = false;
@@ -3502,7 +3452,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 				sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
 					track->pages[pageIndex].currentSequenceIndex);
-				DBG("Page change immediate (not playing): slot " << slotNumber << " -> page " << (char)('A' + pageIndex));
 			}
 			else
 			{
@@ -3527,7 +3476,6 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 								}
 							} });
 				}
-				DBG("Page change pending: slot " << slotNumber << " -> page " << (char)('A' + pageIndex) << " (will switch at next measure)");
 			}
 			break;
 		}
@@ -3953,7 +3901,6 @@ bool DjIaVstProcessor::previewSampleFromBank(const juce::String& sampleId)
 	std::unique_ptr<juce::AudioFormatReader> testReader(formatManager.createReaderFor(sampleFile));
 	if (!testReader)
 	{
-		DBG("Cannot read audio file: " + sampleFile.getFullPathName());
 		return false;
 	}
 
@@ -3982,7 +3929,7 @@ bool DjIaVstProcessor::previewSampleFromBank(const juce::String& sampleId)
 				previewPosition = 0.0;
 				isPreviewPlaying = true;
 			}
-			DBG("Preview loaded: " + sampleFile.getFileName()); });
+		});
 
 	return true;
 }
