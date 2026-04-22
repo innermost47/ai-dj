@@ -1098,7 +1098,7 @@ void DjIaVstEditor::addEventListeners()
 
 void DjIaVstEditor::notifyTracksPromptUpdate()
 {
-	juce::StringArray allPrompts = promptPresets;
+	juce::StringArray allPrompts = audioProcessor.promptPresets;
 	auto customPrompts = audioProcessor.getCustomPrompts();
 
 	for (const auto& customPrompt : customPrompts)
@@ -1141,7 +1141,7 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent& event)
 							[this, selectedPrompt](bool confirmed) {
 								if (confirmed) {
 									audioProcessor.removeCustomPrompt(selectedPrompt);
-									promptPresets.removeString(selectedPrompt);
+									audioProcessor.promptPresets.removeString(selectedPrompt);
 									audioProcessor.setLastPresetIndex(audioProcessor.getLastPresetIndex() - 1);
 									loadPromptPresets();
 									notifyTracksPromptUpdate();
@@ -1159,9 +1159,9 @@ void DjIaVstEditor::editCustomPromptDialog(const juce::String& selectedPrompt)
 		[this, selectedPrompt](const juce::String& newPrompt)
 		{
 			audioProcessor.editCustomPrompt(selectedPrompt, newPrompt);
-			int index = promptPresets.indexOf(selectedPrompt);
+			int index = audioProcessor.promptPresets.indexOf(selectedPrompt);
 			if (index >= 0)
-				promptPresets.set(index, newPrompt);
+				audioProcessor.promptPresets.set(index, newPrompt);
 			loadPromptPresets();
 		});
 }
@@ -1202,7 +1202,7 @@ void DjIaVstEditor::updateUIFromProcessor()
 	}
 
 	int presetIndex = audioProcessor.getLastPresetIndex();
-	if (presetIndex >= 0 && presetIndex < promptPresets.size())
+	if (presetIndex >= 0 && presetIndex < audioProcessor.promptPresets.size())
 	{
 		promptPresetSelector.setSelectedId(presetIndex + 1, juce::dontSendNotification);
 	}
@@ -1628,7 +1628,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 void DjIaVstEditor::loadPromptPresets()
 {
 	promptPresetSelector.clear();
-	juce::StringArray allPrompts = promptPresets;
+	juce::StringArray allPrompts = audioProcessor.promptPresets;
 	auto customPrompts = audioProcessor.getCustomPrompts();
 	for (const auto& customPrompt : customPrompts)
 	{
@@ -1638,7 +1638,7 @@ void DjIaVstEditor::loadPromptPresets()
 		}
 	}
 	allPrompts.sort(true);
-	promptPresets = allPrompts;
+
 	for (int i = 0; i < allPrompts.size(); ++i)
 	{
 		promptPresetSelector.addItem(allPrompts[i], i + 1);
@@ -2109,7 +2109,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String& trackId)
 
 juce::StringArray DjIaVstEditor::getAllPrompts() const
 {
-	juce::StringArray allPrompts = promptPresets;
+	juce::StringArray allPrompts = audioProcessor.promptPresets;
 	auto customPrompts = audioProcessor.getCustomPrompts();
 
 	for (const auto& customPrompt : customPrompts)

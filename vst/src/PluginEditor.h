@@ -31,8 +31,6 @@ public:
 
 	std::unique_ptr<MixerPanel> mixerPanel;
 
-	juce::StringArray getBuiltInPrompts() const { return promptPresets; }
-
 	juce::Label statusLabel;
 
 	std::atomic<bool> isBeingDestroyed{ false };
@@ -141,19 +139,6 @@ private:
 	juce::String generatingTrackId;
 	juce::String originalButtonText;
 
-	juce::StringArray promptPresets = {
-		"Techno kick rhythm",
-		"Hardcore kick pattern",
-		"Drum and bass rhythm",
-		"Dub kick rhythm",
-		"Acidic 303 bassline",
-		"Deep rolling bass",
-		"Ambient flute psychedelic",
-		"Dark atmospheric pad",
-		"Industrial noise texture",
-		"Glitchy percussion loop",
-		"Vintage analog lead",
-		"Distorted noise chops" };
 
 	juce::Label pluginNameLabel;
 	juce::Label developerLabel;
