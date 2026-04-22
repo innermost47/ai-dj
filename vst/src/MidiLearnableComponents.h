@@ -23,7 +23,7 @@ public:
 
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
 	{
-		return createIgnoredAccessibilityHandler(*this);
+		return juce::Component::createIgnoredAccessibilityHandler(*this);
 	}
 
 	~MidiLearnable()
