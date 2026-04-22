@@ -1,309 +1,287 @@
 #pragma once
 #include <JuceHeader.h>
 #include "ColourPalette.h"
+#include "ObsidianModal.h"
 
 class ObsidianAlertManager
 {
-public:
-    static void initialize()
-    {
-        juce::LookAndFeel::setDefaultLookAndFeel(&getAlertLookAndFeel());
-    }
-
-    static void shutdown()
-    {
-        juce::LookAndFeel::setDefaultLookAndFeel(nullptr);
-    }
-
-    struct ConfigDialogResult
-    {
-        bool confirmed;
-        bool useLocalModel;
-        juce::String serverUrl;
-        juce::String apiKey;
-        int timeoutMs;
-    };
-
-    static void showInfo(
-        const juce::String &title,
-        const juce::String &message,
-        const juce::String &buttonText = "OK",
-        std::function<void()> onConfirm = nullptr)
-    {
-        juce::AlertWindow::showAsync(
-            juce::MessageBoxOptions()
-                .withIconType(juce::MessageBoxIconType::NoIcon)
-                .withTitle(title)
-                .withMessage(message)
-                .withButton(buttonText),
-            [onConfirm](int)
-            { if (onConfirm) onConfirm(); });
-    }
-
-    static void showError(
-        const juce::String &title,
-        const juce::String &message)
-    {
-        juce::AlertWindow::showAsync(
-            juce::MessageBoxOptions()
-                .withIconType(juce::MessageBoxIconType::NoIcon)
-                .withTitle(title)
-                .withMessage(message)
-                .withButton("OK"),
-            nullptr);
-    }
-
-    static void showConfirm(
-        const juce::String &title,
-        const juce::String &message,
-        const juce::String &confirmText,
-        const juce::String &cancelText,
-        std::function<void(bool confirmed)> callback)
-    {
-        juce::AlertWindow::showAsync(
-            juce::MessageBoxOptions()
-                .withIconType(juce::MessageBoxIconType::NoIcon)
-                .withTitle(title)
-                .withMessage(message)
-                .withButton(confirmText)
-                .withButton(cancelText),
-            [callback](int result)
-            { if (callback) callback(result == 1); });
-    }
-
-    static void showConfigDialog(
-        const juce::String &title,
-        const juce::String &serverUrl,
-        const juce::String & /* apiKey */,
-        bool currentUseLocal,
-        int currentTimeoutMs,
-        bool isFirstTime,
-        std::function<void(const ConfigDialogResult &)> callback)
-    {
-        auto alertWindow = std::make_unique<juce::AlertWindow>(
-            title,
-            isFirstTime
-                ? "Choose your generation method.\n\nNo API key yet? Get your free account at:\nobsidian-neural.com\n\n7-day free trial - 100 credits included - no credit card required."
-                : "Update your settings:",
-            juce::MessageBoxIconType::NoIcon);
-
-        juce::StringArray modes;
-        modes.add("Server/API (Full features + stems separation)");
-        modes.add("Local Model (Basic - requires manual setup)");
-        alertWindow->addComboBox("generationMode", modes, "Generation Mode:");
-        if (auto *combo = alertWindow->getComboBoxComponent("generationMode"))
-            combo->setSelectedItemIndex(currentUseLocal ? 1 : 0);
-
-        alertWindow->addTextEditor("serverUrl",
-                                   serverUrl.isEmpty() ? "http://localhost:8000" : serverUrl,
-                                   "Server URL:");
-
-        alertWindow->addTextEditor("apiKey", "",
-                                   isFirstTime ? "API Key:" : "API Key (leave blank to keep current):");
-        if (auto *keyEditor = alertWindow->getTextEditor("apiKey"))
-            keyEditor->setPasswordCharacter('*');
-
-        static const juce::Array<int> timeoutValues = {1, 2, 5, 10, 15, 20, 30, 45};
-        juce::StringArray timeouts;
-        for (int v : timeoutValues)
-            timeouts.add(juce::String(v) + " minute" + (v > 1 ? "s" : ""));
-        alertWindow->addComboBox("requestTimeout", timeouts, "Request Timeout:");
-        if (auto *timeoutCombo = alertWindow->getComboBoxComponent("requestTimeout"))
-        {
-            int selectedIndex = 2;
-            int currentMinutes = currentTimeoutMs / 60000;
-            for (int i = 0; i < timeoutValues.size(); ++i)
-                if (timeoutValues[i] == currentMinutes)
-                {
-                    selectedIndex = i;
-                    break;
-                }
-            timeoutCombo->setSelectedItemIndex(selectedIndex);
-        }
-
-        alertWindow->addButton(isFirstTime ? "Save & Continue" : "Update", 1);
-        alertWindow->addButton(isFirstTime ? "Skip for now" : "Cancel", 0);
-
-        applyThemeToAlertWindow(alertWindow.get());
-
-        auto *windowPtr = alertWindow.get();
-        alertWindow.release()->enterModalState(true,
-                                               juce::ModalCallbackFunction::create([windowPtr, callback](int result)
-                                                                                   {
-                ConfigDialogResult res{};
-                res.confirmed = (result == 1);
-
-                if (res.confirmed)
-                {
-                    auto* modeCombo    = windowPtr->getComboBoxComponent("generationMode");
-                    auto* urlEditor    = windowPtr->getTextEditor("serverUrl");
-                    auto* keyEditor    = windowPtr->getTextEditor("apiKey");
-                    auto* timeoutCombo = windowPtr->getComboBoxComponent("requestTimeout");
-
-                    res.useLocalModel = (modeCombo->getSelectedItemIndex() == 1);
-                    res.serverUrl     = urlEditor->getText();
-                    res.apiKey        = keyEditor->getText();
-                    res.timeoutMs     = timeoutValues[timeoutCombo->getSelectedItemIndex()] * 60000;
-                }
-
-                windowPtr->exitModalState(result);
-                delete windowPtr;
-
-                if (callback) callback(res); }));
-    }
-
-    static void showEditPrompt(
-        const juce::String &currentPrompt,
-        std::function<void(const juce::String &newPrompt)> callback)
-    {
-        auto alertWindow = std::make_unique<juce::AlertWindow>(
-            "Edit Custom Prompt", "Edit your prompt:",
-            juce::MessageBoxIconType::NoIcon);
-        alertWindow->addTextEditor("promptText", currentPrompt, "Prompt text:");
-        alertWindow->addButton("Save", 1);
-        alertWindow->addButton("Cancel", 0);
-
-        applyThemeToAlertWindow(alertWindow.get());
-
-        auto *windowPtr = alertWindow.get();
-        alertWindow.release()->enterModalState(true,
-                                               juce::ModalCallbackFunction::create([windowPtr, callback](int result)
-                                                                                   {
-                juce::String result_str;
-                if (result == 1)
-                    if (auto* editor = windowPtr->getTextEditor("promptText"))
-                        result_str = editor->getText();
-                windowPtr->exitModalState(result);
-                delete windowPtr;
-                if (callback && result == 1 && result_str.isNotEmpty())
-                    callback(result_str); }));
-    }
-
-    static void showUpdateAvailable(
-        const juce::String &latestTag,
-        const juce::String &currentBuild)
-    {
-        juce::AlertWindow::showAsync(
-            juce::MessageBoxOptions()
-                .withIconType(juce::MessageBoxIconType::NoIcon)
-                .withTitle("Update Available!")
-                .withMessage(
-                    "A new version of OBSIDIAN Neural is available: " + latestTag + "\n\n"
-                                                                                    "Your current build: v" +
-                    currentBuild + "\n\n"
-                                   "Download the latest version at:\ngithub.com/innermost47/ai-dj/releases/latest")
-                .withButton("Download Now")
-                .withButton("Later"),
-            [](int result)
-            {
-                if (result == 1)
-                    juce::URL("https://github.com/innermost47/ai-dj/releases/latest")
-                        .launchInDefaultBrowser();
-            });
-    }
-
-    static void applyThemeToAlertWindow(juce::AlertWindow *aw)
-    {
-        aw->setColour(juce::AlertWindow::backgroundColourId, ColourPalette::backgroundDeep);
-        aw->setColour(juce::AlertWindow::textColourId, ColourPalette::textPrimary);
-        aw->setColour(juce::AlertWindow::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
-        auto windowTitle = aw->getName();
-        for (auto *child : aw->getChildren())
-        {
-            if (auto *label = dynamic_cast<juce::Label *>(child))
-            {
-                if (label->getText().contains(windowTitle))
-                {
-                    label->setVisible(false);
-                    continue;
-                }
-                label->setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-            }
-            if (auto *te = dynamic_cast<juce::TextEditor *>(child))
-            {
-                te->setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-                te->setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-                te->setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.5f));
-                te->setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::buttonPrimary);
-                te->setColour(juce::TextEditor::highlightColourId, ColourPalette::buttonPrimary.withAlpha(0.3f));
-                te->applyFontToAllText(juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain)));
-            }
-            if (auto *cb = dynamic_cast<juce::ComboBox *>(child))
-            {
-                cb->setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
-                cb->setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
-                cb->setColour(juce::ComboBox::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.5f));
-                cb->setColour(juce::ComboBox::arrowColourId, ColourPalette::buttonPrimary);
-            }
-            if (auto *label = dynamic_cast<juce::Label *>(child))
-            {
-                label->setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-            }
-        }
-    }
-
 private:
-    class ObsidianLookAndFeel : public juce::LookAndFeel_V4
-    {
-    public:
-        ObsidianLookAndFeel()
-        {
-            setColour(juce::AlertWindow::backgroundColourId, ColourPalette::backgroundDeep);
-            setColour(juce::AlertWindow::textColourId, ColourPalette::textPrimary);
-            setColour(juce::AlertWindow::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
+	static inline const juce::String checkSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>)";
+	static inline const juce::String crossSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>)";
+	static inline const juce::String downloadSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>)";
+	static inline const juce::String infoSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>)";
 
-            setColour(juce::ResizableWindow::backgroundColourId, ColourPalette::backgroundDeep);
+	class TextContent : public juce::Component
+	{
+		juce::Label label;
+	public:
+		TextContent(const juce::String& text) {
+			label.setText(text, juce::dontSendNotification);
+			label.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			label.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+			label.setJustificationType(juce::Justification::centredLeft);
+			addAndMakeVisible(label);
+		}
+		void resized() override { label.setBounds(getLocalBounds()); }
+	};
 
-            setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
-            setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonPrimary.darker(0.2f));
-            setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-            setColour(juce::TextButton::textColourOnId, juce::Colours::white);
+public:
+	static void initialize() {}
+	static void shutdown() {}
 
-            setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-            setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-            setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.5f));
+	struct ConfigDialogResult
+	{
+		bool confirmed;
+		bool useLocalModel;
+		juce::String serverUrl;
+		juce::String apiKey;
+		int timeoutMs;
+	};
 
-            setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
-            setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
-            setColour(juce::ComboBox::outlineColourId, ColourPalette::buttonPrimary.withAlpha(0.5f));
-            setColour(juce::ComboBox::arrowColourId, ColourPalette::buttonPrimary);
+	static void showInfo(
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& message,
+		const juce::String& buttonText = "OK",
+		std::function<void()> onConfirm = nullptr)
+	{
+		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		modal->setContent(std::make_unique<TextContent>(message));
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
 
-            setColour(juce::PopupMenu::backgroundColourId, ColourPalette::backgroundDark);
-            setColour(juce::PopupMenu::textColourId, ColourPalette::textPrimary);
-            setColour(juce::PopupMenu::highlightedBackgroundColourId, ColourPalette::buttonPrimary);
-            setColour(juce::PopupMenu::highlightedTextColourId, juce::Colours::white);
+		overlay->modalWindow->addButton(buttonText, checkSvg, ColourPalette::buttonPrimary, [overlay, onConfirm]() {
+			if (onConfirm) onConfirm();
+			overlay->close();
+			});
+	}
 
-            setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-        }
+	static void showError(
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& message)
+	{
+		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		modal->setContent(std::make_unique<TextContent>(message));
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
 
-        void drawAlertBox(juce::Graphics &g, juce::AlertWindow &alert,
-                          const juce::Rectangle<int> &textArea,
-                          juce::TextLayout &textLayout) override
-        {
-            LookAndFeel_V4::drawAlertBox(g, alert, textArea, textLayout);
-        }
+		overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDanger, [overlay]() {
+			overlay->close();
+			});
+	}
 
-        int getAlertWindowButtonHeight() override { return 36; }
+	static void showConfirm(
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& message,
+		const juce::String& confirmText,
+		const juce::String& cancelText,
+		std::function<void(bool confirmed)> callback)
+	{
+		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		modal->setContent(std::make_unique<TextContent>(message));
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
 
-        juce::Font getAlertWindowTitleFont() override
-        {
-            return juce::Font(juce::FontOptions("Courier New", 16.0f, juce::Font::bold));
-        }
+		overlay->modalWindow->addButton(cancelText, crossSvg, ColourPalette::buttonInactive, [overlay, callback]() {
+			if (callback) callback(false);
+			overlay->close();
+			});
 
-        juce::Font getAlertWindowMessageFont() override
-        {
-            return juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
-        }
+		overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::buttonDanger, [overlay, callback]() {
+			if (callback) callback(true);
+			overlay->close();
+			});
+	}
 
-        juce::Font getAlertWindowFont() override
-        {
-            return juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
-        }
-    };
+	static void showConfigDialog(
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& serverUrl,
+		const juce::String& apiKey,
+		bool currentUseLocal,
+		int currentTimeoutMs,
+		bool isFirstTime,
+		std::function<void(const ConfigDialogResult&)> callback)
+	{
+		auto modal = std::make_unique<ObsidianModalWindow>(title);
 
-    static ObsidianLookAndFeel &getAlertLookAndFeel()
-    {
-        static ObsidianLookAndFeel instance;
-        return instance;
-    }
+		class ConfigContent : public juce::Component
+		{
+		public:
+			juce::ComboBox modeCombo, timeoutCombo;
+			juce::TextEditor urlEditor, keyEditor;
+			juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
+
+			ConfigContent(bool useLocal, const juce::String& url, const juce::String& key, int timeout, bool firstTime)
+			{
+				auto styleEditor = [](juce::TextEditor& te, const juce::String& text) {
+					te.setText(text);
+					te.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
+					te.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+					te.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+					te.applyFontToAllText(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+					};
+
+				auto styleCombo = [](juce::ComboBox& cb) {
+					cb.setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
+					cb.setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
+					cb.setColour(juce::ComboBox::outlineColourId, ColourPalette::backgroundLight);
+					cb.setColour(juce::ComboBox::arrowColourId, ColourPalette::buttonPrimary);
+					};
+
+				auto styleLabel = [this](juce::Label& lbl, const juce::String& text) {
+					lbl.setText(text, juce::dontSendNotification);
+					lbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+					lbl.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+					addAndMakeVisible(lbl);
+					};
+
+				styleLabel(modeLbl, "Generation Mode:");
+				modeCombo.addItem("Server/API (Full features + stems separation)", 1);
+				modeCombo.addItem("Local Model (Basic - requires manual setup)", 2);
+				modeCombo.setSelectedId(useLocal ? 2 : 1);
+				styleCombo(modeCombo);
+				addAndMakeVisible(modeCombo);
+
+				styleLabel(urlLbl, "Server URL:");
+				styleEditor(urlEditor, url.isEmpty() ? "http://localhost:8000" : url);
+				addAndMakeVisible(urlEditor);
+
+				styleLabel(keyLbl, firstTime ? "API Key:" : "API Key (leave blank to keep current):");
+				styleEditor(keyEditor, "");
+				keyEditor.setPasswordCharacter('*');
+				addAndMakeVisible(keyEditor);
+
+				styleLabel(timeoutLbl, "Request Timeout:");
+				timeoutCombo.addItem("1 minute", 1);
+				timeoutCombo.addItem("2 minutes", 2);
+				timeoutCombo.addItem("5 minutes", 3);
+				timeoutCombo.addItem("10 minutes", 4);
+
+				int selectedIndex = 3;
+				if (timeout == 60000) selectedIndex = 1;
+				else if (timeout == 120000) selectedIndex = 2;
+				else if (timeout == 600000) selectedIndex = 4;
+
+				timeoutCombo.setSelectedId(selectedIndex);
+				styleCombo(timeoutCombo);
+				addAndMakeVisible(timeoutCombo);
+			}
+
+			void resized() override
+			{
+				auto bounds = getLocalBounds().reduced(10);
+				int rowH = 30;
+				int spacing = 15;
+
+				modeLbl.setBounds(bounds.removeFromTop(20));
+				modeCombo.setBounds(bounds.removeFromTop(rowH));
+				bounds.removeFromTop(spacing);
+
+				urlLbl.setBounds(bounds.removeFromTop(20));
+				urlEditor.setBounds(bounds.removeFromTop(rowH));
+				bounds.removeFromTop(spacing);
+
+				keyLbl.setBounds(bounds.removeFromTop(20));
+				keyEditor.setBounds(bounds.removeFromTop(rowH));
+				bounds.removeFromTop(spacing);
+
+				timeoutLbl.setBounds(bounds.removeFromTop(20));
+				timeoutCombo.setBounds(bounds.removeFromTop(rowH));
+			}
+		};
+
+		auto formContent = std::make_unique<ConfigContent>(currentUseLocal, serverUrl, apiKey, currentTimeoutMs, isFirstTime);
+		auto* formPtr = formContent.get();
+		modal->setContent(std::move(formContent));
+
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+
+		overlay->modalWindow->addButton(isFirstTime ? "Skip for now" : "Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]() {
+			ConfigDialogResult res{ false, false, "", "", 0 };
+			callback(res);
+			overlay->close();
+			});
+
+		overlay->modalWindow->addButton(isFirstTime ? "Save & Continue" : "Update", checkSvg, ColourPalette::buttonPrimary, [overlay, formPtr, callback]() {
+			ConfigDialogResult res;
+			res.confirmed = true;
+			res.useLocalModel = formPtr->modeCombo.getSelectedId() == 2;
+			res.serverUrl = formPtr->urlEditor.getText();
+			res.apiKey = formPtr->keyEditor.getText();
+
+			int tid = formPtr->timeoutCombo.getSelectedId();
+			if (tid == 1) res.timeoutMs = 60000;
+			else if (tid == 2) res.timeoutMs = 120000;
+			else if (tid == 4) res.timeoutMs = 600000;
+			else res.timeoutMs = 300000;
+
+			callback(res);
+			overlay->close();
+			});
+	}
+
+	static void showEditPrompt(
+		juce::Component* parent,
+		const juce::String& currentPrompt,
+		std::function<void(const juce::String& newPrompt)> callback)
+	{
+		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt");
+
+		class EditPromptContent : public juce::Component
+		{
+		public:
+			juce::TextEditor editor;
+			EditPromptContent(const juce::String& text) {
+				editor.setText(text);
+				editor.setMultiLine(true);
+				editor.setReturnKeyStartsNewLine(true);
+				editor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
+				editor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+				editor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+				editor.applyFontToAllText(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+				addAndMakeVisible(editor);
+			}
+			void resized() override { editor.setBounds(getLocalBounds().reduced(5)); }
+		};
+
+		auto content = std::make_unique<EditPromptContent>(currentPrompt);
+		auto* editorPtr = &content->editor;
+		modal->setContent(std::move(content));
+
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+
+		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]() {
+			if (callback) callback("");
+			overlay->close();
+			});
+
+		overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary, [overlay, editorPtr, callback]() {
+			juce::String resultStr = editorPtr->getText();
+			if (callback && resultStr.isNotEmpty()) callback(resultStr);
+			overlay->close();
+			});
+	}
+
+	static void showUpdateAvailable(
+		juce::Component* parent,
+		const juce::String& latestTag,
+		const juce::String& currentBuild)
+	{
+		auto modal = std::make_unique<ObsidianModalWindow>("Update Available!");
+		juce::String message = "A new version of OBSIDIAN Neural is available: " + latestTag + "\n\n"
+			"Your current build: v" + currentBuild + "\n\n"
+			"Download the latest version at:\ngithub.com/innermost47/ai-dj/releases/latest";
+
+		modal->setContent(std::make_unique<TextContent>(message));
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+
+		overlay->modalWindow->addButton("Later", crossSvg, ColourPalette::buttonInactive, [overlay]() {
+			overlay->close();
+			});
+
+		overlay->modalWindow->addButton("Download Now", downloadSvg, ColourPalette::buttonPrimary, [overlay]() {
+			juce::URL("https://github.com/innermost47/ai-dj/releases/latest").launchInDefaultBrowser();
+			overlay->close();
+			});
+	}
 };

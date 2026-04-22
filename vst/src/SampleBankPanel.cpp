@@ -1042,10 +1042,10 @@ void SampleBankPanel::cleanupUnusedSamples()
 	auto unused = bank->getUnusedSamples();
 	if (unused.empty())
 	{
-		ObsidianAlertManager::showInfo("Clean Unused", "No unused samples.");
+		ObsidianAlertManager::showInfo(this, "Clean Unused", "No unused samples.");
 		return;
 	}
-	ObsidianAlertManager::showConfirm("Clean Unused",
+	ObsidianAlertManager::showConfirm(this, "Clean Unused",
 									  "Found " + juce::String((int)unused.size()) + " unused samples. Delete all?",
 									  "Delete All", "Cancel",
 									  [this, bank](bool ok)
@@ -1054,7 +1054,7 @@ void SampleBankPanel::cleanupUnusedSamples()
 											  return;
 										  int n = bank->removeUnusedSamples();
 										  refreshSampleList();
-										  ObsidianAlertManager::showInfo("Done", "Removed " + juce::String(n) + " samples.");
+										  ObsidianAlertManager::showInfo(this, "Done", "Removed " + juce::String(n) + " samples.");
 									  });
 }
 
@@ -1066,7 +1066,7 @@ void SampleBankPanel::showDeleteConfirmation(const juce::String &id, const juce:
 	juce::String msg = "Delete '" + name + "'?";
 	if (!e->usedInProjects.empty())
 		msg += "\n\nUsed in " + juce::String((int)e->usedInProjects.size()) + " project(s).";
-	ObsidianAlertManager::showConfirm("Delete Sample", msg, "Delete", "Cancel",
+	ObsidianAlertManager::showConfirm(this, "Delete Sample", msg, "Delete", "Cancel",
 									  [this, id](bool ok)
 									  { if (ok) deleteSample(id); });
 }
@@ -1076,13 +1076,13 @@ void SampleBankPanel::addCategory()
 	juce::String name = categoryInput.getText().trim();
 	if (name.isEmpty())
 	{
-		ObsidianAlertManager::showError("Add Category", "Enter a name.");
+		ObsidianAlertManager::showError(this, "Add Category", "Enter a name.");
 		return;
 	}
 	for (const auto &info : categoryInfos)
 		if (info.name.compareIgnoreCase(name) == 0)
 		{
-			ObsidianAlertManager::showError("Add Category", "Already exists.");
+			ObsidianAlertManager::showError(this, "Add Category", "Already exists.");
 			return;
 		}
 	int id = std::max(20, getNextCategoryId());
@@ -1101,7 +1101,7 @@ void SampleBankPanel::editCategory()
 {
 	if (!isCategoryEditable(currentCategoryId))
 	{
-		ObsidianAlertManager::showError("Edit Category", "Cannot edit built-in categories.");
+		ObsidianAlertManager::showError(this, "Edit Category", "Cannot edit built-in categories.");
 		return;
 	}
 	auto it = std::find_if(categoryInfos.begin(), categoryInfos.end(),
@@ -1118,7 +1118,7 @@ void SampleBankPanel::editCategory()
 	for (const auto &info : categoryInfos)
 		if (info.id != currentCategoryId && info.name.compareIgnoreCase(newName) == 0)
 		{
-			ObsidianAlertManager::showError("Edit Category", "Already exists.");
+			ObsidianAlertManager::showError(this, "Edit Category", "Already exists.");
 			return;
 		}
 	juce::String old = it->name;
@@ -1138,7 +1138,7 @@ void SampleBankPanel::deleteCategory()
 {
 	if (!isCategoryEditable(currentCategoryId))
 	{
-		ObsidianAlertManager::showError("Delete Category", "Cannot delete built-in categories.");
+		ObsidianAlertManager::showError(this, "Delete Category", "Cannot delete built-in categories.");
 		return;
 	}
 	auto it = std::find_if(categoryInfos.begin(), categoryInfos.end(),
@@ -1148,7 +1148,7 @@ void SampleBankPanel::deleteCategory()
 		return;
 	juce::String catName = it->name;
 	int catId = currentCategoryId;
-	ObsidianAlertManager::showConfirm("Delete Category",
+	ObsidianAlertManager::showConfirm(this, "Delete Category",
 									  "Delete '" + catName + "'? Samples won't be deleted.",
 									  "Delete", "Cancel",
 									  [this, catName, catId](bool ok)

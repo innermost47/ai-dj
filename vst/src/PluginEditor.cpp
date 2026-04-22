@@ -294,7 +294,7 @@ void DjIaVstEditor::initUI()
 
 void DjIaVstEditor::showFirstTimeSetup()
 {
-	ObsidianAlertManager::showConfigDialog(
+	ObsidianAlertManager::showConfigDialog(this,
 		"OBSIDIAN-Neural Configuration " + Version::FULL,
 		audioProcessor.getServerUrl(),
 		audioProcessor.getApiKey(),
@@ -332,151 +332,127 @@ void DjIaVstEditor::showOnboardingTour()
 
 void DjIaVstEditor::showOnboardingStep(int step)
 {
-	struct StepInfo
-	{
+	struct StepInfo {
 		juce::String title;
 		juce::String message;
 		juce::String buttonNext;
 		juce::String buttonSkip;
+		juce::String illustrationSvg;
 	};
+
+	juce::String lightningSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>)";
+	juce::String diskSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>)";
+	juce::String playSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>)";
+	juce::String mapSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>)";
 
 	std::vector<StepInfo> steps = {
-			{"OBSIDIAN Neural  -  1 of 5  -  Welcome",
+		{"OBSIDIAN Neural  -  1 of 5  -  Welcome",
+		 "Welcome to OBSIDIAN Neural.\n\nThis is an AI sound engine. You describe a sound,\nthe engine generates it as audio you can play, loop\nand sequence in your DAW.\n\nThe power lies in the [ GEN ] buttons.\nPress GEN, get audio.\nEverything else is just sculpting what comes out.",
+		 "Show me how", "Skip tour", lightningSvg},
 
-			 "Welcome to OBSIDIAN Neural.\n\n"
-			 "This is an AI sound engine. You describe a sound,\n"
-			 "the engine generates it as audio you can play, loop\n"
-			 "and sequence in your DAW.\n\n"
-			 "The power lies in the [ GEN ] buttons (the lightning bolt).\n"
-			 "Press GEN, get audio.\n"
-			 "Everything else is just sculpting what comes out.",
+		{"OBSIDIAN Neural  -  2 of 5  -  The Global Prompt",
+		 "To create sounds, start at the very top:\n\n1. PROMPT INPUT   Type your idea (e.g. 'Acid Bass')\n2. SAVE (Disk)    Click the disk icon to save it.\n\nOnce saved, your prompt is added to the global list\nand becomes available to every track in the plugin.\n\nOn each track, use the dropdowns to pick your saved\nprompt and the AI Model you want to use.\nEach model has its own color and personality.",
+		 "Got it", "Skip tour", diskSvg},
 
-			 "Show me how  ->",
-			 "Skip tour"},
+		{"OBSIDIAN Neural  -  3 of 5  -  Generate",
+		 "Two ways to trigger a generation:\n\n1. TRACK GEN: Click the [ GEN ] lightning bolt on a\n   specific track to generate audio for that page.\n\n2. GLOBAL GEN: Click a track to select it\n   (grey frame), then use the large lightning bolt\n   at the top of the VST.\n\nThe track pulses while the AI is thinking. When\nfinished, the waveform appears. Don't like it?\nHit GEN again for a fresh roll of the dice.",
+		 "OK", "Skip tour", lightningSvg},
 
-			{"OBSIDIAN Neural  -  2 of 5  -  The Global Prompt",
+		{"OBSIDIAN Neural  -  4 of 5  -  Make it play",
+		 "How to play and shape your sounds:\n\n1. PREVIEW: Instant audition of the raw sample.\n\n2. MIXER PLAY (Bottom panel): Arm the track. If\n   your DAW is playing, the sound starts at the next\n   bar and loops perfectly.\n\n3. WAVEFORM: Edit loop points directly on the\n   waveform. You can also DRAG & DROP the waveform\n   directly into your DAW.\n\n4. SEQUENCER: Use the grid to set retrigger points.",
+		 "Almost done", "Skip tour", playSvg},
 
-			 "To create sounds, start at the very top:\n\n"
-			 "  1. PROMPT INPUT   Type your idea (e.g. 'Acid Bass')\n"
-			 "  2. SAVE (Disk)    Click the disk icon to save it.\n\n"
-			 "Once saved, your prompt is added to the global list\n"
-			 "and becomes available to every track in the plugin.\n\n"
-			 "On each track, use the dropdowns to pick your saved\n"
-			 "prompt and the AI Model (engine) you want to use.\n"
-			 "Each model has its own color and personality.",
-
-			 "Got it  ->",
-			 "Skip tour"},
-
-			{"OBSIDIAN Neural  -  3 of 5  -  Generate",
-
-			 "Two ways to trigger a generation:\n\n"
-			 "1. TRACK GEN: Click the [ GEN ] lightning bolt on a\n"
-			 "   specific track to generate audio for that page.\n\n"
-			 "2. GLOBAL GEN: Click a track to select it\n"
-			 "   (grey frame), then use the large lightning bolt\n"
-			 "   at the top of the VST.\n\n"
-			 "The track pulses while the AI is thinking. When\n"
-			 "finished, the waveform appears. Don't like it?\n"
-			 "Hit GEN again for a fresh roll of the dice.",
-
-			 "OK  ->",
-			 "Skip tour"},
-
-			{"OBSIDIAN Neural  -  4 of 5  -  Make it play",
-
-			 "How to play and shape your sounds:\n\n"
-			 "1. PREVIEW (Play icon on track): Instant audition\n"
-			 "   of the raw sample, regardless of host tempo.\n\n"
-			 "2. MIXER PLAY (Bottom panel):\n"
-			 "   Click Play to 'arm' the track. If your DAW is playing,\n"
-			 "   the sound starts at the next bar and loops perfectly.\n"
-			 "   Click Play/Stop again to deactivate it at the end\n"
-			 "   of the current loop (up to 4 bars).\n\n"
-			 "3. WAVEFORM EDITING & DRAG:\n"
-			 "   Edit START and END loop points directly on the\n"
-			 "   waveform. You can also DRAG & DROP the waveform\n"
-			 "   directly into your DAW's timeline or a sampler.\n\n"
-			 "4. SEQUENCER & RETRIGGER:\n"
-			 "   Use the grid to set 'retrigger' points. Each page\n"
-			 "   holds 8 sequences of up to 4 bars.",
-
-			 "Almost done  ->",
-			 "Skip tour"},
-
-			{"OBSIDIAN Neural  -  5 of 5  -  The rest",
-
-			"Quick map of the interface:\n\n"
-			"  ABCD     4 pages per track. Use them to store\n"
-			"           different prompts or variations.\n\n"
-			"  REPEAT   Beat-repeat effect. Use the knob for\n"
-			"           intervals and RND to randomize.\n\n"
-			"  MIXER    Located at the BOTTOM. Controls volume,\n"
-			"           pitch, pan, and EQ for the Master channel.\n\n"
-			"  SAMPLE BANK  Left panel. Every generation is saved\n"
-			"           here automatically. Drag any file back onto\n"
-			"           a track header to reload it.\n\n"
-			"Now go make noise.",
-
-			"Let's go !",
-			"Skip"}
+		{"OBSIDIAN Neural  -  5 of 5  -  The rest",
+		 "Quick map of the interface:\n\nABCD    4 pages per track. Store variations here.\n\nREPEAT  Beat-repeat effect. Use RND to randomize.\n\nMIXER   Located at the BOTTOM. Controls volume,\n        pitch, pan, and EQ for the Master.\n\nBANK    Left panel. Every generation is saved here\n        automatically. Drag files back to reload.\n\nNow go make noise.",
+		 "Let's go !", "Skip", mapSvg}
 	};
 
-	if (step < 1 || step >(int)steps.size())
-		return;
+	if (step < 1 || step >(int)steps.size()) return;
 
 	const auto& info = steps[step - 1];
 	bool isLastStep = (step == (int)steps.size());
 
-	auto* alertWindow = new juce::AlertWindow(
-		info.title,
-		info.message,
-		juce::MessageBoxIconType::NoIcon);
+	auto modal = std::make_unique<ObsidianModalWindow>(info.title);
 
+	class OnboardingContent : public juce::Component
+	{
+	public:
+		juce::Label textLabel;
+		std::unique_ptr<juce::Drawable> svgIllustration;
 
-	ObsidianAlertManager::applyThemeToAlertWindow(alertWindow);
-
-	alertWindow->addButton(info.buttonNext, 1);
-	alertWindow->addButton(info.buttonSkip, 0);
-
-	alertWindow->enterModalState(true,
-		juce::ModalCallbackFunction::create([this, alertWindow, step, isLastStep](int result)
-			{
-				alertWindow->exitModalState(result);
-				delete alertWindow;
-
-				if (result == 1 && !isLastStep)
-				{
-					juce::Timer::callAfterDelay(50, [this, step]()
-						{
-							showOnboardingStep(step + 1);
-						});
-				}
-				else
-				{
-					audioProcessor.setOnboardingDone(true);
-					audioProcessor.saveGlobalConfig();
-
-					if (isLastStep && result == 1)
-					{
-						statusLabel.setText(
-							juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
-							juce::dontSendNotification);
-						updateLCD();
-						statusLabel.setColour(juce::Label::textColourId,
-							ColourPalette::violet);
-					}
-				}
-			}),
-		true);
-
-	juce::Timer::callAfterDelay(100, [alertWindow]()
+		OnboardingContent(const juce::String& text, const juce::String& svgData)
 		{
-			if (alertWindow != nullptr)
+			textLabel.setText(text, juce::dontSendNotification);
+			textLabel.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+			textLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			textLabel.setJustificationType(juce::Justification::topLeft);
+			addAndMakeVisible(textLabel);
+
+			if (svgData.isNotEmpty())
 			{
-				alertWindow->toFront(true);
-				alertWindow->grabKeyboardFocus();
+				auto xml = juce::XmlDocument::parse(svgData);
+				if (xml) svgIllustration = juce::Drawable::createFromSVG(*xml);
 			}
+		}
+
+		void paint(juce::Graphics& g) override
+		{
+			if (svgIllustration != nullptr)
+			{
+				auto bounds = getLocalBounds().toFloat();
+				auto iconArea = bounds.removeFromRight(120.0f).withSizeKeepingCentre(100.0f, 100.0f);
+				svgIllustration->drawWithin(g, iconArea, juce::RectanglePlacement::centred, 0.35f);
+			}
+		}
+
+		void resized() override
+		{
+			auto bounds = getLocalBounds();
+			if (svgIllustration != nullptr)
+				bounds.removeFromRight(120);
+			textLabel.setBounds(bounds);
+		}
+	};
+
+	modal->setContent(std::make_unique<OnboardingContent>(info.message, info.illustrationSvg));
+
+	auto* overlay = new ObsidianModalOverlay(this, std::move(modal));
+
+	juce::String arrowSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>)";
+	juce::String skipSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>)";
+
+	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]() {
+		overlay->setVisible(false);
+		juce::MessageManager::callAsync([this, overlay]() {
+			delete overlay;
+			audioProcessor.setOnboardingDone(true);
+			audioProcessor.saveGlobalConfig();
+			});
+		});
+
+	overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]() {
+
+		overlay->setVisible(false);
+		juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
+
+			delete overlay;
+
+			if (!isLastStep)
+			{
+				showOnboardingStep(step + 1);
+			}
+			else
+			{
+				audioProcessor.setOnboardingDone(true);
+				audioProcessor.saveGlobalConfig();
+
+				statusLabel.setText(
+					juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
+					juce::dontSendNotification);
+				statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+				updateLCD();
+			}
+			});
 		});
 }
 
@@ -493,6 +469,7 @@ void DjIaVstEditor::refreshUIForMode()
 void DjIaVstEditor::showConfigDialog()
 {
 	ObsidianAlertManager::showConfigDialog(
+		this,
 		"OBSIDIAN-Neural Configuration " + Version::FULL,
 		audioProcessor.getServerUrl(),
 		audioProcessor.getApiKey(),
@@ -520,9 +497,7 @@ void DjIaVstEditor::showConfigDialog()
 
 			if (modeChanged)
 				refreshUIForMode();
-			setStatusWithTimeout(modeChanged ? "Mode changed! Configuration updated."
-				: "Configuration updated.",
-				3000);
+			setStatusWithTimeout(modeChanged ? "Mode changed! Configuration updated." : "Configuration updated.", 3000);
 		});
 }
 
@@ -543,7 +518,7 @@ void DjIaVstEditor::checkLocalModelsAndNotify()
 	}
 	else
 	{
-		ObsidianAlertManager::showConfirm(
+		ObsidianAlertManager::showConfirm(this,
 			"Local Models Required",
 			"Local models not found!\n\nExpected location: " + stableAudioDir.getFullPathName(),
 			"Open GitHub Instructions", "OK",
@@ -1166,7 +1141,7 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent& event)
 						editCustomPromptDialog(selectedPrompt);
 					}
 					else if (result == 2) {
-						ObsidianAlertManager::showConfirm(
+						ObsidianAlertManager::showConfirm(this,
 							"Delete Custom Prompt",
 							"Are you sure you want to delete this prompt?\n\n'" + selectedPrompt + "'",
 							"Delete", "Cancel",
@@ -1187,7 +1162,7 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent& event)
 
 void DjIaVstEditor::editCustomPromptDialog(const juce::String& selectedPrompt)
 {
-	ObsidianAlertManager::showEditPrompt(selectedPrompt,
+	ObsidianAlertManager::showEditPrompt(this, selectedPrompt,
 		[this, selectedPrompt](const juce::String& newPrompt)
 		{
 			audioProcessor.editCustomPrompt(selectedPrompt, newPrompt);
@@ -2398,7 +2373,7 @@ void DjIaVstEditor::checkForUpdates()
 										{
 											if (auto* editor = safeThis.getComponent())
 											{
-												ObsidianAlertManager::showUpdateAvailable(tagName, juce::String(BUILD_NUMBER));
+												ObsidianAlertManager::showUpdateAvailable(safeThis, tagName, juce::String(BUILD_NUMBER));
 											}
 										});
 								}

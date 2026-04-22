@@ -3,7 +3,7 @@
 #include "ObsidianAlertManager.h"
 #include "BinaryData.h"
 
-MidiMappingRow::MidiMappingRow(const MidiMapping& mapping, MidiLearnManager* manager)
+MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *manager)
 	: mapping(mapping), midiLearnManager(manager)
 {
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
@@ -35,22 +35,22 @@ MidiMappingRow::~MidiMappingRow()
 {
 }
 
-void MidiMappingRow::paint(juce::Graphics& g)
+void MidiMappingRow::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
 	bool isEven = (getY() / getHeight()) % 2 == 0;
 	g.setColour(isEven
-		? ColourPalette::backgroundDark
-		: ColourPalette::backgroundMid.withAlpha(0.5f));
+					? ColourPalette::backgroundDark
+					: ColourPalette::backgroundMid.withAlpha(0.5f));
 	g.fillRect(bounds);
 	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.6f));
 	g.fillRect(0.0f, 4.0f, 3.0f, bounds.getHeight() - 8.0f);
 	g.setColour(ColourPalette::trackSelected.withAlpha(0.2f));
 	g.drawLine(10.0f, bounds.getBottom() - 0.5f,
-		bounds.getWidth() - 10.0f, bounds.getBottom() - 0.5f, 0.5f);
+			   bounds.getWidth() - 10.0f, bounds.getBottom() - 0.5f, 0.5f);
 }
 
-void MidiMappingRow::buttonClicked(juce::Button* button)
+void MidiMappingRow::buttonClicked(juce::Button *button)
 {
 	if (button == &deleteButton && onDeleteClicked)
 		onDeleteClicked();
@@ -77,36 +77,36 @@ void MidiMappingRow::resized()
 	midiInfoLabel.setBounds(labelArea);
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::buttonClicked(juce::Button* button)
+void MidiMappingEditorWindow::MidiMappingEditorContent::buttonClicked(juce::Button *button)
 {
 	if (button == &clearAllButton)
 	{
-		ObsidianAlertManager::showConfirm(
-			"Confirmation", "Are you sure you want to clear all MIDI mappings?",
-			"Yes", "No",
-			[this](bool confirmed)
-			{
-				if (confirmed)
-				{
-					midiLearnManager->clearAllMappings();
-					refreshMappingsList();
-				}
-			});
+		ObsidianAlertManager::showConfirm(this,
+										  "Confirmation", "Are you sure you want to clear all MIDI mappings?",
+										  "Yes", "No",
+										  [this](bool confirmed)
+										  {
+											  if (confirmed)
+											  {
+												  midiLearnManager->clearAllMappings();
+												  refreshMappingsList();
+											  }
+										  });
 	}
 	else if (button == &reloadDefaultsButton)
 	{
-		ObsidianAlertManager::showConfirm(
-			"Confirmation", "Reset mappings to default configuration?",
-			"Yes", "No",
-			[this](bool confirmed)
-			{
-				if (confirmed)
-				{
-					midiLearnManager->clearAllMappings();
-					midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
-					refreshMappingsList();
-				}
-			});
+		ObsidianAlertManager::showConfirm(this,
+										  "Confirmation", "Reset mappings to default configuration?",
+										  "Yes", "No",
+										  [this](bool confirmed)
+										  {
+											  if (confirmed)
+											  {
+												  midiLearnManager->clearAllMappings();
+												  midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
+												  refreshMappingsList();
+											  }
+										  });
 	}
 }
 
@@ -127,7 +127,7 @@ void MidiMappingRow::toggleBlink()
 	{
 		blinkState = !blinkState;
 		learnButton.setColour(juce::TextButton::buttonColourId,
-			blinkState ? ColourPalette::playArmed : ColourPalette::buttonSuccess);
+							  blinkState ? ColourPalette::playArmed : ColourPalette::buttonSuccess);
 		repaint();
 	}
 }
@@ -153,7 +153,7 @@ juce::String MidiMappingRow::getMidiInfoString() const
 	return typeStr + " " + juce::String(mapping.midiNumber) + " (Ch " + juce::String(mapping.midiChannel + 1) + ")";
 }
 
-MidiMappingEditorWindow::MidiMappingEditorContent::MidiMappingEditorContent(MidiLearnManager* manager)
+MidiMappingEditorWindow::MidiMappingEditorContent::MidiMappingEditorContent(MidiLearnManager *manager)
 	: midiLearnManager(manager)
 {
 	titleLabel.setText("MIDI Mappings", juce::dontSendNotification);
@@ -187,7 +187,7 @@ MidiMappingEditorWindow::MidiMappingEditorContent::~MidiMappingEditorContent()
 	mappingsViewport.setLookAndFeel(nullptr);
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::paint(juce::Graphics& g)
+void MidiMappingEditorWindow::MidiMappingEditorContent::paint(juce::Graphics &g)
 {
 	g.fillAll(ColourPalette::backgroundDark);
 }
@@ -219,13 +219,13 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::createMappingRows()
 	auto mappings = midiLearnManager->getAllMappings();
 	int y = 0;
 
-	for (const auto& mapping : mappings)
+	for (const auto &mapping : mappings)
 	{
-		auto* row = new MidiMappingRow(mapping, midiLearnManager);
+		auto *row = new MidiMappingRow(mapping, midiLearnManager);
 		row->onDeleteClicked = [this, mapping]
-			{ deleteMapping(mapping); };
+		{ deleteMapping(mapping); };
 		row->onLearnClicked = [this, mapping]
-			{ startLearningForMapping(mapping); };
+		{ startLearningForMapping(mapping); };
 
 		mappingRows.add(row);
 		mappingsContainer.addAndMakeVisible(row);
@@ -236,27 +236,27 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::createMappingRows()
 	mappingsContainer.setSize(800, y);
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::deleteMapping(const MidiMapping& mapping)
+void MidiMappingEditorWindow::MidiMappingEditorContent::deleteMapping(const MidiMapping &mapping)
 {
-	ObsidianAlertManager::showConfirm(
-		"Confirmation", "Delete mapping for \"" + mapping.parameterName + "\"?",
-		"Yes", "No",
-		[this, mapping](bool confirmed)
-		{
-			if (confirmed)
-			{
-				midiLearnManager->removeMapping(mapping.parameterName);
-				refreshMappingsList();
-			}
-		});
+	ObsidianAlertManager::showConfirm(this,
+									  "Confirmation", "Delete mapping for \"" + mapping.parameterName + "\"?",
+									  "Yes", "No",
+									  [this, mapping](bool confirmed)
+									  {
+										  if (confirmed)
+										  {
+											  midiLearnManager->removeMapping(mapping.parameterName);
+											  refreshMappingsList();
+										  }
+									  });
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(const MidiMapping& mapping)
+void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(const MidiMapping &mapping)
 {
 	auto onLearningComplete = [this, paramName = mapping.parameterName](float /* value */)
-		{
-			juce::MessageManager::callAsync([this, paramName]()
-				{
+	{
+		juce::MessageManager::callAsync([this, paramName]()
+										{
 					auto updatedMappings = midiLearnManager->getAllMappings();
 
 					for (const auto& updated : updatedMappings)
@@ -275,7 +275,7 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(
 							break;
 						}
 					} });
-		};
+	};
 
 	midiLearnManager->startLearning(
 		mapping.parameterName,
@@ -283,10 +283,10 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(
 		onLearningComplete,
 		mapping.description);
 
-	for (auto* row : mappingRows)
+	for (auto *row : mappingRows)
 		row->setLearningActive(false);
 
-	for (auto* row : mappingRows)
+	for (auto *row : mappingRows)
 	{
 		if (row->getMapping().parameterName == mapping.parameterName)
 		{
@@ -296,7 +296,7 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(
 	}
 }
 
-void MidiMappingRow::updateMapping(const MidiMapping& newMapping)
+void MidiMappingRow::updateMapping(const MidiMapping &newMapping)
 {
 	mapping = newMapping;
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
@@ -304,11 +304,11 @@ void MidiMappingRow::updateMapping(const MidiMapping& newMapping)
 	repaint();
 }
 
-MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager* manager)
+MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager)
 	: DocumentWindow("MIDI Mappings",
-		ColourPalette::backgroundDark,
-		DocumentWindow::allButtons),
-	midiLearnManager(manager)
+					 ColourPalette::backgroundDark,
+					 DocumentWindow::allButtons),
+	  midiLearnManager(manager)
 {
 	content = std::make_unique<MidiMappingEditorContent>(manager);
 	setUsingNativeTitleBar(true);
@@ -336,16 +336,16 @@ void MidiMappingEditorWindow::closeButtonPressed()
 
 void MidiMappingEditorWindow::timerCallback()
 {
-	if (auto* contentLocal = dynamic_cast<MidiMappingEditorContent*>(getContentComponent()))
+	if (auto *contentLocal = dynamic_cast<MidiMappingEditorContent *>(getContentComponent()))
 	{
 		if (midiLearnManager->isLearningActive())
 		{
-			for (auto* row : contentLocal->mappingRows)
+			for (auto *row : contentLocal->mappingRows)
 				row->toggleBlink();
 		}
 		else
 		{
-			for (auto* row : contentLocal->mappingRows)
+			for (auto *row : contentLocal->mappingRows)
 				row->setLearningActive(false);
 		}
 	}
