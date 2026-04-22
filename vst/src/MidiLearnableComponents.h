@@ -18,7 +18,7 @@ public:
 	{
 		learningMode = false;
 		blinkState = false;
-		setAccessible(false);
+		this->setAccessible(false);
 	}
 
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
@@ -31,7 +31,7 @@ public:
 		onMidiLearn = nullptr;
 		onMidiRemove = nullptr;
 		stopTimer();
-		setVisible(false);
+		this->setVisible(false);
 	}
 
 	std::function<void()> onMidiLearn;
