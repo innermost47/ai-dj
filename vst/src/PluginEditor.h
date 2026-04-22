@@ -20,12 +20,12 @@ public:
 		return createIgnoredAccessibilityHandler(*this);
 	}
 
-	explicit DjIaVstEditor(DjIaVstProcessor &);
+	explicit DjIaVstEditor(DjIaVstProcessor&);
 
 	~DjIaVstEditor() override;
 
 	std::vector<std::unique_ptr<TrackComponent>> trackComponents;
-	std::vector<std::unique_ptr<TrackComponent>> &getTrackComponents()
+	std::vector<std::unique_ptr<TrackComponent>>& getTrackComponents()
 	{
 		return trackComponents;
 	}
@@ -36,13 +36,13 @@ public:
 
 	juce::Label statusLabel;
 
-	std::atomic<bool> isBeingDestroyed{false};
+	std::atomic<bool> isBeingDestroyed{ false };
 
-	TrackComponent *getTrackComponent(const juce::String &trackId);
+	TrackComponent* getTrackComponent(const juce::String& trackId);
 
 	LCDScreen lcdScreen;
 
-	void paint(juce::Graphics &) override;
+	void paint(juce::Graphics&) override;
 	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
 	void layoutConfigSection(juce::Rectangle<int> area, int reducing, int spacing);
 	void resized() override;
@@ -50,26 +50,26 @@ public:
 	void refreshTrackComponents();
 	void updateUIFromProcessor();
 	void refreshTracks();
-	void onGenerationComplete(const juce::String &trackId, const juce::String &message) override;
+	void onGenerationComplete(const juce::String& trackId, const juce::String& message) override;
 	void refreshMixerChannels();
 	void initUI();
 	void toggleWaveFormButtonOnTrack();
-	void setStatusWithTimeout(const juce::String &message, int timeoutMs = 2000);
-	void *getSequencerForTrack(const juce::String &trackId);
-	void stopGenerationUI(const juce::String &trackId, bool success = true, const juce::String &errorMessage = "");
-	void startGenerationUI(const juce::String &trackId);
+	void setStatusWithTimeout(const juce::String& message, int timeoutMs = 2000);
+	void* getSequencerForTrack(const juce::String& trackId);
+	void stopGenerationUI(const juce::String& trackId, bool success = true, const juce::String& errorMessage = "");
+	void startGenerationUI(const juce::String& trackId);
 	void restoreUICallbacks();
 	void updateSelectedTrack();
 	void onGenerateButtonClicked();
 	void toggleSampleBank();
-	void onSampleLoaded(const juce::String &trackId);
+	void onSampleLoaded(const juce::String& trackId);
 	void reEnableCanvasForTrack();
 	void updateLCD();
 
 	bool keyStateChanged(bool isKeyDown) override;
 
 private:
-	DjIaVstProcessor &audioProcessor;
+	DjIaVstProcessor& audioProcessor;
 	CustomLookAndFeel customLookAndFeel;
 	MasterWaveformDisplay masterWaveformDisplay;
 	juce::Image logoImage;
@@ -87,7 +87,7 @@ private:
 		QWERTZ
 	};
 	KeyboardLayout detectKeyboardLayout();
-	MidiMappingEditorWindow *midiEditorWindow = nullptr;
+	MidiMappingEditorWindow* midiEditorWindow = nullptr;
 
 	void visibilityChanged() override;
 	void openMidiMappingEditor();
@@ -99,21 +99,21 @@ private:
 	void onAutoLoadToggled();
 	void onLoadSampleClicked();
 	void updateLoadButtonState();
-	void updateMidiIndicator(const juce::String &noteInfo);
+	void updateMidiIndicator(const juce::String& noteInfo);
 	void onAddTrack();
 	void updateUIComponents();
 	void setAllGenerateButtonsEnabled(bool enabled);
 	void showFirstTimeSetup();
 	void showConfigDialog();
-	void mouseDown(const juce::MouseEvent &event) override;
-	void editCustomPromptDialog(const juce::String &selectedPrompt);
+	void mouseDown(const juce::MouseEvent& event) override;
+	void editCustomPromptDialog(const juce::String& selectedPrompt);
 	void toggleSEQButtonOnTrack();
 	void startGenerationButtonAnimation();
 	void stopGenerationButtonAnimation();
 	void refreshUIForMode();
 	void checkLocalModelsAndNotify();
 	void notifyTracksPromptUpdate();
-	void generateFromTrackComponent(const juce::String &trackId);
+	void generateFromTrackComponent(const juce::String& trackId);
 	void refreshCredits();
 	void refreshCreditsAsync();
 	void showOnboardingStep(int step);
@@ -121,22 +121,24 @@ private:
 	void checkForUpdates();
 	void layoutControlPanel(juce::Rectangle<int> area, int spacing);
 	void layoutTracksGrid();
-	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
-	bool keyPressed(const juce::KeyPress &key) override;
+	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
+	bool keyPressed(const juce::KeyPress& key) override;
 
 	juce::StringArray getAllPrompts() const;
 
 	juce::TextButton showMixerButton;
 	bool mixerVisible = false;
-	std::atomic<bool> isGenerating{false};
-	std::atomic<bool> wasGenerating{false};
-	std::atomic<bool> isInitialized{false};
+	std::atomic<bool> isGenerating{ false };
+	std::atomic<bool> wasGenerating{ false };
+	std::atomic<bool> isInitialized{ false };
 
-	IconButtonSimple autoLoadButton{"AutoLoad", ""};
-	IconButtonSimple loadSampleButton{"LoadSample", ""};
-	IconButtonSimple bypassSequencerButton{"BypassSeq", ""};
-	IconButtonSimple configButton{"Config", ""};
-	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
+	IconButtonSimple autoLoadButton{ "AutoLoad", "" };
+	IconButtonSimple loadSampleButton{ "LoadSample", "" };
+	IconButtonSimple bypassSequencerButton{ "BypassSeq", "" };
+	IconButtonSimple configButton{ "Config", "" };
+	IconButtonSimple openMidiEditorButton{ "MidiEditor", "" };
+	IconButtonSimple helpButton{ "Help", "" };
+
 
 	juce::String generatingTrackId;
 	juce::String originalButtonText;
@@ -153,19 +155,19 @@ private:
 		"Industrial noise texture",
 		"Glitchy percussion loop",
 		"Vintage analog lead",
-		"Distorted noise chops"};
+		"Distorted noise chops" };
 
 	juce::Label pluginNameLabel;
 	juce::Label developerLabel;
 	juce::Label stabilityLabel;
 	juce::Typeface::Ptr customFont;
 	MidiLearnableComboBox promptPresetSelector;
-	IconButtonSimple savePresetButton{"SavePreset", "SAVE"};
+	IconButtonSimple savePresetButton{ "SavePreset", "SAVE" };
 	juce::TextEditor promptInput;
 	juce::ComboBox styleSelector;
 	juce::Label bpmLabel;
 	juce::ComboBox keySelector;
-	IconButton generateButton{"GenerateBtn", "GEN"};
+	IconButton generateButton{ "GenerateBtn", "GEN" };
 	juce::TextButton resetUIButton;
 	juce::Label serverUrlLabel;
 	juce::TextEditor serverUrlInput;
