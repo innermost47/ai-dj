@@ -5,7 +5,6 @@
 #include "MidiLearnableComponents.h"
 #include "SampleBankPanel.h"
 #include "CustomLookAndFeel.h"
-#include "MidiMappingEditorWindow.h"
 #include "LCDScreen.h"
 #include "IconButton.h"
 #include "MasterWaveformDisplay.h"
@@ -87,7 +86,6 @@ private:
 		QWERTZ
 	};
 	KeyboardLayout detectKeyboardLayout();
-	MidiMappingEditorWindow* midiEditorWindow = nullptr;
 
 	void visibilityChanged() override;
 	void openMidiMappingEditor();

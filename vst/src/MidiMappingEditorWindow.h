@@ -31,6 +31,7 @@ private:
 
 	juce::Label parameterLabel;
 	juce::Label midiInfoLabel;
+
 	IconButtonSimple deleteButton{ "Delete", "" };
 	IconButtonSimple learnButton{ "ReLearn", "" };
 
@@ -42,56 +43,39 @@ private:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiMappingRow)
 };
 
-class MidiMappingEditorWindow : public juce::DocumentWindow,
+class MidiMappingEditorWindow : public juce::Component,
+	public juce::Button::Listener,
 	public juce::Timer
 {
 public:
 	MidiMappingEditorWindow(MidiLearnManager* manager);
 	~MidiMappingEditorWindow() override;
 
-	void closeButtonPressed() override;
+	void paint(juce::Graphics& g) override;
+	void resized() override;
+	void buttonClicked(juce::Button* button) override;
 	void timerCallback() override;
 
-	std::function<void()> onWindowClosed;
+	void refreshMappingsList();
 
 private:
-	class MidiMappingEditorContent : public juce::Component,
-		public juce::Button::Listener
-	{
-	public:
-		MidiMappingEditorContent(MidiLearnManager* manager);
-		~MidiMappingEditorContent() override;
-
-		void paint(juce::Graphics& g) override;
-		void resized() override;
-		void buttonClicked(juce::Button* button) override;
-
-		void refreshMappingsList();
-		void deleteMapping(const MidiMapping& mapping);
-		void startLearningForMapping(const MidiMapping& mapping);
-
-		juce::OwnedArray<MidiMappingRow> mappingRows;
-
-	private:
-		MidiLearnManager* midiLearnManager = nullptr;
-
-		CustomLookAndFeel customLookAndFeel;
-
-		juce::Label titleLabel;
-
-		IconButtonSimple clearAllButton{ "ClearAll", "" };
-		IconButtonSimple reloadDefaultsButton{ "ReloadDefaults", "" };
-
-		juce::Viewport mappingsViewport;
-		juce::Component mappingsContainer;
-
-		void createMappingRows();
-
-		JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiMappingEditorContent)
-	};
+	void deleteMapping(const MidiMapping& mapping);
+	void startLearningForMapping(const MidiMapping& mapping);
 
 	MidiLearnManager* midiLearnManager = nullptr;
-	std::unique_ptr<MidiMappingEditorContent> content;
+
+	CustomLookAndFeel customLookAndFeel;
+
+	IconButtonSimple clearAllButton{ "ClearAll", "" };
+	IconButtonSimple reloadDefaultsButton{ "ReloadDefaults", "" };
+
+	juce::Label subtitleLabel;
+	juce::Rectangle<int> headerBounds;
+
+	juce::Viewport mappingsViewport;
+	juce::Component mappingsContainer;
+
+	juce::OwnedArray<MidiMappingRow> mappingRows;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiMappingEditorWindow)
 };

@@ -1,9 +1,8 @@
 ﻿#include "MidiMappingEditorWindow.h"
-#include "ColourPalette.h"
 #include "ObsidianAlertManager.h"
-#include "BinaryData.h"
+#include "BinaryData.h" 
 
-MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *manager)
+MidiMappingRow::MidiMappingRow(const MidiMapping& mapping, MidiLearnManager* manager)
 	: mapping(mapping), midiLearnManager(manager)
 {
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
@@ -27,33 +26,39 @@ MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *man
 	learnButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	learnButton.addListener(this);
 	addAndMakeVisible(learnButton);
-
-	setSize(800, 50);
 }
 
-MidiMappingRow::~MidiMappingRow()
-{
-}
+MidiMappingRow::~MidiMappingRow() {}
 
-void MidiMappingRow::paint(juce::Graphics &g)
+void MidiMappingRow::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds().toFloat();
 	bool isEven = (getY() / getHeight()) % 2 == 0;
-	g.setColour(isEven
-					? ColourPalette::backgroundDark
-					: ColourPalette::backgroundMid.withAlpha(0.5f));
+	g.setColour(isEven ? ColourPalette::backgroundDark : ColourPalette::backgroundMid.withAlpha(0.5f));
 	g.fillRect(bounds);
+
 	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.6f));
 	g.fillRect(0.0f, 4.0f, 3.0f, bounds.getHeight() - 8.0f);
+
 	g.setColour(ColourPalette::trackSelected.withAlpha(0.2f));
-	g.drawLine(10.0f, bounds.getBottom() - 0.5f,
-			   bounds.getWidth() - 10.0f, bounds.getBottom() - 0.5f, 0.5f);
+	g.drawLine(10.0f, bounds.getBottom() - 0.5f, bounds.getWidth() - 10.0f, bounds.getBottom() - 0.5f, 0.5f);
 }
 
-void MidiMappingRow::buttonClicked(juce::Button *button)
+void MidiMappingRow::resized()
 {
-	if (button == &deleteButton && onDeleteClicked)
-		onDeleteClicked();
+	auto bounds = getLocalBounds().reduced(5);
+	auto buttonArea = bounds.removeFromRight(90);
+	deleteButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(36, 36));
+	learnButton.setBounds(buttonArea.removeFromRight(44).withSizeKeepingCentre(36, 36));
+
+	auto labelArea = bounds;
+	parameterLabel.setBounds(labelArea.removeFromLeft(300));
+	midiInfoLabel.setBounds(labelArea);
+}
+
+void MidiMappingRow::buttonClicked(juce::Button* button)
+{
+	if (button == &deleteButton && onDeleteClicked) onDeleteClicked();
 	else if (button == &learnButton && onLearnClicked)
 	{
 		if (midiLearnManager->isLearningActive())
@@ -63,50 +68,6 @@ void MidiMappingRow::buttonClicked(juce::Button *button)
 			return;
 		}
 		onLearnClicked();
-	}
-}
-
-void MidiMappingRow::resized()
-{
-	auto bounds = getLocalBounds().reduced(5);
-	auto buttonArea = bounds.removeFromRight(90);
-	deleteButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(36, 36));
-	learnButton.setBounds(buttonArea.removeFromRight(44).withSizeKeepingCentre(36, 36));
-	auto labelArea = bounds;
-	parameterLabel.setBounds(labelArea.removeFromLeft(300));
-	midiInfoLabel.setBounds(labelArea);
-}
-
-void MidiMappingEditorWindow::MidiMappingEditorContent::buttonClicked(juce::Button *button)
-{
-	if (button == &clearAllButton)
-	{
-		ObsidianAlertManager::showConfirm(this,
-										  "Confirmation", "Are you sure you want to clear all MIDI mappings?",
-										  "Yes", "No",
-										  [this](bool confirmed)
-										  {
-											  if (confirmed)
-											  {
-												  midiLearnManager->clearAllMappings();
-												  refreshMappingsList();
-											  }
-										  });
-	}
-	else if (button == &reloadDefaultsButton)
-	{
-		ObsidianAlertManager::showConfirm(this,
-										  "Confirmation", "Reset mappings to default configuration?",
-										  "Yes", "No",
-										  [this](bool confirmed)
-										  {
-											  if (confirmed)
-											  {
-												  midiLearnManager->clearAllMappings();
-												  midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
-												  refreshMappingsList();
-											  }
-										  });
 	}
 }
 
@@ -127,9 +88,17 @@ void MidiMappingRow::toggleBlink()
 	{
 		blinkState = !blinkState;
 		learnButton.setColour(juce::TextButton::buttonColourId,
-							  blinkState ? ColourPalette::playArmed : ColourPalette::buttonSuccess);
+			blinkState ? ColourPalette::playArmed : ColourPalette::buttonSuccess);
 		repaint();
 	}
+}
+
+void MidiMappingRow::updateMapping(const MidiMapping& newMapping)
+{
+	mapping = newMapping;
+	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
+	midiInfoLabel.setText(getMidiInfoString(), juce::dontSendNotification);
+	repaint();
 }
 
 juce::String MidiMappingRow::getMidiInfoString() const
@@ -137,30 +106,22 @@ juce::String MidiMappingRow::getMidiInfoString() const
 	juce::String typeStr;
 	switch (mapping.midiType)
 	{
-	case 1:
-		typeStr = "CC";
-		break;
-	case 0:
-		typeStr = "Note";
-		break;
-	case 2:
-		typeStr = "Pitch Bend";
-		break;
-	default:
-		typeStr = "Unknown";
-		break;
+	case 1: typeStr = "CC"; break;
+	case 0: typeStr = "Note"; break;
+	case 2: typeStr = "Pitch Bend"; break;
+	default: typeStr = "Unknown"; break;
 	}
 	return typeStr + " " + juce::String(mapping.midiNumber) + " (Ch " + juce::String(mapping.midiChannel + 1) + ")";
 }
 
-MidiMappingEditorWindow::MidiMappingEditorContent::MidiMappingEditorContent(MidiLearnManager *manager)
+MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager* manager)
 	: midiLearnManager(manager)
 {
-	titleLabel.setText("MIDI Mappings", juce::dontSendNotification);
-	titleLabel.setFont(juce::Font(juce::FontOptions(24.0f).withStyle("Bold")));
-	titleLabel.setJustificationType(juce::Justification::centred);
-	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	addAndMakeVisible(titleLabel);
+	subtitleLabel.setText("Manage custom mappings or click 'ReLearn' to assign a new MIDI control.", juce::dontSendNotification);
+	subtitleLabel.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+	subtitleLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	subtitleLabel.setJustificationType(juce::Justification::centredLeft);
+	addAndMakeVisible(subtitleLabel);
 
 	clearAllButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	clearAllButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
@@ -180,113 +141,152 @@ MidiMappingEditorWindow::MidiMappingEditorContent::MidiMappingEditorContent(Midi
 	addAndMakeVisible(mappingsViewport);
 
 	refreshMappingsList();
+	startTimerHz(2);
 }
 
-MidiMappingEditorWindow::MidiMappingEditorContent::~MidiMappingEditorContent()
+MidiMappingEditorWindow::~MidiMappingEditorWindow()
 {
+	stopTimer();
 	mappingsViewport.setLookAndFeel(nullptr);
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::paint(juce::Graphics &g)
+void MidiMappingEditorWindow::timerCallback()
+{
+	if (midiLearnManager->isLearningActive())
+	{
+		for (auto* row : mappingRows) row->toggleBlink();
+	}
+	else
+	{
+		for (auto* row : mappingRows) row->setLearningActive(false);
+	}
+}
+
+void MidiMappingEditorWindow::paint(juce::Graphics& g)
 {
 	g.fillAll(ColourPalette::backgroundDark);
+
+	g.setColour(ColourPalette::backgroundDeep);
+	g.fillRoundedRectangle(headerBounds.toFloat(), 6.0f);
+
+	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
+	g.drawRoundedRectangle(headerBounds.toFloat(), 6.0f, 1.0f);
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::resized()
+void MidiMappingEditorWindow::resized()
 {
 	auto bounds = getLocalBounds().reduced(10);
+	headerBounds = bounds.removeFromTop(44);
+	auto headerContent = headerBounds.reduced(8, 5);
+	reloadDefaultsButton.setBounds(headerContent.removeFromRight(34).withSizeKeepingCentre(34, 34));
+	headerContent.removeFromRight(10);
+	clearAllButton.setBounds(headerContent.removeFromRight(34).withSizeKeepingCentre(34, 34));
 
-	auto headerRow = bounds.removeFromTop(40);
-	reloadDefaultsButton.setBounds(headerRow.removeFromRight(38).withSizeKeepingCentre(34, 34));
-	headerRow.removeFromRight(6);
-	clearAllButton.setBounds(headerRow.removeFromRight(38).withSizeKeepingCentre(34, 34));
-	titleLabel.setBounds(headerRow);
+	subtitleLabel.setBounds(headerContent);
 
-	bounds.removeFromTop(8);
+	bounds.removeFromTop(10);
+
 	mappingsViewport.setBounds(bounds);
+
+	int scrollBarWidth = mappingsViewport.getVerticalScrollBar().isVisible() ? mappingsViewport.getScrollBarThickness() : 0;
+	int rowWidth = mappingsViewport.getWidth() - scrollBarWidth;
+	int rowHeight = 50;
+
+	mappingsContainer.setSize(rowWidth, mappingRows.size() * rowHeight);
+
+	for (int i = 0; i < mappingRows.size(); ++i)
+	{
+		mappingRows[i]->setBounds(0, i * rowHeight, rowWidth, rowHeight);
+	}
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::refreshMappingsList()
+void MidiMappingEditorWindow::buttonClicked(juce::Button* button)
 {
-	auto mappings = midiLearnManager->getAllMappings();
-	createMappingRows();
+	if (button == &clearAllButton)
+	{
+		ObsidianAlertManager::showConfirm(this,
+			"Confirmation", "Are you sure you want to clear all MIDI mappings?", "Yes", "No",
+			[this](bool confirmed) {
+				if (confirmed) {
+					midiLearnManager->clearAllMappings();
+					refreshMappingsList();
+				}
+			});
+	}
+	else if (button == &reloadDefaultsButton)
+	{
+		ObsidianAlertManager::showConfirm(this,
+			"Confirmation", "Reset mappings to default configuration?", "Yes", "No",
+			[this](bool confirmed) {
+				if (confirmed) {
+					midiLearnManager->clearAllMappings();
+					midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
+					refreshMappingsList();
+				}
+			});
+	}
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::createMappingRows()
+void MidiMappingEditorWindow::refreshMappingsList()
 {
 	mappingRows.clear();
+	mappingsContainer.removeAllChildren();
 
 	auto mappings = midiLearnManager->getAllMappings();
-	int y = 0;
 
-	for (const auto &mapping : mappings)
+	for (const auto& mapping : mappings)
 	{
-		auto *row = new MidiMappingRow(mapping, midiLearnManager);
-		row->onDeleteClicked = [this, mapping]
-		{ deleteMapping(mapping); };
-		row->onLearnClicked = [this, mapping]
-		{ startLearningForMapping(mapping); };
+		auto* row = new MidiMappingRow(mapping, midiLearnManager);
+		row->onDeleteClicked = [this, mapping] { deleteMapping(mapping); };
+		row->onLearnClicked = [this, mapping] { startLearningForMapping(mapping); };
 
 		mappingRows.add(row);
 		mappingsContainer.addAndMakeVisible(row);
-		row->setBounds(0, y, 800, 50);
-		y += 50;
 	}
 
-	mappingsContainer.setSize(800, y);
+	resized();
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::deleteMapping(const MidiMapping &mapping)
+void MidiMappingEditorWindow::deleteMapping(const MidiMapping& mapping)
 {
-	ObsidianAlertManager::showConfirm(this,
-									  "Confirmation", "Delete mapping for \"" + mapping.parameterName + "\"?",
-									  "Yes", "No",
-									  [this, mapping](bool confirmed)
-									  {
-										  if (confirmed)
-										  {
-											  midiLearnManager->removeMapping(mapping.parameterName);
-											  refreshMappingsList();
-										  }
-									  });
+	ObsidianAlertManager::showConfirm(this, "Confirmation", "Delete mapping for \"" + mapping.parameterName + "\"?", "Yes", "No",
+		[this, mapping](bool confirmed) {
+			if (confirmed) {
+				midiLearnManager->removeMapping(mapping.parameterName);
+				refreshMappingsList();
+			}
+		});
 }
 
-void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(const MidiMapping &mapping)
+void MidiMappingEditorWindow::startLearningForMapping(const MidiMapping& mapping)
 {
 	auto onLearningComplete = [this, paramName = mapping.parameterName](float /* value */)
-	{
-		juce::MessageManager::callAsync([this, paramName]()
-										{
-					auto updatedMappings = midiLearnManager->getAllMappings();
-
-					for (const auto& updated : updatedMappings)
+		{
+			juce::MessageManager::callAsync([this, paramName]() {
+				auto updatedMappings = midiLearnManager->getAllMappings();
+				for (const auto& updated : updatedMappings)
+				{
+					if (updated.parameterName == paramName)
 					{
-						if (updated.parameterName == paramName)
+						for (auto* row : mappingRows)
 						{
-							for (auto* row : mappingRows)
+							if (row->getMapping().parameterName == paramName)
 							{
-								if (row->getMapping().parameterName == paramName)
-								{
-									row->updateMapping(updated);
-									row->setLearningActive(false);
-									break;
-								}
+								row->updateMapping(updated);
+								row->setLearningActive(false);
+								break;
 							}
-							break;
 						}
-					} });
-	};
+						break;
+					}
+				}
+				});
+		};
 
-	midiLearnManager->startLearning(
-		mapping.parameterName,
-		mapping.processor,
-		onLearningComplete,
-		mapping.description);
+	midiLearnManager->startLearning(mapping.parameterName, mapping.processor, onLearningComplete, mapping.description);
 
-	for (auto *row : mappingRows)
-		row->setLearningActive(false);
-
-	for (auto *row : mappingRows)
+	for (auto* row : mappingRows) row->setLearningActive(false);
+	for (auto* row : mappingRows)
 	{
 		if (row->getMapping().parameterName == mapping.parameterName)
 		{
@@ -296,57 +296,18 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(
 	}
 }
 
-void MidiMappingRow::updateMapping(const MidiMapping &newMapping)
+
+
+void ObsidianAlertManager::showMidiMappingEditor(juce::Component* parent, MidiLearnManager* manager)
 {
-	mapping = newMapping;
-	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
-	midiInfoLabel.setText(getMidiInfoString(), juce::dontSendNotification);
-	repaint();
+	auto modal = std::make_unique<ObsidianModalWindow>("MIDI Mappings");
+
+	modal->setContent(std::make_unique<MidiMappingEditorWindow>(manager));
+
+	auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+
+	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive, [overlay]() {
+		overlay->close();
+		});
 }
 
-MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager)
-	: DocumentWindow("MIDI Mappings",
-					 ColourPalette::backgroundDark,
-					 DocumentWindow::allButtons),
-	  midiLearnManager(manager)
-{
-	content = std::make_unique<MidiMappingEditorContent>(manager);
-	setUsingNativeTitleBar(true);
-	setOpaque(true);
-	setContentOwned(content.release(), true);
-	setResizable(true, true);
-	setResizeLimits(600, 300, 1200, 800);
-	setBounds(100, 100, 850, 500);
-	setVisible(true);
-	startTimerHz(2);
-}
-
-MidiMappingEditorWindow::~MidiMappingEditorWindow()
-{
-	stopTimer();
-}
-
-void MidiMappingEditorWindow::closeButtonPressed()
-{
-	if (onWindowClosed)
-		onWindowClosed();
-	setVisible(false);
-	delete this;
-}
-
-void MidiMappingEditorWindow::timerCallback()
-{
-	if (auto *contentLocal = dynamic_cast<MidiMappingEditorContent *>(getContentComponent()))
-	{
-		if (midiLearnManager->isLearningActive())
-		{
-			for (auto *row : contentLocal->mappingRows)
-				row->toggleBlink();
-		}
-		else
-		{
-			for (auto *row : contentLocal->mappingRows)
-				row->setLearningActive(false);
-		}
-	}
-}

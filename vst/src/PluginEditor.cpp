@@ -106,13 +106,6 @@ DjIaVstEditor::~DjIaVstEditor()
 		mixerPanel.reset();
 	}
 
-	if (midiEditorWindow != nullptr)
-	{
-		midiEditorWindow->setVisible(false);
-		delete midiEditorWindow;
-		midiEditorWindow = nullptr;
-	}
-
 	setLookAndFeel(nullptr);
 	ObsidianAlertManager::shutdown();
 }
@@ -1415,22 +1408,7 @@ void DjIaVstEditor::layoutTracksGrid()
 
 void DjIaVstEditor::openMidiMappingEditor()
 {
-	if (midiEditorWindow != nullptr)
-	{
-		midiEditorWindow->toFront(true);
-		return;
-	}
-
-	midiEditorWindow = new MidiMappingEditorWindow(&audioProcessor.getMidiLearnManager());
-
-	midiEditorWindow->onWindowClosed = [this]()
-		{
-			midiEditorWindow = nullptr;
-		};
-
-	midiEditorWindow->centreAroundComponent(this,
-		midiEditorWindow->getWidth(),
-		midiEditorWindow->getHeight());
+	ObsidianAlertManager::showMidiMappingEditor(this, &audioProcessor.getMidiLearnManager());
 }
 
 void DjIaVstEditor::setAllGenerateButtonsEnabled(bool enabled)

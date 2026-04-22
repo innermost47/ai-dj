@@ -106,7 +106,10 @@ public:
 
 		for (auto* btn : buttons)
 		{
-			fb.items.add(juce::FlexItem(*btn).withWidth(btnWidth).withHeight(36).withMargin(juce::FlexItem::Margin(0, 0, 0, spacing)));
+			fb.items.add(juce::FlexItem(*btn)
+				.withWidth(static_cast<float>(btnWidth))
+				.withHeight(36.0f)
+				.withMargin(juce::FlexItem::Margin(0.0f, 0.0f, 0.0f, static_cast<float>(spacing))));
 		}
 		fb.performLayout(buttonArea);
 	}
@@ -125,8 +128,8 @@ public:
 	{
 		addAndMakeVisible(modalWindow.get());
 		parent->addAndMakeVisible(this);
+		toFront(false);
 		setBounds(parent->getLocalBounds());
-
 		setInterceptsMouseClicks(true, true);
 	}
 
@@ -144,7 +147,7 @@ public:
 	{
 		if (modalWindow != nullptr)
 		{
-			int width = juce::jmin(600, getWidth() - 40);
+			int width = juce::jmin(800, getWidth() - 40);
 			int height = juce::jmin(500, getHeight() - 40);
 			modalWindow->setBounds(getLocalBounds().withSizeKeepingCentre(width, height));
 		}

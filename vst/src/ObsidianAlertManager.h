@@ -24,10 +24,23 @@ private:
 		}
 		void resized() override { label.setBounds(getLocalBounds()); }
 	};
+	static juce::Component* getSafePluginWindow(juce::Component* c)
+	{
+		auto* current = c;
+		while (current != nullptr)
+		{
+			if (dynamic_cast<juce::AudioProcessorEditor*>(current) != nullptr)
+				return current;
+
+			current = current->getParentComponent();
+		}
+		return c;
+	}
 
 public:
 	static void initialize() {}
 	static void shutdown() {}
+	static void showMidiMappingEditor(juce::Component* parent, class MidiLearnManager* manager);
 
 	struct ConfigDialogResult
 	{
@@ -45,9 +58,11 @@ public:
 		const juce::String& buttonText = "OK",
 		std::function<void()> onConfirm = nullptr)
 	{
+		auto* root = getSafePluginWindow(parent);
+		if (root == nullptr) return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton(buttonText, checkSvg, ColourPalette::buttonPrimary, [overlay, onConfirm]() {
 			if (onConfirm) onConfirm();
@@ -60,9 +75,11 @@ public:
 		const juce::String& title,
 		const juce::String& message)
 	{
+		auto* root = getSafePluginWindow(parent);
+		if (root == nullptr) return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDanger, [overlay]() {
 			overlay->close();
@@ -77,9 +94,11 @@ public:
 		const juce::String& cancelText,
 		std::function<void(bool confirmed)> callback)
 	{
+		auto* root = getSafePluginWindow(parent);
+		if (root == nullptr) return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton(cancelText, crossSvg, ColourPalette::buttonInactive, [overlay, callback]() {
 			if (callback) callback(false);
@@ -111,7 +130,7 @@ public:
 			juce::TextEditor urlEditor, keyEditor;
 			juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
 
-			ConfigContent(bool useLocal, const juce::String& url, const juce::String& key, int timeout, bool firstTime)
+			ConfigContent(bool useLocal, const juce::String& url, const juce::String& /*key */, int timeout, bool firstTime)
 			{
 				auto styleEditor = [](juce::TextEditor& te, const juce::String& text) {
 					te.setText(text);
@@ -226,7 +245,8 @@ public:
 		std::function<void(const juce::String& newPrompt)> callback)
 	{
 		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt");
-
+		auto* root = getSafePluginWindow(parent);
+		if (root == nullptr) return;
 		class EditPromptContent : public juce::Component
 		{
 		public:
@@ -248,7 +268,7 @@ public:
 		auto* editorPtr = &content->editor;
 		modal->setContent(std::move(content));
 
-		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]() {
 			if (callback) callback("");
