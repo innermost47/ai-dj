@@ -13,11 +13,8 @@
 ## 🎵 AI music generation VST3 plugin designed for live performance
 
 <div align="center">
-
-[![Live Session](https://img.youtube.com/vi/5aXvwh3zIFE/maxresdefault.jpg)](https://youtu.be/5aXvwh3zIFE)
-
-_Live improvisation — Foundation-1 by RoyalCities for melodic content · Stable Audio Open for drums_
-
+  <img src="assets/screenshot.png" alt="OBSIDIAN-Neural Interface" width="800"/>
+  <p><i>Live AI music generation in your DAW</i></p>
 </div>
 
 ---
