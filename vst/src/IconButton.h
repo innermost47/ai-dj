@@ -20,6 +20,7 @@ struct IconButtonBase
 	void setHasToggledIcon(bool has) { hasToggledIcon = has; }
 	void setHasAccentBar(bool has) { hasAccentBar = has; }
 	void setShowBackground(bool show) { showBackground = show; }
+	void setIconSize(float size) { customIconSize = size; }
 
 protected:
 	std::unique_ptr<juce::Drawable> iconDrawable;
@@ -29,6 +30,7 @@ protected:
 	bool hasToggledIcon = false;
 	bool hasAccentBar = false;
 	bool showBackground = true;
+	float customIconSize = -1.0f;
 
 	static std::unique_ptr<juce::Drawable> loadSVG(const char* data, size_t size)
 	{
@@ -111,7 +113,10 @@ protected:
 				contentArea.getHeight() * marginV);
 			float side = std::min(iconBounds.getWidth(), iconBounds.getHeight());
 
-			if (isCompact) side = std::min(side, 9.0f);
+			if (customIconSize > 0.0f)
+				side = customIconSize;
+			else if (isCompact)
+				side = std::min(side, 9.0f);
 
 			juce::Rectangle<float> square(iconBounds.getCentreX() - side * 0.5f,
 				iconBounds.getCentreY() - side * 0.5f,
