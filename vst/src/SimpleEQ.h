@@ -82,13 +82,6 @@ public:
 		}
 	}
 
-	float getHighGain() const { return highGain; }
-	float getMidGain() const { return midGain; }
-	float getLowGain() const { return lowGain; }
-
-	void setBypass(bool shouldBypass) { bypass = shouldBypass; }
-	bool isBypassed() const { return bypass; }
-
 	void reset()
 	{
 		for (int ch = 0; ch < 2; ++ch)

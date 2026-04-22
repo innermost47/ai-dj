@@ -39,10 +39,8 @@ public:
 	StableAudioEngine() {}
 
 	bool initialize(const juce::String &modelsDir);
-	bool isReady() const { return isInitialized; }
 
 	GenerationResult generateSample(const GenerationParams &params);
-	std::vector<float> generateAudio(const juce::String &prompt, float duration = 10.0f);
 
 private:
 	bool isInitialized = false;

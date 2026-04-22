@@ -104,57 +104,6 @@ void MidiLearnManager::timerCallback()
 	}
 }
 
-void MidiLearnManager::removeMappingsForSlot(int slotNumber)
-{
-	juce::String slotPrefix = "slot" + juce::String(slotNumber);
-	for (int i = static_cast<int>(mappings.size()) - 1; i >= 0; --i)
-	{
-		if (mappings[i].parameterName.startsWith(slotPrefix))
-		{
-			mappings.erase(mappings.begin() + i);
-		}
-	}
-}
-
-void MidiLearnManager::moveMappingsFromSlotToSlot(int fromSlot, int toSlot)
-{
-	if (fromSlot == toSlot)
-		return;
-
-	juce::String fromPrefix = "slot" + juce::String(fromSlot);
-	juce::String toPrefix = "slot" + juce::String(toSlot);
-
-	removeMappingsForSlot(toSlot);
-
-	std::vector<MidiMapping> mappingsToMove;
-
-	for (auto it = mappings.begin(); it != mappings.end();)
-	{
-		if (it->parameterName.startsWith(fromPrefix))
-		{
-			MidiMapping movedMapping = *it;
-
-			juce::String suffix = it->parameterName.substring(fromPrefix.length());
-			movedMapping.parameterName = toPrefix + suffix;
-
-			movedMapping.description = movedMapping.description.replace(
-				"Slot " + juce::String(fromSlot),
-				"Slot " + juce::String(toSlot));
-
-			mappingsToMove.push_back(movedMapping);
-			it = mappings.erase(it);
-		}
-		else
-		{
-			++it;
-		}
-	}
-
-	for (const auto &mapping : mappingsToMove)
-	{
-		mappings.push_back(mapping);
-	}
-}
 bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 {
 	if (!isLearning)
@@ -313,7 +262,6 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				int ccVal = message.getControllerValue();
 				if (mapping.parameterName.endsWith("Page") && matches)
 				{
-					int ccVal = message.getControllerValue();
 					int slotNum = mapping.parameterName.substring(4, 5).getIntValue();
 
 					juce::String suffix = (ccVal >= 96) ? "D" : (ccVal >= 64) ? "C"
@@ -670,15 +618,6 @@ bool MidiLearnManager::isBooleanParameter(const juce::String &parameterName)
 		   parameterName == "generate";
 }
 
-void MidiLearnManager::clearUICallbacks()
-{
-	registeredUICallbacks.clear();
-	for (auto &mapping : mappings)
-	{
-		mapping.uiCallback = nullptr;
-	}
-}
-
 void MidiLearnManager::registerUICallback(const juce::String &parameterName,
 										  std::function<void(float)> callback)
 {
@@ -759,44 +698,6 @@ bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterNa
 			} });
 
 	return true;
-}
-
-bool MidiLearnManager::hasMappingForParameter(const juce::String &parameterName) const
-{
-	return std::any_of(mappings.begin(), mappings.end(),
-					   [parameterName](const MidiMapping &mapping)
-					   {
-						   return mapping.parameterName == parameterName;
-					   });
-}
-
-juce::String MidiLearnManager::getMappingDescription(const juce::String &parameterName) const
-{
-	auto it = std::find_if(mappings.begin(), mappings.end(),
-						   [parameterName](const MidiMapping &mapping)
-						   {
-							   return mapping.parameterName == parameterName;
-						   });
-
-	if (it != mappings.end())
-	{
-		juce::String midiDescription;
-		switch (it->midiType)
-		{
-		case 0:
-			midiDescription = "Note " + juce::MidiMessage::getMidiNoteName(it->midiNumber, true, true, 3);
-			break;
-		case 1:
-			midiDescription = "CC " + juce::String(it->midiNumber);
-			break;
-		case 2:
-			midiDescription = "Pitchbend";
-			break;
-		}
-		return midiDescription + " (Ch." + juce::String(it->midiChannel + 1) + ")";
-	}
-
-	return juce::String();
 }
 
 void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)

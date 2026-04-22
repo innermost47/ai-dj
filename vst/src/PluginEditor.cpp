@@ -1924,7 +1924,6 @@ void DjIaVstEditor::refreshTrackComponents()
 
 		auto trackComp = std::make_unique<TrackComponent>(trackId, audioProcessor);
 		trackComp->setTrackData(trackData);
-		TrackComponent *trackCompPtr = trackComp.get();
 		juce::Component::SafePointer<TrackComponent> safePtr(trackComp.get());
 		juce::Timer::callAfterDelay(100, [this, safePtr]()
 									{

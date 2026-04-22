@@ -38,7 +38,7 @@ void MidiMappingRow::paint(juce::Graphics &g)
 {
 	g.fillAll(juce::Colours::transparentBlack);
 	g.setColour(ColourPalette::textSecondary);
-	g.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1, 0.5f);
+	g.drawLine(0.0f, (float)getHeight() - 1.0f, (float)getWidth(), (float)getHeight() - 1.0f, 0.5f);
 }
 
 void MidiMappingRow::buttonClicked(juce::Button *button)
@@ -150,9 +150,7 @@ MidiMappingEditorWindow::MidiMappingEditorContent::MidiMappingEditorContent(Midi
 	: midiLearnManager(manager)
 {
 	titleLabel.setText("MIDI Mappings", juce::dontSendNotification);
-	auto titleFont = juce::Font(24.0f);
-	titleFont.setBold(true);
-	titleLabel.setFont(titleFont);
+	titleLabel.setFont(juce::Font(juce::FontOptions(24.0f).withStyle("Bold")));
 	titleLabel.setJustificationType(juce::Justification::centred);
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	addAndMakeVisible(titleLabel);
@@ -254,7 +252,7 @@ void MidiMappingEditorWindow::MidiMappingEditorContent::deleteMapping(const Midi
 
 void MidiMappingEditorWindow::MidiMappingEditorContent::startLearningForMapping(const MidiMapping &mapping)
 {
-	auto onLearningComplete = [this, paramName = mapping.parameterName](float value)
+	auto onLearningComplete = [this, paramName = mapping.parameterName](float /* value */)
 	{
 		juce::MessageManager::callAsync([this, paramName]()
 										{
@@ -335,16 +333,16 @@ void MidiMappingEditorWindow::closeButtonPressed()
 
 void MidiMappingEditorWindow::timerCallback()
 {
-	if (auto *content = dynamic_cast<MidiMappingEditorContent *>(getContentComponent()))
+	if (auto *contentLocal = dynamic_cast<MidiMappingEditorContent *>(getContentComponent()))
 	{
 		if (midiLearnManager->isLearningActive())
 		{
-			for (auto *row : content->mappingRows)
+			for (auto *row : contentLocal->mappingRows)
 				row->toggleBlink();
 		}
 		else
 		{
-			for (auto *row : content->mappingRows)
+			for (auto *row : contentLocal->mappingRows)
 				row->setLearningActive(false);
 		}
 	}

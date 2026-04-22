@@ -30,8 +30,6 @@ public:
 		return trackComponents;
 	}
 
-	MixerPanel *getMixerPanel() { return mixerPanel.get(); }
-
 	std::unique_ptr<MixerPanel> mixerPanel;
 
 	juce::StringArray getBuiltInPrompts() const { return promptPresets; }

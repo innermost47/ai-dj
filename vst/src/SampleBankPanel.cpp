@@ -4,7 +4,7 @@
 #include "ObsidianAlertManager.h"
 #include "BinaryData.h"
 
-SampleBankItem::SampleBankItem(SampleBankEntry* entry, DjIaVstProcessor& processor)
+SampleBankItem::SampleBankItem(SampleBankEntry *entry, DjIaVstProcessor &processor)
 	: sampleEntry(entry), audioProcessor(processor)
 {
 	addAndMakeVisible(nameLabel);
@@ -17,7 +17,7 @@ SampleBankItem::SampleBankItem(SampleBankEntry* entry, DjIaVstProcessor& process
 
 SampleBankItem::~SampleBankItem() {}
 
-void SampleBankItem::paint(juce::Graphics& g)
+void SampleBankItem::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds();
 
@@ -29,7 +29,7 @@ void SampleBankItem::paint(juce::Graphics& g)
 
 	if (sampleEntry && !sampleEntry->categories.empty())
 	{
-		float cy = bounds.getCentreY();
+		float cy = bounds.toFloat().getCentreY();
 		g.setColour(getCategoryColor(sampleEntry->categories[0]));
 		g.fillEllipse(8.0f, cy - 4.0f, 8.0f, 8.0f);
 	}
@@ -40,50 +40,56 @@ void SampleBankItem::resized()
 	nameLabel.setBounds(getLocalBounds().withTrimmedLeft(24).withTrimmedRight(4));
 }
 
-juce::Colour SampleBankItem::getCategoryColor(const juce::String& category)
+juce::Colour SampleBankItem::getCategoryColor(const juce::String &category)
 {
 	static const std::map<juce::String, juce::Colour> colors = {
-		{"Drums",      ColourPalette::indigo},
-		{"Bass",       ColourPalette::teal},
-		{"Melody",     ColourPalette::coral},
-		{"Ambient",    ColourPalette::emerald},
+		{"Drums", ColourPalette::indigo},
+		{"Bass", ColourPalette::teal},
+		{"Melody", ColourPalette::coral},
+		{"Ambient", ColourPalette::emerald},
 		{"Percussion", ColourPalette::slate},
-		{"Vocal",      ColourPalette::amber},
-		{"FX",         ColourPalette::backgroundLight},
-		{"Loops",      ColourPalette::buttonSuccess},
-		{"One-shots",  ColourPalette::buttonSecondary},
-		{"House",      ColourPalette::buttonDangerDark},
-		{"Techno",     ColourPalette::lime},
-		{"Hip-Hop",    ColourPalette::violet},
-		{"Jazz",       ColourPalette::amber},
-		{"Rock",       ColourPalette::buttonDanger},
+		{"Vocal", ColourPalette::amber},
+		{"FX", ColourPalette::backgroundLight},
+		{"Loops", ColourPalette::buttonSuccess},
+		{"One-shots", ColourPalette::buttonSecondary},
+		{"House", ColourPalette::buttonDangerDark},
+		{"Techno", ColourPalette::lime},
+		{"Hip-Hop", ColourPalette::violet},
+		{"Jazz", ColourPalette::amber},
+		{"Rock", ColourPalette::buttonDanger},
 		{"Electronic", ColourPalette::cyan},
-		{"Piano",      ColourPalette::textSecondary},
-		{"Guitar",     ColourPalette::textWarning},
-		{"Synth",      ColourPalette::textSecondary} };
+		{"Piano", ColourPalette::textSecondary},
+		{"Guitar", ColourPalette::textWarning},
+		{"Synth", ColourPalette::textSecondary}};
 	auto it = colors.find(category);
 	return it != colors.end() ? it->second : ColourPalette::backgroundLight;
 }
 
-void SampleBankItem::mouseEnter(const juce::MouseEvent&)
+void SampleBankItem::mouseEnter(const juce::MouseEvent &)
 {
 	setMouseCursor(juce::MouseCursor::PointingHandCursor);
 }
 
-void SampleBankItem::mouseExit(const juce::MouseEvent&)
+void SampleBankItem::mouseExit(const juce::MouseEvent &)
 {
 	setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 
-void SampleBankItem::mouseDown(const juce::MouseEvent& event)
+void SampleBankItem::mouseDown(const juce::MouseEvent &event)
 {
-	if (event.mods.isRightButtonDown()) { showCategoryMenu(); return; }
-	if (onItemClicked) onItemClicked(sampleEntry);
+	if (event.mods.isRightButtonDown())
+	{
+		showCategoryMenu();
+		return;
+	}
+	if (onItemClicked)
+		onItemClicked(sampleEntry);
 }
 
-void SampleBankItem::mouseDrag(const juce::MouseEvent& event)
+void SampleBankItem::mouseDrag(const juce::MouseEvent &event)
 {
-	if (event.getDistanceFromDragStart() < 6 || isDragging) return;
+	if (event.getDistanceFromDragStart() < 6 || isDragging)
+		return;
 	isDragging = true;
 
 	if (event.mods.isCtrlDown() && sampleEntry)
@@ -97,39 +103,43 @@ void SampleBankItem::mouseDrag(const juce::MouseEvent& event)
 			return;
 		}
 	}
-	if (auto* dc = juce::DragAndDropContainer::findParentDragContainerFor(this))
+	if (auto *dc = juce::DragAndDropContainer::findParentDragContainerFor(this))
 		dc->startDragging(sampleEntry->id, this);
 }
 
-void SampleBankItem::mouseUp(const juce::MouseEvent&)
+void SampleBankItem::mouseUp(const juce::MouseEvent &)
 {
 	isDragging = false;
 }
 
 void SampleBankItem::showCategoryMenu()
 {
-	if (!sampleEntry) return;
+	if (!sampleEntry)
+		return;
 	juce::String sampleId = sampleEntry->id;
 
 	std::vector<juce::String> avail;
-	if (getCategoriesList) avail = getCategoriesList();
-	else avail = { "Drums","Bass","Melody","Ambient","Percussion","Vocal",
-				  "FX","Loops","One-shots","House","Techno","Hip-Hop",
-				  "Jazz","Rock","Electronic","Piano","Guitar","Synth" };
+	if (getCategoriesList)
+		avail = getCategoriesList();
+	else
+		avail = {"Drums", "Bass", "Melody", "Ambient", "Percussion", "Vocal",
+				 "FX", "Loops", "One-shots", "House", "Techno", "Hip-Hop",
+				 "Jazz", "Rock", "Electronic", "Piano", "Guitar", "Synth"};
 
-	auto* window = new CategoryWindow(sampleEntry->originalPrompt,
-		sampleEntry->categories, avail);
+	auto *window = new CategoryWindow(sampleEntry->originalPrompt,
+									  sampleEntry->categories, avail);
 	window->onCategoriesChanged = [sampleId,
-		&ap = audioProcessor,
-		cb = onCategoriesChanged](const std::vector<juce::String>& cats)
-		{
-			if (auto* bank = ap.getSampleBank())
-				if (auto* s = bank->getSample(sampleId))
-				{
-					s->categories = cats;
-					if (cb) cb(s, cats);
-				}
-		};
+								   &ap = audioProcessor,
+								   cb = onCategoriesChanged](const std::vector<juce::String> &cats)
+	{
+		if (auto *bank = ap.getSampleBank())
+			if (auto *s = bank->getSample(sampleId))
+			{
+				s->categories = cats;
+				if (cb)
+					cb(s, cats);
+			}
+	};
 }
 
 DetailPanel::DetailPanel()
@@ -149,19 +159,29 @@ DetailPanel::DetailPanel()
 	playButton.setClickingTogglesState(false);
 	playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
 	playButton.onClick = [this]()
+	{
+		if (!entry)
+			return;
+		if (isPlaying)
 		{
-			if (!entry) return;
-			if (isPlaying) { if (onStopRequested) onStopRequested(); }
-			else { if (onPlayRequested) onPlayRequested(entry); }
-		};
+			if (onStopRequested)
+				onStopRequested();
+		}
+		else
+		{
+			if (onPlayRequested)
+				onPlayRequested(entry);
+		}
+	};
 
 	addAndMakeVisible(deleteButton);
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 	deleteButton.onClick = [this]()
-		{
-			if (entry && onDeleteRequested) onDeleteRequested(entry->id);
-		};
+	{
+		if (entry && onDeleteRequested)
+			onDeleteRequested(entry->id);
+	};
 	playButton.setCompactMode(true);
 	deleteButton.setCompactMode(true);
 	setVisible(false);
@@ -175,7 +195,7 @@ DetailPanel::~DetailPanel()
 	removeAllChildren();
 }
 
-void DetailPanel::setEntry(SampleBankEntry* e)
+void DetailPanel::setEntry(SampleBankEntry *e)
 {
 	if (entry != e)
 	{
@@ -191,7 +211,6 @@ void DetailPanel::setEntry(SampleBankEntry* e)
 	playbackPos = 0.0f;
 	updatePlayButton();
 
-
 	if (!entry)
 	{
 		nameLabel.setText("", juce::dontSendNotification);
@@ -201,11 +220,13 @@ void DetailPanel::setEntry(SampleBankEntry* e)
 
 	nameLabel.setText(entry->originalPrompt, juce::dontSendNotification);
 
-	juce::String meta = formatDuration(entry->duration)
-		+ "   " + juce::String(entry->bpm, 1) + " BPM   ";
-	if (entry->usedInProjects.empty()) meta += "Unused";
-	else meta += juce::String((int)entry->usedInProjects.size()) + " project(s)";
-	if (!entry->categories.empty()) meta += "   [" + entry->categories[0] + "]";
+	juce::String meta = formatDuration(entry->duration) + "   " + juce::String(entry->bpm, 1) + " BPM   ";
+	if (entry->usedInProjects.empty())
+		meta += "Unused";
+	else
+		meta += juce::String((int)entry->usedInProjects.size()) + " project(s)";
+	if (!entry->categories.empty())
+		meta += "   [" + entry->categories[0] + "]";
 	metaLabel.setText(meta, juce::dontSendNotification);
 
 	setVisible(true);
@@ -213,22 +234,17 @@ void DetailPanel::setEntry(SampleBankEntry* e)
 	loadAudio();
 }
 
-void DetailPanel::clearEntry()
-{
-	entry = nullptr;
-	setVisible(false);
-	stopTimer();
-}
-
 void DetailPanel::loadAudio()
 {
-	if (!entry) return;
+	if (!entry)
+		return;
 	juce::File f(entry->filePath);
-	if (!f.exists()) return;
+	if (!f.exists())
+		return;
 
 	auto v = validity;
 	juce::Thread::launch([this, f, v]()
-		{
+						 {
 			if (!v->load()) return;
 
 			juce::AudioFormatManager fm;
@@ -256,31 +272,35 @@ void DetailPanel::loadAudio()
 					audioBuf = *buf;
 					generateThumbnail();
 					repaint();
-				});
-		});
+				}); });
 }
 
 void DetailPanel::generateThumbnail()
 {
-	thumbL.clear(); thumbR.clear();
-	if (audioBuf.getNumSamples() == 0 || waveformBounds.isEmpty()) return;
+	thumbL.clear();
+	thumbR.clear();
+	if (audioBuf.getNumSamples() == 0 || waveformBounds.isEmpty())
+		return;
 
 	int n = audioBuf.getNumSamples();
 	int ch = audioBuf.getNumChannels();
 	bool mono = (ch == 1);
 	int w = waveformBounds.getWidth() - 4;
-	if (w <= 0) return;
+	if (w <= 0)
+		return;
 	int spp = std::max(1, n / w);
 
 	for (int p = 0; p < w; ++p)
 	{
 		int s0 = p * spp, s1 = std::min(s0 + spp, n);
-		float rL = 0, rR = 0, pL = 0, pR = 0; int cnt = 0;
+		float rL = 0, rR = 0, pL = 0, pR = 0;
+		int cnt = 0;
 		for (int s = s0; s < s1; ++s)
 		{
 			float vL = audioBuf.getSample(0, s);
 			float vR = mono ? vL : audioBuf.getSample(1, s);
-			rL += vL * vL; rR += vR * vR;
+			rL += vL * vL;
+			rR += vR * vR;
 			pL = std::max(pL, std::abs(vL));
 			pR = std::max(pR, std::abs(vR));
 			++cnt;
@@ -292,7 +312,7 @@ void DetailPanel::generateThumbnail()
 	}
 }
 
-void DetailPanel::paint(juce::Graphics& g)
+void DetailPanel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds();
 	g.setColour(ColourPalette::backgroundMid);
@@ -302,16 +322,17 @@ void DetailPanel::paint(juce::Graphics& g)
 	if (entry && !entry->categories.empty())
 	{
 		auto nb = nameLabel.getBounds();
-		float cy = nb.getCentreY();
+		float cy = nb.toFloat().getCentreY();
 		g.setColour(getCategoryColor(entry->categories[0]));
 		g.fillEllipse(8.0f, cy - 4.0f, 8.0f, 8.0f);
 	}
 	drawWaveform(g);
 }
 
-void DetailPanel::drawWaveform(juce::Graphics& g)
+void DetailPanel::drawWaveform(juce::Graphics &g)
 {
-	if (thumbL.empty() || waveformBounds.isEmpty()) return;
+	if (thumbL.empty() || waveformBounds.isEmpty())
+		return;
 
 	g.saveState();
 	juce::Path clip;
@@ -324,26 +345,34 @@ void DetailPanel::drawWaveform(juce::Graphics& g)
 	auto innerBounds = waveformBounds.reduced(6, 4);
 
 	size_t sz = std::min(thumbL.size(), thumbR.size());
-	float  ppx = (float)innerBounds.getWidth() / (float)sz;
-	bool   stereo = (thumbR.size() == thumbL.size() && audioBuf.getNumChannels() > 1);
+	float ppx = (float)innerBounds.getWidth() / (float)sz;
+	bool stereo = (thumbR.size() == thumbL.size() && audioBuf.getNumChannels() > 1);
 
-	auto drawChannel = [&](const std::vector<float>& thumb, float centerY, float halfH)
+	auto drawChannel = [&](const std::vector<float> &thumb, float centerY, float halfH)
+	{
+		juce::Path top, bot;
+		bool ts = false, bs = false;
+		for (size_t i = 0; i < sz; ++i)
 		{
-			juce::Path top, bot;
-			bool ts = false, bs = false;
-			for (size_t i = 0; i < sz; ++i)
+			float x = innerBounds.getX() + i * ppx;
+			float h = thumb[i] * halfH;
+			if (!ts)
 			{
-				float x = innerBounds.getX() + i * ppx;
-				float h = thumb[i] * halfH;
-				if (!ts) { top.startNewSubPath(x, centerY); ts = true; }
-				if (!bs) { bot.startNewSubPath(x, centerY); bs = true; }
-				top.lineTo(x, centerY - h);
-				bot.lineTo(x, centerY + h);
+				top.startNewSubPath(x, centerY);
+				ts = true;
 			}
-			g.setColour(ColourPalette::buttonDanger);
-			g.strokePath(top, juce::PathStrokeType(1.0f));
-			g.strokePath(bot, juce::PathStrokeType(1.0f));
-		};
+			if (!bs)
+			{
+				bot.startNewSubPath(x, centerY);
+				bs = true;
+			}
+			top.lineTo(x, centerY - h);
+			bot.lineTo(x, centerY + h);
+		}
+		g.setColour(ColourPalette::buttonDanger);
+		g.strokePath(top, juce::PathStrokeType(1.0f));
+		g.strokePath(bot, juce::PathStrokeType(1.0f));
+	};
 
 	if (stereo)
 	{
@@ -354,7 +383,7 @@ void DetailPanel::drawWaveform(juce::Graphics& g)
 		drawChannel(thumbR, tqY, hH);
 		g.setColour(ColourPalette::backgroundLight.withAlpha(0.15f));
 		g.drawLine((float)innerBounds.getX(), (float)innerBounds.getCentreY(),
-			(float)innerBounds.getRight(), (float)innerBounds.getCentreY(), 0.5f);
+				   (float)innerBounds.getRight(), (float)innerBounds.getCentreY(), 0.5f);
 	}
 	else
 	{
@@ -369,7 +398,7 @@ void DetailPanel::drawWaveform(juce::Graphics& g)
 		float hx = innerBounds.getX() + prog * innerBounds.getWidth();
 		g.setColour(ColourPalette::playArmed);
 		g.drawLine(hx, (float)innerBounds.getY(),
-			hx, (float)innerBounds.getBottom(), 2.0f);
+				   hx, (float)innerBounds.getBottom(), 2.0f);
 	}
 
 	g.restoreState();
@@ -431,7 +460,11 @@ void DetailPanel::updatePlaybackPosition(float pos)
 
 void DetailPanel::timerCallback()
 {
-	if (!isPlaying || !entry) { stopTimer(); return; }
+	if (!isPlaying || !entry)
+	{
+		stopTimer();
+		return;
+	}
 	double now = juce::Time::getMillisecondCounterHiRes() / 1000.0;
 	playbackPos += (float)(now - lastTimerCall);
 	lastTimerCall = now;
@@ -439,7 +472,8 @@ void DetailPanel::timerCallback()
 	{
 		playbackPos = entry->duration;
 		setIsPlaying(false);
-		if (onStopRequested) onStopRequested();
+		if (onStopRequested)
+			onStopRequested();
 	}
 	repaint();
 }
@@ -465,35 +499,35 @@ juce::String DetailPanel::formatDuration(float s)
 	int sc = (int)s % 60;
 	int ms = (int)((s - (int)s) * 100);
 	return m > 0 ? juce::String::formatted("%d:%02d.%02d", m, sc, ms)
-		: juce::String::formatted("%d.%02ds", sc, ms);
+				 : juce::String::formatted("%d.%02ds", sc, ms);
 }
 
-juce::Colour DetailPanel::getCategoryColor(const juce::String& category)
+juce::Colour DetailPanel::getCategoryColor(const juce::String &category)
 {
 	static const std::map<juce::String, juce::Colour> colors = {
-		{"Drums",      ColourPalette::indigo},
-		{"Bass",       ColourPalette::teal},
-		{"Melody",     ColourPalette::coral},
-		{"Ambient",    ColourPalette::emerald},
+		{"Drums", ColourPalette::indigo},
+		{"Bass", ColourPalette::teal},
+		{"Melody", ColourPalette::coral},
+		{"Ambient", ColourPalette::emerald},
 		{"Percussion", ColourPalette::slate},
-		{"Vocal",      ColourPalette::amber},
-		{"FX",         ColourPalette::backgroundLight},
-		{"Loops",      ColourPalette::buttonSuccess},
-		{"One-shots",  ColourPalette::buttonSecondary},
-		{"House",      ColourPalette::buttonDangerDark},
-		{"Techno",     ColourPalette::lime},
-		{"Hip-Hop",    ColourPalette::violet},
-		{"Jazz",       ColourPalette::amber},
-		{"Rock",       ColourPalette::buttonDanger},
+		{"Vocal", ColourPalette::amber},
+		{"FX", ColourPalette::backgroundLight},
+		{"Loops", ColourPalette::buttonSuccess},
+		{"One-shots", ColourPalette::buttonSecondary},
+		{"House", ColourPalette::buttonDangerDark},
+		{"Techno", ColourPalette::lime},
+		{"Hip-Hop", ColourPalette::violet},
+		{"Jazz", ColourPalette::amber},
+		{"Rock", ColourPalette::buttonDanger},
 		{"Electronic", ColourPalette::cyan},
-		{"Piano",      ColourPalette::textSecondary},
-		{"Guitar",     ColourPalette::textWarning},
-		{"Synth",      ColourPalette::textSecondary} };
+		{"Piano", ColourPalette::textSecondary},
+		{"Guitar", ColourPalette::textWarning},
+		{"Synth", ColourPalette::textSecondary}};
 	auto it = colors.find(category);
 	return it != colors.end() ? it->second : ColourPalette::backgroundLight;
 }
 
-SampleBankPanel::SampleBankPanel(DjIaVstProcessor& processor)
+SampleBankPanel::SampleBankPanel(DjIaVstProcessor &processor)
 	: audioProcessor(processor)
 {
 	categoryNames[SampleCategory::All] = "All Samples";
@@ -519,9 +553,10 @@ SampleBankPanel::SampleBankPanel(DjIaVstProcessor& processor)
 	loadCategoriesConfig();
 	setupUI();
 
-	if (auto* bank = audioProcessor.getSampleBank())
+	if (auto *bank = audioProcessor.getSampleBank())
 		bank->onBankChanged = [this]()
-		{ juce::MessageManager::callAsync([this]() { refreshSampleList(); }); };
+		{ juce::MessageManager::callAsync([this]()
+										  { refreshSampleList(); }); };
 }
 
 SampleBankPanel::~SampleBankPanel()
@@ -530,7 +565,7 @@ SampleBankPanel::~SampleBankPanel()
 	stopPreview();
 	sampleListBox.setVisible(false);
 	sampleListBox.setModel(nullptr);
-	if (auto* bank = audioProcessor.getSampleBank())
+	if (auto *bank = audioProcessor.getSampleBank())
 		bank->onBankChanged = nullptr;
 }
 
@@ -543,7 +578,7 @@ void SampleBankPanel::setupUI()
 
 	addAndMakeVisible(infoLabel);
 	infoLabel.setText("Preview: ch.9 | Drag: drop on track | Ctrl+Drag: drop in DAW | Right-click: categories",
-		juce::dontSendNotification);
+					  juce::dontSendNotification);
 	infoLabel.setFont(juce::FontOptions(11.0f));
 	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	infoLabel.setJustificationType(juce::Justification::centredLeft);
@@ -552,7 +587,8 @@ void SampleBankPanel::setupUI()
 	cleanupButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	cleanupButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 	cleanupButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-	cleanupButton.onClick = [this]() { cleanupUnusedSamples(); };
+	cleanupButton.onClick = [this]()
+	{ cleanupUnusedSamples(); };
 
 	addAndMakeVisible(sortMenu);
 	sortMenu.addItem("Sort: Recent", SortType::Time);
@@ -562,10 +598,10 @@ void SampleBankPanel::setupUI()
 	sortMenu.addItem("Sort: Duration", SortType::Duration);
 	sortMenu.setSelectedId(SortType::Prompt);
 	sortMenu.onChange = [this]()
-		{
-			currentSortType = static_cast<SortType>(sortMenu.getSelectedId());
-			refreshSampleList();
-		};
+	{
+		currentSortType = static_cast<SortType>(sortMenu.getSelectedId());
+		refreshSampleList();
+	};
 
 	addAndMakeVisible(sampleListBox);
 	sampleListBox.setModel(this);
@@ -575,17 +611,17 @@ void SampleBankPanel::setupUI()
 	sampleListBox.setColour(juce::ListBox::backgroundColourId, juce::Colours::transparentBlack);
 
 	addAndMakeVisible(categoryFilter);
-	for (const auto& info : categoryInfos)
+	for (const auto &info : categoryInfos)
 		categoryFilter.addItem(info.name, info.id + 1);
 	categoryFilter.setSelectedId(1);
 	categoryFilter.onChange = [this]()
-		{
-			int sel = categoryFilter.getSelectedId();
-			currentCategoryId = sel > 0 ? sel - 1 : 0;
-			editCategoryButton.setEnabled(isCategoryEditable(currentCategoryId));
-			deleteCategoryButton.setEnabled(isCategoryEditable(currentCategoryId));
-			refreshSampleList();
-		};
+	{
+		int sel = categoryFilter.getSelectedId();
+		currentCategoryId = sel > 0 ? sel - 1 : 0;
+		editCategoryButton.setEnabled(isCategoryEditable(currentCategoryId));
+		deleteCategoryButton.setEnabled(isCategoryEditable(currentCategoryId));
+		refreshSampleList();
+	};
 
 	addAndMakeVisible(categoryInput);
 	categoryInput.setTextToShowWhenEmpty("New category name...", ColourPalette::textSecondary);
@@ -595,20 +631,23 @@ void SampleBankPanel::setupUI()
 	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::emerald);
 	addCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 
-	addCategoryButton.onClick = [this]() { addCategory(); };
+	addCategoryButton.onClick = [this]()
+	{ addCategory(); };
 
 	addAndMakeVisible(editCategoryButton);
 	editCategoryButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
 	editCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::amber);
 	editCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-	editCategoryButton.onClick = [this]() { editCategory(); };
+	editCategoryButton.onClick = [this]()
+	{ editCategory(); };
 	editCategoryButton.setEnabled(false);
 
 	addAndMakeVisible(deleteCategoryButton);
 	deleteCategoryButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	deleteCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 	deleteCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-	deleteCategoryButton.onClick = [this]() { deleteCategory(); };
+	deleteCategoryButton.onClick = [this]()
+	{ deleteCategory(); };
 	deleteCategoryButton.setEnabled(false);
 
 	deleteCategoryButton.setCompactMode(true);
@@ -618,13 +657,15 @@ void SampleBankPanel::setupUI()
 
 	addAndMakeVisible(detailPanel);
 
-	detailPanel.onPlayRequested = [this](SampleBankEntry* e) { playPreview(e); };
-	detailPanel.onStopRequested = [this]() { stopPreview(); };
-	detailPanel.onDeleteRequested = [this](const juce::String& id)
-		{
-			if (auto* e = audioProcessor.getSampleBank()->getSample(id))
-				showDeleteConfirmation(id, e->originalPrompt);
-		};
+	detailPanel.onPlayRequested = [this](SampleBankEntry *e)
+	{ playPreview(e); };
+	detailPanel.onStopRequested = [this]()
+	{ stopPreview(); };
+	detailPanel.onDeleteRequested = [this](const juce::String &id)
+	{
+		if (auto *e = audioProcessor.getSampleBank()->getSample(id))
+			showDeleteConfirmation(id, e->originalPrompt);
+	};
 }
 
 void SampleBankPanel::resized()
@@ -669,7 +710,7 @@ void SampleBankPanel::resized()
 	sampleListBox.setBounds(area);
 }
 
-void SampleBankPanel::selectEntry(SampleBankEntry* entry)
+void SampleBankPanel::selectEntry(SampleBankEntry *entry)
 {
 	if (currentPreviewEntry != nullptr)
 		stopPreview();
@@ -684,10 +725,10 @@ int SampleBankPanel::getNumRows()
 	return (int)filteredSamples.size();
 }
 
-juce::Component* SampleBankPanel::refreshComponentForRow(
-	int rowNumber, bool, juce::Component* existingComponentToUpdate)
+juce::Component *SampleBankPanel::refreshComponentForRow(
+	int rowNumber, bool, juce::Component *existingComponentToUpdate)
 {
-	auto* wrapper = dynamic_cast<SampleBankItemWrapper*>(existingComponentToUpdate);
+	auto *wrapper = dynamic_cast<SampleBankItemWrapper *>(existingComponentToUpdate);
 
 	if (rowNumber < 0 || rowNumber >= (int)filteredSamples.size())
 	{
@@ -695,8 +736,8 @@ juce::Component* SampleBankPanel::refreshComponentForRow(
 		return nullptr;
 	}
 
-	auto* entry = filteredSamples[rowNumber];
-	SampleBankItem* item = nullptr;
+	auto *entry = filteredSamples[rowNumber];
+	SampleBankItem *item = nullptr;
 
 	if (wrapper == nullptr || wrapper->getItem()->getSampleEntry() != entry)
 	{
@@ -711,41 +752,47 @@ juce::Component* SampleBankPanel::refreshComponentForRow(
 
 	item->setSelected(selectedEntry == entry);
 
-	item->onItemClicked = [this](SampleBankEntry* e)
-		{
-			if (selectedEntry == e) selectEntry(nullptr);
-			else                    selectEntry(e);
-		};
+	item->onItemClicked = [this](SampleBankEntry *e)
+	{
+		if (selectedEntry == e)
+			selectEntry(nullptr);
+		else
+			selectEntry(e);
+	};
 
-	item->onCategoriesChanged = [this](SampleBankEntry*, const std::vector<juce::String>&)
-		{
-			if (auto* bank = audioProcessor.getSampleBank())
-				bank->saveBankData();
-			refreshSampleListSilent();
-		};
+	item->onCategoriesChanged = [this](SampleBankEntry *, const std::vector<juce::String> &)
+	{
+		if (auto *bank = audioProcessor.getSampleBank())
+			bank->saveBankData();
+		refreshSampleListSilent();
+	};
 
 	item->getCategoriesList = [this]() -> std::vector<juce::String>
-		{
-			std::vector<juce::String> cats;
-			for (const auto& info : categoryInfos)
-				if (info.id > 0) cats.push_back(info.name);
-			return cats;
-		};
+	{
+		std::vector<juce::String> cats;
+		for (const auto &info : categoryInfos)
+			if (info.id > 0)
+				cats.push_back(info.name);
+		return cats;
+	};
 
-	item->onDeleteRequested = [this](SampleBankEntry* e)
-		{
-			if (e) showDeleteConfirmation(e->id, e->originalPrompt);
-		};
+	item->onDeleteRequested = [this](SampleBankEntry *e)
+	{
+		if (e)
+			showDeleteConfirmation(e->id, e->originalPrompt);
+	};
 
 	return wrapper;
 }
 
-void SampleBankPanel::playPreview(SampleBankEntry* entry)
+void SampleBankPanel::playPreview(SampleBankEntry *entry)
 {
-	if (!entry) return;
+	if (!entry)
+		return;
 	stopPreview();
 
-	if (!audioProcessor.previewSampleFromBank(entry->id)) return;
+	if (!audioProcessor.previewSampleFromBank(entry->id))
+		return;
 
 	currentPreviewEntry = entry;
 	detailPanel.setIsPlaying(true);
@@ -777,7 +824,7 @@ void SampleBankPanel::timerCallback()
 		stopTimer();
 }
 
-void SampleBankPanel::paint(juce::Graphics& g)
+void SampleBankPanel::paint(juce::Graphics &g)
 {
 	g.fillAll(ColourPalette::backgroundDark);
 
@@ -785,19 +832,21 @@ void SampleBankPanel::paint(juce::Graphics& g)
 	juce::Path listBg;
 	auto lb = sampleListBox.getBounds().toFloat();
 	listBg.addRoundedRectangle(lb.getX(), lb.getY(), lb.getWidth(), lb.getHeight(),
-		4.0f, 4.0f, true, true, false, false);
+							   4.0f, 4.0f, true, true, false, false);
 	g.fillPath(listBg);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
 	g.drawRect(getLocalBounds(), 1);
 
-	if (isLoading.load())                              drawLoader(g);
-	else if (filteredSamples.empty() && hasEverLoaded.load()) drawEmptyState(g);
+	if (isLoading.load())
+		drawLoader(g);
+	else if (filteredSamples.empty() && hasEverLoaded.load())
+		drawEmptyState(g);
 }
 
-void SampleBankPanel::drawLoader(juce::Graphics& g)
+void SampleBankPanel::drawLoader(juce::Graphics &g)
 {
-	auto b = sampleListBox.getBounds();
+	auto b = sampleListBox.getBounds().toFloat();
 	float cx = b.getCentreX(), cy = b.getCentreY();
 	const float r = 40.0f, t = 4.0f;
 
@@ -808,32 +857,32 @@ void SampleBankPanel::drawLoader(juce::Graphics& g)
 
 	juce::Path arc;
 	arc.addCentredArc(cx, cy, r, r, 0.0f,
-		loadingAngle, loadingAngle + juce::MathConstants<float>::pi * 1.5f, true);
+					  loadingAngle, loadingAngle + juce::MathConstants<float>::pi * 1.5f, true);
 	g.setColour(ColourPalette::violet);
 	g.strokePath(arc, juce::PathStrokeType(t, juce::PathStrokeType::curved,
-		juce::PathStrokeType::rounded));
+										   juce::PathStrokeType::rounded));
 
 	g.setColour(ColourPalette::textSecondary);
 	g.setFont(juce::FontOptions(14.0f));
 	g.drawText("Loading samples...",
-		b.withSizeKeepingCentre(200, 30).translated(0, r + 30),
-		juce::Justification::centred);
+			   b.withSizeKeepingCentre(200, 30).translated(0, r + 30),
+			   juce::Justification::centred);
 }
 
-void SampleBankPanel::drawEmptyState(juce::Graphics& g)
+void SampleBankPanel::drawEmptyState(juce::Graphics &g)
 {
 	auto b = sampleListBox.getBounds();
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
 	g.setFont(juce::FontOptions(48.0f));
 	g.drawText(juce::String::fromUTF8("\xE2\x99\xAA"),
-		b.withSizeKeepingCentre(60, 60), juce::Justification::centred);
+			   b.withSizeKeepingCentre(60, 60), juce::Justification::centred);
 	g.setColour(ColourPalette::textSecondary);
 	g.setFont(juce::FontOptions(15.0f, juce::Font::bold));
 	g.drawText("No samples yet",
-		b.withSizeKeepingCentre(300, 28).translated(0, 55), juce::Justification::centred);
+			   b.withSizeKeepingCentre(300, 28).translated(0, 55), juce::Justification::centred);
 	g.setFont(juce::FontOptions(12.0f));
 	g.drawText("Generate some loops to populate your bank!",
-		b.withSizeKeepingCentre(300, 28).translated(0, 80), juce::Justification::centred);
+			   b.withSizeKeepingCentre(300, 28).translated(0, 80), juce::Justification::centred);
 }
 
 void SampleBankPanel::refreshSampleList()
@@ -842,7 +891,7 @@ void SampleBankPanel::refreshSampleList()
 	startTimer(30);
 	repaint();
 
-	auto* bank = audioProcessor.getSampleBank();
+	auto *bank = audioProcessor.getSampleBank();
 	if (!bank)
 	{
 		filteredSamples.clear();
@@ -857,7 +906,7 @@ void SampleBankPanel::refreshSampleList()
 	applyFiltersAndSort();
 
 	juce::Timer::callAfterDelay(600, [this, safe = juce::Component::SafePointer(this)]()
-		{
+								{
 			if (!safe) return;
 			sampleListBox.updateContent();
 			isLoading.store(false);
@@ -865,14 +914,19 @@ void SampleBankPanel::refreshSampleList()
 			if (selectedEntry == nullptr && !filteredSamples.empty())
 				selectEntry(filteredSamples[0]);
 			if (!currentPreviewEntry) stopTimer();
-			repaint();
-		});
+			repaint(); });
 }
 
 void SampleBankPanel::refreshSampleListSilent()
 {
-	auto* bank = audioProcessor.getSampleBank();
-	if (!bank) { filteredSamples.clear(); sampleListBox.updateContent(); repaint(); return; }
+	auto *bank = audioProcessor.getSampleBank();
+	if (!bank)
+	{
+		filteredSamples.clear();
+		sampleListBox.updateContent();
+		repaint();
+		return;
+	}
 
 	applyFiltersAndSort();
 
@@ -890,43 +944,61 @@ void SampleBankPanel::refreshSampleListSilent()
 
 void SampleBankPanel::applyFiltersAndSort()
 {
-	auto* bank = audioProcessor.getSampleBank();
-	if (!bank) { filteredSamples.clear(); return; }
+	auto *bank = audioProcessor.getSampleBank();
+	if (!bank)
+	{
+		filteredSamples.clear();
+		return;
+	}
 
 	auto samples = bank->getAllSamples();
 
 	if (currentCategoryId != 0)
 	{
 		juce::String catName;
-		for (const auto& info : categoryInfos)
-			if (info.id == currentCategoryId) { catName = info.name; break; }
+		for (const auto &info : categoryInfos)
+			if (info.id == currentCategoryId)
+			{
+				catName = info.name;
+				break;
+			}
 
 		if (!catName.isEmpty())
 			samples.erase(std::remove_if(samples.begin(), samples.end(),
-				[&catName](const SampleBankEntry* e)
-				{
-					return std::find(e->categories.begin(), e->categories.end(), catName)
-						== e->categories.end();
-				}), samples.end());
+										 [&catName](const SampleBankEntry *e)
+										 {
+											 return std::find(e->categories.begin(), e->categories.end(), catName) == e->categories.end();
+										 }),
+						  samples.end());
 	}
 
 	switch (currentSortType)
 	{
 	case Time:
 		std::sort(samples.begin(), samples.end(),
-			[](auto* a, auto* b) { return a->creationTime > b->creationTime; }); break;
+				  [](auto *a, auto *b)
+				  { return a->creationTime > b->creationTime; });
+		break;
 	case Prompt:
 		std::sort(samples.begin(), samples.end(),
-			[](auto* a, auto* b) { return a->originalPrompt.compareIgnoreCase(b->originalPrompt) < 0; }); break;
+				  [](auto *a, auto *b)
+				  { return a->originalPrompt.compareIgnoreCase(b->originalPrompt) < 0; });
+		break;
 	case Usage:
 		std::sort(samples.begin(), samples.end(),
-			[](auto* a, auto* b) { return a->usedInProjects.size() > b->usedInProjects.size(); }); break;
+				  [](auto *a, auto *b)
+				  { return a->usedInProjects.size() > b->usedInProjects.size(); });
+		break;
 	case BPM:
 		std::sort(samples.begin(), samples.end(),
-			[](auto* a, auto* b) { return a->bpm > b->bpm; }); break;
+				  [](auto *a, auto *b)
+				  { return a->bpm > b->bpm; });
+		break;
 	case Duration:
 		std::sort(samples.begin(), samples.end(),
-			[](auto* a, auto* b) { return a->duration > b->duration; }); break;
+				  [](auto *a, auto *b)
+				  { return a->duration > b->duration; });
+		break;
 	}
 
 	filteredSamples = samples;
@@ -941,7 +1013,7 @@ void SampleBankPanel::setVisible(bool v)
 		isLoading.store(true);
 		startTimer(30);
 		juce::Timer::callAfterDelay(100, [this, safe = juce::Component::SafePointer(this)]()
-			{ if (safe) refreshSampleList(); });
+									{ if (safe) refreshSampleList(); });
 	}
 	else
 	{
@@ -953,55 +1025,68 @@ void SampleBankPanel::setVisible(bool v)
 	}
 }
 
-void SampleBankPanel::deleteSample(const juce::String& id)
+void SampleBankPanel::deleteSample(const juce::String &id)
 {
 	if (selectedEntry && selectedEntry->id == id)
 		selectEntry(nullptr);
-	if (auto* bank = audioProcessor.getSampleBank())
+	if (auto *bank = audioProcessor.getSampleBank())
 		if (bank->removeSample(id))
 			refreshSampleList();
 }
 
 void SampleBankPanel::cleanupUnusedSamples()
 {
-	auto* bank = audioProcessor.getSampleBank();
-	if (!bank) return;
+	auto *bank = audioProcessor.getSampleBank();
+	if (!bank)
+		return;
 	auto unused = bank->getUnusedSamples();
-	if (unused.empty()) { ObsidianAlertManager::showInfo("Clean Unused", "No unused samples."); return; }
+	if (unused.empty())
+	{
+		ObsidianAlertManager::showInfo("Clean Unused", "No unused samples.");
+		return;
+	}
 	ObsidianAlertManager::showConfirm("Clean Unused",
-		"Found " + juce::String((int)unused.size()) + " unused samples. Delete all?",
-		"Delete All", "Cancel",
-		[this, bank](bool ok)
-		{
-			if (!ok) return;
-			int n = bank->removeUnusedSamples();
-			refreshSampleList();
-			ObsidianAlertManager::showInfo("Done", "Removed " + juce::String(n) + " samples.");
-		});
+									  "Found " + juce::String((int)unused.size()) + " unused samples. Delete all?",
+									  "Delete All", "Cancel",
+									  [this, bank](bool ok)
+									  {
+										  if (!ok)
+											  return;
+										  int n = bank->removeUnusedSamples();
+										  refreshSampleList();
+										  ObsidianAlertManager::showInfo("Done", "Removed " + juce::String(n) + " samples.");
+									  });
 }
 
-void SampleBankPanel::showDeleteConfirmation(const juce::String& id, const juce::String& name)
+void SampleBankPanel::showDeleteConfirmation(const juce::String &id, const juce::String &name)
 {
-	auto* e = audioProcessor.getSampleBank()->getSample(id);
-	if (!e) return;
+	auto *e = audioProcessor.getSampleBank()->getSample(id);
+	if (!e)
+		return;
 	juce::String msg = "Delete '" + name + "'?";
 	if (!e->usedInProjects.empty())
 		msg += "\n\nUsed in " + juce::String((int)e->usedInProjects.size()) + " project(s).";
 	ObsidianAlertManager::showConfirm("Delete Sample", msg, "Delete", "Cancel",
-		[this, id](bool ok) { if (ok) deleteSample(id); });
+									  [this, id](bool ok)
+									  { if (ok) deleteSample(id); });
 }
 
 void SampleBankPanel::addCategory()
 {
 	juce::String name = categoryInput.getText().trim();
-	if (name.isEmpty()) { ObsidianAlertManager::showError("Add Category", "Enter a name."); return; }
-	for (const auto& info : categoryInfos)
+	if (name.isEmpty())
+	{
+		ObsidianAlertManager::showError("Add Category", "Enter a name.");
+		return;
+	}
+	for (const auto &info : categoryInfos)
 		if (info.name.compareIgnoreCase(name) == 0)
 		{
-			ObsidianAlertManager::showError("Add Category", "Already exists."); return;
+			ObsidianAlertManager::showError("Add Category", "Already exists.");
+			return;
 		}
 	int id = std::max(20, getNextCategoryId());
-	categoryInfos.push_back({ id, name });
+	categoryInfos.push_back({id, name});
 	rebuildCategoryFilter();
 	categoryFilter.setSelectedId(id + 1);
 	currentCategoryId = id;
@@ -1016,25 +1101,34 @@ void SampleBankPanel::editCategory()
 {
 	if (!isCategoryEditable(currentCategoryId))
 	{
-		ObsidianAlertManager::showError("Edit Category", "Cannot edit built-in categories."); return;
+		ObsidianAlertManager::showError("Edit Category", "Cannot edit built-in categories.");
+		return;
 	}
 	auto it = std::find_if(categoryInfos.begin(), categoryInfos.end(),
-		[this](const CategoryInfo& i) { return i.id == currentCategoryId; });
-	if (it == categoryInfos.end()) return;
+						   [this](const CategoryInfo &i)
+						   { return i.id == currentCategoryId; });
+	if (it == categoryInfos.end())
+		return;
 	juce::String newName = categoryInput.getText().trim();
-	if (newName.isEmpty()) { categoryInput.setText(it->name, juce::dontSendNotification); return; }
-	for (const auto& info : categoryInfos)
+	if (newName.isEmpty())
+	{
+		categoryInput.setText(it->name, juce::dontSendNotification);
+		return;
+	}
+	for (const auto &info : categoryInfos)
 		if (info.id != currentCategoryId && info.name.compareIgnoreCase(newName) == 0)
 		{
-			ObsidianAlertManager::showError("Edit Category", "Already exists."); return;
+			ObsidianAlertManager::showError("Edit Category", "Already exists.");
+			return;
 		}
 	juce::String old = it->name;
 	it->name = newName;
 	rebuildCategoryFilter();
-	if (auto* bank = audioProcessor.getSampleBank())
-		for (auto* s : bank->getAllSamples())
-			for (auto& c : s->categories)
-				if (c == old) c = newName;
+	if (auto *bank = audioProcessor.getSampleBank())
+		for (auto *s : bank->getAllSamples())
+			for (auto &c : s->categories)
+				if (c == old)
+					c = newName;
 	categoryInput.clear();
 	saveCategoriesConfig();
 	refreshSampleList();
@@ -1044,37 +1138,43 @@ void SampleBankPanel::deleteCategory()
 {
 	if (!isCategoryEditable(currentCategoryId))
 	{
-		ObsidianAlertManager::showError("Delete Category", "Cannot delete built-in categories."); return;
+		ObsidianAlertManager::showError("Delete Category", "Cannot delete built-in categories.");
+		return;
 	}
 	auto it = std::find_if(categoryInfos.begin(), categoryInfos.end(),
-		[this](const CategoryInfo& i) { return i.id == currentCategoryId; });
-	if (it == categoryInfos.end()) return;
+						   [this](const CategoryInfo &i)
+						   { return i.id == currentCategoryId; });
+	if (it == categoryInfos.end())
+		return;
 	juce::String catName = it->name;
 	int catId = currentCategoryId;
 	ObsidianAlertManager::showConfirm("Delete Category",
-		"Delete '" + catName + "'? Samples won't be deleted.",
-		"Delete", "Cancel",
-		[this, catName, catId](bool ok)
-		{
-			if (!ok) return;
-			if (auto* bank = audioProcessor.getSampleBank())
-			{
-				for (auto* s : bank->getAllSamples())
-					s->categories.erase(std::remove(s->categories.begin(),
-						s->categories.end(), catName),
-						s->categories.end());
-				bank->saveBankData();
-			}
-			categoryInfos.erase(std::remove_if(categoryInfos.begin(), categoryInfos.end(),
-				[catId](const CategoryInfo& i) { return i.id == catId; }), categoryInfos.end());
-			rebuildCategoryFilter();
-			categoryFilter.setSelectedId(1);
-			currentCategoryId = 0;
-			editCategoryButton.setEnabled(false);
-			deleteCategoryButton.setEnabled(false);
-			saveCategoriesConfig();
-			refreshSampleList();
-		});
+									  "Delete '" + catName + "'? Samples won't be deleted.",
+									  "Delete", "Cancel",
+									  [this, catName, catId](bool ok)
+									  {
+										  if (!ok)
+											  return;
+										  if (auto *bank = audioProcessor.getSampleBank())
+										  {
+											  for (auto *s : bank->getAllSamples())
+												  s->categories.erase(std::remove(s->categories.begin(),
+																				  s->categories.end(), catName),
+																	  s->categories.end());
+											  bank->saveBankData();
+										  }
+										  categoryInfos.erase(std::remove_if(categoryInfos.begin(), categoryInfos.end(),
+																			 [catId](const CategoryInfo &i)
+																			 { return i.id == catId; }),
+															  categoryInfos.end());
+										  rebuildCategoryFilter();
+										  categoryFilter.setSelectedId(1);
+										  currentCategoryId = 0;
+										  editCategoryButton.setEnabled(false);
+										  deleteCategoryButton.setEnabled(false);
+										  saveCategoriesConfig();
+										  refreshSampleList();
+									  });
 }
 
 bool SampleBankPanel::isCategoryEditable(int id) const { return id >= 20; }
@@ -1082,17 +1182,19 @@ bool SampleBankPanel::isCategoryEditable(int id) const { return id >= 20; }
 int SampleBankPanel::getNextCategoryId()
 {
 	int mx = 19;
-	for (const auto& i : categoryInfos) mx = std::max(mx, i.id);
+	for (const auto &i : categoryInfos)
+		mx = std::max(mx, i.id);
 	return mx + 1;
 }
 
 void SampleBankPanel::saveCategoriesConfig()
 {
 	juce::File f = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		.getChildFile("OBSIDIAN-Neural").getChildFile("categories.json");
+					   .getChildFile("OBSIDIAN-Neural")
+					   .getChildFile("categories.json");
 	juce::DynamicObject::Ptr cfg = new juce::DynamicObject();
 	juce::Array<juce::var> arr;
-	for (const auto& info : categoryInfos)
+	for (const auto &info : categoryInfos)
 		if (info.id > 0)
 		{
 			juce::DynamicObject::Ptr d = new juce::DynamicObject();
@@ -1108,25 +1210,35 @@ void SampleBankPanel::saveCategoriesConfig()
 void SampleBankPanel::loadCategoriesConfig()
 {
 	juce::File f = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		.getChildFile("OBSIDIAN-Neural").getChildFile("categories.json");
-	if (!f.exists()) return;
+					   .getChildFile("OBSIDIAN-Neural")
+					   .getChildFile("categories.json");
+	if (!f.exists())
+		return;
 	auto cfg = juce::JSON::parse(f);
-	if (!cfg.isObject()) return;
-	auto* obj = cfg.getDynamicObject();
-	if (!obj) return;
+	if (!cfg.isObject())
+		return;
+	auto *obj = cfg.getDynamicObject();
+	if (!obj)
+		return;
 	auto av = obj->getProperty("categories");
-	if (!av.isArray()) return;
+	if (!av.isArray())
+		return;
 	categoryInfos.erase(std::remove_if(categoryInfos.begin(), categoryInfos.end(),
-		[](const CategoryInfo& i) { return i.id >= 20; }), categoryInfos.end());
+									   [](const CategoryInfo &i)
+									   { return i.id >= 20; }),
+						categoryInfos.end());
 	for (int i = 0; i < av.getArray()->size(); ++i)
 	{
 		auto v = av.getArray()->getUnchecked(i);
-		if (!v.isObject()) continue;
-		auto* o = v.getDynamicObject();
-		if (!o) continue;
+		if (!v.isObject())
+			continue;
+		auto *o = v.getDynamicObject();
+		if (!o)
+			continue;
 		int id = o->getProperty("id");
 		juce::String name = o->getProperty("name").toString();
-		if (id >= 20) categoryInfos.push_back({ id, name });
+		if (id >= 20)
+			categoryInfos.push_back({id, name});
 	}
 }
 
@@ -1134,9 +1246,10 @@ void SampleBankPanel::rebuildCategoryFilter()
 {
 	int cur = categoryFilter.getSelectedId();
 	categoryFilter.clear();
-	for (const auto& info : categoryInfos)
+	for (const auto &info : categoryInfos)
 		categoryFilter.addItem(info.name, info.id + 1);
 	bool found = std::any_of(categoryInfos.begin(), categoryInfos.end(),
-		[cur](const CategoryInfo& i) { return i.id == cur - 1; });
+							 [cur](const CategoryInfo &i)
+							 { return i.id == cur - 1; });
 	categoryFilter.setSelectedId(found ? cur : 1);
 }

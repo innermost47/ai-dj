@@ -9,14 +9,13 @@ class DjIaVstProcessor;
 class SequencerComponent : public ObsidianComponent
 {
 public:
-	SequencerComponent(const juce::String& trackId, DjIaVstProcessor& processor);
+	SequencerComponent(const juce::String &trackId, DjIaVstProcessor &processor);
 	~SequencerComponent();
 
-	void paint(juce::Graphics& g) override;
+	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void mouseDown(const juce::MouseEvent& event) override;
+	void mouseDown(const juce::MouseEvent &event) override;
 
-	void setCurrentStep(int step);
 	void setPlaying(bool playing);
 	void setNumMeasures(int measures);
 	void setCurrentMeasure(int measure);
@@ -24,25 +23,23 @@ public:
 	void updateFromTrackData();
 	void setAccentColour(juce::Colour colour);
 
-	bool isSequencerPlaying() const { return isPlaying; }
-
 private:
 	struct RoundedLabelLF : public juce::LookAndFeel_V4
 	{
 		float radius = 4.0f;
-		void drawLabel(juce::Graphics& g, juce::Label& label) override
+		void drawLabel(juce::Graphics &g, juce::Label &label) override
 		{
 			g.setColour(label.findColour(juce::Label::backgroundColourId));
 			g.fillRoundedRectangle(label.getLocalBounds().toFloat(), radius);
 			g.setColour(label.findColour(juce::Label::textColourId));
 			g.setFont(label.getFont());
 			g.drawFittedText(label.getText(), label.getLocalBounds().reduced(1),
-				label.getJustificationType(), 1);
+							 label.getJustificationType(), 1);
 		}
 	};
 	RoundedLabelLF roundedLabelLF;
 	juce::String trackId;
-	DjIaVstProcessor& audioProcessor;
+	DjIaVstProcessor &audioProcessor;
 
 	static const int MAX_STEPS_PER_MEASURE = 16;
 	static const int MAX_MEASURES = 4;
@@ -60,10 +57,10 @@ private:
 	std::array<MidiLearnableButton, 8> sequenceButtons;
 	juce::Colour accentColour = ColourPalette::buttonDanger;
 
-	juce::Timer* editingTimer = nullptr;
+	juce::Timer *editingTimer = nullptr;
 
-	IconButtonSimple prevMeasureButton{ "PrevMeasure", "" };
-	IconButtonSimple nextMeasureButton{ "NextMeasure", "" };
+	IconButtonSimple prevMeasureButton{"PrevMeasure", ""};
+	IconButtonSimple nextMeasureButton{"NextMeasure", ""};
 
 	juce::Label measureLabel;
 	juce::Label currentPlayingMeasureLabel;

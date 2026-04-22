@@ -31,13 +31,6 @@ public:
 
 	typedef std::function<void(LoopResponse)> GenerationCallback;
 
-private:
-	std::unique_ptr<StableAudioEngine> stableAudioEngine;
-
-	juce::File appDataDir;
-	juce::String currentUserId = "default_user";
-
-public:
 	bool initialize()
 	{
 		appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -52,56 +45,8 @@ public:
 		return true;
 	}
 
-	void generateLoopAsync(const LoopRequest &request, GenerationCallback callback)
-	{
-		juce::Thread::launch([this, request, callback]()
-							 {
-				auto response = generateLoop(request);
-				juce::MessageManager::callAsync([callback, response]() {
-					callback(response);
-					}); });
-	}
-
 private:
-	LoopResponse generateLoop(const LoopRequest &request)
-	{
-		LoopResponse response;
-		try
-		{
-
-			juce::String optimizedPrompt = (request.prompt + " " + juce::String(request.bpm) + "bpm " + request.key).toStdString();
-
-			StableAudioEngine::GenerationParams audioParams;
-			audioParams.prompt = optimizedPrompt;
-			audioParams.duration = request.generationDuration;
-			audioParams.numThreads = 4;
-			audioParams.seed = -1;
-
-			auto audioResult = stableAudioEngine->generateSample(audioParams);
-
-			if (audioResult.success)
-			{
-				response.success = true;
-				response.audioData = audioResult.audioData;
-				response.leftChannel = audioResult.leftChannel;
-				response.rightChannel = audioResult.rightChannel;
-				response.actualDuration = audioResult.actualDuration;
-				response.duration = audioResult.actualDuration;
-				response.bpm = request.bpm;
-				response.optimizedPrompt = optimizedPrompt;
-				response.stemsUsed = request.preferredStems;
-			}
-			else
-			{
-				response.success = false;
-				response.errorMessage = "Audio generation failed: " + audioResult.errorMessage;
-			}
-		}
-		catch (const std::exception &e)
-		{
-			response.success = false;
-			response.errorMessage = juce::String("Generation exception: ") + e.what();
-		}
-		return response;
-	}
+	std::unique_ptr<StableAudioEngine> stableAudioEngine;
+	juce::File appDataDir;
+	juce::String currentUserId = "default_user";
 };

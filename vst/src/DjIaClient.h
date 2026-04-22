@@ -74,12 +74,6 @@ public:
 		return apiKey;
 	}
 
-	juce::String getBaseUrl() const
-	{
-		std::lock_guard<std::mutex> lock(mutex);
-		return baseUrl;
-	}
-
 	void setBaseUrl(const juce::String &newBaseUrl)
 	{
 		std::lock_guard<std::mutex> lock(mutex);

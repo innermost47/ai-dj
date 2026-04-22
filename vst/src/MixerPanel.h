@@ -8,33 +8,29 @@ class MasterChannel;
 class MixerPanel : public ObsidianComponent
 {
 public:
-	MixerPanel(DjIaVstProcessor& processor);
+	MixerPanel(DjIaVstProcessor &processor);
 	~MixerPanel();
 
-	void updateTrackName(const juce::String& trackId, const juce::String& newName);
+	void updateTrackName(const juce::String &trackId, const juce::String &newName);
 	void updateAllMixerComponents();
-
-	float getMasterVolume() const;
-	float getMasterPan() const;
 
 	void calculateMasterLevel();
 	void refreshMixerChannels();
 	void refreshAllChannels();
 
-	void trackAdded(const juce::String& trackId);
-	void trackRemoved(const juce::String& trackId);
-	void trackSelected(const juce::String& trackId);
-	void updateModelUI(const juce::String& trackId);
-	void paint(juce::Graphics& g) override;
+	void trackAdded(const juce::String &trackId);
+	void trackSelected(const juce::String &trackId);
+	void updateModelUI(const juce::String &trackId);
+	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void startGeneratingAnimationForTrack(const juce::String& trackId);
-	void stopGeneratingAnimationForTrack(const juce::String& trackId);
-	void clearSamplePending(const juce::String& trackId);
+	void startGeneratingAnimationForTrack(const juce::String &trackId);
+	void stopGeneratingAnimationForTrack(const juce::String &trackId);
+	void clearSamplePending(const juce::String &trackId);
 
-	std::function<void(const juce::String& trackId, const juce::String& newName)> onTrackRenamedFromMixer;
+	std::function<void(const juce::String &trackId, const juce::String &newName)> onTrackRenamedFromMixer;
 
 private:
-	DjIaVstProcessor& audioProcessor;
+	DjIaVstProcessor &audioProcessor;
 
 	std::unique_ptr<MasterChannel> masterChannel;
 	float masterVolume = 0.8f;

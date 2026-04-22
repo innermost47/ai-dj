@@ -7,7 +7,7 @@ struct TrackData;
 class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
 {
 public:
-	WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData);
+	WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData);
 	~WaveformDisplay();
 
 	std::function<void(double, double)> onLoopPointsChanged;
@@ -16,9 +16,9 @@ public:
 	void setSampleBpm(float bpm);
 	void lockLoopPoints(bool locked);
 	void setPlaybackPosition(double timeInSeconds, bool isPlaying);
-	void setAudioData(const juce::AudioBuffer<float>& newAudioBuffer, double newSampleRate);
+	void setAudioData(const juce::AudioBuffer<float> &newAudioBuffer, double newSampleRate);
 	void setLoopPoints(double startTime, double endTime);
-	void setAudioFile(const juce::File& file);
+	void setAudioFile(const juce::File &file);
 
 private:
 	juce::AudioBuffer<float> audioBuffer;
@@ -26,8 +26,8 @@ private:
 	juce::Point<int> dragStartPosition;
 	std::unique_ptr<juce::ScrollBar> horizontalScrollBar;
 
-	DjIaVstProcessor& audioProcessor;
-	TrackData& track;
+	DjIaVstProcessor &audioProcessor;
+	TrackData &track;
 	std::vector<float> thumbnailLeft;
 	std::vector<float> thumbnailRight;
 
@@ -55,29 +55,28 @@ private:
 	float timeToX(double time);
 
 	void generateThumbnail();
-	void feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int& retFlag);
-	void drawWaveform(juce::Graphics& g);
-	void setColorDependingTimeStretchRatio(juce::Colour& waveformColor) const;
-	void drawLoopMarkers(juce::Graphics& g);
-	void drawLoopTimeLabels(juce::Graphics& g, float startX, float endX);
-	void drawLoopBarLabels(juce::Graphics& g, float startX, float endX) const;
-	void drawPlaybackHead(juce::Graphics& g);
-	void drawBeatMarkers(juce::Graphics& g);
-	void drawBeats(juce::Graphics& g, float beatDuration, float viewEndTime, float barDuration, double viewDuration);
+	void feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int &retFlag);
+	void drawWaveform(juce::Graphics &g);
+	void setColorDependingTimeStretchRatio(juce::Colour &waveformColor) const;
+	void drawLoopMarkers(juce::Graphics &g);
+	void drawLoopTimeLabels(juce::Graphics &g, float startX, float endX);
+	void drawLoopBarLabels(juce::Graphics &g, float startX, float endX) const;
+	void drawPlaybackHead(juce::Graphics &g);
+	void drawBeatMarkers(juce::Graphics &g);
 	void calculateStretchRatio() const;
 	void updateScrollBarVisibility();
 	void updateScrollBar();
-	void drawVisibleBarLabels(juce::Graphics& g);
+	void drawVisibleBarLabels(juce::Graphics &g);
 	void setViewStartTime(double newViewStartTime);
-	void drawMeasureLine(double time, juce::Graphics& g, float barDuration, double viewDuration);
-	void drawBeatLine(double time, juce::Graphics& g, double viewDuration);
-	void drawSubdivisionLine(double time, juce::Graphics& g, double viewDuration);
-	void paint(juce::Graphics& g) override;
-	void mouseDown(const juce::MouseEvent& e) override;
-	void mouseDrag(const juce::MouseEvent& e) override;
-	void mouseUp(const juce::MouseEvent& e) override;
-	void mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override;
-	void scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override;
+	void drawMeasureLine(double time, juce::Graphics &g, float barDuration, double viewDuration);
+	void drawBeatLine(double time, juce::Graphics &g, double viewDuration);
+	void drawSubdivisionLine(double time, juce::Graphics &g, double viewDuration);
+	void paint(juce::Graphics &g) override;
+	void mouseDown(const juce::MouseEvent &e) override;
+	void mouseDrag(const juce::MouseEvent &e) override;
+	void mouseUp(const juce::MouseEvent &e) override;
+	void mouseWheelMove(const juce::MouseEvent &e, const juce::MouseWheelDetails &wheel) override;
+	void scrollBarMoved(juce::ScrollBar *scrollBarThatHasMoved, double newRangeStart) override;
 
 	juce::Colour getModelAccentColour() const;
 
@@ -85,5 +84,4 @@ private:
 	double getTotalDuration() const;
 	double getViewStartTime() const;
 	double getViewEndTime() const;
-	double getMinLoopDuration() const;
 };

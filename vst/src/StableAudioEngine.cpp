@@ -262,13 +262,6 @@ juce::AudioBuffer<float> StableAudioEngine::resampleBuffer(const juce::AudioBuff
 	return outputBuffer;
 }
 
-std::vector<float> StableAudioEngine::generateAudio(const juce::String &prompt, float duration)
-{
-	GenerationParams params(prompt, duration);
-	auto result = generateSample(params);
-	return result.isValid() ? result.audioData : std::vector<float>();
-}
-
 juce::String StableAudioEngine::sanitizePrompt(const juce::String &prompt)
 {
 	auto sanitized = prompt.replace("\"", "\\\"")

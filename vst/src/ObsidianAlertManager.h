@@ -74,7 +74,7 @@ public:
     static void showConfigDialog(
         const juce::String &title,
         const juce::String &serverUrl,
-        const juce::String &apiKey,
+        const juce::String & /* apiKey */,
         bool currentUseLocal,
         int currentTimeoutMs,
         bool isFirstTime,

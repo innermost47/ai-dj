@@ -380,7 +380,7 @@ void TrackComponent::setSelected(bool selected)
 	repaint();
 }
 
-void TrackComponent::mouseDown(const juce::MouseEvent &event)
+void TrackComponent::mouseDown(const juce::MouseEvent & /*event*/)
 {
 	if (onSelectTrack)
 		onSelectTrack(trackId);
@@ -434,50 +434,6 @@ void TrackComponent::setSamplePending(bool pending)
 {
 	hasSamplePending = pending;
 	repaint();
-}
-
-void TrackComponent::layoutPlaybackCluster(juce::Rectangle<int> area)
-{
-	const int gap = 2;
-	int cellW = (area.getWidth() - gap) / 2;
-	int cellH = (area.getHeight() - gap) / 2;
-
-	auto topRow = area.removeFromTop(cellH);
-	originalSyncButton.setBounds(topRow.removeFromLeft(cellW));
-	topRow.removeFromLeft(gap);
-	previewButton.setBounds(topRow.removeFromLeft(cellW));
-
-	area.removeFromTop(gap);
-
-	auto bottomRow = area.removeFromTop(cellH);
-	bottomRow.removeFromLeft(gap);
-}
-
-void TrackComponent::layoutFxCluster(juce::Rectangle<int> area)
-{
-	const int gap = 2;
-	int cellW = (area.getWidth() - gap) / 2;
-	int topRowHeight = area.getHeight() / 2;
-
-	auto topRow = area.removeFromTop(topRowHeight);
-	randomRetriggerButton.setBounds(topRow.removeFromLeft(cellW));
-	topRow.removeFromLeft(gap);
-	randomDurationToggle.setBounds(topRow.removeFromLeft(cellW));
-
-	area.removeFromTop(gap);
-
-	const int knobDiameter = 22;
-	const int labelHeight = 10;
-
-	intervalKnob.setBounds(
-		area.getX() + (area.getWidth() - knobDiameter) / 2,
-		area.getY(),
-		knobDiameter, knobDiameter);
-
-	intervalLabel.setBounds(
-		area.getX(),
-		area.getY() + knobDiameter + 2,
-		area.getWidth(), labelHeight);
 }
 
 void TrackComponent::resized()
@@ -923,7 +879,6 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	if (waveformDisplay)
 	{
-		const auto &newPage = track->getCurrentPage();
 		if (newPage.numSamples > 0 && newPage.isLoaded.load())
 		{
 			waveformDisplay->setAudioData(newPage.audioBuffer, newPage.sampleRate);
@@ -1775,36 +1730,6 @@ void TrackComponent::onTrackPresetSelected()
 		{
 			onTrackPromptChanged(trackId, newPrompt);
 		}
-	}
-}
-
-void TrackComponent::adjustLoopPointsToTempo()
-{
-	if (!track || track->numSamples == 0)
-		return;
-
-	float effectiveBpm = calculateEffectiveBpm();
-	if (effectiveBpm <= 0)
-		return;
-
-	int numerator = audioProcessor.getTimeSignatureNumerator();
-	double beatDuration = 60.0 / effectiveBpm;
-	double barDuration = beatDuration * numerator;
-	double originalDuration = track->numSamples / track->sampleRate;
-	double stretchRatio = effectiveBpm / track->originalBpm;
-	double effectiveDuration = originalDuration / stretchRatio;
-
-	track->loopStart = 0.0;
-
-	int maxWholeBars = (int)(effectiveDuration / barDuration);
-	maxWholeBars = juce::jlimit(1, 8, maxWholeBars);
-
-	track->loopEnd = maxWholeBars * barDuration;
-
-	if (track->loopEnd > effectiveDuration)
-	{
-		maxWholeBars = (std::max)(1, maxWholeBars - 1);
-		track->loopEnd = maxWholeBars * barDuration;
 	}
 }
 

@@ -85,8 +85,6 @@ public:
 	static const juce::Colour cyan;
 
 	static juce::Colour getTrackColour(int trackIndex);
-	static juce::Colour withAlpha(const juce::Colour& colour, float alpha);
-	static juce::Colour darken(const juce::Colour& colour, float amount = 0.2f);
-	static juce::Colour lighten(const juce::Colour& colour, float amount = 0.2f);
+	static juce::Colour withAlpha(const juce::Colour &colour, float alpha);
 	static juce::Colour getModelColourByIndex(int index);
 };

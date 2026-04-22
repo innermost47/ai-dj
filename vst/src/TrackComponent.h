@@ -85,11 +85,8 @@ public:
 	void performPageChange(int pageIndex);
 	void updatePagesDisplay();
 	void setSamplePending(bool pending);
-	bool isSamplePending() const { return hasSamplePending; }
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String &name);
-
-	juce::String getSelectedModel() const { return modelSelector.getText(); }
 
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
@@ -99,9 +96,6 @@ public:
 	juce::Component::SafePointer<juce::DocumentWindow> drawingWindowPtr;
 
 	juce::String trackId;
-
-	IconButton *getGenerateButton() { return &generateButton; }
-	juce::Slider *getBpmOffsetSlider() { return &bpmOffsetSlider; }
 
 	SequencerComponent *getSequencer() const { return sequencer.get(); }
 
@@ -214,7 +208,6 @@ private:
 	void setupUI();
 	void setupIconButtons();
 	void updateButtonsEnabledState();
-	void adjustLoopPointsToTempo();
 	void updateTrackInfo();
 	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
 	void removeMidiMapping(const juce::String &param);
@@ -237,8 +230,6 @@ private:
 	void openDrawingCanvas();
 	void updatePreviewButton();
 	void updateModelUI();
-	void layoutPlaybackCluster(juce::Rectangle<int> area);
-	void layoutFxCluster(juce::Rectangle<int> area);
 	void mouseDown(const juce::MouseEvent &event) override;
 
 	float calculateEffectiveBpm();

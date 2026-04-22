@@ -36,20 +36,10 @@ public:
 			}
 			return 0.0f;
 		}
-		catch (const std::exception &e)
+		catch (const std::exception & /*e*/)
 		{
 			return 0.0f;
 		}
-	}
-	static float returnDetectedBPMorFallback(float detectedBPM,
-											 const juce::AudioSampleBuffer & /*buffer*/,
-											 double /*sampleRate*/)
-	{
-		if (detectedBPM >= 30.0f && detectedBPM <= 300.0f)
-		{
-			return detectedBPM;
-		}
-		return 0.0f;
 	}
 
 	static void chunkAnalysis(std::vector<float> &monoData, soundtouch::BPMDetect &bpmDetect)
@@ -99,13 +89,6 @@ public:
 
 		retFlag = false;
 		return 0.0f;
-	}
-
-	static void timeStretchBufferFast(juce::AudioBuffer<float> &buffer,
-									  double ratio,
-									  double sampleRate)
-	{
-		timeStretchBuffer(buffer, ratio, sampleRate, false);
 	}
 
 	static void timeStretchBufferHQ(juce::AudioBuffer<float> &buffer,
@@ -193,7 +176,7 @@ public:
 				}
 			}
 		}
-		catch (const std::exception &e)
+		catch (const std::exception & /*e*/)
 		{
 		}
 	}

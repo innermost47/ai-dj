@@ -13,18 +13,16 @@ struct StereoLevel
 class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::AudioProcessorParameter::Listener
 {
 public:
-	MixerChannel(const juce::String& trackId, DjIaVstProcessor& processor, TrackData* trackData);
+	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData);
 	~MixerChannel() override;
 	juce::String getTrackId() const { return trackId; }
 	juce::Label trackNameLabel;
-	TrackData* track;
-	float getCurrentAudioLevel() const { return currentAudioLevel; }
-	float getPeakLevel() const { return peakHold; }
+	TrackData *track;
 	void setSelected(bool selected);
 	void updateFromTrackData();
 	void updateModelUI();
 	void updateVUMeters();
-	void setTrackData(TrackData* trackData);
+	void setTrackData(TrackData *trackData);
 	void updateButtonColors();
 	void cleanup();
 	void addEventListeners();
@@ -37,12 +35,12 @@ public:
 		hasSamplePending = pending;
 		repaint();
 	}
-	void setTrackName(const juce::String& name);
-	std::function<void(const juce::String&)> onTrackRenamed;
+	void setTrackName(const juce::String &name);
+	std::function<void(const juce::String &)> onTrackRenamed;
 
 private:
-	DjIaVstProcessor& audioProcessor;
-	std::atomic<bool> isDestroyed{ false };
+	DjIaVstProcessor &audioProcessor;
+	std::atomic<bool> isDestroyed{false};
 	juce::String trackId;
 
 	bool isGenerating = false;
@@ -51,7 +49,7 @@ private:
 
 	bool isSelected = false;
 	int bypassMidiFrames = 0;
-	std::atomic<bool> isUpdatingButtons{ false };
+	std::atomic<bool> isUpdatingButtons{false};
 
 	float currentAudioLevel = 0.0f;
 	float peakHold = 0.0f;
@@ -63,10 +61,10 @@ private:
 
 	juce::Rectangle<int> sliderBounds;
 
-	IconButton playButton{ "Play", "PLAY" };
-	IconButtonSimple stopButton{ "Stop", "STOP" };
-	IconButton muteButton{ "Mute", "MUTE" };
-	IconButton soloButton{ "Solo", "SOLO" };
+	IconButton playButton{"Play", "PLAY"};
+	IconButtonSimple stopButton{"Stop", "STOP"};
+	IconButton muteButton{"Mute", "MUTE"};
+	IconButton soloButton{"Solo", "SOLO"};
 
 	MidiLearnableSlider volumeSlider;
 
@@ -88,31 +86,29 @@ private:
 	std::vector<float> levelHistoryLeft;
 	std::vector<float> levelHistoryRight;
 
-	void paint(juce::Graphics& g) override;
-	void drawVUMeter(juce::Graphics& g, juce::Rectangle<int> bounds);
-	void fillMeters(juce::Rectangle<float>& vuArea, int i, float segmentHeight, int numSegments, float currentLevel, juce::Graphics& g);
+	void paint(juce::Graphics &g) override;
+	void drawVUMeter(juce::Graphics &g, juce::Rectangle<int> bounds);
 	void resized() override;
 	void updateVUMeter();
 	StereoLevel calculateInstantLevel();
-	void setCurrentLevel(float level);
 	void timerCallback() override;
 	void setupMidiLearn();
 	void setupUI();
 	void parameterValueChanged(int parameterIndex, float newValue) override;
 	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
-	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
+	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
 	void removeListener(juce::String name);
 	void addListener(juce::String name);
-	void setSliderParameter(juce::String name, juce::Slider& slider);
-	void setButtonParameter(juce::String name, juce::Button& button);
-	void updateUIFromParameter(const juce::String& paramName,
-		const juce::String& slotPrefix,
-		float newValue);
-	void removeMidiMapping(const juce::String& param);
+	void setSliderParameter(juce::String name, juce::Slider &slider);
+	void setButtonParameter(juce::String name, juce::Button &button);
+	void updateUIFromParameter(const juce::String &paramName,
+							   const juce::String &slotPrefix,
+							   float newValue);
+	void removeMidiMapping(const juce::String &param);
 	void stopTrackImmediatly();
-	void fillMeterSegment(juce::Graphics& g, juce::Rectangle<float>& vuArea,
-		int i, float segmentHeight, int numSegments,
-		float currentLevel);
+	void fillMeterSegment(juce::Graphics &g, juce::Rectangle<float> &vuArea,
+						  int i, float segmentHeight, int numSegments,
+						  float currentLevel);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerChannel);
 	JUCE_DECLARE_WEAK_REFERENCEABLE(MixerChannel);
