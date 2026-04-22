@@ -4,6 +4,7 @@
 #include "MidiLearnManager.h"
 #include "PluginProcessor.h"
 #include "CustomLookAndFeel.h"
+#include "IconButton.h"
 
 class MidiMappingRow : public ObsidianComponent,
 	public juce::Button::Listener
@@ -30,8 +31,8 @@ private:
 
 	juce::Label parameterLabel;
 	juce::Label midiInfoLabel;
-	juce::TextButton deleteButton;
-	juce::TextButton learnButton;
+	IconButtonSimple deleteButton{ "Delete", "" };
+	IconButtonSimple learnButton{ "ReLearn", "" };
 
 	bool isLearning = false;
 	bool blinkState = false;
@@ -77,8 +78,9 @@ private:
 		CustomLookAndFeel customLookAndFeel;
 
 		juce::Label titleLabel;
-		juce::TextButton clearAllButton;
-		juce::TextButton reloadDefaultsButton;
+
+		IconButtonSimple clearAllButton{ "ClearAll", "" };
+		IconButtonSimple reloadDefaultsButton{ "ReloadDefaults", "" };
 
 		juce::Viewport mappingsViewport;
 		juce::Component mappingsContainer;
