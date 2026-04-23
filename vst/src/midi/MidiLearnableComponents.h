@@ -56,14 +56,14 @@ public:
 			else
 			{
 				juce::MessageManager::callAsync([this]()
-												{ this->repaint(); });
+					{ this->repaint(); });
 			}
 		}
 	}
 
 	bool isLearning() const override { return learningMode; }
 
-	void mouseDown(const juce::MouseEvent &e) override
+	void mouseDown(const juce::MouseEvent& e) override
 	{
 		if (e.mods.isRightButtonDown() && !e.mods.isCtrlDown())
 		{
@@ -71,7 +71,7 @@ public:
 			menu.addItem(1, "MIDI Learn");
 			menu.addItem(2, "Remove MIDI", onMidiRemove != nullptr);
 			menu.showMenuAsync(juce::PopupMenu::Options(), [this](int result)
-							   {
+				{
 					if (result == 1 && onMidiLearn)
 					{
 						setLearningMode(true);
@@ -88,7 +88,7 @@ public:
 		}
 	}
 
-	void paint(juce::Graphics &g) override
+	void paint(juce::Graphics& g) override
 	{
 		ComponentType::paint(g);
 

@@ -111,6 +111,8 @@ public:
 
 		for (auto* btn : buttons)
 		{
+			if (btn == nullptr) continue;
+
 			fb.items.add(juce::FlexItem(*btn)
 				.withWidth(static_cast<float>(btnWidth))
 				.withHeight(36.0f)

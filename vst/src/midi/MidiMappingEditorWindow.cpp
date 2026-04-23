@@ -1,8 +1,8 @@
 ﻿#include "MidiMappingEditorWindow.h"
-#include "components/ObsidianAlertManager.h"
+#include "components/shared/ObsidianAlertManager.h"
 #include "BinaryData.h"
 
-MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *manager)
+MidiMappingRow::MidiMappingRow(const MidiMapping& mapping, MidiLearnManager* manager)
 	: mapping(mapping), midiLearnManager(manager)
 {
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
@@ -30,7 +30,7 @@ MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *man
 
 MidiMappingRow::~MidiMappingRow() {}
 
-void MidiMappingRow::paint(juce::Graphics &g)
+void MidiMappingRow::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds().toFloat();
 	bool isEven = (getY() / getHeight()) % 2 == 0;
@@ -56,7 +56,7 @@ void MidiMappingRow::resized()
 	midiInfoLabel.setBounds(labelArea);
 }
 
-void MidiMappingRow::buttonClicked(juce::Button *button)
+void MidiMappingRow::buttonClicked(juce::Button* button)
 {
 	if (button == &deleteButton && onDeleteClicked)
 		onDeleteClicked();
@@ -89,12 +89,12 @@ void MidiMappingRow::toggleBlink()
 	{
 		blinkState = !blinkState;
 		learnButton.setColour(juce::TextButton::buttonColourId,
-							  blinkState ? ColourPalette::playArmed : ColourPalette::buttonSuccess);
+			blinkState ? ColourPalette::playArmed : ColourPalette::buttonSuccess);
 		repaint();
 	}
 }
 
-void MidiMappingRow::updateMapping(const MidiMapping &newMapping)
+void MidiMappingRow::updateMapping(const MidiMapping& newMapping)
 {
 	mapping = newMapping;
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
@@ -123,7 +123,7 @@ juce::String MidiMappingRow::getMidiInfoString() const
 	return typeStr + " " + juce::String(mapping.midiNumber) + " (Ch " + juce::String(mapping.midiChannel + 1) + ")";
 }
 
-MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager)
+MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager* manager)
 	: midiLearnManager(manager)
 {
 	subtitleLabel.setText("Manage custom mappings or click 'ReLearn' to assign a new MIDI control.", juce::dontSendNotification);
@@ -163,17 +163,17 @@ void MidiMappingEditorWindow::timerCallback()
 {
 	if (midiLearnManager->isLearningActive())
 	{
-		for (auto *row : mappingRows)
+		for (auto* row : mappingRows)
 			row->toggleBlink();
 	}
 	else
 	{
-		for (auto *row : mappingRows)
+		for (auto* row : mappingRows)
 			row->setLearningActive(false);
 	}
 }
 
-void MidiMappingEditorWindow::paint(juce::Graphics &g)
+void MidiMappingEditorWindow::paint(juce::Graphics& g)
 {
 	g.fillAll(ColourPalette::backgroundDark);
 
@@ -211,34 +211,34 @@ void MidiMappingEditorWindow::resized()
 	}
 }
 
-void MidiMappingEditorWindow::buttonClicked(juce::Button *button)
+void MidiMappingEditorWindow::buttonClicked(juce::Button* button)
 {
 	if (button == &clearAllButton)
 	{
 		ObsidianAlertManager::showConfirm(this,
-										  "Confirmation", "Are you sure you want to clear all MIDI mappings?", "Yes", "No",
-										  [this](bool confirmed)
-										  {
-											  if (confirmed)
-											  {
-												  midiLearnManager->clearAllMappings();
-												  refreshMappingsList();
-											  }
-										  });
+			"Confirmation", "Are you sure you want to clear all MIDI mappings?", "Yes", "No",
+			[this](bool confirmed)
+			{
+				if (confirmed)
+				{
+					midiLearnManager->clearAllMappings();
+					refreshMappingsList();
+				}
+			});
 	}
 	else if (button == &reloadDefaultsButton)
 	{
 		ObsidianAlertManager::showConfirm(this,
-										  "Confirmation", "Reset mappings to default configuration?", "Yes", "No",
-										  [this](bool confirmed)
-										  {
-											  if (confirmed)
-											  {
-												  midiLearnManager->clearAllMappings();
-												  midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
-												  refreshMappingsList();
-											  }
-										  });
+			"Confirmation", "Reset mappings to default configuration?", "Yes", "No",
+			[this](bool confirmed)
+			{
+				if (confirmed)
+				{
+					midiLearnManager->clearAllMappings();
+					midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
+					refreshMappingsList();
+				}
+			});
 	}
 }
 
@@ -249,13 +249,13 @@ void MidiMappingEditorWindow::refreshMappingsList()
 
 	auto mappings = midiLearnManager->getAllMappings();
 
-	for (const auto &mapping : mappings)
+	for (const auto& mapping : mappings)
 	{
-		auto *row = new MidiMappingRow(mapping, midiLearnManager);
+		auto* row = new MidiMappingRow(mapping, midiLearnManager);
 		row->onDeleteClicked = [this, mapping]
-		{ deleteMapping(mapping); };
+			{ deleteMapping(mapping); };
 		row->onLearnClicked = [this, mapping]
-		{ startLearningForMapping(mapping); };
+			{ startLearningForMapping(mapping); };
 
 		mappingRows.add(row);
 		mappingsContainer.addAndMakeVisible(row);
@@ -264,49 +264,49 @@ void MidiMappingEditorWindow::refreshMappingsList()
 	resized();
 }
 
-void MidiMappingEditorWindow::deleteMapping(const MidiMapping &mapping)
+void MidiMappingEditorWindow::deleteMapping(const MidiMapping& mapping)
 {
 	ObsidianAlertManager::showConfirm(this, "Confirmation", "Delete mapping for \"" + mapping.parameterName + "\"?", "Yes", "No",
-									  [this, mapping](bool confirmed)
-									  {
-										  if (confirmed)
-										  {
-											  midiLearnManager->removeMapping(mapping.parameterName);
-											  refreshMappingsList();
-										  }
-									  });
+		[this, mapping](bool confirmed)
+		{
+			if (confirmed)
+			{
+				midiLearnManager->removeMapping(mapping.parameterName);
+				refreshMappingsList();
+			}
+		});
 }
 
-void MidiMappingEditorWindow::startLearningForMapping(const MidiMapping &mapping)
+void MidiMappingEditorWindow::startLearningForMapping(const MidiMapping& mapping)
 {
 	auto onLearningComplete = [this, paramName = mapping.parameterName](float /* value */)
-	{
-		juce::MessageManager::callAsync([this, paramName]()
-										{
-				auto updatedMappings = midiLearnManager->getAllMappings();
-				for (const auto& updated : updatedMappings)
+		{
+			juce::MessageManager::callAsync([this, paramName]()
 				{
-					if (updated.parameterName == paramName)
+					auto updatedMappings = midiLearnManager->getAllMappings();
+					for (const auto& updated : updatedMappings)
 					{
-						for (auto* row : mappingRows)
+						if (updated.parameterName == paramName)
 						{
-							if (row->getMapping().parameterName == paramName)
+							for (auto* row : mappingRows)
 							{
-								row->updateMapping(updated);
-								row->setLearningActive(false);
-								break;
+								if (row->getMapping().parameterName == paramName)
+								{
+									row->updateMapping(updated);
+									row->setLearningActive(false);
+									break;
+								}
 							}
+							break;
 						}
-						break;
-					}
-				} });
-	};
+					} });
+		};
 
 	midiLearnManager->startLearning(mapping.parameterName, mapping.processor, onLearningComplete, mapping.description);
 
-	for (auto *row : mappingRows)
+	for (auto* row : mappingRows)
 		row->setLearningActive(false);
-	for (auto *row : mappingRows)
+	for (auto* row : mappingRows)
 	{
 		if (row->getMapping().parameterName == mapping.parameterName)
 		{
@@ -316,14 +316,16 @@ void MidiMappingEditorWindow::startLearningForMapping(const MidiMapping &mapping
 	}
 }
 
-void ObsidianAlertManager::showMidiMappingEditor(juce::Component *parent, MidiLearnManager *manager)
+void ObsidianAlertManager::showMidiMappingEditor(juce::Component* parent, MidiLearnManager* manager)
 {
 	auto modal = std::make_unique<ObsidianModalWindow>("MIDI Mappings");
-
 	modal->setContent(std::make_unique<MidiMappingEditorWindow>(manager));
+	auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+	juce::Component::SafePointer<ObsidianModalOverlay> safeOverlay(overlay);
 
-	auto *overlay = new ObsidianModalOverlay(parent, std::move(modal));
-
-	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive, [overlay]()
-									{ overlay->close(); });
+	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive, [safeOverlay]()
+		{
+			if (safeOverlay != nullptr)
+				safeOverlay->close();
+		});
 }

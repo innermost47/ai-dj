@@ -17,7 +17,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 	setResizeLimits(1100, 800, 2400, 1600);
 	setSize(1580, 800);
 	setScaleFactor(1.0f);
-	setLookAndFeel(&customLookAndFeel);
+	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());
 	ObsidianAlertManager::initialize();
 	setWantsKeyboardFocus(true);
 	setMouseClickGrabsKeyboardFocus(false);

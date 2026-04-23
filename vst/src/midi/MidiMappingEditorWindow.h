@@ -1,39 +1,39 @@
 #pragma once
-#include "ObsidianBase.h"
+#include "components/ObsidianBase.h"
 #include "MidiMapping.h"
 #include "MidiLearnManager.h"
 #include "PluginProcessor.h"
 #include "style/CustomLookAndFeel.h"
-#include "components/IconButton.h"
+#include "components/shared/IconButton.h"
 
 class MidiMappingRow : public ObsidianComponent,
-					   public juce::Button::Listener
+	public juce::Button::Listener
 {
 public:
-	MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *manager);
+	MidiMappingRow(const MidiMapping& mapping, MidiLearnManager* manager);
 	~MidiMappingRow() override;
 
-	void paint(juce::Graphics &g) override;
+	void paint(juce::Graphics& g) override;
 	void resized() override;
-	void buttonClicked(juce::Button *button) override;
+	void buttonClicked(juce::Button* button) override;
 
 	std::function<void()> onDeleteClicked;
 	std::function<void()> onLearnClicked;
 
-	const MidiMapping &getMapping() const { return mapping; }
+	const MidiMapping& getMapping() const { return mapping; }
 	void setLearningActive(bool active);
 	void toggleBlink();
-	void updateMapping(const MidiMapping &newMapping);
+	void updateMapping(const MidiMapping& newMapping);
 
 private:
 	MidiMapping mapping;
-	MidiLearnManager *midiLearnManager = nullptr;
+	MidiLearnManager* midiLearnManager = nullptr;
 
 	juce::Label parameterLabel;
 	juce::Label midiInfoLabel;
 
-	IconButtonSimple deleteButton{"Delete", ""};
-	IconButtonSimple learnButton{"ReLearn", ""};
+	IconButtonSimple deleteButton{ "Delete", "" };
+	IconButtonSimple learnButton{ "ReLearn", "" };
 
 	bool isLearning = false;
 	bool blinkState = false;
@@ -44,30 +44,30 @@ private:
 };
 
 class MidiMappingEditorWindow : public juce::Component,
-								public juce::Button::Listener,
-								public juce::Timer
+	public juce::Button::Listener,
+	public juce::Timer
 {
 public:
-	MidiMappingEditorWindow(MidiLearnManager *manager);
+	MidiMappingEditorWindow(MidiLearnManager* manager);
 	~MidiMappingEditorWindow() override;
 
-	void paint(juce::Graphics &g) override;
+	void paint(juce::Graphics& g) override;
 	void resized() override;
-	void buttonClicked(juce::Button *button) override;
+	void buttonClicked(juce::Button* button) override;
 	void timerCallback() override;
 
 	void refreshMappingsList();
 
 private:
-	void deleteMapping(const MidiMapping &mapping);
-	void startLearningForMapping(const MidiMapping &mapping);
+	void deleteMapping(const MidiMapping& mapping);
+	void startLearningForMapping(const MidiMapping& mapping);
 
-	MidiLearnManager *midiLearnManager = nullptr;
+	MidiLearnManager* midiLearnManager = nullptr;
 
 	CustomLookAndFeel customLookAndFeel;
 
-	IconButtonSimple clearAllButton{"ClearAll", ""};
-	IconButtonSimple reloadDefaultsButton{"ReloadDefaults", ""};
+	IconButtonSimple clearAllButton{ "ClearAll", "" };
+	IconButtonSimple reloadDefaultsButton{ "ReloadDefaults", "" };
 
 	juce::Label subtitleLabel;
 	juce::Rectangle<int> headerBounds;
