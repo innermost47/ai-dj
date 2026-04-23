@@ -1,10 +1,10 @@
 ﻿#include "./PluginProcessor.h"
 #include "PluginEditor.h"
 #include "BinaryData.h"
-#include "SequencerComponent.h"
-#include "version.h"
-#include "ColourPalette.h"
-#include "ObsidianAlertManager.h"
+#include "components/tracks/SequencerComponent.h"
+#include "config/version.h"
+#include "style/ColourPalette.h"
+#include "components/shared/ObsidianAlertManager.h"
 #if JUCE_WINDOWS
 #include <windows.h>
 #include <winuser.h>
@@ -325,7 +325,8 @@ void DjIaVstEditor::showOnboardingTour()
 
 void DjIaVstEditor::showOnboardingStep(int step)
 {
-	struct StepInfo {
+	struct StepInfo
+	{
 		juce::String title;
 		juce::String message;
 		juce::String buttonNext;
@@ -357,10 +358,10 @@ void DjIaVstEditor::showOnboardingStep(int step)
 
 		{"OBSIDIAN Neural  -  5 of 5  -  The rest",
 		 "Quick map of the interface:\n\nABCD    4 pages per track. Store variations here.\n\nREPEAT  Beat-repeat effect. Use RND to randomize.\n\nMIXER   Located at the BOTTOM. Controls volume,\n        pitch, pan, and EQ for the Master.\n\nBANK    Left panel. Every generation is saved here\n        automatically. Drag files back to reload.\n\nNow go make noise.",
-		 "Let's go !", "Skip", mapSvg}
-	};
+		 "Let's go !", "Skip", mapSvg} };
 
-	if (step < 1 || step >(int)steps.size()) return;
+	if (step < 1 || step >(int)steps.size())
+		return;
 
 	const auto& info = steps[step - 1];
 	bool isLastStep = (step == (int)steps.size());
@@ -384,7 +385,8 @@ void DjIaVstEditor::showOnboardingStep(int step)
 			if (svgData.isNotEmpty())
 			{
 				auto xml = juce::XmlDocument::parse(svgData);
-				if (xml) svgIllustration = juce::Drawable::createFromSVG(*xml);
+				if (xml)
+					svgIllustration = juce::Drawable::createFromSVG(*xml);
 			}
 		}
 
@@ -414,39 +416,39 @@ void DjIaVstEditor::showOnboardingStep(int step)
 	juce::String arrowSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>)";
 	juce::String skipSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>)";
 
-	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]() {
-		overlay->setVisible(false);
-		juce::MessageManager::callAsync([this, overlay]() {
-			delete overlay;
-			audioProcessor.setOnboardingDone(true);
-			audioProcessor.saveGlobalConfig();
-			});
-		});
-
-	overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]() {
-
-		overlay->setVisible(false);
-		juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
-
-			delete overlay;
-
-			if (!isLastStep)
-			{
-				showOnboardingStep(step + 1);
-			}
-			else
-			{
+	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]()
+		{
+			overlay->setVisible(false);
+			juce::MessageManager::callAsync([this, overlay]() {
+				delete overlay;
 				audioProcessor.setOnboardingDone(true);
 				audioProcessor.saveGlobalConfig();
+				}); });
 
-				statusLabel.setText(
-					juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
-					juce::dontSendNotification);
-				statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-				updateLCD();
-			}
-			});
-		});
+			overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]()
+				{
+
+					overlay->setVisible(false);
+					juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
+
+						delete overlay;
+
+						if (!isLastStep)
+						{
+							showOnboardingStep(step + 1);
+						}
+						else
+						{
+							audioProcessor.setOnboardingDone(true);
+							audioProcessor.saveGlobalConfig();
+
+							statusLabel.setText(
+								juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
+								juce::dontSendNotification);
+							statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+							updateLCD();
+						}
+						}); });
 }
 
 void DjIaVstEditor::refreshUIForMode()
@@ -1329,7 +1331,6 @@ void DjIaVstEditor::setAllGenerateButtonsEnabled(bool enabled)
 	}
 }
 
-
 void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
 {
 	generateButton.setEnabled(false);
@@ -2013,7 +2014,6 @@ juce::StringArray DjIaVstEditor::getAllPrompts() const
 
 	return allPrompts;
 }
-
 
 void DjIaVstEditor::restoreUICallbacks()
 {

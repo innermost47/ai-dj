@@ -1,13 +1,13 @@
 #pragma once
 #include "PluginProcessor.h"
-#include "TrackComponent.h"
-#include "MixerPanel.h"
-#include "MidiLearnableComponents.h"
-#include "SampleBankPanel.h"
-#include "CustomLookAndFeel.h"
-#include "LCDScreen.h"
-#include "IconButton.h"
-#include "MasterWaveformDisplay.h"
+#include "components/tracks/TrackComponent.h"
+#include "components/mixer/MixerPanel.h"
+#include "midi/MidiLearnableComponents.h"
+#include "components/bank/SampleBankPanel.h"
+#include "style/CustomLookAndFeel.h"
+#include "components/mixer/LCDScreen.h"
+#include "components/shared/IconButton.h"
+#include "components/mixer/MasterWaveformDisplay.h"
 
 class SequencerComponent;
 
@@ -133,10 +133,8 @@ private:
 	IconButtonSimple openMidiEditorButton{ "MidiEditor", "" };
 	IconButtonSimple helpButton{ "Help", "" };
 
-
 	juce::String generatingTrackId;
 	juce::String originalButtonText;
-
 
 	juce::Label pluginNameLabel;
 	juce::Label developerLabel;

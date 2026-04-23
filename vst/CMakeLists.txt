@@ -117,8 +117,8 @@ else()
     string(TIMESTAMP BUILD_NUMBER "%Y%m%d_%H%M")
 endif()
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/config/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/config/version.h"
     @ONLY
 )
 
@@ -189,20 +189,20 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
     src/PluginEntry.cpp
-    src/MidiLearnManager.cpp
-    src/MixerChannel.cpp
-    src/TrackComponent.cpp
-    src/MasterChannel.cpp
-    src/WaveformDisplay.cpp
-    src/SequencerComponent.cpp
-    src/ColourPalette.cpp
-    src/MixerPanel.cpp
-    src/StableAudioEngine.cpp
-    src/SampleBank.cpp
-    src/SampleBankPanel.cpp
-    src/CategoryWindow.cpp
-    src/MidiMappingEditorWindow.cpp
-    src/Parameters.cpp
+    src/midi/MidiLearnManager.cpp
+    src/components/mixer/MixerChannel.cpp
+    src/components/tracks/TrackComponent.cpp
+    src/components/mixer/MasterChannel.cpp
+    src/components/tracks/WaveformDisplay.cpp
+    src/components/tracks/SequencerComponent.cpp
+    src/style/ColourPalette.cpp
+    src/components/mixer/MixerPanel.cpp
+    src/engines/StableAudioEngine.cpp
+    src/components/bank/SampleBank.cpp
+    src/components/bank/SampleBankPanel.cpp
+    src/components/bank/CategoryWindow.cpp
+    src/midi/MidiMappingEditorWindow.cpp
+    src/data/Parameters.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE

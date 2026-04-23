@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include "JuceHeader.h"
-#include "TrackManager.h"
-#include "DjIaClient.h"
-#include "MidiLearnManager.h"
-#include "ObsidianEngine.h"
-#include "SimpleEQ.h"
-#include "SampleBank.h"
+#include "core/TrackManager.h"
+#include "engines/DjIaClient.h"
+#include "midi/MidiLearnManager.h"
+#include "engines/ObsidianEngine.h"
+#include "dsp/SimpleEQ.h"
+#include "components/bank/SampleBank.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
