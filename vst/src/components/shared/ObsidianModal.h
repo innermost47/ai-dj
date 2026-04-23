@@ -5,7 +5,7 @@
 class ObsidianSvgButton : public juce::Button
 {
 public:
-	ObsidianSvgButton(const juce::String &name, const juce::String &svgData, juce::Colour baseColour)
+	ObsidianSvgButton(const juce::String& name, const juce::String& svgData, juce::Colour baseColour)
 		: juce::Button(name), colour(baseColour)
 	{
 		if (svgData.isNotEmpty())
@@ -16,7 +16,7 @@ public:
 		}
 	}
 
-	void paintButton(juce::Graphics &g, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
+	void paintButton(juce::Graphics& g, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
 	{
 		auto bounds = getLocalBounds().toFloat();
 
@@ -49,7 +49,13 @@ private:
 class ObsidianModalWindow : public juce::Component
 {
 public:
-	ObsidianModalWindow(const juce::String &titleText) : title(titleText) {}
+	ObsidianModalWindow(const juce::String& titleText, int width = 600, int height = 400)
+		: title(titleText), targetWidth(width), targetHeight(height)
+	{
+	}
+
+	int targetWidth;
+	int targetHeight;
 
 	void setContent(std::unique_ptr<juce::Component> newContent)
 	{
@@ -58,15 +64,15 @@ public:
 		resized();
 	}
 
-	void addButton(const juce::String &text, const juce::String &svgData, juce::Colour colour, std::function<void()> onClick)
+	void addButton(const juce::String& text, const juce::String& svgData, juce::Colour colour, std::function<void()> onClick)
 	{
-		auto *btn = buttons.add(new ObsidianSvgButton(text, svgData, colour));
+		auto* btn = buttons.add(new ObsidianSvgButton(text, svgData, colour));
 		addAndMakeVisible(btn);
 		btn->onClick = onClick;
 		resized();
 	}
 
-	void paint(juce::Graphics &g) override
+	void paint(juce::Graphics& g) override
 	{
 		auto bounds = getLocalBounds().toFloat();
 
@@ -103,12 +109,12 @@ public:
 		juce::FlexBox fb;
 		fb.justifyContent = juce::FlexBox::JustifyContent::flexEnd;
 
-		for (auto *btn : buttons)
+		for (auto* btn : buttons)
 		{
 			fb.items.add(juce::FlexItem(*btn)
-							 .withWidth(static_cast<float>(btnWidth))
-							 .withHeight(36.0f)
-							 .withMargin(juce::FlexItem::Margin(0.0f, 0.0f, 0.0f, static_cast<float>(spacing))));
+				.withWidth(static_cast<float>(btnWidth))
+				.withHeight(36.0f)
+				.withMargin(juce::FlexItem::Margin(0.0f, 0.0f, 0.0f, static_cast<float>(spacing))));
 		}
 		fb.performLayout(buttonArea);
 	}
@@ -122,7 +128,7 @@ private:
 class ObsidianModalOverlay : public juce::Component
 {
 public:
-	ObsidianModalOverlay(juce::Component *parentToOverlay, std::unique_ptr<ObsidianModalWindow> modal)
+	ObsidianModalOverlay(juce::Component* parentToOverlay, std::unique_ptr<ObsidianModalWindow> modal)
 		: parent(parentToOverlay), modalWindow(std::move(modal))
 	{
 		addAndMakeVisible(modalWindow.get());
@@ -137,7 +143,7 @@ public:
 		parent->removeChildComponent(this);
 	}
 
-	void paint(juce::Graphics &g) override
+	void paint(juce::Graphics& g) override
 	{
 		g.fillAll(ColourPalette::backgroundDeep.withAlpha(0.85f));
 	}
@@ -146,8 +152,9 @@ public:
 	{
 		if (modalWindow != nullptr)
 		{
-			int width = juce::jmin(800, getWidth() - 40);
-			int height = juce::jmin(500, getHeight() - 40);
+			int width = juce::jmin(modalWindow->targetWidth, getWidth() - 40);
+			int height = juce::jmin(modalWindow->targetHeight, getHeight() - 40);
+
 			modalWindow->setBounds(getLocalBounds().withSizeKeepingCentre(width, height));
 		}
 	}
@@ -155,11 +162,11 @@ public:
 	void close()
 	{
 		juce::MessageManager::callAsync([this]()
-										{ delete this; });
+			{ delete this; });
 	}
 
 	std::unique_ptr<ObsidianModalWindow> modalWindow;
 
 private:
-	juce::Component *parent;
+	juce::Component* parent;
 };

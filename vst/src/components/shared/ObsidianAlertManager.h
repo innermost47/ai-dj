@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "style/ColourPalette.h"
 #include "ObsidianModal.h"
+#include "components/bank/CategoryPanel.h"
 
 class ObsidianAlertManager
 {
@@ -16,7 +17,7 @@ private:
 		juce::Label label;
 
 	public:
-		TextContent(const juce::String &text)
+		TextContent(const juce::String& text)
 		{
 			label.setText(text, juce::dontSendNotification);
 			label.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
@@ -26,12 +27,12 @@ private:
 		}
 		void resized() override { label.setBounds(getLocalBounds()); }
 	};
-	static juce::Component *getSafePluginWindow(juce::Component *c)
+	static juce::Component* getSafePluginWindow(juce::Component* c)
 	{
-		auto *current = c;
+		auto* current = c;
 		while (current != nullptr)
 		{
-			if (dynamic_cast<juce::AudioProcessorEditor *>(current) != nullptr)
+			if (dynamic_cast<juce::AudioProcessorEditor*>(current) != nullptr)
 				return current;
 
 			current = current->getParentComponent();
@@ -42,7 +43,7 @@ private:
 public:
 	static void initialize() {}
 	static void shutdown() {}
-	static void showMidiMappingEditor(juce::Component *parent, class MidiLearnManager *manager);
+	static void showMidiMappingEditor(juce::Component* parent, class MidiLearnManager* manager);
 
 	struct ConfigDialogResult
 	{
@@ -54,76 +55,76 @@ public:
 	};
 
 	static void showInfo(
-		juce::Component *parent,
-		const juce::String &title,
-		const juce::String &message,
-		const juce::String &buttonText = "OK",
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& message,
+		const juce::String& buttonText = "OK",
 		std::function<void()> onConfirm = nullptr)
 	{
-		auto *root = getSafePluginWindow(parent);
+		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto *overlay = new ObsidianModalOverlay(root, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton(buttonText, checkSvg, ColourPalette::buttonPrimary, [overlay, onConfirm]()
-										{
-			if (onConfirm) onConfirm();
-			overlay->close(); });
+			{
+				if (onConfirm) onConfirm();
+				overlay->close(); });
 	}
 
 	static void showError(
-		juce::Component *parent,
-		const juce::String &title,
-		const juce::String &message)
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& message)
 	{
-		auto *root = getSafePluginWindow(parent);
+		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto *overlay = new ObsidianModalOverlay(root, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDanger, [overlay]()
-										{ overlay->close(); });
+			{ overlay->close(); });
 	}
 
 	static void showConfirm(
-		juce::Component *parent,
-		const juce::String &title,
-		const juce::String &message,
-		const juce::String &confirmText,
-		const juce::String &cancelText,
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& message,
+		const juce::String& confirmText,
+		const juce::String& cancelText,
 		std::function<void(bool confirmed)> callback)
 	{
-		auto *root = getSafePluginWindow(parent);
+		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto *overlay = new ObsidianModalOverlay(root, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton(cancelText, crossSvg, ColourPalette::buttonInactive, [overlay, callback]()
-										{
-			if (callback) callback(false);
-			overlay->close(); });
+			{
+				if (callback) callback(false);
+				overlay->close(); });
 
 		overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::buttonDanger, [overlay, callback]()
-										{
-			if (callback) callback(true);
-			overlay->close(); });
+			{
+				if (callback) callback(true);
+				overlay->close(); });
 	}
 
 	static void showConfigDialog(
-		juce::Component *parent,
-		const juce::String &title,
-		const juce::String &serverUrl,
-		const juce::String &apiKey,
+		juce::Component* parent,
+		const juce::String& title,
+		const juce::String& serverUrl,
+		const juce::String& apiKey,
 		bool currentUseLocal,
 		int currentTimeoutMs,
 		bool isFirstTime,
-		std::function<void(const ConfigDialogResult &)> callback)
+		std::function<void(const ConfigDialogResult&)> callback)
 	{
 		auto modal = std::make_unique<ObsidianModalWindow>(title);
 
@@ -134,32 +135,32 @@ public:
 			juce::TextEditor urlEditor, keyEditor;
 			juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
 
-			ConfigContent(bool useLocal, const juce::String &url, const juce::String & /*key */, int timeout, bool firstTime)
+			ConfigContent(bool useLocal, const juce::String& url, const juce::String& /*key */, int timeout, bool firstTime)
 			{
-				auto styleEditor = [](juce::TextEditor &te, const juce::String &text)
-				{
-					te.setText(text);
-					te.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-					te.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-					te.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
-					te.applyFontToAllText(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
-				};
+				auto styleEditor = [](juce::TextEditor& te, const juce::String& text)
+					{
+						te.setText(text);
+						te.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
+						te.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+						te.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+						te.applyFontToAllText(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+					};
 
-				auto styleCombo = [](juce::ComboBox &cb)
-				{
-					cb.setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
-					cb.setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
-					cb.setColour(juce::ComboBox::outlineColourId, ColourPalette::backgroundLight);
-					cb.setColour(juce::ComboBox::arrowColourId, ColourPalette::buttonPrimary);
-				};
+				auto styleCombo = [](juce::ComboBox& cb)
+					{
+						cb.setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
+						cb.setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
+						cb.setColour(juce::ComboBox::outlineColourId, ColourPalette::backgroundLight);
+						cb.setColour(juce::ComboBox::arrowColourId, ColourPalette::buttonPrimary);
+					};
 
-				auto styleLabel = [this](juce::Label &lbl, const juce::String &text)
-				{
-					lbl.setText(text, juce::dontSendNotification);
-					lbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-					lbl.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
-					addAndMakeVisible(lbl);
-				};
+				auto styleLabel = [this](juce::Label& lbl, const juce::String& text)
+					{
+						lbl.setText(text, juce::dontSendNotification);
+						lbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+						lbl.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+						addAndMakeVisible(lbl);
+					};
 
 				styleLabel(modeLbl, "Generation Mode:");
 				modeCombo.addItem("Server/API (Full features + stems separation)", 1);
@@ -220,49 +221,78 @@ public:
 		};
 
 		auto formContent = std::make_unique<ConfigContent>(currentUseLocal, serverUrl, apiKey, currentTimeoutMs, isFirstTime);
-		auto *formPtr = formContent.get();
+		auto* formPtr = formContent.get();
 		modal->setContent(std::move(formContent));
 
-		auto *overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
 
 		overlay->modalWindow->addButton(isFirstTime ? "Skip for now" : "Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]()
-										{
-			ConfigDialogResult res{ false, false, "", "", 0 };
-			callback(res);
-			overlay->close(); });
+			{
+				ConfigDialogResult res{ false, false, "", "", 0 };
+				callback(res);
+				overlay->close(); });
 
 		overlay->modalWindow->addButton(isFirstTime ? "Save & Continue" : "Update", checkSvg, ColourPalette::buttonPrimary, [overlay, formPtr, callback]()
-										{
-			ConfigDialogResult res;
-			res.confirmed = true;
-			res.useLocalModel = formPtr->modeCombo.getSelectedId() == 2;
-			res.serverUrl = formPtr->urlEditor.getText();
-			res.apiKey = formPtr->keyEditor.getText();
+			{
+				ConfigDialogResult res;
+				res.confirmed = true;
+				res.useLocalModel = formPtr->modeCombo.getSelectedId() == 2;
+				res.serverUrl = formPtr->urlEditor.getText();
+				res.apiKey = formPtr->keyEditor.getText();
 
-			int tid = formPtr->timeoutCombo.getSelectedId();
-			if (tid == 1) res.timeoutMs = 60000;
-			else if (tid == 2) res.timeoutMs = 120000;
-			else if (tid == 4) res.timeoutMs = 600000;
-			else res.timeoutMs = 300000;
+				int tid = formPtr->timeoutCombo.getSelectedId();
+				if (tid == 1) res.timeoutMs = 60000;
+				else if (tid == 2) res.timeoutMs = 120000;
+				else if (tid == 4) res.timeoutMs = 600000;
+				else res.timeoutMs = 300000;
 
-			callback(res);
-			overlay->close(); });
+				callback(res);
+				overlay->close(); });
+	}
+
+	static void showCategoryEditor(
+		juce::Component* parent,
+		const juce::String& sampleName,
+		const std::vector<juce::String>& currentCategories,
+		const std::vector<juce::String>& availableCategories,
+		std::function<void(const std::vector<juce::String>&)> onSave)
+	{
+		auto* root = getSafePluginWindow(parent);
+		if (root == nullptr) return;
+
+		auto modal = std::make_unique<ObsidianModalWindow>("Categories: " + sampleName, 500, 450);
+
+		auto categoryContent = std::make_unique<CategoryPanel>(currentCategories, availableCategories);
+		auto* panelPtr = categoryContent.get();
+		modal->setContent(std::move(categoryContent));
+
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
+
+		overlay->modalWindow->addButton("Clear All", crossSvg, ColourPalette::buttonInactive, [panelPtr]() {
+			panelPtr->clearAll();
+			});
+
+		overlay->modalWindow->addButton("Done", checkSvg, ColourPalette::buttonPrimary, [overlay, panelPtr, onSave]() {
+			if (onSave)
+				onSave(panelPtr->getSelectedCategories());
+			overlay->close();
+			});
 	}
 
 	static void showEditPrompt(
-		juce::Component *parent,
-		const juce::String &currentPrompt,
-		std::function<void(const juce::String &newPrompt)> callback)
+		juce::Component* parent,
+		const juce::String& currentPrompt,
+		std::function<void(const juce::String& newPrompt)> callback)
 	{
 		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt");
-		auto *root = getSafePluginWindow(parent);
+		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
 		class EditPromptContent : public juce::Component
 		{
 		public:
 			juce::TextEditor editor;
-			EditPromptContent(const juce::String &text)
+			EditPromptContent(const juce::String& text)
 			{
 				editor.setText(text);
 				editor.setMultiLine(true);
@@ -277,43 +307,43 @@ public:
 		};
 
 		auto content = std::make_unique<EditPromptContent>(currentPrompt);
-		auto *editorPtr = &content->editor;
+		auto* editorPtr = &content->editor;
 		modal->setContent(std::move(content));
 
-		auto *overlay = new ObsidianModalOverlay(root, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
 		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]()
-										{
-			if (callback) callback("");
-			overlay->close(); });
+			{
+				if (callback) callback("");
+				overlay->close(); });
 
 		overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary, [overlay, editorPtr, callback]()
-										{
-			juce::String resultStr = editorPtr->getText();
-			if (callback && resultStr.isNotEmpty()) callback(resultStr);
-			overlay->close(); });
+			{
+				juce::String resultStr = editorPtr->getText();
+				if (callback && resultStr.isNotEmpty()) callback(resultStr);
+				overlay->close(); });
 	}
 
 	static void showUpdateAvailable(
-		juce::Component *parent,
-		const juce::String &latestTag,
-		const juce::String &currentBuild)
+		juce::Component* parent,
+		const juce::String& latestTag,
+		const juce::String& currentBuild)
 	{
 		auto modal = std::make_unique<ObsidianModalWindow>("Update Available!");
 		juce::String message = "A new version of OBSIDIAN Neural is available: " + latestTag + "\n\n"
-																							   "Your current build: v" +
-							   currentBuild + "\n\n"
-											  "Download the latest version at:\ngithub.com/innermost47/ai-dj/releases/latest";
+			"Your current build: v" +
+			currentBuild + "\n\n"
+			"Download the latest version at:\ngithub.com/innermost47/ai-dj/releases/latest";
 
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto *overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
 
 		overlay->modalWindow->addButton("Later", crossSvg, ColourPalette::buttonInactive, [overlay]()
-										{ overlay->close(); });
+			{ overlay->close(); });
 
 		overlay->modalWindow->addButton("Download Now", downloadSvg, ColourPalette::buttonPrimary, [overlay]()
-										{
-			juce::URL("https://github.com/innermost47/ai-dj/releases/latest").launchInDefaultBrowser();
-			overlay->close(); });
+			{
+				juce::URL("https://github.com/innermost47/ai-dj/releases/latest").launchInDefaultBrowser();
+				overlay->close(); });
 	}
 };

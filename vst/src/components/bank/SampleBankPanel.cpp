@@ -1,6 +1,5 @@
 ﻿#include "SampleBankPanel.h"
 #include "PluginProcessor.h"
-#include "CategoryWindow.h"
 #include "components/shared/ObsidianAlertManager.h"
 #include "BinaryData.h"
 
@@ -116,6 +115,7 @@ void SampleBankItem::showCategoryMenu()
 {
 	if (!sampleEntry)
 		return;
+
 	juce::String sampleId = sampleEntry->id;
 
 	std::vector<juce::String> avail;
@@ -126,20 +126,23 @@ void SampleBankItem::showCategoryMenu()
 				 "FX", "Loops", "One-shots", "House", "Techno", "Hip-Hop",
 				 "Jazz", "Rock", "Electronic", "Piano", "Guitar", "Synth" };
 
-	auto* window = new CategoryWindow(sampleEntry->originalPrompt,
-		sampleEntry->categories, avail);
-	window->onCategoriesChanged = [sampleId,
-		&ap = audioProcessor,
-		cb = onCategoriesChanged](const std::vector<juce::String>& cats)
+	ObsidianAlertManager::showCategoryEditor(
+		this,
+		sampleEntry->originalPrompt,
+		sampleEntry->categories,
+		avail,
+		[sampleId, &ap = audioProcessor, cb = onCategoriesChanged](const std::vector<juce::String>& cats)
 		{
 			if (auto* bank = ap.getSampleBank())
+			{
 				if (auto* s = bank->getSample(sampleId))
 				{
 					s->categories = cats;
 					if (cb)
 						cb(s, cats);
 				}
-		};
+			}
+		});
 }
 
 DetailPanel::DetailPanel()

@@ -200,7 +200,6 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/engines/StableAudioEngine.cpp
     src/components/bank/SampleBank.cpp
     src/components/bank/SampleBankPanel.cpp
-    src/components/bank/CategoryWindow.cpp
     src/midi/MidiMappingEditorWindow.cpp
     src/data/Parameters.cpp
 )
