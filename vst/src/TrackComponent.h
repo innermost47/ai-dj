@@ -162,24 +162,14 @@ private:
 	IconButton randomRetriggerButton{ "RandomRetriggerBtn", "REPEAT" };
 	IconButton randomDurationToggle{ "RandomDurationBtn", "RND" };
 
-	IconButton deleteButton{ "DeleteBtn", "DELETE" };
-
 	MidiLearnableSlider intervalKnob;
 
 	juce::ComboBox modelSelector;
 	juce::StringArray aiModels;
 
-	juce::TextButton trackNumberButton;
-
-	juce::Slider bpmOffsetSlider;
-
-	juce::Label trackNameLabel;
 	juce::Label intervalLabel;
 
 	juce::Label infoLabel;
-	juce::Label bpmOffsetLabel;
-
-	juce::ComboBox timeStretchModeSelector;
 
 	std::atomic<bool> isDestroyed{ false };
 

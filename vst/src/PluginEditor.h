@@ -75,8 +75,7 @@ private:
 	juce::Rectangle<int> bannerArea;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;
 	std::unique_ptr<SampleBankPanel> sampleBankPanel;
-	juce::TextButton showSampleBankButton;
-	bool sampleBankVisible = false;
+	bool sampleBankVisible = true;
 	enum KeyboardLayout
 	{
 		QWERTY,
@@ -122,7 +121,6 @@ private:
 
 	juce::StringArray getAllPrompts() const;
 
-	juce::TextButton showMixerButton;
 	bool mixerVisible = false;
 	std::atomic<bool> isGenerating{ false };
 	std::atomic<bool> wasGenerating{ false };
@@ -151,7 +149,6 @@ private:
 	juce::Label bpmLabel;
 	juce::ComboBox keySelector;
 	IconButton generateButton{ "GenerateBtn", "GEN" };
-	juce::TextButton resetUIButton;
 	juce::Label serverUrlLabel;
 	juce::TextEditor serverUrlInput;
 	juce::Label apiKeyLabel;
@@ -161,14 +158,9 @@ private:
 	juce::Label durationLabel;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
-	juce::TextButton testMidiButton;
 	juce::Viewport tracksViewport;
 	juce::Component tracksContainer;
-	juce::TextButton addTrackButton;
 	juce::Label tracksLabel;
-
-	MidiLearnableButton nextTrackButton;
-	MidiLearnableButton prevTrackButton;
 
 	juce::Label creditsLabel;
 

@@ -1610,17 +1610,6 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 	}
 }
 
-juce::String DjIaVstProcessor::createNewTrack(const juce::String& name)
-{
-	auto trackIds = trackManager.getAllTrackIds();
-	if (trackIds.size() >= MAX_TRACKS)
-	{
-		throw std::runtime_error("Maximum number of tracks reached (" + std::to_string(MAX_TRACKS) + ")");
-	}
-
-	juce::String trackId = trackManager.createTrack(name);
-	return trackId;
-}
 
 void DjIaVstProcessor::reorderTracks(const juce::String& fromTrackId, const juce::String& toTrackId)
 {

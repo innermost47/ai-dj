@@ -586,16 +586,6 @@ void DjIaVstEditor::stopGenerationButtonAnimation()
 
 void DjIaVstEditor::setupUI()
 {
-	addAndMakeVisible(nextTrackButton);
-	nextTrackButton.setButtonText("Next Track");
-	nextTrackButton.setTooltip("Select next track (Right-click for MIDI learn)");
-	nextTrackButton.setDescription("Next Track");
-
-	addAndMakeVisible(prevTrackButton);
-	prevTrackButton.setButtonText("Prev Track");
-	prevTrackButton.setTooltip("Select previous track (Right-click for MIDI learn)");
-	prevTrackButton.setDescription("Previous Track");
-
 	addAndMakeVisible(pluginNameLabel);
 	pluginNameLabel.setText("NEURAL SOUND ENGINE", juce::dontSendNotification);
 	pluginNameLabel.setFont(juce::FontOptions("Courier New", 18.0f, juce::Font::bold));
@@ -624,10 +614,6 @@ void DjIaVstEditor::setupUI()
 	promptInput.setReturnKeyStartsNewLine(false);
 	promptInput.setTextToShowWhenEmpty("Enter custom prompt or select preset...", ColourPalette::textSecondary);
 	promptInput.setText(audioProcessor.getGlobalPrompt(), juce::dontSendNotification);
-
-	addAndMakeVisible(resetUIButton);
-	resetUIButton.setButtonText("Reset UI");
-	resetUIButton.setTooltip("Reset UI state if stuck in generation mode");
 
 	addAndMakeVisible(keySelector);
 	keySelector.addItem("C Ionian", 1);
@@ -776,13 +762,6 @@ void DjIaVstEditor::setupUI()
 	loadSampleButton.setEnabled(!audioProcessor.getAutoLoadEnabled());
 	loadSampleButton.setTooltip("Manually load pending generated sample");
 
-	addAndMakeVisible(tracksLabel);
-	tracksLabel.setText("Tracks:", juce::dontSendNotification);
-	tracksLabel.setFont(juce::FontOptions(14.0f, juce::Font::bold));
-
-	addAndMakeVisible(addTrackButton);
-	addTrackButton.setButtonText("+ Add Track");
-
 	addAndMakeVisible(tracksViewport);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
 	tracksViewport.setScrollBarsShown(true, false);
@@ -808,10 +787,6 @@ void DjIaVstEditor::setupUI()
 			};
 	}
 
-	addAndMakeVisible(showSampleBankButton);
-	showSampleBankButton.setButtonText("Bank");
-	showSampleBankButton.setTooltip("Show/hide sample bank");
-
 	statusLabel.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDeep);
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
@@ -830,8 +805,6 @@ void DjIaVstEditor::setupUI()
 	configButton.setTooltip("Configure API settings and generation mode");
 	autoLoadButton.setTooltip("Automatically load generated samples (disable for manual control)");
 	loadSampleButton.setTooltip("Manually load pending generated sample");
-	addTrackButton.setTooltip("Add a new track to the session");
-	resetUIButton.setTooltip("Reset UI if stuck in generation mode");
 
 	if (!sampleBankPanel)
 	{
@@ -884,8 +857,6 @@ void DjIaVstEditor::setupUI()
 
 void DjIaVstEditor::addEventListeners()
 {
-	addTrackButton.onClick = [this]()
-		{ onAddTrack(); };
 	autoLoadButton.onClick = [this]
 		{ onAutoLoadToggled(); };
 	loadSampleButton.onClick = [this]
@@ -918,23 +889,6 @@ void DjIaVstEditor::addEventListeners()
 		{
 			onPresetSelected();
 			audioProcessor.setLastPresetIndex(promptPresetSelector.getSelectedId() - 1);
-		};
-
-	resetUIButton.onClick = [this]()
-		{
-			audioProcessor.setIsGenerating(false);
-			audioProcessor.setGeneratingTrackId("");
-			generateButton.setEnabled(true);
-			setAllGenerateButtonsEnabled(true);
-			toggleWaveFormButtonOnTrack();
-			toggleSEQButtonOnTrack();
-			statusLabel.setText("UI Reset - Ready", juce::dontSendNotification);
-			updateLCD();
-			for (auto& trackComp : trackComponents)
-			{
-				trackComp->stopGeneratingAnimation();
-			}
-			refreshTracks();
 		};
 
 	promptPresetSelector.onMidiLearn = [this]()
@@ -1017,48 +971,6 @@ void DjIaVstEditor::addEventListeners()
 			}
 		};
 
-	nextTrackButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for next track button...", juce::dontSendNotification);
-			updateLCD();
-			audioProcessor.getMidiLearnManager().startLearning(
-				"nextTrack",
-				&audioProcessor,
-				nullptr,
-				"Next Track", &nextTrackButton);
-		};
-
-	nextTrackButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("nextTrack");
-		};
-
-	nextTrackButton.onClick = [this]()
-		{
-			audioProcessor.selectNextTrack();
-		};
-
-	prevTrackButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for previous track button...", juce::dontSendNotification);
-			updateLCD();
-			audioProcessor.getMidiLearnManager().startLearning(
-				"prevTrack",
-				&audioProcessor,
-				nullptr,
-				"Previous Track", &prevTrackButton);
-		};
-
-	prevTrackButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("prevTrack");
-		};
-
-	prevTrackButton.onClick = [this]()
-		{
-			audioProcessor.selectPreviousTrack();
-		};
-
 	generateButton.onMidiLearn = [this]()
 		{
 			statusLabel.setText("Learning MIDI for generate button...", juce::dontSendNotification);
@@ -1079,9 +991,6 @@ void DjIaVstEditor::addEventListeners()
 		{
 			onGenerateButtonClicked();
 		};
-
-	showSampleBankButton.onClick = [this]()
-		{ toggleSampleBank(); };
 
 	sampleBankPanel->onSampleDroppedToTrack = [this](const juce::String& sampleId, const juce::String& trackId)
 		{
@@ -1420,24 +1329,6 @@ void DjIaVstEditor::setAllGenerateButtonsEnabled(bool enabled)
 	}
 }
 
-void DjIaVstEditor::toggleSampleBank()
-{
-	sampleBankVisible = !sampleBankVisible;
-	sampleBankPanel->setVisible(sampleBankVisible);
-
-	if (sampleBankVisible)
-	{
-		showSampleBankButton.setButtonText("Hide Bank");
-		setStatusWithTimeout("Sample bank opened", 2000);
-	}
-	else
-	{
-		showSampleBankButton.setButtonText("Bank");
-		setStatusWithTimeout("Sample bank closed", 2000);
-	}
-
-	resized();
-}
 
 void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
 {
@@ -2123,18 +2014,6 @@ juce::StringArray DjIaVstEditor::getAllPrompts() const
 	return allPrompts;
 }
 
-void DjIaVstEditor::toggleWaveFormButtonOnTrack()
-{
-	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto& trackId : trackIds)
-	{
-		TrackData* track = audioProcessor.getTrack(trackId);
-		if (track)
-		{
-			track->showWaveform = false;
-		}
-	}
-}
 
 void DjIaVstEditor::restoreUICallbacks()
 {
@@ -2143,19 +2022,6 @@ void DjIaVstEditor::restoreUICallbacks()
 		if (trackComp->getTrack())
 		{
 			trackComp->setupMidiLearn();
-		}
-	}
-}
-
-void DjIaVstEditor::toggleSEQButtonOnTrack()
-{
-	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto& trackId : trackIds)
-	{
-		TrackData* track = audioProcessor.getTrack(trackId);
-		if (track)
-		{
-			track->showSequencer = false;
 		}
 	}
 }
@@ -2171,44 +2037,6 @@ void DjIaVstEditor::setStatusWithTimeout(const juce::String& message, int timeou
 				editor->statusLabel.setText("Ready", juce::dontSendNotification);
 				editor->updateLCD();
 			} });
-}
-
-void DjIaVstEditor::onAddTrack()
-{
-	try
-	{
-		juce::String currentSelectedId = audioProcessor.getSelectedTrackId();
-		juce::String newTrackId = audioProcessor.createNewTrack();
-
-		refreshTrackComponents();
-
-		if (audioProcessor.getIsGenerating())
-		{
-			for (auto& trackComp : trackComponents)
-			{
-				if (trackComp->trackId == newTrackId)
-				{
-					trackComp->setGenerateButtonEnabled(false);
-					trackComp->setCanvasGenerating(true);
-					break;
-				}
-			}
-		}
-
-		if (mixerPanel)
-		{
-			mixerPanel->trackAdded(newTrackId);
-			if (!currentSelectedId.isEmpty())
-			{
-				mixerPanel->trackSelected(currentSelectedId);
-			}
-		}
-		setStatusWithTimeout("New track created");
-	}
-	catch (const std::exception& e)
-	{
-		setStatusWithTimeout("Error: " + juce::String(e.what()));
-	}
 }
 
 void DjIaVstEditor::updateSelectedTrack()
