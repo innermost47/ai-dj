@@ -1,12 +1,12 @@
 ﻿#include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "AudioAnalyzer.h"
-#include "DummySynth.h"
-#include "MidiMapping.h"
-#include "SequencerComponent.h"
-#include "Parameters.h"
-#include "ObsidianAlertManager.h"
-#include "AiModelDefinitions.h"
+#include "dsp/AudioAnalyzer.h"
+#include "core/DummySynth.h"
+#include "midi/MidiMapping.h"
+#include "components/tracks/SequencerComponent.h"
+#include "data/Parameters.h"
+#include "components/shared/ObsidianAlertManager.h"
+#include "config/AiModelDefinitions.h"
 
 juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 {
@@ -184,10 +184,10 @@ void DjIaVstProcessor::loadGlobalConfig()
 	if (trackManager.getAllTrackIds().empty())
 	{
 		initTracks();
-		juce::MessageManager::callAsync([this]() {
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
-				editor->refreshTrackComponents();
-			});
+		juce::MessageManager::callAsync([this]()
+			{
+				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
+					editor->refreshTrackComponents(); });
 	}
 }
 
@@ -1608,18 +1608,6 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 		}
 		playingTracks.erase(it);
 	}
-}
-
-juce::String DjIaVstProcessor::createNewTrack(const juce::String& name)
-{
-	auto trackIds = trackManager.getAllTrackIds();
-	if (trackIds.size() >= MAX_TRACKS)
-	{
-		throw std::runtime_error("Maximum number of tracks reached (" + std::to_string(MAX_TRACKS) + ")");
-	}
-
-	juce::String trackId = trackManager.createTrack(name);
-	return trackId;
 }
 
 void DjIaVstProcessor::reorderTracks(const juce::String& fromTrackId, const juce::String& toTrackId)

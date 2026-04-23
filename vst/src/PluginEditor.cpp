@@ -1,10 +1,10 @@
 ﻿#include "./PluginProcessor.h"
 #include "PluginEditor.h"
 #include "BinaryData.h"
-#include "SequencerComponent.h"
-#include "version.h"
-#include "ColourPalette.h"
-#include "ObsidianAlertManager.h"
+#include "components/tracks/SequencerComponent.h"
+#include "config/version.h"
+#include "style/ColourPalette.h"
+#include "components/shared/ObsidianAlertManager.h"
 #if JUCE_WINDOWS
 #include <windows.h>
 #include <winuser.h>
@@ -17,7 +17,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 	setResizeLimits(1100, 800, 2400, 1600);
 	setSize(1580, 800);
 	setScaleFactor(1.0f);
-	setLookAndFeel(&customLookAndFeel);
+	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());
 	ObsidianAlertManager::initialize();
 	setWantsKeyboardFocus(true);
 	setMouseClickGrabsKeyboardFocus(false);
@@ -325,7 +325,8 @@ void DjIaVstEditor::showOnboardingTour()
 
 void DjIaVstEditor::showOnboardingStep(int step)
 {
-	struct StepInfo {
+	struct StepInfo
+	{
 		juce::String title;
 		juce::String message;
 		juce::String buttonNext;
@@ -357,10 +358,10 @@ void DjIaVstEditor::showOnboardingStep(int step)
 
 		{"OBSIDIAN Neural  -  5 of 5  -  The rest",
 		 "Quick map of the interface:\n\nABCD    4 pages per track. Store variations here.\n\nREPEAT  Beat-repeat effect. Use RND to randomize.\n\nMIXER   Located at the BOTTOM. Controls volume,\n        pitch, pan, and EQ for the Master.\n\nBANK    Left panel. Every generation is saved here\n        automatically. Drag files back to reload.\n\nNow go make noise.",
-		 "Let's go !", "Skip", mapSvg}
-	};
+		 "Let's go !", "Skip", mapSvg} };
 
-	if (step < 1 || step >(int)steps.size()) return;
+	if (step < 1 || step >(int)steps.size())
+		return;
 
 	const auto& info = steps[step - 1];
 	bool isLastStep = (step == (int)steps.size());
@@ -384,7 +385,8 @@ void DjIaVstEditor::showOnboardingStep(int step)
 			if (svgData.isNotEmpty())
 			{
 				auto xml = juce::XmlDocument::parse(svgData);
-				if (xml) svgIllustration = juce::Drawable::createFromSVG(*xml);
+				if (xml)
+					svgIllustration = juce::Drawable::createFromSVG(*xml);
 			}
 		}
 
@@ -414,39 +416,39 @@ void DjIaVstEditor::showOnboardingStep(int step)
 	juce::String arrowSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>)";
 	juce::String skipSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>)";
 
-	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]() {
-		overlay->setVisible(false);
-		juce::MessageManager::callAsync([this, overlay]() {
-			delete overlay;
-			audioProcessor.setOnboardingDone(true);
-			audioProcessor.saveGlobalConfig();
-			});
-		});
-
-	overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]() {
-
-		overlay->setVisible(false);
-		juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
-
-			delete overlay;
-
-			if (!isLastStep)
-			{
-				showOnboardingStep(step + 1);
-			}
-			else
-			{
+	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]()
+		{
+			overlay->setVisible(false);
+			juce::MessageManager::callAsync([this, overlay]() {
+				delete overlay;
 				audioProcessor.setOnboardingDone(true);
 				audioProcessor.saveGlobalConfig();
+				}); });
 
-				statusLabel.setText(
-					juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
-					juce::dontSendNotification);
-				statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-				updateLCD();
-			}
-			});
-		});
+			overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]()
+				{
+
+					overlay->setVisible(false);
+					juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
+
+						delete overlay;
+
+						if (!isLastStep)
+						{
+							showOnboardingStep(step + 1);
+						}
+						else
+						{
+							audioProcessor.setOnboardingDone(true);
+							audioProcessor.saveGlobalConfig();
+
+							statusLabel.setText(
+								juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
+								juce::dontSendNotification);
+							statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+							updateLCD();
+						}
+						}); });
 }
 
 void DjIaVstEditor::refreshUIForMode()
@@ -586,16 +588,6 @@ void DjIaVstEditor::stopGenerationButtonAnimation()
 
 void DjIaVstEditor::setupUI()
 {
-	addAndMakeVisible(nextTrackButton);
-	nextTrackButton.setButtonText("Next Track");
-	nextTrackButton.setTooltip("Select next track (Right-click for MIDI learn)");
-	nextTrackButton.setDescription("Next Track");
-
-	addAndMakeVisible(prevTrackButton);
-	prevTrackButton.setButtonText("Prev Track");
-	prevTrackButton.setTooltip("Select previous track (Right-click for MIDI learn)");
-	prevTrackButton.setDescription("Previous Track");
-
 	addAndMakeVisible(pluginNameLabel);
 	pluginNameLabel.setText("NEURAL SOUND ENGINE", juce::dontSendNotification);
 	pluginNameLabel.setFont(juce::FontOptions("Courier New", 18.0f, juce::Font::bold));
@@ -624,10 +616,6 @@ void DjIaVstEditor::setupUI()
 	promptInput.setReturnKeyStartsNewLine(false);
 	promptInput.setTextToShowWhenEmpty("Enter custom prompt or select preset...", ColourPalette::textSecondary);
 	promptInput.setText(audioProcessor.getGlobalPrompt(), juce::dontSendNotification);
-
-	addAndMakeVisible(resetUIButton);
-	resetUIButton.setButtonText("Reset UI");
-	resetUIButton.setTooltip("Reset UI state if stuck in generation mode");
 
 	addAndMakeVisible(keySelector);
 	keySelector.addItem("C Ionian", 1);
@@ -776,13 +764,6 @@ void DjIaVstEditor::setupUI()
 	loadSampleButton.setEnabled(!audioProcessor.getAutoLoadEnabled());
 	loadSampleButton.setTooltip("Manually load pending generated sample");
 
-	addAndMakeVisible(tracksLabel);
-	tracksLabel.setText("Tracks:", juce::dontSendNotification);
-	tracksLabel.setFont(juce::FontOptions(14.0f, juce::Font::bold));
-
-	addAndMakeVisible(addTrackButton);
-	addTrackButton.setButtonText("+ Add Track");
-
 	addAndMakeVisible(tracksViewport);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
 	tracksViewport.setScrollBarsShown(true, false);
@@ -808,10 +789,6 @@ void DjIaVstEditor::setupUI()
 			};
 	}
 
-	addAndMakeVisible(showSampleBankButton);
-	showSampleBankButton.setButtonText("Bank");
-	showSampleBankButton.setTooltip("Show/hide sample bank");
-
 	statusLabel.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDeep);
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
@@ -830,8 +807,6 @@ void DjIaVstEditor::setupUI()
 	configButton.setTooltip("Configure API settings and generation mode");
 	autoLoadButton.setTooltip("Automatically load generated samples (disable for manual control)");
 	loadSampleButton.setTooltip("Manually load pending generated sample");
-	addTrackButton.setTooltip("Add a new track to the session");
-	resetUIButton.setTooltip("Reset UI if stuck in generation mode");
 
 	if (!sampleBankPanel)
 	{
@@ -884,8 +859,6 @@ void DjIaVstEditor::setupUI()
 
 void DjIaVstEditor::addEventListeners()
 {
-	addTrackButton.onClick = [this]()
-		{ onAddTrack(); };
 	autoLoadButton.onClick = [this]
 		{ onAutoLoadToggled(); };
 	loadSampleButton.onClick = [this]
@@ -918,23 +891,6 @@ void DjIaVstEditor::addEventListeners()
 		{
 			onPresetSelected();
 			audioProcessor.setLastPresetIndex(promptPresetSelector.getSelectedId() - 1);
-		};
-
-	resetUIButton.onClick = [this]()
-		{
-			audioProcessor.setIsGenerating(false);
-			audioProcessor.setGeneratingTrackId("");
-			generateButton.setEnabled(true);
-			setAllGenerateButtonsEnabled(true);
-			toggleWaveFormButtonOnTrack();
-			toggleSEQButtonOnTrack();
-			statusLabel.setText("UI Reset - Ready", juce::dontSendNotification);
-			updateLCD();
-			for (auto& trackComp : trackComponents)
-			{
-				trackComp->stopGeneratingAnimation();
-			}
-			refreshTracks();
 		};
 
 	promptPresetSelector.onMidiLearn = [this]()
@@ -1017,48 +973,6 @@ void DjIaVstEditor::addEventListeners()
 			}
 		};
 
-	nextTrackButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for next track button...", juce::dontSendNotification);
-			updateLCD();
-			audioProcessor.getMidiLearnManager().startLearning(
-				"nextTrack",
-				&audioProcessor,
-				nullptr,
-				"Next Track", &nextTrackButton);
-		};
-
-	nextTrackButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("nextTrack");
-		};
-
-	nextTrackButton.onClick = [this]()
-		{
-			audioProcessor.selectNextTrack();
-		};
-
-	prevTrackButton.onMidiLearn = [this]()
-		{
-			statusLabel.setText("Learning MIDI for previous track button...", juce::dontSendNotification);
-			updateLCD();
-			audioProcessor.getMidiLearnManager().startLearning(
-				"prevTrack",
-				&audioProcessor,
-				nullptr,
-				"Previous Track", &prevTrackButton);
-		};
-
-	prevTrackButton.onMidiRemove = [this]()
-		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter("prevTrack");
-		};
-
-	prevTrackButton.onClick = [this]()
-		{
-			audioProcessor.selectPreviousTrack();
-		};
-
 	generateButton.onMidiLearn = [this]()
 		{
 			statusLabel.setText("Learning MIDI for generate button...", juce::dontSendNotification);
@@ -1079,9 +993,6 @@ void DjIaVstEditor::addEventListeners()
 		{
 			onGenerateButtonClicked();
 		};
-
-	showSampleBankButton.onClick = [this]()
-		{ toggleSampleBank(); };
 
 	sampleBankPanel->onSampleDroppedToTrack = [this](const juce::String& sampleId, const juce::String& trackId)
 		{
@@ -1418,25 +1329,6 @@ void DjIaVstEditor::setAllGenerateButtonsEnabled(bool enabled)
 		trackComp->setGenerateButtonEnabled(enabled);
 		trackComp->setCanvasGenerating(!enabled);
 	}
-}
-
-void DjIaVstEditor::toggleSampleBank()
-{
-	sampleBankVisible = !sampleBankVisible;
-	sampleBankPanel->setVisible(sampleBankVisible);
-
-	if (sampleBankVisible)
-	{
-		showSampleBankButton.setButtonText("Hide Bank");
-		setStatusWithTimeout("Sample bank opened", 2000);
-	}
-	else
-	{
-		showSampleBankButton.setButtonText("Bank");
-		setStatusWithTimeout("Sample bank closed", 2000);
-	}
-
-	resized();
 }
 
 void DjIaVstEditor::startGenerationUI(const juce::String& trackId)
@@ -2123,19 +2015,6 @@ juce::StringArray DjIaVstEditor::getAllPrompts() const
 	return allPrompts;
 }
 
-void DjIaVstEditor::toggleWaveFormButtonOnTrack()
-{
-	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto& trackId : trackIds)
-	{
-		TrackData* track = audioProcessor.getTrack(trackId);
-		if (track)
-		{
-			track->showWaveform = false;
-		}
-	}
-}
-
 void DjIaVstEditor::restoreUICallbacks()
 {
 	for (auto& trackComp : trackComponents)
@@ -2143,19 +2022,6 @@ void DjIaVstEditor::restoreUICallbacks()
 		if (trackComp->getTrack())
 		{
 			trackComp->setupMidiLearn();
-		}
-	}
-}
-
-void DjIaVstEditor::toggleSEQButtonOnTrack()
-{
-	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto& trackId : trackIds)
-	{
-		TrackData* track = audioProcessor.getTrack(trackId);
-		if (track)
-		{
-			track->showSequencer = false;
 		}
 	}
 }
@@ -2171,44 +2037,6 @@ void DjIaVstEditor::setStatusWithTimeout(const juce::String& message, int timeou
 				editor->statusLabel.setText("Ready", juce::dontSendNotification);
 				editor->updateLCD();
 			} });
-}
-
-void DjIaVstEditor::onAddTrack()
-{
-	try
-	{
-		juce::String currentSelectedId = audioProcessor.getSelectedTrackId();
-		juce::String newTrackId = audioProcessor.createNewTrack();
-
-		refreshTrackComponents();
-
-		if (audioProcessor.getIsGenerating())
-		{
-			for (auto& trackComp : trackComponents)
-			{
-				if (trackComp->trackId == newTrackId)
-				{
-					trackComp->setGenerateButtonEnabled(false);
-					trackComp->setCanvasGenerating(true);
-					break;
-				}
-			}
-		}
-
-		if (mixerPanel)
-		{
-			mixerPanel->trackAdded(newTrackId);
-			if (!currentSelectedId.isEmpty())
-			{
-				mixerPanel->trackSelected(currentSelectedId);
-			}
-		}
-		setStatusWithTimeout("New track created");
-	}
-	catch (const std::exception& e)
-	{
-		setStatusWithTimeout("Error: " + juce::String(e.what()));
-	}
 }
 
 void DjIaVstEditor::updateSelectedTrack()

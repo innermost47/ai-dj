@@ -1,0 +1,10 @@
+#pragma once
+#include <string>
+
+#define PLUGIN_VERSION "@PROJECT_VERSION@"
+#define BUILD_NUMBER "@BUILD_NUMBER@"
+
+namespace Version
+{
+    static const std::string FULL = "v@PROJECT_VERSION@ (build @BUILD_NUMBER@)";
+}
