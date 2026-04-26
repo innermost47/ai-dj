@@ -2825,9 +2825,11 @@ void DjIaVstProcessor::getStateInformation(juce::MemoryBlock& destData)
 
 void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
+	isLoadingState.store(true);
 	std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
 	if (!xml || !xml->hasTagName("DjIaVstState"))
 	{
+		isLoadingState.store(false);
 		return;
 	}
 	juce::ValueTree state = juce::ValueTree::fromXml(*xml);
@@ -2993,7 +2995,9 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 							if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor())) {
 								editor->refreshTrackComponents();
 								editor->updateUIFromProcessor();
-							} });
+							}
+							isLoadingState.store(false);
+						});
 }
 
 void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float newValue)

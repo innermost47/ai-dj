@@ -27,45 +27,36 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 	logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_png,
 		BinaryData::logo_pngSize);
 	audioProcessor.setGenerationListener(this);
+
 	if (audioProcessor.isStateReady())
 	{
 		initUI();
-		loadPromptPresets();
-		refreshTracks();
-		refreshCreditsAsync();
-		if (audioProcessor.getIsGenerating())
-		{
-			generateButton.setEnabled(false);
-			setAllGenerateButtonsEnabled(false);
-			statusLabel.setText("Generation in progress...", juce::dontSendNotification);
-			updateLCD();
-			juce::String generatingId = audioProcessor.getGeneratingTrackId();
-			for (auto& trackComp : trackComponents)
+		juce::Timer::callAfterDelay(300, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 			{
-				if (trackComp->getTrackId() == generatingId)
-				{
-					trackComp->startGeneratingAnimation();
-					break;
-				}
-			}
-		}
+				if (safeThis == nullptr || safeThis->isBeingDestroyed.load()) return;
+				safeThis->finalizeInit();
+			});
 	}
 	else
+	{
 		startTimer(50);
+	}
 
 	juce::WeakReference<DjIaVstEditor> weakThis(this);
 
 	audioProcessor.setMidiIndicatorCallback([weakThis](const juce::String& noteInfo)
 		{
 			if (weakThis != nullptr)
-				weakThis->updateMidiIndicator(noteInfo); });
+				weakThis->updateMidiIndicator(noteInfo);
+		});
 
 	audioProcessor.onUIUpdateNeeded = [weakThis]()
 		{
 			juce::MessageManager::callAsync([weakThis]()
 				{
 					if (weakThis != nullptr)
-						weakThis->updateUIComponents(); });
+						weakThis->updateUIComponents();
+				});
 		};
 
 	juce::Timer::callAfterDelay(4000, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
@@ -75,7 +66,8 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 			{
 				safeThis->audioProcessor.updateCheckDone = true;
 				safeThis->checkForUpdates();
-			} });
+			}
+		});
 }
 
 DjIaVstEditor::~DjIaVstEditor()
@@ -100,6 +92,41 @@ DjIaVstEditor::~DjIaVstEditor()
 
 	setLookAndFeel(nullptr);
 	ObsidianAlertManager::shutdown();
+}
+
+void DjIaVstEditor::finalizeInit()
+{
+	if (isBeingDestroyed.load()) return;
+	if (audioProcessor.isLoadingState.load())
+	{
+		juce::Timer::callAfterDelay(100, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+			{
+				if (safeThis == nullptr || safeThis->isBeingDestroyed.load()) return;
+				safeThis->finalizeInit();
+			});
+		return;
+	}
+
+	loadPromptPresets();
+	refreshTracks();
+	refreshCreditsAsync();
+
+	if (audioProcessor.getIsGenerating())
+	{
+		generateButton.setEnabled(false);
+		setAllGenerateButtonsEnabled(false);
+		statusLabel.setText("Generation in progress...", juce::dontSendNotification);
+		updateLCD();
+		juce::String generatingId = audioProcessor.getGeneratingTrackId();
+		for (auto& trackComp : trackComponents)
+		{
+			if (trackComp && trackComp->getTrackId() == generatingId)
+			{
+				trackComp->startGeneratingAnimation();
+				break;
+			}
+		}
+	}
 }
 
 bool DjIaVstEditor::keyStateChanged(bool isKeyDown)
@@ -249,9 +276,8 @@ void DjIaVstEditor::refreshTracks()
 void DjIaVstEditor::initUI()
 {
 	if (isInitialized.load())
-	{
 		return;
-	}
+
 	setupUI();
 	refreshUIForMode();
 	serverUrlInput.setText(audioProcessor.getServerUrl(), juce::dontSendNotification);
@@ -531,58 +557,47 @@ void DjIaVstEditor::timerCallback()
 		{
 			stopTimer();
 			initUI();
-			loadPromptPresets();
-			refreshTracks();
-			refreshCreditsAsync();
-			if (audioProcessor.getIsGenerating())
-			{
-				generateButton.setEnabled(false);
-				setAllGenerateButtonsEnabled(false);
-				statusLabel.setText("Generation in progress...", juce::dontSendNotification);
-				updateLCD();
-				juce::String generatingId = audioProcessor.getGeneratingTrackId();
-				for (auto& trackComp : trackComponents)
+			juce::Timer::callAfterDelay(300, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 				{
-					if (trackComp->getTrackId() == generatingId)
-					{
-						trackComp->startGeneratingAnimation();
-						break;
-					}
-				}
+					if (safeThis == nullptr || safeThis->isBeingDestroyed.load()) return;
+					safeThis->finalizeInit();
+				});
+			return;
+		}
+	}
+
+	bool anyTrackPlaying = false;
+	for (auto& trackComp : trackComponents)
+	{
+		if (trackComp->isShowing())
+		{
+			TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
+			if (track && track->isPlaying.load())
+			{
+				trackComp->updateFromTrackData();
+				anyTrackPlaying = true;
 			}
 		}
-		bool anyTrackPlaying = false;
+	}
+	if (!anyTrackPlaying)
+	{
+		static int skipFrames = 0;
+		skipFrames++;
+		if (skipFrames < 10)
+			return;
+		skipFrames = 0;
+	}
+
+	static double lastHostBpm = 0.0;
+	double currentHostBpm = audioProcessor.getHostBpm();
+	if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
+	{
+		lastHostBpm = currentHostBpm;
 		for (auto& trackComp : trackComponents)
 		{
-			if (trackComp->isShowing())
-			{
-				TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
-				if (track && track->isPlaying.load())
-				{
-					trackComp->updateFromTrackData();
-					anyTrackPlaying = true;
-				}
-			}
-		}
-		if (!anyTrackPlaying)
-		{
-			static int skipFrames = 0;
-			skipFrames++;
-			if (skipFrames < 10)
-				return;
-			skipFrames = 0;
-		}
-		static double lastHostBpm = 0.0;
-		double currentHostBpm = audioProcessor.getHostBpm();
-		if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
-		{
-			lastHostBpm = currentHostBpm;
-			for (auto& trackComp : trackComponents)
-			{
-				TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
-				if (track && (track->timeStretchMode == 3 || track->timeStretchMode == 4))
-					trackComp->updateWaveformWithTimeStretch();
-			}
+			TrackData* track = audioProcessor.getTrack(trackComp->getTrackId());
+			if (track && (track->timeStretchMode == 3 || track->timeStretchMode == 4))
+				trackComp->updateWaveformWithTimeStretch();
 		}
 	}
 }

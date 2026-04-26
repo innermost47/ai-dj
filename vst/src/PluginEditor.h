@@ -95,14 +95,13 @@ private:
 	void onLoadSampleClicked();
 	void updateLoadButtonState();
 	void updateMidiIndicator(const juce::String& noteInfo);
-	void onAddTrack();
+	void finalizeInit();
 	void updateUIComponents();
 	void setAllGenerateButtonsEnabled(bool enabled);
 	void showFirstTimeSetup();
 	void showConfigDialog();
 	void mouseDown(const juce::MouseEvent& event) override;
 	void editCustomPromptDialog(const juce::String& selectedPrompt);
-	void toggleSEQButtonOnTrack();
 	void startGenerationButtonAnimation();
 	void stopGenerationButtonAnimation();
 	void refreshUIForMode();
