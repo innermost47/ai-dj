@@ -157,16 +157,16 @@ public:
 	DrawingCanvas(DjIaVstProcessor& proc)
 		: audioProcessor(proc)
 	{
-		canvas = juce::Image(juce::Image::RGB, 512, 512, true);
+		canvas = juce::Image(juce::Image::RGB, 400, 400, true);
 		clearCanvas();
 		resetHistory();
 		setLookAndFeel(&CustomLookAndFeel::getInstance());
 		setupUI();
 		setupKeywordsUI();
 		setWantsKeyboardFocus(true);
-		setSize(900, 750);
 		startTimerHz(60);
 	}
+
 
 	~DrawingCanvas()
 	{
@@ -182,62 +182,122 @@ public:
 
 	void paint(juce::Graphics& g) override
 	{
-		g.fillAll(ColourPalette::backgroundDeep);
+		const float corner = 8.0f;
 
-		g.setColour(juce::Colour(0xff1a1a1a));
-		g.fillRect(canvasAreaBounds);
+		auto canvasFrame = canvasAreaBounds.expanded(6).toFloat();
 
-		g.drawImageAt(canvas, canvasAreaBounds.getX(), canvasAreaBounds.getY());
+		g.setColour(juce::Colours::black.withAlpha(0.4f));
+		g.fillRoundedRectangle(canvasFrame.translated(0, 2), corner);
 
-		g.setColour(ColourPalette::backgroundLight);
-		g.drawRect(canvasAreaBounds, 2);
+		juce::ColourGradient frameGradient(
+			ColourPalette::backgroundDeep.brighter(0.03f),
+			canvasFrame.getX(), canvasFrame.getY(),
+			ColourPalette::backgroundDeep.darker(0.03f),
+			canvasFrame.getX(), canvasFrame.getBottom(),
+			false);
+		g.setGradientFill(frameGradient);
+		g.fillRoundedRectangle(canvasFrame, corner);
+
+		{
+			juce::Graphics::ScopedSaveState saveState(g);
+			g.reduceClipRegion(canvasAreaBounds);
+			g.drawImageAt(canvas, canvasAreaBounds.getX(), canvasAreaBounds.getY());
+		}
+
+		g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
+		g.drawRect(canvasAreaBounds.toFloat(), 1.0f);
+
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.3f));
+		g.drawRoundedRectangle(canvasFrame, corner, 0.8f);
+
+		if (!keywordsPanelBounds.isEmpty())
+		{
+			auto kwFrame = keywordsPanelBounds.toFloat();
+
+			juce::ColourGradient kwGradient(
+				ColourPalette::backgroundDeep.brighter(0.02f),
+				kwFrame.getX(), kwFrame.getY(),
+				ColourPalette::backgroundDeep.darker(0.04f),
+				kwFrame.getX(), kwFrame.getBottom(),
+				false);
+			g.setGradientFill(kwGradient);
+			g.fillRoundedRectangle(kwFrame, corner);
+
+			g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
+			g.drawRoundedRectangle(kwFrame, corner, 0.8f);
+
+			auto accentBar = juce::Rectangle<float>(
+				kwFrame.getX() + 8.0f, kwFrame.getY() + 14.0f,
+				3.0f, 18.0f);
+			g.setColour(ColourPalette::trackSelected);
+			g.fillRoundedRectangle(accentBar, 1.5f);
+		}
+
+		if (!toolsPanelBounds.isEmpty())
+		{
+			auto toolsFrame = toolsPanelBounds.toFloat();
+
+			juce::ColourGradient toolsGradient(
+				ColourPalette::backgroundDeep.brighter(0.02f),
+				toolsFrame.getX(), toolsFrame.getY(),
+				ColourPalette::backgroundDeep.darker(0.04f),
+				toolsFrame.getX(), toolsFrame.getBottom(),
+				false);
+			g.setGradientFill(toolsGradient);
+			g.fillRoundedRectangle(toolsFrame, corner);
+
+			g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
+			g.drawRoundedRectangle(toolsFrame, corner, 0.8f);
+
+			g.setColour(juce::Colours::white.withAlpha(0.025f));
+			auto topHighlight = toolsFrame.withHeight(toolsFrame.getHeight() * 0.4f);
+			g.fillRoundedRectangle(topHighlight, corner);
+		}
 	}
 
 	void resized() override
 	{
-		auto bounds = getLocalBounds().reduced(10);
-		bounds.removeFromTop(10);
+		auto bounds = getLocalBounds().reduced(6);
 
-		auto mainArea = bounds.removeFromTop(512);
+		auto mainArea = bounds.removeFromTop(416);
 
-		auto canvasArea = mainArea.removeFromLeft(512);
-		canvasAreaBounds = juce::Rectangle<int>(canvasArea.getX(), canvasArea.getY(), 512, 512);
+		auto canvasContainer = mainArea.removeFromLeft(416);
+		canvasAreaBounds = canvasContainer.withSizeKeepingCentre(400, 400);
 
-		mainArea.removeFromLeft(15);
+		mainArea.removeFromLeft(12);
 
-		auto keywordsArea = mainArea;
+		keywordsPanelBounds = mainArea;
+		auto keywordsArea = mainArea.reduced(14, 12);
 
-		auto keywordsHeaderRow = keywordsArea.removeFromTop(35);
+		auto keywordsHeaderRow = keywordsArea.removeFromTop(28);
+		keywordsHeaderRow.removeFromLeft(8);
 		keywordsLabel.setBounds(keywordsHeaderRow);
 
-		keywordsArea.removeFromTop(5);
+		keywordsArea.removeFromTop(8);
 
-		auto inputRow = keywordsArea.removeFromTop(35);
-		addKeywordButton.setBounds(inputRow.removeFromRight(40));
-		inputRow.removeFromRight(5);
+		auto inputRow = keywordsArea.removeFromTop(34);
+		addKeywordButton.setBounds(inputRow.removeFromRight(38));
+		inputRow.removeFromRight(6);
 		keywordInput.setBounds(inputRow);
 
 		keywordsArea.removeFromTop(10);
 
-		auto viewportArea = keywordsArea.removeFromTop(425);
-		keywordsViewport.setBounds(viewportArea);
+		keywordsViewport.setBounds(keywordsArea);
 
 		int badgeWidth = 105;
 		int badgeHeight = 28;
-		int spacingX = 5;
-		int spacingY = 5;
+		int spacingX = 6;
+		int spacingY = 6;
 
 		int totalBadges = keywordBadges.size();
 		if (totalBadges > 0)
 		{
-			int availableHeight = viewportArea.getHeight() - keywordsViewport.getScrollBarThickness();
+			int availableHeight = keywordsArea.getHeight() - keywordsViewport.getScrollBarThickness();
 			int maxRows = juce::jmax(1, availableHeight / (badgeHeight + spacingY));
-
 			int numColumns = (totalBadges + maxRows - 1) / maxRows;
-
 			int totalWidth = numColumns * (badgeWidth + spacingX) + spacingX;
 
-			keywordsBadgesContainer.setSize(juce::jmax(totalWidth, viewportArea.getWidth()),
+			keywordsBadgesContainer.setSize(juce::jmax(totalWidth, keywordsArea.getWidth()),
 				availableHeight);
 
 			int badgeIndex = 0;
@@ -245,44 +305,57 @@ public:
 			{
 				int col = badgeIndex / maxRows;
 				int row = badgeIndex % maxRows;
-
 				int x = col * (badgeWidth + spacingX) + spacingX;
 				int y = row * (badgeHeight + spacingY) + spacingY;
-
 				badge->setBounds(x, y, badgeWidth, badgeHeight);
-
 				badgeIndex++;
 			}
 		}
 
-		bounds.removeFromTop(15);
-		auto toolsArea = bounds;
+		bounds.removeFromTop(12);
 
-		auto brushRow = toolsArea.removeFromTop(45);
-		int btnW = (brushRow.getWidth() - 20) / 5;
+		toolsPanelBounds = bounds;
+		auto toolsArea = bounds.reduced(14, 10);
+
+		auto brushRow = toolsArea.removeFromTop(42);
+
+		const int actionBtnW = 60;
+		clearButton.setBounds(brushRow.removeFromRight(actionBtnW));
+		brushRow.removeFromRight(6);
+		redoButton.setBounds(brushRow.removeFromRight(actionBtnW));
+		brushRow.removeFromRight(6);
+		undoButton.setBounds(brushRow.removeFromRight(actionBtnW));
+		brushRow.removeFromRight(16);
+
+		int numBrushes = 5;
+		int btnW = (brushRow.getWidth() - (numBrushes - 1) * 6) / numBrushes;
 
 		pencilButton.setBounds(brushRow.removeFromLeft(btnW));
-		brushRow.removeFromLeft(5);
+		brushRow.removeFromLeft(6);
 		brushButton.setBounds(brushRow.removeFromLeft(btnW));
-		brushRow.removeFromLeft(5);
+		brushRow.removeFromLeft(6);
 		airbrushButton.setBounds(brushRow.removeFromLeft(btnW));
-		brushRow.removeFromLeft(5);
+		brushRow.removeFromLeft(6);
 		fillButton.setBounds(brushRow.removeFromLeft(btnW));
-		brushRow.removeFromLeft(5);
+		brushRow.removeFromLeft(6);
 		eraserButton.setBounds(brushRow.removeFromLeft(btnW));
 
-		toolsArea.removeFromTop(12);
+		toolsArea.removeFromTop(10);
 
-		auto sizeRow = toolsArea.removeFromTop(45);
-		brushSizeLabel.setBounds(sizeRow.removeFromLeft(60));
-		sizeRow.removeFromLeft(5);
+		auto sizeRow = toolsArea.removeFromTop(36);
+		brushSizeLabel.setBounds(sizeRow.removeFromLeft(56));
+		sizeRow.removeFromLeft(8);
 		brushSizeSlider.setBounds(sizeRow);
 
-		toolsArea.removeFromTop(12);
+		toolsArea.removeFromTop(10);
 
-		auto colorRow = toolsArea.removeFromTop(35);
-		colorLabel.setBounds(colorRow.removeFromLeft(60));
-		colorRow.removeFromLeft(5);
+		auto colorRow = toolsArea.removeFromTop(38);
+		colorLabel.setBounds(colorRow.removeFromLeft(56));
+		colorRow.removeFromLeft(8);
+
+		const int generateWidth = 140;
+		generateButton.setBounds(colorRow.removeFromRight(generateWidth));
+		colorRow.removeFromRight(12);
 
 		int numSwatches = colorSwatches.size();
 		if (numSwatches > 0)
@@ -299,19 +372,9 @@ public:
 					colorRow.removeFromLeft(5);
 			}
 		}
-
-		toolsArea.removeFromTop(15);
-
-		auto actionRow = toolsArea.removeFromTop(45);
-		int thirdWidth = (actionRow.getWidth() - 20) / 4;
-		undoButton.setBounds(actionRow.removeFromLeft(thirdWidth));
-		actionRow.removeFromLeft(10);
-		redoButton.setBounds(actionRow.removeFromLeft(thirdWidth));
-		actionRow.removeFromLeft(10);
-		clearButton.setBounds(actionRow.removeFromLeft(thirdWidth));
-		actionRow.removeFromLeft(10);
-		generateButton.setBounds(actionRow);
 	}
+
+
 
 	void mouseMove(const juce::MouseEvent& e) override
 	{
@@ -667,9 +730,9 @@ private:
 		}
 
 		addAndMakeVisible(keywordsLabel);
-		keywordsLabel.setText("Keywords:", juce::dontSendNotification);
+		keywordsLabel.setText("Keywords", juce::dontSendNotification);
 		keywordsLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-		keywordsLabel.setFont(juce::FontOptions(14.0f, juce::Font::bold));
+		keywordsLabel.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::bold));
 
 		addAndMakeVisible(keywordInput);
 		keywordInput.setFont(juce::FontOptions(13.0f));
@@ -1254,6 +1317,9 @@ private:
 	juce::Point<int> lastPoint;
 	juce::Random random;
 
+	juce::Rectangle<int> keywordsPanelBounds;
+	juce::Rectangle<int> toolsPanelBounds;
+
 	BrushType currentBrushType = BrushType::Pencil;
 	float currentBrushSize = 5.0f;
 	juce::Colour currentColor = juce::Colours::black;
@@ -1281,3 +1347,32 @@ private:
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DrawingCanvas)
 };
+
+inline DrawingCanvas* ObsidianAlertManager::showDrawingCanvas(juce::Component* parent,
+	DjIaVstProcessor& processor,
+	std::function<void(const juce::String&)> onGenerate,
+	std::function<void(DrawingCanvas*)> onClose)
+{
+	auto* root = getSafePluginWindow(parent);
+	if (root == nullptr) return nullptr;
+
+	auto modal = std::make_unique<ObsidianModalWindow>("Draw to Audio", 980, 980);
+	auto canvasContent = std::make_unique<DrawingCanvas>(processor);
+	auto* canvasPtr = canvasContent.get();
+
+	canvasPtr->onGenerate = onGenerate;
+	modal->setContent(std::move(canvasContent));
+
+	auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
+	juce::Component::SafePointer<ObsidianModalOverlay> safeOverlay(overlay);
+
+	overlay->modalWindow->addButton("Close", ObsidianAlertManager::crossSvg,
+		ColourPalette::buttonInactive,
+		[safeOverlay, canvasPtr, onClose]() {
+			if (onClose) onClose(canvasPtr);
+			if (safeOverlay != nullptr)
+				safeOverlay->close();
+		});
+
+	return canvasPtr;
+}

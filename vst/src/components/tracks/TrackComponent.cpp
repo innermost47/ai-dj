@@ -577,18 +577,43 @@ void TrackComponent::resized()
 
 void TrackComponent::openDrawingCanvas()
 {
-	if (drawingWindowPtr != nullptr)
-	{
-		drawingWindowPtr->toFront(true);
+
+	if (canvasModalOpen)
 		return;
-	}
+	canvasModalOpen = true;
 
-	auto* canvas = new DrawingCanvas(audioProcessor);
+	auto* canvas = ObsidianAlertManager::showDrawingCanvas(
+		this,
+		audioProcessor,
+		[this](const juce::String& /* base64Image */)
+		{
+		},
+		[this](DrawingCanvas* canvas)
+		{
+			if (track && canvas)
+			{
+				auto canvasState = canvas->getState();
+				juce::String stateXml = canvasState.toXml();
+				if (track->usePages.load())
+				{
+					auto& currentPage = track->getCurrentPage();
+					currentPage.canvasState = stateXml;
+					currentPage.canvasData = canvasState.imageBase64;
+					currentPage.selectedKeywords = canvasState.selectedKeywords;
+					track->syncLegacyProperties();
+				}
+				else
+				{
+					track->canvasState = stateXml;
+					track->canvasData = canvasState.imageBase64;
+					track->selectedKeywords = canvasState.selectedKeywords;
+				}
+			}
+			canvasModalOpen = false;
+		});
 
-	auto* window = new DrawingWindow("Draw Image - Track " + track->trackId, canvas);
-	drawingWindowPtr = window;
-	window->setVisible(true);
-
+	if (canvas == nullptr) return;
+	drawingCanvasPtr = canvas;
 	if (track && track->usePages.load())
 	{
 		const auto& currentPage = track->getCurrentPage();
@@ -640,30 +665,6 @@ void TrackComponent::openDrawingCanvas()
 				auto keywords = canvas->getState().selectedKeywords;
 				onGenerateWithImage(trackId, base64Image, keywords);
 			}
-		};
-
-	window->onBeforeClose = [this, canvas]()
-		{
-			if (track)
-			{
-				auto canvasState = canvas->getState();
-				juce::String stateXml = canvasState.toXml();
-				if (track->usePages.load())
-				{
-					auto& currentPage = track->getCurrentPage();
-					currentPage.canvasState = stateXml;
-					currentPage.canvasData = canvasState.imageBase64;
-					currentPage.selectedKeywords = canvasState.selectedKeywords;
-					track->syncLegacyProperties();
-				}
-				else
-				{
-					track->canvasState = stateXml;
-					track->canvasData = canvasState.imageBase64;
-					track->selectedKeywords = canvasState.selectedKeywords;
-				}
-			}
-			drawingWindowPtr = nullptr;
 		};
 }
 

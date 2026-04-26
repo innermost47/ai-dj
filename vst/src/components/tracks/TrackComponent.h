@@ -102,42 +102,14 @@ public:
 	void setCanvasGenerating(bool generating)
 	{
 		canvasIsGenerating = generating;
-		if (drawingWindowPtr != nullptr)
+		if (drawingCanvasPtr != nullptr)
 		{
-			if (auto* window = drawingWindowPtr.getComponent())
-			{
-				if (auto* canvas = dynamic_cast<DrawingCanvas*>(window->getContentComponent()))
-				{
-					canvas->setGenerating(generating);
-				}
-			}
+			drawingCanvasPtr->setGenerating(generating);
 		}
 	}
 
 private:
-	class DrawingWindow : public juce::DocumentWindow
-	{
-	public:
-		DrawingWindow(const juce::String& name, DrawingCanvas* canvas)
-			: juce::DocumentWindow(name, juce::Colour(0xff2a2a2a),
-				juce::DocumentWindow::closeButton)
-		{
-			setContentOwned(canvas, true);
-			centreWithSize(920, 770);
-			setResizable(false, false);
-			setUsingNativeTitleBar(true);
-			setOpaque(true);
-		}
-
-		void closeButtonPressed() override
-		{
-			if (onBeforeClose)
-				onBeforeClose();
-			delete this;
-		}
-
-		std::function<void()> onBeforeClose;
-	};
+	juce::Component::SafePointer<DrawingCanvas> drawingCanvasPtr;
 
 	juce::StringArray promptPresets;
 
@@ -182,6 +154,7 @@ private:
 	bool pageBlinkState = false;
 	bool canvasIsGenerating = false;
 	bool isPreviewPlaying = false;
+	bool canvasModalOpen = false;
 
 	juce::TextButton togglePagesButton;
 
