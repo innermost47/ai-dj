@@ -18,26 +18,51 @@ public:
 
 	void paintButton(juce::Graphics& g, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
 	{
-		auto bounds = getLocalBounds().toFloat();
+		auto bounds = getLocalBounds().toFloat().reduced(0.5f);
+		const float corner = 5.0f;
 
-		juce::Colour bgColour = shouldDrawButtonAsDown ? colour.darker(0.2f) : (shouldDrawButtonAsHighlighted ? colour.brighter(0.1f) : colour);
+		juce::Colour bgColour = colour;
+		if (shouldDrawButtonAsDown)
+			bgColour = colour.darker(0.2f);
+		else if (shouldDrawButtonAsHighlighted)
+			bgColour = colour.brighter(0.12f);
 
-		g.setColour(bgColour);
-		g.fillRoundedRectangle(bounds, 4.0f);
+		if (!shouldDrawButtonAsDown)
+		{
+			g.setColour(juce::Colours::black.withAlpha(0.35f));
+			g.fillRoundedRectangle(bounds.translated(0, 1.5f), corner);
+		}
 
-		auto contentBounds = bounds.reduced(8.0f);
-		float iconSize = 0.0f;
+		juce::ColourGradient bgGradient(
+			bgColour.brighter(0.08f), bounds.getX(), bounds.getY(),
+			bgColour.darker(0.08f), bounds.getX(), bounds.getBottom(),
+			false);
+		g.setGradientFill(bgGradient);
+		g.fillRoundedRectangle(bounds, corner);
+
+		if (!shouldDrawButtonAsDown)
+		{
+			g.setColour(juce::Colours::white.withAlpha(0.08f));
+			auto topHighlight = bounds.withHeight(bounds.getHeight() * 0.45f);
+			g.fillRoundedRectangle(topHighlight, corner);
+		}
+
+		g.setColour(bgColour.brighter(0.25f).withAlpha(0.5f));
+		g.drawRoundedRectangle(bounds, corner, 0.8f);
+
+		auto contentBounds = bounds.reduced(10.0f, 6.0f);
 
 		if (drawable != nullptr)
 		{
-			iconSize = 16.0f;
-			auto iconBounds = contentBounds.removeFromLeft(iconSize).withSizeKeepingCentre(iconSize, iconSize);
+			const float iconSize = 14.0f;
+			auto iconBounds = contentBounds.removeFromLeft(iconSize)
+				.withSizeKeepingCentre(iconSize, iconSize);
 			drawable->drawWithin(g, iconBounds, juce::RectanglePlacement::centred, 1.0f);
 			contentBounds.removeFromLeft(8.0f);
 		}
 
 		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::bold));
+		g.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::bold));
 		g.drawText(getButtonText(), contentBounds, juce::Justification::centredLeft, true);
 	}
 
@@ -64,7 +89,8 @@ public:
 		resized();
 	}
 
-	void addButton(const juce::String& text, const juce::String& svgData, juce::Colour colour, std::function<void()> onClick)
+	void addButton(const juce::String& text, const juce::String& svgData,
+		juce::Colour colour, std::function<void()> onClick)
 	{
 		auto* btn = buttons.add(new ObsidianSvgButton(text, svgData, colour));
 		addAndMakeVisible(btn);
@@ -75,39 +101,94 @@ public:
 	void paint(juce::Graphics& g) override
 	{
 		auto bounds = getLocalBounds().toFloat();
+		const float corner = 10.0f;
+		const float titleHeight = 56.0f;
 
-		juce::DropShadow shadow(juce::Colours::black.withAlpha(0.6f), 12, juce::Point<int>(0, 6));
+		juce::DropShadow shadow(juce::Colours::black.withAlpha(0.7f), 24,
+			juce::Point<int>(0, 8));
 		shadow.drawForRectangle(g, bounds.toNearestInt());
 
-		g.setColour(ColourPalette::backgroundDeep);
-		g.fillRoundedRectangle(bounds, 8.0f);
+		juce::ColourGradient bgGradient(
+			ColourPalette::backgroundDeep.brighter(0.03f),
+			bounds.getX(), bounds.getY(),
+			ColourPalette::backgroundDeep.darker(0.05f),
+			bounds.getX(), bounds.getBottom(),
+			false);
+		g.setGradientFill(bgGradient);
+		g.fillRoundedRectangle(bounds, corner);
 
-		g.setColour(ColourPalette::backgroundLight);
-		g.drawRoundedRectangle(bounds, 8.0f, 1.0f);
+		juce::Path titleBarPath;
+		titleBarPath.addRoundedRectangle(
+			bounds.getX(), bounds.getY(),
+			bounds.getWidth(), titleHeight,
+			corner, corner, true, true, false, false);
 
-		auto titleBounds = bounds.removeFromTop(50.0f).reduced(20.0f, 0.0f);
+		juce::ColourGradient titleGradient(
+			ColourPalette::buttonPrimary.withAlpha(0.18f),
+			bounds.getX(), bounds.getY(),
+			ColourPalette::buttonPrimary.withAlpha(0.05f),
+			bounds.getX(), bounds.getY() + titleHeight,
+			false);
+		g.setGradientFill(titleGradient);
+		g.fillPath(titleBarPath);
+
+		auto titleBounds = juce::Rectangle<float>(
+			bounds.getX() + 30.0f, bounds.getY(),
+			bounds.getWidth() - 60.0f, titleHeight);
 		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions("Courier New", 18.0f, juce::Font::bold));
+		g.setFont(juce::FontOptions("Courier New", 17.0f, juce::Font::bold));
 		g.drawText(title, titleBounds, juce::Justification::centredLeft, true);
 
-		g.setColour(ColourPalette::backgroundLight);
-		g.drawLine(20.0f, 50.0f, bounds.getWidth() - 20.0f, 50.0f, 1.0f);
+		float lineY = bounds.getY() + titleHeight;
+		juce::ColourGradient lineGradient(
+			ColourPalette::trackSelected.withAlpha(0.0f),
+			bounds.getX(), lineY,
+			ColourPalette::trackSelected.withAlpha(0.0f),
+			bounds.getRight(), lineY,
+			false);
+		lineGradient.addColour(0.5, ColourPalette::trackSelected.withAlpha(0.6f));
+		g.setGradientFill(lineGradient);
+		g.fillRect(bounds.getX(), lineY, bounds.getWidth(), 1.0f);
+
+		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.4f));
+		g.drawRoundedRectangle(bounds.reduced(0.5f), corner, 1.0f);
+
+		g.setColour(juce::Colours::white.withAlpha(0.03f));
+		auto topHighlight = juce::Rectangle<float>(
+			bounds.getX(), bounds.getY(),
+			bounds.getWidth(), titleHeight * 0.5f);
+		juce::Path highlightPath;
+		highlightPath.addRoundedRectangle(
+			topHighlight.getX(), topHighlight.getY(),
+			topHighlight.getWidth(), topHighlight.getHeight(),
+			corner, corner, true, true, false, false);
+		g.fillPath(highlightPath);
 	}
 
 	void resized() override
 	{
-		auto bounds = getLocalBounds().reduced(20);
-		bounds.removeFromTop(40);
+		const int titleHeight = 56;
+		const int padding = 24;
+		const int buttonAreaHeight = 48;
+		const int buttonAreaPadding = 16;
 
-		auto buttonArea = bounds.removeFromBottom(40);
+		auto bounds = getLocalBounds();
+		bounds.removeFromTop(titleHeight);
+		bounds = bounds.reduced(padding, padding - 4);
+
+		auto buttonArea = bounds.removeFromBottom(buttonAreaHeight);
+		bounds.removeFromBottom(buttonAreaPadding);
 
 		if (content != nullptr)
-			content->setBounds(bounds.withTrimmedBottom(20));
+			content->setBounds(bounds);
 
-		int btnWidth = 180;
-		int spacing = 10;
+		const int btnWidth = 170;
+		const int btnHeight = 38;
+		const int spacing = 10;
+
 		juce::FlexBox fb;
 		fb.justifyContent = juce::FlexBox::JustifyContent::flexEnd;
+		fb.alignItems = juce::FlexBox::AlignItems::center;
 
 		for (auto* btn : buttons)
 		{
@@ -115,8 +196,9 @@ public:
 
 			fb.items.add(juce::FlexItem(*btn)
 				.withWidth(static_cast<float>(btnWidth))
-				.withHeight(36.0f)
-				.withMargin(juce::FlexItem::Margin(0.0f, 0.0f, 0.0f, static_cast<float>(spacing))));
+				.withHeight(static_cast<float>(btnHeight))
+				.withMargin(juce::FlexItem::Margin(0.0f, 0.0f, 0.0f,
+					static_cast<float>(spacing))));
 		}
 		fb.performLayout(buttonArea);
 	}
@@ -130,7 +212,8 @@ private:
 class ObsidianModalOverlay : public juce::Component
 {
 public:
-	ObsidianModalOverlay(juce::Component* parentToOverlay, std::unique_ptr<ObsidianModalWindow> modal)
+	ObsidianModalOverlay(juce::Component* parentToOverlay,
+		std::unique_ptr<ObsidianModalWindow> modal)
 		: parent(parentToOverlay), modalWindow(std::move(modal))
 	{
 		addAndMakeVisible(modalWindow.get());
@@ -138,6 +221,9 @@ public:
 		toFront(false);
 		setBounds(parent->getLocalBounds());
 		setInterceptsMouseClicks(true, true);
+
+		setAlpha(0.0f);
+		juce::Desktop::getInstance().getAnimator().fadeIn(this, 180);
 	}
 
 	~ObsidianModalOverlay()
@@ -147,7 +233,14 @@ public:
 
 	void paint(juce::Graphics& g) override
 	{
-		g.fillAll(ColourPalette::backgroundDeep.withAlpha(0.85f));
+		juce::ColourGradient backdrop(
+			ColourPalette::backgroundDeep.withAlpha(0.75f),
+			(float)getWidth() * 0.5f, (float)getHeight() * 0.5f,
+			ColourPalette::backgroundDeep.withAlpha(0.92f),
+			0.0f, 0.0f,
+			true);
+		g.setGradientFill(backdrop);
+		g.fillAll();
 	}
 
 	void resized() override
@@ -161,8 +254,25 @@ public:
 		}
 	}
 
+	void mouseDown(const juce::MouseEvent& e) override
+	{
+		if (modalWindow != nullptr && !modalWindow->getBounds().contains(e.getPosition()))
+		{
+			auto& animator = juce::Desktop::getInstance().getAnimator();
+			auto target = modalWindow->getBounds();
+			animator.animateComponent(modalWindow.get(),
+				target.translated(6, 0), 1.0f, 50, false, 1.0, 0.0);
+			animator.animateComponent(modalWindow.get(),
+				target.translated(-6, 0), 1.0f, 50, false, 1.0, 0.0);
+			animator.animateComponent(modalWindow.get(),
+				target, 1.0f, 50, false, 1.0, 0.0);
+		}
+	}
+
 	void close()
 	{
+		auto& animator = juce::Desktop::getInstance().getAnimator();
+		animator.fadeOut(this, 150);
 		juce::MessageManager::callAsync([this]()
 			{ delete this; });
 	}

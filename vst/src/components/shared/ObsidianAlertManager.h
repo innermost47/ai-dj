@@ -64,7 +64,7 @@ public:
 		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
-		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
 		modal->setContent(std::make_unique<TextContent>(message));
 		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
@@ -82,7 +82,7 @@ public:
 		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
-		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
 		modal->setContent(std::make_unique<TextContent>(message));
 		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
@@ -101,7 +101,7 @@ public:
 		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
-		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
 		modal->setContent(std::make_unique<TextContent>(message));
 		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
@@ -126,7 +126,7 @@ public:
 		bool isFirstTime,
 		std::function<void(const ConfigDialogResult&)> callback)
 	{
-		auto modal = std::make_unique<ObsidianModalWindow>(title);
+		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 420);
 
 		class ConfigContent : public juce::Component
 		{
@@ -260,7 +260,7 @@ public:
 		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr) return;
 
-		auto modal = std::make_unique<ObsidianModalWindow>("Categories: " + sampleName, 500, 450);
+		auto modal = std::make_unique<ObsidianModalWindow>("Categories: " + sampleName, 480, 400);
 
 		auto categoryContent = std::make_unique<CategoryPanel>(currentCategories, availableCategories);
 		auto* panelPtr = categoryContent.get();
@@ -284,7 +284,7 @@ public:
 		const juce::String& currentPrompt,
 		std::function<void(const juce::String& newPrompt)> callback)
 	{
-		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt");
+		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt", 600, 400);
 		auto* root = getSafePluginWindow(parent);
 		if (root == nullptr)
 			return;
@@ -329,7 +329,7 @@ public:
 		const juce::String& latestTag,
 		const juce::String& currentBuild)
 	{
-		auto modal = std::make_unique<ObsidianModalWindow>("Update Available!");
+		auto modal = std::make_unique<ObsidianModalWindow>("Update Available!", 520, 280);
 		juce::String message = "A new version of OBSIDIAN Neural is available: " + latestTag + "\n\n"
 			"Your current build: v" +
 			currentBuild + "\n\n"

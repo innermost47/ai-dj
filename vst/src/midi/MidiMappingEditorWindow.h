@@ -29,6 +29,9 @@ private:
 	MidiMapping mapping;
 	MidiLearnManager* midiLearnManager = nullptr;
 
+	juce::String getMidiTypeShort() const;
+	juce::Rectangle<int> midiInfoBadgeBounds;
+
 	juce::Label parameterLabel;
 	juce::Label midiInfoLabel;
 
@@ -65,6 +68,9 @@ private:
 	MidiLearnManager* midiLearnManager = nullptr;
 
 	CustomLookAndFeel customLookAndFeel;
+
+	juce::Label countLabel;
+	juce::Rectangle<int> listBackgroundBounds;
 
 	IconButtonSimple clearAllButton{ "ClearAll", "" };
 	IconButtonSimple reloadDefaultsButton{ "ReloadDefaults", "" };
