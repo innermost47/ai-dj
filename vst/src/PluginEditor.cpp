@@ -30,6 +30,25 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 	if (audioProcessor.isStateReady())
 	{
 		initUI();
+		loadPromptPresets();
+		refreshTracks();
+		refreshCreditsAsync();
+		if (audioProcessor.getIsGenerating())
+		{
+			generateButton.setEnabled(false);
+			setAllGenerateButtonsEnabled(false);
+			statusLabel.setText("Generation in progress...", juce::dontSendNotification);
+			updateLCD();
+			juce::String generatingId = audioProcessor.getGeneratingTrackId();
+			for (auto& trackComp : trackComponents)
+			{
+				if (trackComp->getTrackId() == generatingId)
+				{
+					trackComp->startGeneratingAnimation();
+					break;
+				}
+			}
+		}
 	}
 	else
 		startTimer(50);
@@ -49,41 +68,14 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 						weakThis->updateUIComponents(); });
 		};
 
-	juce::Timer::callAfterDelay(300, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+	juce::Timer::callAfterDelay(4000, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 		{
 			if (safeThis == nullptr) return;
-			if (safeThis->isBeingDestroyed.load()) return;
-
-			safeThis->loadPromptPresets();
-			safeThis->refreshTracks();
-			safeThis->refreshCreditsAsync();
-
-			if (safeThis->audioProcessor.getIsGenerating())
+			if (!safeThis->audioProcessor.updateCheckDone)
 			{
-				safeThis->generateButton.setEnabled(false);
-				safeThis->setAllGenerateButtonsEnabled(false);
-				safeThis->statusLabel.setText("Generation in progress...", juce::dontSendNotification);
-				safeThis->updateLCD();
-				juce::String generatingId = safeThis->audioProcessor.getGeneratingTrackId();
-				for (auto& trackComp : safeThis->trackComponents)
-				{
-					if (safeThis == nullptr) return;
-					if (trackComp->getTrackId() == generatingId)
-					{
-						trackComp->startGeneratingAnimation();
-						break;
-					}
-				}
+				safeThis->audioProcessor.updateCheckDone = true;
+				safeThis->checkForUpdates();
 			} });
-
-			juce::Timer::callAfterDelay(4000, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-				{
-					if (safeThis == nullptr) return;
-					if (!safeThis->audioProcessor.updateCheckDone)
-					{
-						safeThis->audioProcessor.updateCheckDone = true;
-						safeThis->checkForUpdates();
-					} });
 }
 
 DjIaVstEditor::~DjIaVstEditor()
@@ -247,8 +239,9 @@ void DjIaVstEditor::refreshTracks()
 {
 	trackComponents.clear();
 	tracksContainer.removeAllChildren();
-
 	refreshTrackComponents();
+	for (auto& trackComp : trackComponents)
+		trackComp->loadPromptPresets();
 	updateSelectedTrack();
 	repaint();
 }
@@ -538,6 +531,25 @@ void DjIaVstEditor::timerCallback()
 		{
 			stopTimer();
 			initUI();
+			loadPromptPresets();
+			refreshTracks();
+			refreshCreditsAsync();
+			if (audioProcessor.getIsGenerating())
+			{
+				generateButton.setEnabled(false);
+				setAllGenerateButtonsEnabled(false);
+				statusLabel.setText("Generation in progress...", juce::dontSendNotification);
+				updateLCD();
+				juce::String generatingId = audioProcessor.getGeneratingTrackId();
+				for (auto& trackComp : trackComponents)
+				{
+					if (trackComp->getTrackId() == generatingId)
+					{
+						trackComp->startGeneratingAnimation();
+						break;
+					}
+				}
+			}
 		}
 		bool anyTrackPlaying = false;
 		for (auto& trackComp : trackComponents)

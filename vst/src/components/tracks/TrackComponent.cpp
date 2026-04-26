@@ -11,7 +11,6 @@ TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& pr
 	: trackId(trackId), track(nullptr), audioProcessor(processor)
 {
 	setupUI();
-	loadPromptPresets();
 }
 
 TrackComponent::~TrackComponent()
@@ -1601,22 +1600,17 @@ void TrackComponent::loadPromptPresets()
 void TrackComponent::updatePromptPresets(const juce::StringArray& presets)
 {
 	juce::String currentSelection = promptPresetSelector.getText();
-	juce::StringArray sortedPresets = presets;
-	sortedPresets.sort(true);
-	promptPresets = sortedPresets;
+	promptPresets = presets;
+	promptPresets.sort(true);
 	promptPresetSelector.clear();
 
-	for (int i = 0; i < presets.size(); ++i)
-	{
-		promptPresetSelector.addItem(presets[i], i + 1);
-	}
+	for (int i = 0; i < promptPresets.size(); ++i)
+		promptPresetSelector.addItem(promptPresets[i], i + 1);
 
-	int index = presets.indexOf(currentSelection);
+	int index = promptPresets.indexOf(currentSelection);
 	if (index >= 0)
-	{
 		promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
-	}
-	else if (presets.size() > 0)
+	else if (promptPresets.size() > 0)
 	{
 		promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
 		onTrackPresetSelected();

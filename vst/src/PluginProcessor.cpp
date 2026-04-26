@@ -204,8 +204,10 @@ void DjIaVstProcessor::saveGlobalConfig()
 	config->setProperty("localModelsPath", localModelsPath);
 	config->setProperty("onboardingDone", onboardingDone ? "true" : "false");
 
+	juce::StringArray sortedPrompts = customPrompts;
+	sortedPrompts.sort(true);
 	juce::Array<juce::var> promptsArray;
-	for (const auto& prompt : customPrompts)
+	for (const auto& prompt : sortedPrompts)
 	{
 		promptsArray.add(juce::var(prompt));
 	}

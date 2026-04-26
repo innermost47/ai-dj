@@ -87,6 +87,7 @@ public:
 	void setSamplePending(bool pending);
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String& name);
+	void loadPromptPresets();
 
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
@@ -181,7 +182,6 @@ private:
 	void updateUIFromParameter(const juce::String& paramName,
 		const juce::String& slotPrefix,
 		float newValue);
-	void loadPromptPresets();
 	void onTrackPresetSelected();
 	void toggleOriginalSync();
 	void statusCallback(const juce::String& message);
