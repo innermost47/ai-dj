@@ -178,16 +178,11 @@ Featured in **8 countries** and **6 languages**:
 
 ---
 
-## 🎯 Community Milestone — Road to 200 Stars!
+## 🎉 200 Stars Milestone — Giveaway Completed!
 
-Currently at **195+ stars** 🌟
+We hit **200 stars**! 🌟 Huge thanks to the entire community.
 
-When we hit 200 stars, we're celebrating with a community giveaway:
-
-**Prize:** 1 year of Starter Pack free access (€143.88 value)  
-**Eligibility:** Active community members (stars, discussions, issues, contributions)
-
-👉 [Join the discussion](https://github.com/innermost47/ai-dj/discussions/156)
+The winner of the 1-year Starter Pack (€143.88 value) was randomly drawn from all stargazers: congratulations **@mxmilkiib**!
 
 ---
 
