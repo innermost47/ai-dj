@@ -1049,19 +1049,20 @@ void DjIaVstProcessor::generateSampleWithImage(const juce::String& trackId, cons
 							throw std::runtime_error("Track not found");
 
 						DjIaClient::LoopRequest request;
-
+						float hostBpm = static_cast<float>(getHostBpm());
+						float fallbackBpm = hostBpm > 0 ? hostBpm : 127.0f;
 						if (track->usePages.load())
 						{
 							auto& currentPage = track->getCurrentPage();
 							request.model = currentPage.selectedModel;
-							request.bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : static_cast<float>(getHostBpm());
+							request.bpm = fallbackBpm;
 							request.key = !currentPage.generationKey.isEmpty() ? currentPage.generationKey : getGlobalKey();
 							request.generationDuration = currentPage.generationDuration > 0 ? (float)currentPage.generationDuration : static_cast<float>(getGlobalDuration());
 						}
 						else
 						{
 							request.model = track->selectedModel;
-							request.bpm = track->generationBpm > 0 ? track->generationBpm : static_cast<float>(getHostBpm());
+							request.bpm = fallbackBpm;
 							request.key = !track->generationKey.isEmpty() ? track->generationKey : getGlobalKey();
 							request.generationDuration = track->generationDuration > 0 ? (float)track->generationDuration : static_cast<float>(getGlobalDuration());
 						}
