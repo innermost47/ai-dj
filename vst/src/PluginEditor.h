@@ -50,7 +50,6 @@ public:
 	void onGenerationComplete(const juce::String& trackId, const juce::String& message) override;
 	void refreshMixerChannels();
 	void initUI();
-	void toggleWaveFormButtonOnTrack();
 	void setStatusWithTimeout(const juce::String& message, int timeoutMs = 2000);
 	void* getSequencerForTrack(const juce::String& trackId);
 	void stopGenerationUI(const juce::String& trackId, bool success = true, const juce::String& errorMessage = "");
@@ -58,7 +57,6 @@ public:
 	void restoreUICallbacks();
 	void updateSelectedTrack();
 	void onGenerateButtonClicked();
-	void toggleSampleBank();
 	void onSampleLoaded(const juce::String& trackId);
 	void reEnableCanvasForTrack();
 	void updateLCD();
@@ -131,6 +129,7 @@ private:
 	IconButtonSimple configButton{ "Config", "" };
 	IconButtonSimple openMidiEditorButton{ "MidiEditor", "" };
 	IconButtonSimple helpButton{ "Help", "" };
+	IconButtonSimple toggleBankButton{ "ToggleBank", "" };
 
 	juce::String generatingTrackId;
 	juce::String originalButtonText;
@@ -156,6 +155,7 @@ private:
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::Viewport tracksViewport;
+	juce::Viewport mixerViewport;
 	juce::Component tracksContainer;
 	juce::Label tracksLabel;
 

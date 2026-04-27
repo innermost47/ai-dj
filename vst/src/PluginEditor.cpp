@@ -86,7 +86,7 @@ DjIaVstEditor::~DjIaVstEditor()
 
 	if (mixerPanel)
 	{
-		mixerPanel->setVisible(false);
+		mixerViewport.setVisible(false);
 		mixerPanel.reset();
 	}
 
@@ -793,7 +793,7 @@ void DjIaVstEditor::setupUI()
 
 	addAndMakeVisible(tracksViewport);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
-	tracksViewport.setScrollBarsShown(true, false);
+	tracksViewport.setScrollBarsShown(true, true);
 	tracksContainer.setWantsKeyboardFocus(false);
 	tracksViewport.setWantsKeyboardFocus(false);
 	setWantsKeyboardFocus(true);
@@ -801,7 +801,9 @@ void DjIaVstEditor::setupUI()
 	if (!mixerPanel)
 	{
 		mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
-		addAndMakeVisible(*mixerPanel);
+		mixerViewport.setViewedComponent(mixerPanel.get(), false);
+		mixerViewport.setScrollBarsShown(false, true);
+		addAndMakeVisible(mixerViewport);
 		mixerPanel->onTrackRenamedFromMixer = [this](const juce::String& trackId,
 			const juce::String& newName)
 			{
@@ -839,7 +841,7 @@ void DjIaVstEditor::setupUI()
 	{
 		sampleBankPanel = std::make_unique<SampleBankPanel>(audioProcessor);
 		addChildComponent(*sampleBankPanel);
-		sampleBankPanel->setVisible(false);
+		sampleBankPanel->setVisible(true);
 	}
 
 	addAndMakeVisible(openMidiEditorButton);
@@ -864,6 +866,12 @@ void DjIaVstEditor::setupUI()
 			masterWaveformDisplay.setPositionInBeats(ppq);
 		};
 
+	addAndMakeVisible(toggleBankButton);
+	toggleBankButton.loadIcon(BinaryData::search_svg, BinaryData::search_svgSize);
+	toggleBankButton.setClickingTogglesState(true);
+	toggleBankButton.setToggleState(true, juce::dontSendNotification);
+	toggleBankButton.setTooltip("Toggle sample bank panel");
+
 	auto setupControlBtn = [](IconButtonSimple& btn)
 		{
 			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
@@ -879,6 +887,7 @@ void DjIaVstEditor::setupUI()
 	setupControlBtn(openMidiEditorButton);
 	setupControlBtn(configButton);
 	setupControlBtn(helpButton);
+	setupControlBtn(toggleBankButton);
 
 	refreshTrackComponents();
 	addEventListeners();
@@ -1032,6 +1041,14 @@ void DjIaVstEditor::addEventListeners()
 
 	helpButton.onClick = [this]()
 		{ showOnboardingStep(1); };
+
+	toggleBankButton.onClick = [this]()
+		{
+			bool visible = toggleBankButton.getToggleState();
+			if (sampleBankPanel)
+				sampleBankPanel->setVisible(visible);
+			resized();
+		};
 }
 
 void DjIaVstEditor::notifyTracksPromptUpdate()
@@ -1194,12 +1211,13 @@ void DjIaVstEditor::resized()
 
 	auto fullBounds = getLocalBounds();
 
-	const int bankWidth = juce::jmax(290, fullBounds.getWidth() / 6);
-	if (sampleBankPanel)
+	const int bankWidth = (sampleBankPanel && sampleBankPanel->isVisible())
+		? juce::jmax(290, fullBounds.getWidth() / 6)
+		: 0;
+	if (sampleBankPanel && sampleBankPanel->isVisible())
 	{
 		auto bankArea = fullBounds.removeFromLeft(bankWidth);
 		sampleBankPanel->setBounds(bankArea);
-		sampleBankPanel->setVisible(true);
 	}
 
 	auto area = fullBounds.reduced(padding);
@@ -1249,20 +1267,23 @@ void DjIaVstEditor::resized()
 	auto tracksArea = area.removeFromTop(tracksHeight);
 	tracksViewport.setBounds(tracksArea);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
-	tracksViewport.setScrollBarsShown(true, false);
+	tracksViewport.setScrollBarsShown(true, true);
 	layoutTracksGrid();
 
 	area.removeFromTop(spacing);
 
 	auto bottomRow = area;
-	const int controlPanelWidth = juce::jmax(180, juce::jmin(220, bottomRow.getWidth() / 8));
+	const int controlPanelWidth = juce::jmax(220, juce::jmin(260, bottomRow.getWidth() / 7));
 	auto controlPanelArea = bottomRow.removeFromRight(controlPanelWidth);
 	bottomRow.removeFromRight(spacing);
 
+	const int minMixerWidth = 1000;
 	if (mixerPanel)
 	{
-		mixerPanel->setBounds(bottomRow);
-		mixerPanel->setVisible(true);
+		mixerViewport.setBounds(bottomRow);
+		int mixerW = juce::jmax(minMixerWidth, bottomRow.getWidth());
+		mixerPanel->setBounds(0, 0, mixerW, bottomRow.getHeight());
+		mixerViewport.setVisible(true);
 	}
 
 	layoutControlPanel(controlPanelArea, spacing);
@@ -1272,6 +1293,7 @@ void DjIaVstEditor::resized()
 
 void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
 {
+	area.removeFromLeft(8);
 	auto waveArea = area.removeFromTop(area.getHeight() - 75 - spacing - 30);
 	masterWaveformDisplay.setBounds(waveArea);
 
@@ -1282,24 +1304,21 @@ void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
 
 	area.removeFromBottom(10);
 
-	int btnW = (area.getWidth() - spacing * 5) / 6;
+	int btnW = (area.getWidth() - spacing * 6) / 7;
 	auto btnRow = area.removeFromBottom(32);
 
 	bypassSequencerButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
 	btnRow.removeFromLeft(spacing);
-
 	autoLoadButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
 	btnRow.removeFromLeft(spacing);
-
 	loadSampleButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
 	btnRow.removeFromLeft(spacing);
-
 	openMidiEditorButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
 	btnRow.removeFromLeft(spacing);
-
 	helpButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
 	btnRow.removeFromLeft(spacing);
-
+	toggleBankButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
+	btnRow.removeFromLeft(spacing);
 	configButton.setBounds(btnRow.reduced(1));
 }
 
@@ -1316,7 +1335,9 @@ void DjIaVstEditor::layoutTracksGrid()
 	const int cols = 2;
 	const int rows = 4;
 	const int spacing = 5;
-	const int minRowHeight = 220;
+	const int minCellW = 600;
+	const int cellH = 220;
+	const int minTotalWidth = cols * minCellW + spacing * (cols - 1);
 
 	auto viewportBounds = tracksViewport.getBounds();
 	if (viewportBounds.isEmpty())
@@ -1325,12 +1346,9 @@ void DjIaVstEditor::layoutTracksGrid()
 	const int scrollbarAllowance = 12;
 	const int availableWidth = viewportBounds.getWidth() - scrollbarAllowance;
 
-	const int cellW = (availableWidth - spacing * (cols - 1)) / cols;
+	const int totalWidth = juce::jmax(minTotalWidth, availableWidth);
+	const int cellW = (totalWidth - spacing * (cols - 1)) / cols;
 
-	const int cellFromViewport = (viewportBounds.getHeight() - spacing * (rows - 1)) / rows;
-	const int cellH = juce::jmax(minRowHeight, cellFromViewport);
-
-	const int totalWidth = availableWidth;
 	const int totalHeight = cellH * rows + spacing * (rows - 1);
 	tracksContainer.setSize(totalWidth, totalHeight);
 
