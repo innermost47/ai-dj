@@ -564,6 +564,15 @@ void TrackComponent::resized()
 		sequencer = std::make_unique<SequencerComponent>(trackId, audioProcessor);
 		addAndMakeVisible(*sequencer);
 		sequencerVisible = true;
+
+		juce::String currentModel = modelSelector.getText();
+		if (currentModel.isEmpty() && track)
+			currentModel = track->usePages.load()
+			? track->getCurrentPage().selectedModel
+			: track->selectedModel;
+		if (currentModel.isEmpty())
+			currentModel = AiModelDefinitions::getAvailableModels()[0];
+		sequencer->setAccentColour(AiModelDefinitions::getColourForModel(currentModel));
 	}
 
 	if (sequencer)
