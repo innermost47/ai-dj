@@ -74,6 +74,7 @@ DjIaVstEditor::~DjIaVstEditor()
 {
 	isBeingDestroyed.store(true);
 	stopTimer();
+	tracksViewport.setViewedComponent(nullptr, false);
 	audioProcessor.onMasterOutput = nullptr;
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
@@ -86,6 +87,7 @@ DjIaVstEditor::~DjIaVstEditor()
 
 	if (mixerPanel)
 	{
+		mixerViewport.setViewedComponent(nullptr, false);
 		mixerViewport.setVisible(false);
 		mixerPanel.reset();
 	}
@@ -1812,24 +1814,23 @@ void DjIaVstEditor::visibilityChanged()
 {
 	if (isVisible())
 	{
-		juce::Timer::callAfterDelay(50, [this]()
-			{ refreshTrackComponents(); });
+		juce::Timer::callAfterDelay(50, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+			{
+				if (safeThis != nullptr)
+					safeThis->refreshTrackComponents();
+			});
 	}
 }
 
 void DjIaVstEditor::refreshTrackComponents()
 {
+	if (isBeingDestroyed.load()) return;
+	if (audioProcessor.trackManager.isInitializing.load())
+	{
+		juce::Timer::callAfterDelay(50, [this]() { refreshTrackComponents(); });
+		return;
+	}
 	auto trackIds = audioProcessor.getAllTrackIds();
-	std::sort(trackIds.begin(), trackIds.end(),
-		[this](const juce::String& a, const juce::String& b)
-		{
-			TrackData* trackA = audioProcessor.getTrack(a);
-			TrackData* trackB = audioProcessor.getTrack(b);
-			if (!trackA || !trackB)
-				return false;
-
-			return trackA->slotIndex < trackB->slotIndex;
-		});
 
 	if (trackComponents.size() == trackIds.size())
 	{
@@ -1848,13 +1849,6 @@ void DjIaVstEditor::refreshTrackComponents()
 			{
 				trackComponents[i]->setTrackData(audioProcessor.getTrack(trackIds[i]));
 
-				juce::Component::SafePointer<TrackComponent> safeComp(trackComponents[i].get());
-				juce::Timer::callAfterDelay(100, [this, safeComp]()
-					{
-						if (isBeingDestroyed.load()) return;
-						if (safeComp != nullptr)
-							safeComp->updatePromptPresets(getAllPrompts()); });
-
 				trackComponents[i]->updateFromTrackData();
 				if (auto* sequencer = trackComponents[i]->getSequencer())
 					sequencer->updateFromTrackData();
@@ -1863,7 +1857,6 @@ void DjIaVstEditor::refreshTrackComponents()
 			return;
 		}
 	}
-
 	setEnabled(false);
 	juce::String previousSelectedId = audioProcessor.getSelectedTrackId();
 	juce::String generatingId = audioProcessor.getGeneratingTrackId();
@@ -1880,13 +1873,6 @@ void DjIaVstEditor::refreshTrackComponents()
 
 		auto trackComp = std::make_unique<TrackComponent>(trackId, audioProcessor);
 		trackComp->setTrackData(trackData);
-		juce::Component::SafePointer<TrackComponent> safePtr(trackComp.get());
-		juce::Timer::callAfterDelay(100, [this, safePtr]()
-			{
-				if (isBeingDestroyed.load()) return;
-				if (safePtr == nullptr) return;
-				if (safePtr->getTrack() && !safePtr->getTrack()->selectedPrompt.isEmpty())
-					safePtr->updatePromptPresets(getAllPrompts()); });
 
 		trackComp->onSelectTrack = [this](const juce::String& id)
 			{
@@ -1968,10 +1954,14 @@ void DjIaVstEditor::refreshTrackComponents()
 		mixerPanel->refreshMixerChannels();
 	}
 	setEnabled(true);
-	juce::MessageManager::callAsync([this]()
+	juce::MessageManager::callAsync([safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 		{
-			resized();
-			repaint(); });
+			if (safeThis != nullptr)
+			{
+				safeThis->resized();
+				safeThis->repaint();
+			}
+		});
 	tracksContainer.repaint();
 }
 
@@ -2164,6 +2154,7 @@ void DjIaVstEditor::refreshCreditsAsync()
 
 	juce::Thread::launch([this, timeout, safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 		{
+			if (audioProcessor.isShuttingDown.load()) return;
 			auto creditsInfo = audioProcessor.getApiClient().checkCredits(timeout);
 			juce::MessageManager::callAsync([safeThis, creditsInfo]() {
 				if (auto* editor = safeThis.getComponent())

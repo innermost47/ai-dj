@@ -32,6 +32,7 @@ public:
 	std::function<void()> onUIUpdateNeeded;
 	std::function<void(double)> onHostBpmChanged = nullptr;
 	std::function<void(const float* l, const float* r, int n, double ppqPosition)> onMasterOutput;
+	std::atomic<bool> isShuttingDown{ false };
 
 	juce::AudioProcessorEditor* createEditor() override;
 	juce::AudioFormatManager sharedFormatManager;
@@ -209,7 +210,7 @@ public:
 		"Ambient flute psychedelic",
 		"Dark atmospheric pad",
 		"Deep rolling bass",
-		"Distorted noise chops"
+		"Distorted noise chops",
 		"Drum and bass rhythm",
 		"Dub kick rhythm",
 		"Glitchy percussion loop",

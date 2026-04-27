@@ -30,6 +30,10 @@ public:
 	}
 
 	std::unique_ptr<MixerPanel> mixerPanel;
+	std::unique_ptr<SampleBankPanel> sampleBankPanel;
+	juce::Viewport mixerViewport;
+	juce::Viewport tracksViewport;
+	juce::Component tracksContainer;
 
 	juce::Label statusLabel;
 
@@ -72,7 +76,6 @@ private:
 	juce::Image bannerImage;
 	juce::Rectangle<int> bannerArea;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;
-	std::unique_ptr<SampleBankPanel> sampleBankPanel;
 	bool sampleBankVisible = true;
 	enum KeyboardLayout
 	{
@@ -122,6 +125,7 @@ private:
 	std::atomic<bool> isGenerating{ false };
 	std::atomic<bool> wasGenerating{ false };
 	std::atomic<bool> isInitialized{ false };
+	std::atomic<bool> isRefreshingTracks{ false };
 
 	IconButtonSimple autoLoadButton{ "AutoLoad", "" };
 	IconButtonSimple loadSampleButton{ "LoadSample", "" };
@@ -154,9 +158,6 @@ private:
 	juce::Label durationLabel;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
-	juce::Viewport tracksViewport;
-	juce::Viewport mixerViewport;
-	juce::Component tracksContainer;
 	juce::Label tracksLabel;
 
 	juce::Label creditsLabel;

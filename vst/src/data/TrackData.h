@@ -59,23 +59,7 @@ struct TrackPage
 	TrackPage() : generationBpm(126.0f) {}
 
 	TrackPage(const TrackPage& other)
-		: audioBuffer(other.audioBuffer)
-		, audioFilePath(other.audioFilePath)
-		, prompt(other.prompt)
-		, selectedPrompt(other.selectedPrompt)
-		, generationPrompt(other.generationPrompt)
-		, generationKey(other.generationKey)
-		, selectedModel(other.selectedModel)
-		, numSamples(other.numSamples)
-		, generationDuration(other.generationDuration)
-		, sampleRate(other.sampleRate)
-		, loopStart(other.loopStart)
-		, loopEnd(other.loopEnd)
-		, stagingOriginalBpm(other.stagingOriginalBpm)
-		, bpm(other.bpm)
-		, originalBpm(other.originalBpm)
-		, generationBpm(other.generationBpm)
-		, originalStagingBuffer(other.originalStagingBuffer)
+		: audioBuffer(other.audioBuffer), audioFilePath(other.audioFilePath), prompt(other.prompt), selectedPrompt(other.selectedPrompt), generationPrompt(other.generationPrompt), generationKey(other.generationKey), selectedModel(other.selectedModel), numSamples(other.numSamples), generationDuration(other.generationDuration), sampleRate(other.sampleRate), loopStart(other.loopStart), loopEnd(other.loopEnd), stagingOriginalBpm(other.stagingOriginalBpm), bpm(other.bpm), originalBpm(other.originalBpm), generationBpm(other.generationBpm), originalStagingBuffer(other.originalStagingBuffer)
 	{
 		useOriginalFile = other.useOriginalFile.load();
 		hasOriginalVersion = other.hasOriginalVersion.load();
@@ -144,13 +128,13 @@ struct TrackData
 
 	juce::StringArray selectedKeywords;
 
-	bool showWaveform = true;
-	bool showSequencer = true;
-	bool isVersionSwitch = false;
-	bool preservedLoopLocked = false;
+	std::atomic<bool> showWaveform{ true };
+	std::atomic<bool> showSequencer{ true };
+	std::atomic<bool> isVersionSwitch{ false };
+	std::atomic<bool> preservedLoopLocked{ false };
 
 	int slotIndex = -1;
-	int currentPageIndex = 0;
+	std::atomic<int> currentPageIndex{ 0 };
 	int timeStretchMode = 4;
 	int midiNote = 60;
 	int numSamples = 0;
@@ -238,7 +222,7 @@ struct TrackData
 
 	SequencerData& getCurrentSequencerData()
 	{
-		if (usePages)
+		if (usePages.load())
 		{
 			return getCurrentPage().getCurrentSequence();
 		}
@@ -250,7 +234,7 @@ struct TrackData
 
 	const SequencerData& getCurrentSequencerData() const
 	{
-		if (usePages)
+		if (usePages.load())
 		{
 			return getCurrentPage().getCurrentSequence();
 		}
@@ -261,14 +245,7 @@ struct TrackData
 	}
 
 	TrackData()
-		: trackId(juce::Uuid().toString())
-		, generationDuration(6)
-		, generationBpm(126.0f)
-		, volume(0.8f)
-		, pan(0.0f)
-		, readPosition(0.0)
-		, bpmOffset(0.0)
-		, onPlayStateChanged(nullptr)
+		: trackId(juce::Uuid().toString()), generationDuration(6), generationBpm(126.0f), volume(0.8f), pan(0.0f), readPosition(0.0), bpmOffset(0.0), onPlayStateChanged(nullptr)
 	{
 		for (int i = 0; i < 4; ++i)
 			pages[i].reset();
@@ -293,7 +270,7 @@ struct TrackData
 
 	void syncLegacyProperties()
 	{
-		if (!usePages)
+		if (!usePages.load())
 			return;
 
 		auto& currentPage = getCurrentPage();
@@ -324,7 +301,7 @@ struct TrackData
 
 	void migrateToPages()
 	{
-		if (usePages)
+		if (usePages.load())
 			return;
 
 		pages[0].audioBuffer = audioBuffer;
@@ -359,7 +336,7 @@ struct TrackData
 
 		currentPageIndex = pageIndex;
 
-		if (usePages)
+		if (usePages.load())
 		{
 			syncLegacyProperties();
 		}
@@ -368,7 +345,7 @@ struct TrackData
 	DjIaClient::LoopRequest createLoopRequest() const
 	{
 		DjIaClient::LoopRequest request;
-		if (usePages)
+		if (usePages.load())
 		{
 			const auto& currentPage = getCurrentPage();
 			request.prompt = !currentPage.selectedPrompt.isEmpty() ? currentPage.selectedPrompt : currentPage.generationPrompt;
@@ -390,7 +367,7 @@ struct TrackData
 
 	void updateFromRequest(const DjIaClient::LoopRequest& request)
 	{
-		if (usePages)
+		if (usePages.load())
 		{
 			auto& currentPage = getCurrentPage();
 			currentPage.generationPrompt = request.prompt;
@@ -412,7 +389,7 @@ struct TrackData
 
 	void reset()
 	{
-		if (usePages)
+		if (usePages.load())
 		{
 			for (int i = 0; i < 4; ++i)
 			{
@@ -450,11 +427,14 @@ struct TrackData
 		isPlaying = playing;
 		if (wasPlaying != playing && onPlayStateChanged && getCurrentAudioBuffer().getNumChannels() > 0 && isPlaying.load())
 		{
-			juce::MessageManager::callAsync([this, playing]()
+			auto* safeCallback = &onPlayStateChanged;
+
+			juce::MessageManager::callAsync([safeCallback, playing]()
 				{
-					if (onPlayStateChanged) {
-						onPlayStateChanged(playing);
-					} });
+					if (safeCallback != nullptr && *safeCallback) {
+						(*safeCallback)(playing);
+					}
+				});
 		}
 	}
 
@@ -464,11 +444,14 @@ struct TrackData
 		isArmed = armed;
 		if (wasArmed != armed && onArmedStateChanged && getCurrentAudioBuffer().getNumChannels() > 0 && isPlaying.load())
 		{
-			juce::MessageManager::callAsync([this, armed]()
+			auto* safeCallback = &onArmedStateChanged;
+
+			juce::MessageManager::callAsync([safeCallback, armed]()
 				{
-					if (onArmedStateChanged) {
-						onArmedStateChanged(armed);
-					} });
+					if (safeCallback != nullptr && *safeCallback) {
+						(*safeCallback)(armed);
+					}
+				});
 		}
 	}
 
@@ -477,26 +460,32 @@ struct TrackData
 		isArmedToStop = armedToStop;
 		if (onArmedToStopStateChanged && getCurrentAudioBuffer().getNumChannels() > 0 && isCurrentlyPlaying.load())
 		{
-			juce::MessageManager::callAsync([this, armedToStop]()
+			auto* safeCallback = &onArmedToStopStateChanged;
+
+			juce::MessageManager::callAsync([safeCallback, armedToStop]()
 				{
-					if (onArmedToStopStateChanged) {
-						onArmedToStopStateChanged(armedToStop);
-					} });
+					if (safeCallback != nullptr && *safeCallback) {
+						(*safeCallback)(armedToStop);
+					}
+				});
 		}
 	}
 
 	void setStop()
 	{
-		juce::MessageManager::callAsync([this]()
+		auto* safeCallback = &onPlayStateChanged;
+
+		juce::MessageManager::callAsync([safeCallback]()
 			{
-				if (onPlayStateChanged) {
-					onPlayStateChanged(false);
-				} });
+				if (safeCallback != nullptr && *safeCallback) {
+					(*safeCallback)(false);
+				}
+			});
 	}
 
 private:
 	juce::AudioSampleBuffer& getCurrentAudioBuffer()
 	{
-		return usePages ? pages[currentPageIndex].audioBuffer : audioBuffer;
+		return usePages.load() ? pages[currentPageIndex].audioBuffer : audioBuffer;
 	}
 };

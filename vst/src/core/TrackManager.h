@@ -8,8 +8,9 @@ class TrackManager
 public:
 	TrackManager() = default;
 
-	std::function<void(int slot, TrackData* track)> parameterUpdateCallback;
+	std::atomic<std::function<void(int slot, TrackData* track)>*> parameterUpdateCallback{ nullptr };
 	std::function<void(const juce::String&)> onPreviewEnded;
+	std::atomic<bool> isInitializing{ false };
 
 	juce::String createTrack(const juce::String& name = "Track")
 	{
@@ -70,6 +71,7 @@ public:
 		return (it != tracks.end()) ? it->second.get() : nullptr;
 	}
 
+
 	std::vector<juce::String> getAllTrackIds() const
 	{
 		juce::ScopedLock lock(tracksLock);
@@ -108,8 +110,6 @@ public:
 		{
 			buffer.clear();
 		}
-
-		juce::ScopedLock lock(tracksLock);
 
 		for (const auto& pair : tracks)
 		{
@@ -166,13 +166,17 @@ public:
 		juce::ValueTree state("TrackManager");
 
 		juce::ScopedLock lock(tracksLock);
-		for (const auto& pair : tracks)
+		for (const auto& stdId : trackOrder)
 		{
+			auto it = tracks.find(stdId);
+			if (it == tracks.end())
+				continue;
 			auto trackState = juce::ValueTree("Track");
-			auto* track = pair.second.get();
+			auto* track = it->second.get();
 
 			trackState.setProperty("id", track->trackId, nullptr);
 			trackState.setProperty("name", track->trackName, nullptr);
+
 			trackState.setProperty("slotIndex", track->slotIndex, nullptr);
 			trackState.setProperty("prompt", track->prompt, nullptr);
 			trackState.setProperty("style", track->style, nullptr);
@@ -191,8 +195,8 @@ public:
 			trackState.setProperty("fineOffset", track->fineOffset, nullptr);
 			trackState.setProperty("timeStretchRatio", track->timeStretchRatio, nullptr);
 			trackState.setProperty("stagingOriginalBpm", track->stagingOriginalBpm, nullptr);
-			trackState.setProperty("showWaveform", track->showWaveform, nullptr);
-			trackState.setProperty("showSequencer", track->showSequencer, nullptr);
+			trackState.setProperty("showWaveform", track->showWaveform.load(), nullptr);
+			trackState.setProperty("showSequencer", track->showSequencer.load(), nullptr);
 			trackState.setProperty("isPlaying", track->isPlaying.load(), nullptr);
 			trackState.setProperty("isArmed", track->isArmed.load(), nullptr);
 			trackState.setProperty("isArmedToStop", track->isArmedToStop.load(), nullptr);
@@ -217,7 +221,7 @@ public:
 			trackState.setProperty("beatRepeatActive", track->beatRepeatActive.load(), nullptr);
 			trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(), nullptr);
 			trackState.setProperty("usePages", track->usePages.load(), nullptr);
-			trackState.setProperty("currentPageIndex", track->currentPageIndex, nullptr);
+			trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
 			trackState.setProperty("canvasData", track->canvasData, nullptr);
 			trackState.setProperty("canvasState", track->canvasState, nullptr);
 			trackState.setProperty("selectedKeywords", track->selectedKeywords.joinIntoString("|"), nullptr);
@@ -380,7 +384,7 @@ public:
 			track->canvasData = trackState.getProperty("canvasData", "");
 			track->canvasState = trackState.getProperty("canvasState", "");
 			track->usePages = trackState.getProperty("usePages", false);
-			track->currentPageIndex = trackState.getProperty("currentPageIndex", 0);
+			track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 
 			juce::String keywordsStr = trackState.getProperty("selectedKeywords", "");
 			if (keywordsStr.isNotEmpty())
@@ -599,7 +603,7 @@ public:
 
 				if (track->usePages.load())
 				{
-					auto& currentPage = track->pages[track->currentPageIndex];
+					auto& currentPage = track->pages[track->currentPageIndex.load()];
 					auto& seq = currentPage.sequences[0];
 
 					bool isEmpty = true;
@@ -669,13 +673,8 @@ public:
 
 		auto& page = track->pages[pageIndex];
 
-		static juce::AudioFormatManager formatManager;
-		static bool initialized = false;
-		if (!initialized)
-		{
-			formatManager.registerBasicFormats();
-			initialized = true;
-		}
+		juce::AudioFormatManager formatManager;
+		formatManager.registerBasicFormats();
 
 		std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
 		if (!reader)
@@ -731,13 +730,8 @@ public:
 
 	void loadAudioFileForTrack(TrackData* track, const juce::File& audioFile)
 	{
-		static juce::AudioFormatManager formatManager;
-		static bool initialized = false;
-		if (!initialized)
-		{
-			formatManager.registerBasicFormats();
-			initialized = true;
-		}
+		juce::AudioFormatManager formatManager;
+		formatManager.registerBasicFormats();
 
 		std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
 
@@ -763,7 +757,7 @@ public:
 
 private:
 	mutable juce::CriticalSection tracksLock;
-	std::unordered_map<std::string, std::unique_ptr<TrackData>> tracks;
+	std::map<std::string, std::unique_ptr<TrackData>> tracks;
 	std::vector<std::string> trackOrder;
 
 	int findFreeSlot()
@@ -795,12 +789,13 @@ private:
 		juce::AudioBuffer<float>& /* previewOutput */,
 		int numSamples, int /* trackIndex */, double hostBpm) const
 	{
-		if (parameterUpdateCallback)
+		auto* safeCallback = parameterUpdateCallback.load();
+		if (safeCallback != nullptr && *safeCallback)
 		{
 			int slot = track.slotIndex;
 			if (slot != -1)
 			{
-				parameterUpdateCallback(slot, &track);
+				(*safeCallback)(slot, &track);
 			}
 		}
 

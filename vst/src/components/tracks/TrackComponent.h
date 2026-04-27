@@ -110,6 +110,117 @@ public:
 	}
 
 private:
+	class BorderOverlay : public juce::Component
+	{
+	public:
+		BorderOverlay()
+		{
+			setInterceptsMouseClicks(false, false);
+			setOpaque(false);
+		}
+
+		void setVisualState(bool generating, bool samplePending, bool selected,
+			bool dragOver, bool blink, juce::Colour modelColour)
+		{
+			if (generating == isGenerating
+				&& samplePending == hasSamplePending
+				&& selected == isSelected
+				&& dragOver == isDragOver
+				&& blink == blinkState
+				&& modelColour == accentColour)
+				return;
+
+			isGenerating = generating;
+			hasSamplePending = samplePending;
+			isSelected = selected;
+			isDragOver = dragOver;
+			blinkState = blink;
+			accentColour = modelColour;
+			repaint();
+		}
+
+		void paint(juce::Graphics& g) override
+		{
+			auto bounds = getLocalBounds().toFloat();
+
+			juce::Colour bgColour;
+			bool fillBg = true;
+
+			if (isDragOver)
+				bgColour = ColourPalette::buttonSuccess.withAlpha(0.4f);
+			else if (hasSamplePending && !isGenerating)
+				bgColour = ColourPalette::samplePending.withAlpha(0.15f);
+			else
+				fillBg = false;
+
+			if (fillBg)
+			{
+				g.setColour(bgColour);
+				g.fillRoundedRectangle(bounds, 6.0f);
+			}
+
+			juce::Colour borderColour;
+			float borderWidth;
+
+			if (isGenerating)
+			{
+				borderColour = blinkState ? accentColour.brighter(0.4f) : accentColour.darker(0.4f);
+				borderWidth = 3.0f;
+			}
+			else if (hasSamplePending)
+			{
+				borderColour = ColourPalette::samplePending;
+				borderWidth = 2.0f;
+			}
+			else if (isSelected)
+			{
+				borderColour = ColourPalette::trackSelected;
+				borderWidth = 2.0f;
+			}
+			else
+			{
+				borderColour = ColourPalette::backgroundLight;
+				borderWidth = 1.0f;
+			}
+
+			g.setColour(borderColour);
+			g.drawRoundedRectangle(bounds.reduced(1.0f), 6.0f, borderWidth);
+		}
+
+	private:
+		bool isGenerating = false;
+		bool hasSamplePending = false;
+		bool isSelected = false;
+		bool isDragOver = false;
+		bool blinkState = false;
+		juce::Colour accentColour{ ColourPalette::buttonPrimary };
+	};
+
+	struct PageButtonState
+	{
+		bool isActive = false;
+		bool isPending = false;
+		bool hasAudio = false;
+		bool blinkState = false;
+		juce::Colour modelColour{ ColourPalette::buttonPrimary };
+
+		bool operator==(const PageButtonState& other) const
+		{
+			return isActive == other.isActive
+				&& isPending == other.isPending
+				&& hasAudio == other.hasAudio
+				&& blinkState == other.blinkState
+				&& modelColour == other.modelColour;
+		}
+		bool operator!=(const PageButtonState& other) const { return !(*this == other); }
+	};
+
+	std::array<PageButtonState, 4> lastPageStates;
+	int lastWaveformNumSamples = 0;
+	juce::Colour cachedModelColour{ ColourPalette::buttonPrimary };
+
+	BorderOverlay borderOverlay;
+
 	juce::Component::SafePointer<DrawingCanvas> drawingCanvasPtr;
 
 	juce::StringArray promptPresets;
@@ -194,6 +305,8 @@ private:
 	void openDrawingCanvas();
 	void updatePreviewButton();
 	void updateModelUI();
+	void syncBorderOverlay();
+	juce::Colour getCurrentModelColour() const;
 	void mouseDown(const juce::MouseEvent& event) override;
 
 	float calculateEffectiveBpm();

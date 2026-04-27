@@ -13,7 +13,7 @@ public:
 	}
 	~MasterWaveformDisplay() override { stopTimer(); }
 
-	void pushSamples(const float *left, const float *right, int numSamples)
+	void pushSamples(const float* left, const float* right, int numSamples)
 	{
 		for (int i = 0; i < numSamples; ++i)
 		{
@@ -21,24 +21,40 @@ public:
 			writeBuffer[writePos % writeBuffer.size()] = mono;
 			++writePos;
 		}
+		hasNewData.store(true);
 	}
 
 	void setPositionInBeats(double ppqPosition)
 	{
 		positionInBeats.store(ppqPosition);
+		hasNewData.store(true);
 	}
 
 	void timerCallback() override
 	{
+		if (!hasNewData.load())
+		{
+			idleFrames++;
+			if (idleFrames == 30)
+				startTimerHz(5);
+			return;
+		}
+
+		hasNewData.store(false);
+		idleFrames = 0;
+		startTimerHz(30);
+
 		size_t pos = writePos.load();
 		size_t sz = readBuffer.size();
 		for (size_t i = 0; i < sz; ++i)
 			readBuffer[i] = writeBuffer[(pos + i) % sz];
+
 		animPhase += 1.0f / 30.0f;
+		pathsDirty = true;
 		repaint();
 	}
 
-	void paint(juce::Graphics &g) override
+	void paint(juce::Graphics& g) override
 	{
 		auto bounds = getLocalBounds().toFloat();
 
@@ -57,9 +73,13 @@ public:
 		float hH = inner.getHeight() * 0.45f;
 		float ppx = (float)readBuffer.size() / (float)w;
 
-		float peakAbs = 0.0f;
-		for (size_t i = 0; i < readBuffer.size(); ++i)
-			peakAbs = juce::jmax(peakAbs, std::abs(readBuffer[i]));
+		if (pathsDirty || lastW != w || lastH != h)
+		{
+			rebuildPaths(inner, w, cy, hH, ppx);
+			lastW = w;
+			lastH = h;
+			pathsDirty = false;
+		}
 
 		g.setColour(ColourPalette::sequencerSubBeat.withAlpha(0.5f));
 		for (int i = 1; i < 8; ++i)
@@ -79,84 +99,37 @@ public:
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.15f));
 		g.drawLine(inner.getX(), cy, inner.getRight(), cy, 0.8f);
 
-		const int echoOffset = 96;
-		juce::Path echoTop, echoBot;
-		bool echoStarted = false;
-		for (int i = 0; i < w; ++i)
-		{
-			float x = inner.getX() + i;
-			int idx = ((int)(i * ppx) + echoOffset) % (int)readBuffer.size();
-			float val = std::abs(readBuffer[idx]) * hH * 0.85f;
-
-			if (!echoStarted)
-			{
-				echoTop.startNewSubPath(x, cy);
-				echoBot.startNewSubPath(x, cy);
-				echoStarted = true;
-			}
-			echoTop.lineTo(x, cy - val);
-			echoBot.lineTo(x, cy + val);
-		}
 		g.setColour(ColourPalette::teal.withAlpha(0.30f));
-		g.strokePath(echoTop, juce::PathStrokeType(0.8f));
-		g.strokePath(echoBot, juce::PathStrokeType(0.8f));
-
-		juce::Path top, bot;
-		bool started = false;
-		float maxPeakX = inner.getX();
-		float maxPeakVal = 0.0f;
-
-		for (int i = 0; i < w; ++i)
-		{
-			float x = inner.getX() + i;
-			int idx = (int)(i * ppx) % (int)readBuffer.size();
-			float val = std::abs(readBuffer[idx]);
-			float vScaled = val * hH;
-
-			if (val > maxPeakVal)
-			{
-				maxPeakVal = val;
-				maxPeakX = x;
-			}
-
-			if (!started)
-			{
-				top.startNewSubPath(x, cy);
-				bot.startNewSubPath(x, cy);
-				started = true;
-			}
-			top.lineTo(x, cy - vScaled);
-			bot.lineTo(x, cy + vScaled);
-		}
+		g.strokePath(cachedEchoTop, juce::PathStrokeType(0.8f));
+		g.strokePath(cachedEchoBot, juce::PathStrokeType(0.8f));
 
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.12f));
-		g.strokePath(top, juce::PathStrokeType(3.5f));
-		g.strokePath(bot, juce::PathStrokeType(3.5f));
+		g.strokePath(cachedTop, juce::PathStrokeType(3.5f));
+		g.strokePath(cachedBot, juce::PathStrokeType(3.5f));
 
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.85f));
-		g.strokePath(top, juce::PathStrokeType(1.2f));
-		g.strokePath(bot, juce::PathStrokeType(1.2f));
+		g.strokePath(cachedTop, juce::PathStrokeType(1.2f));
+		g.strokePath(cachedBot, juce::PathStrokeType(1.2f));
 
-		if (maxPeakVal > 0.15f)
+		if (cachedMaxPeakVal > 0.15f)
 		{
-			float peakY1 = cy - maxPeakVal * hH;
-			float peakY2 = cy + maxPeakVal * hH;
+			float peakY1 = cy - cachedMaxPeakVal * hH;
+			float peakY2 = cy + cachedMaxPeakVal * hH;
 			g.setColour(ColourPalette::buttonDangerLight);
-			g.fillEllipse(maxPeakX - 1.8f, peakY1 - 1.8f, 3.6f, 3.6f);
-			g.fillEllipse(maxPeakX - 1.8f, peakY2 - 1.8f, 3.6f, 3.6f);
+			g.fillEllipse(cachedMaxPeakX - 1.8f, peakY1 - 1.8f, 3.6f, 3.6f);
+			g.fillEllipse(cachedMaxPeakX - 1.8f, peakY2 - 1.8f, 3.6f, 3.6f);
 
 			float ringAlpha = 0.4f + 0.3f * std::sin(animPhase * 6.0f);
 			g.setColour(ColourPalette::buttonDangerLight.withAlpha(ringAlpha));
-			g.drawEllipse(maxPeakX - 4.0f, peakY1 - 4.0f, 8.0f, 8.0f, 0.6f);
+			g.drawEllipse(cachedMaxPeakX - 4.0f, peakY1 - 4.0f, 8.0f, 8.0f, 0.6f);
 		}
 
 		const int numParticles = 8;
 		double pos = positionInBeats.load();
 		float beatFrac = (float)(pos - std::floor(pos));
-		float baseAlpha = 0.25f + 0.35f * juce::jmin(1.0f, peakAbs * 2.0f);
-
-		float transientKick = juce::jmax(0.0f, peakAbs - lastPeak) * 3.0f;
-		lastPeak = peakAbs * 0.92f + peakAbs * 0.08f;
+		float baseAlpha = 0.25f + 0.35f * juce::jmin(1.0f, cachedPeakAbs * 2.0f);
+		float transientKick = juce::jmax(0.0f, cachedPeakAbs - lastPeak) * 3.0f;
+		lastPeak = cachedPeakAbs * 0.92f + cachedPeakAbs * 0.08f;
 
 		for (int i = 0; i < numParticles; ++i)
 		{
@@ -168,9 +141,7 @@ public:
 			float t = animPhase * 0.3f + (float)i * 0.78539f;
 			float px = inner.getX() + inner.getWidth() * (0.1f + 0.8f * (0.5f + 0.5f * std::sin(t + (float)i)));
 			float py = cy + std::sin(t * 1.3f + (float)i * 1.1f) * (hH * 0.75f);
-
 			float pr = 1.3f + beatPulse * 2.8f + transientKick * 1.5f;
-
 			float alpha = juce::jlimit(0.0f, 1.0f, baseAlpha + beatPulse * 0.6f + transientKick * 0.4f);
 
 			auto col = ColourPalette::getTrackColour(i);
@@ -186,8 +157,7 @@ public:
 		}
 
 		float phNorm = (float)(std::fmod(pos, 4.0) / 4.0);
-		if (phNorm < 0.0f)
-			phNorm += 1.0f;
+		if (phNorm < 0.0f) phNorm += 1.0f;
 		float phX = inner.getX() + inner.getWidth() * phNorm;
 
 		g.setColour(ColourPalette::playArmed.withAlpha(0.12f));
@@ -210,12 +180,75 @@ public:
 	}
 
 private:
+	void rebuildPaths(juce::Rectangle<float> inner, int w, float cy, float hH, float ppx)
+	{
+		cachedTop.clear();
+		cachedBot.clear();
+		cachedEchoTop.clear();
+		cachedEchoBot.clear();
+
+		cachedMaxPeakVal = 0.0f;
+		cachedMaxPeakX = inner.getX();
+		cachedPeakAbs = 0.0f;
+
+		for (size_t i = 0; i < readBuffer.size(); ++i)
+			cachedPeakAbs = juce::jmax(cachedPeakAbs, std::abs(readBuffer[i]));
+
+		const int echoOffset = 96;
+		bool echoStarted = false, mainStarted = false;
+
+		for (int i = 0; i < w; ++i)
+		{
+			float x = inner.getX() + i;
+
+			int echoIdx = ((int)(i * ppx) + echoOffset) % (int)readBuffer.size();
+			float echoVal = std::abs(readBuffer[echoIdx]) * hH * 0.85f;
+			if (!echoStarted)
+			{
+				cachedEchoTop.startNewSubPath(x, cy);
+				cachedEchoBot.startNewSubPath(x, cy);
+				echoStarted = true;
+			}
+			cachedEchoTop.lineTo(x, cy - echoVal);
+			cachedEchoBot.lineTo(x, cy + echoVal);
+
+			int idx = (int)(i * ppx) % (int)readBuffer.size();
+			float val = std::abs(readBuffer[idx]);
+			float vScaled = val * hH;
+
+			if (val > cachedMaxPeakVal)
+			{
+				cachedMaxPeakVal = val;
+				cachedMaxPeakX = x;
+			}
+
+			if (!mainStarted)
+			{
+				cachedTop.startNewSubPath(x, cy);
+				cachedBot.startNewSubPath(x, cy);
+				mainStarted = true;
+			}
+			cachedTop.lineTo(x, cy - vScaled);
+			cachedBot.lineTo(x, cy + vScaled);
+		}
+	}
+
 	std::vector<float> writeBuffer;
 	std::vector<float> readBuffer;
-	std::atomic<size_t> writePos{0};
-	std::atomic<double> positionInBeats{0.0};
-	float animPhase{0.0f};
-	float lastPeak{0.0f};
+	std::atomic<size_t> writePos{ 0 };
+	std::atomic<double> positionInBeats{ 0.0 };
+	std::atomic<bool> hasNewData{ false };
+
+	float animPhase{ 0.0f };
+	float lastPeak{ 0.0f };
+	int idleFrames{ 0 };
+
+	juce::Path cachedTop, cachedBot, cachedEchoTop, cachedEchoBot;
+	bool pathsDirty{ true };
+	float cachedMaxPeakVal{ 0.0f };
+	float cachedMaxPeakX{ 0.0f };
+	float cachedPeakAbs{ 0.0f };
+	int lastW{ 0 }, lastH{ 0 };
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterWaveformDisplay)
 };

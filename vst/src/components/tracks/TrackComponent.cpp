@@ -124,7 +124,7 @@ void TrackComponent::updateUIFromParameter(const juce::String& paramName,
 	}
 }
 
-void TrackComponent::parameterGestureChanged(int /*parameterIndex*/, bool /*gestureIsStarting*/)
+void TrackComponent::parameterGestureChanged(int, bool)
 {
 }
 
@@ -214,10 +214,39 @@ void TrackComponent::updatePlaybackPosition(double timeInSeconds)
 	}
 }
 
+juce::Colour TrackComponent::getCurrentModelColour() const
+{
+	juce::String currentModel = modelSelector.getText();
+	if (currentModel.isEmpty() && track)
+		currentModel = track->selectedModel;
+	if (currentModel.isEmpty())
+		currentModel = AiModelDefinitions::getAvailableModels()[0];
+	return AiModelDefinitions::getColourForModel(currentModel);
+}
+
+void TrackComponent::syncBorderOverlay()
+{
+	borderOverlay.setVisualState(isGenerating, hasSamplePending, isSelected,
+		isDragOver, blinkState, cachedModelColour);
+}
+
 void TrackComponent::updateFromTrackData()
 {
 	if (track == nullptr)
 		return;
+
+	juce::String modelToSet = track->usePages.load()
+		? track->getCurrentPage().selectedModel
+		: track->selectedModel;
+
+	if (modelToSet.isEmpty())
+	{
+		auto& models = AiModelDefinitions::getAvailableModels();
+		modelToSet = models[0];
+	}
+
+	modelSelector.setText(modelToSet, juce::dontSendNotification);
+	updateModelUI();
 
 	if (track->usePages.load())
 	{
@@ -227,7 +256,7 @@ void TrackComponent::updateFromTrackData()
 		{
 			pageButtons[i].setVisible(true);
 		}
-		pageButtons[track->currentPageIndex].setToggleState(true, juce::dontSendNotification);
+		pageButtons[track->currentPageIndex.load()].setToggleState(true, juce::dontSendNotification);
 		updatePagesDisplay();
 	}
 	else
@@ -296,19 +325,6 @@ void TrackComponent::updateFromTrackData()
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
 
-	juce::String modelToSet = track->usePages.load()
-		? track->getCurrentPage().selectedModel
-		: track->selectedModel;
-
-	if (modelToSet.isEmpty())
-	{
-		auto& models = AiModelDefinitions::getAvailableModels();
-		modelToSet = models[0];
-	}
-
-	modelSelector.setText(modelToSet, juce::dontSendNotification);
-	updateModelUI();
-
 	updateRandomRetriggerButtonColor();
 	updateRandomDurationButtonColor();
 
@@ -367,11 +383,13 @@ float TrackComponent::calculateEffectiveBpm()
 
 void TrackComponent::setSelected(bool selected)
 {
+	if (isSelected == selected)
+		return;
 	isSelected = selected;
-	repaint();
+	syncBorderOverlay();
 }
 
-void TrackComponent::mouseDown(const juce::MouseEvent& /*event*/)
+void TrackComponent::mouseDown(const juce::MouseEvent&)
 {
 	if (onSelectTrack)
 		onSelectTrack(trackId);
@@ -379,57 +397,23 @@ void TrackComponent::mouseDown(const juce::MouseEvent& /*event*/)
 
 void TrackComponent::paint(juce::Graphics& g)
 {
-	auto bounds = getLocalBounds();
-
-	juce::Colour bgColour;
-	if (isDragOver)
-		bgColour = ColourPalette::buttonSuccess.withAlpha(0.4f);
-	else if (hasSamplePending && !isGenerating)
-		bgColour = ColourPalette::samplePending.withAlpha(0.15f);
-	else
-		bgColour = ColourPalette::backgroundDark.withAlpha(0.8f);
-
-	g.setColour(bgColour);
-	g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
-
-	juce::Colour borderColour;
-	float borderWidth;
-
-	if (isGenerating)
-	{
-		auto modelColour = AiModelDefinitions::getColourForModel(track->selectedModel);
-		borderColour = blinkState ? modelColour.brighter(0.4f) : modelColour.darker(0.4f);
-		borderWidth = 3.0f;
-	}
-	else if (hasSamplePending)
-	{
-		borderColour = ColourPalette::samplePending;
-		borderWidth = 2.0f;
-	}
-	else if (isSelected)
-	{
-		borderColour = ColourPalette::trackSelected;
-		borderWidth = 2.0f;
-	}
-	else
-	{
-		borderColour = ColourPalette::backgroundLight;
-		borderWidth = 1.0f;
-	}
-
-	g.setColour(borderColour);
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 6.0f, borderWidth);
+	auto bounds = getLocalBounds().toFloat();
+	g.setColour(ColourPalette::backgroundDark.withAlpha(0.8f));
+	g.fillRoundedRectangle(bounds, 6.0f);
 }
 
 void TrackComponent::setSamplePending(bool pending)
 {
+	if (hasSamplePending == pending)
+		return;
 	hasSamplePending = pending;
-	repaint();
+	syncBorderOverlay();
 }
 
 void TrackComponent::resized()
 {
-	auto area = getLocalBounds().reduced(6);
+	auto fullBounds = getLocalBounds();
+	auto area = fullBounds.reduced(6);
 	auto headerArea = area.removeFromTop(36);
 
 	if (pagesMode)
@@ -581,6 +565,9 @@ void TrackComponent::resized()
 		sequencer->setBounds(area.removeFromTop(SEQUENCER_HEIGHT));
 		sequencer->setVisible(true);
 	}
+
+	borderOverlay.setBounds(fullBounds);
+	borderOverlay.toFront(false);
 }
 
 void TrackComponent::openDrawingCanvas()
@@ -593,9 +580,7 @@ void TrackComponent::openDrawingCanvas()
 	auto* canvas = ObsidianAlertManager::showDrawingCanvas(
 		this,
 		audioProcessor,
-		[this](const juce::String& /* base64Image */)
-		{
-		},
+		[this](const juce::String&) {},
 		[this](DrawingCanvas* canvas)
 		{
 			if (track && canvas)
@@ -620,7 +605,8 @@ void TrackComponent::openDrawingCanvas()
 			canvasModalOpen = false;
 		});
 
-	if (canvas == nullptr) return;
+	if (canvas == nullptr)
+		return;
 	drawingCanvasPtr = canvas;
 	if (track && track->usePages.load())
 	{
@@ -776,7 +762,7 @@ void TrackComponent::onTogglePagesMode()
 		}
 		togglePagesButton.setVisible(false);
 
-		pageButtons[track->currentPageIndex].setToggleState(true, juce::dontSendNotification);
+		pageButtons[track->currentPageIndex.load()].setToggleState(true, juce::dontSendNotification);
 		updatePagesDisplay();
 
 		statusCallback("Pages mode enabled - " + juce::String(4) + " slots available");
@@ -793,7 +779,6 @@ void TrackComponent::onTogglePagesMode()
 	}
 
 	resized();
-	repaint();
 }
 
 void TrackComponent::onPageSelected(int pageIndex)
@@ -801,9 +786,15 @@ void TrackComponent::onPageSelected(int pageIndex)
 	if (!track || !pagesMode || pageIndex < 0 || pageIndex >= 4)
 		return;
 
-	if (track->currentPageIndex == pageIndex && !track->pageChangePending.load())
+	if (track->currentPageIndex.load() == pageIndex && !track->pageChangePending.load())
 	{
+		pageButtons[pageIndex].setToggleState(true, juce::dontSendNotification);
 		return;
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		pageButtons[i].setToggleState(i == track->currentPageIndex.load(), juce::dontSendNotification);
 	}
 
 	if (track->pageChangePending.load() && track->pendingPageIndex.load() == pageIndex)
@@ -811,6 +802,7 @@ void TrackComponent::onPageSelected(int pageIndex)
 		track->pageChangePending = false;
 		track->pendingPageIndex = -1;
 		stopTimer();
+		lastPageStates[pageIndex] = PageButtonState{};
 		updatePagesDisplay();
 		statusCallback("Page change cancelled");
 		return;
@@ -911,10 +903,7 @@ void TrackComponent::updatePagesDisplay()
 	if (!track || !pagesMode)
 		return;
 
-	juce::String currentModel = modelSelector.getText();
-	if (currentModel.isEmpty())
-		currentModel = track->selectedModel;
-	auto modelColour = AiModelDefinitions::getColourForModel(currentModel);
+	auto modelColour = cachedModelColour;
 	bool darkText = modelColour.getBrightness() > 0.6f;
 	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
 
@@ -924,26 +913,34 @@ void TrackComponent::updatePagesDisplay()
 
 	for (int i = 0; i < 4; ++i)
 	{
-		bool isActive = (i == track->currentPageIndex);
-		bool isPending = (i == pendingPage);
-		bool hasAudio = track->pages[i].numSamples > 0;
+		PageButtonState newState;
+		newState.isActive = (i == track->currentPageIndex.load());
+		newState.isPending = (i == pendingPage);
+		newState.hasAudio = track->pages[i].numSamples > 0;
+		newState.blinkState = newState.isPending ? pageBlinkState : false;
+		newState.modelColour = modelColour;
 
-		if (isPending)
+		if (newState == lastPageStates[i])
+			continue;
+
+		lastPageStates[i] = newState;
+
+		if (newState.isPending)
 		{
 			auto blinkOn = modelColour.withAlpha(0.95f);
 			auto blinkOff = modelColour.darker(0.5f).withAlpha(0.35f);
 
 			pageButtons[i].setColour(juce::TextButton::buttonColourId,
-				pageBlinkState ? blinkOn : blinkOff);
+				newState.blinkState ? blinkOn : blinkOff);
 			pageButtons[i].setColour(juce::TextButton::textColourOffId,
-				pageBlinkState ? textColour : modelColour.brighter(0.5f));
+				newState.blinkState ? textColour : modelColour.brighter(0.5f));
 		}
-		else if (isActive)
+		else if (newState.isActive)
 		{
 			pageButtons[i].setColour(juce::TextButton::buttonOnColourId, modelColour);
 			pageButtons[i].setColour(juce::TextButton::textColourOnId, textColour);
 		}
-		else if (hasAudio)
+		else if (newState.hasAudio)
 		{
 			pageButtons[i].setColour(juce::TextButton::buttonColourId,
 				modelColour.withAlpha(0.3f));
@@ -958,7 +955,7 @@ void TrackComponent::updatePagesDisplay()
 				ColourPalette::textSecondary);
 		}
 
-		pageButtons[i].setToggleState(isActive, juce::dontSendNotification);
+		pageButtons[i].setToggleState(newState.isActive, juce::dontSendNotification);
 		pageButtons[i].repaint();
 	}
 }
@@ -1027,7 +1024,7 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File& audioFil
 
 		juce::MessageManager::callAsync([this, pageIndex]()
 			{
-				if (track && track->currentPageIndex == pageIndex) {
+				if (track && track->currentPageIndex.load() == pageIndex) {
 					track->syncLegacyProperties();
 					updateFromTrackData();
 					if (waveformDisplay) {
@@ -1036,7 +1033,7 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File& audioFil
 				}
 				updatePagesDisplay(); });
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception&)
 	{
 		page.isLoading = false;
 
@@ -1057,6 +1054,8 @@ void TrackComponent::startGeneratingAnimation()
 		}
 	}
 	togglePagesButton.setEnabled(false);
+
+	syncBorderOverlay();
 
 	if (!isTimerRunning())
 	{
@@ -1103,7 +1102,7 @@ void TrackComponent::stopGeneratingAnimation()
 		}
 	}
 
-	repaint();
+	syncBorderOverlay();
 }
 
 void TrackComponent::timerCallback()
@@ -1111,7 +1110,7 @@ void TrackComponent::timerCallback()
 	if (isGenerating)
 	{
 		blinkState = !blinkState;
-		repaint();
+		syncBorderOverlay();
 	}
 
 	if (track && track->pageChangePending.load())
@@ -1280,6 +1279,8 @@ void TrackComponent::setupUI()
 	}
 
 	setupPagesUI();
+
+	addAndMakeVisible(borderOverlay);
 }
 
 void TrackComponent::syncTrackName(const juce::String& name)
@@ -1436,8 +1437,9 @@ void TrackComponent::updateRandomRetriggerButtonColor()
 void TrackComponent::updateRandomDurationButtonColor()
 {
 	if (!track)
-		return randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(),
-			juce::dontSendNotification);
+		return;
+	randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(),
+		juce::dontSendNotification);
 }
 
 void TrackComponent::onRandomRetriggerToggled()
@@ -1573,37 +1575,42 @@ void TrackComponent::setSliderParameter(juce::String name, juce::Slider& slider)
 
 void TrackComponent::loadPromptPresets()
 {
-	promptPresetSelector.clear();
-	juce::StringArray allPrompts = audioProcessor.getBuiltInPrompts();
-	auto customPrompts = audioProcessor.getCustomPrompts();
-
-	for (const auto& customPrompt : customPrompts)
-	{
-		if (!allPrompts.contains(customPrompt))
+	juce::MessageManager::callAsync([this]()
 		{
-			allPrompts.add(customPrompt);
-		}
-	}
-	allPrompts.sort(true);
-	promptPresets = allPrompts;
+			if (promptPresetSelector.isVisible() || promptPresetSelector.getParentComponent() != nullptr)
+			{
+				promptPresetSelector.clear();
+				juce::StringArray allPrompts = audioProcessor.getBuiltInPrompts();
+				auto customPrompts = audioProcessor.getCustomPrompts();
 
-	for (int i = 0; i < allPrompts.size(); ++i)
-	{
-		promptPresetSelector.addItem(allPrompts[i], i + 1);
-	}
+				for (const auto& customPrompt : customPrompts)
+				{
+					if (!allPrompts.contains(customPrompt))
+					{
+						allPrompts.add(customPrompt);
+					}
+				}
+				allPrompts.sort(true);
+				promptPresets = allPrompts;
 
-	if (track && !track->selectedPrompt.isEmpty())
-	{
-		int index = allPrompts.indexOf(track->selectedPrompt);
-		if (index >= 0)
-		{
-			promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
-		}
-	}
-	else if (allPrompts.size() > 0)
-	{
-		promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
-	}
+				for (int i = 0; i < allPrompts.size(); ++i)
+				{
+					promptPresetSelector.addItem(allPrompts[i], i + 1);
+				}
+
+				if (track && !track->selectedPrompt.isEmpty())
+				{
+					int index = allPrompts.indexOf(track->selectedPrompt);
+					if (index >= 0)
+					{
+						promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
+					}
+				}
+				else if (allPrompts.size() > 0)
+				{
+					promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
+				}
+			} });
 }
 
 void TrackComponent::updatePromptPresets(const juce::StringArray& presets)
@@ -1728,18 +1735,16 @@ void TrackComponent::updateTrackInfo()
 		infoLabel.setText(track->prompt.substring(0, 30) + "..." + bpmInfo,
 			juce::dontSendNotification);
 	}
-	repaint();
 }
 
 void TrackComponent::refreshWaveformIfNeeded()
 {
 	if (waveformDisplay && track && track->numSamples > 0)
 	{
-		static int lastNumSamples = 0;
-		if (track->numSamples != lastNumSamples)
+		if (track->numSamples != lastWaveformNumSamples)
 		{
 			refreshWaveformDisplay();
-			lastNumSamples = track->numSamples;
+			lastWaveformNumSamples = track->numSamples;
 		}
 	}
 }
@@ -1759,8 +1764,6 @@ void TrackComponent::updatePromptSelection(const juce::String& promptText)
 			break;
 		}
 	}
-
-	repaint();
 }
 
 void TrackComponent::learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback)
@@ -1864,25 +1867,26 @@ bool TrackComponent::isInterestedInDragSource(const SourceDetails& dragSourceDet
 		dragSourceDetails.description.toString().isNotEmpty();
 }
 
-void TrackComponent::itemDragEnter(const SourceDetails& /*dragSourceDetails*/)
+void TrackComponent::itemDragEnter(const SourceDetails&)
 {
 	isDragOver = true;
-	repaint();
+	syncBorderOverlay();
 }
 
-void TrackComponent::itemDragMove(const SourceDetails& /*dragSourceDetails*/)
+void TrackComponent::itemDragMove(const SourceDetails&)
 {
 }
 
-void TrackComponent::itemDragExit(const SourceDetails& /*dragSourceDetails*/)
+void TrackComponent::itemDragExit(const SourceDetails&)
 {
 	isDragOver = false;
-	repaint();
+	syncBorderOverlay();
 }
 
 void TrackComponent::itemDropped(const SourceDetails& dragSourceDetails)
 {
 	isDragOver = false;
+	syncBorderOverlay();
 
 	juce::String sampleId = dragSourceDetails.description.toString();
 	if (sampleId.isNotEmpty() && track)
@@ -1911,15 +1915,14 @@ void TrackComponent::itemDropped(const SourceDetails& dragSourceDetails)
 			onStatusMessage("Sample loaded from bank!");
 		}
 	}
-
-	repaint();
 }
 
 void TrackComponent::setPreviewPlaying(bool playing)
 {
+	if (isPreviewPlaying == playing)
+		return;
 	isPreviewPlaying = playing;
 	updatePreviewButton();
-	repaint();
 }
 
 void TrackComponent::updatePreviewButton()
@@ -1933,13 +1936,15 @@ void TrackComponent::updateModelUI()
 	if (track == nullptr)
 		return;
 
-	juce::String currentModel = modelSelector.getText();
-	if (currentModel.isEmpty())
-		currentModel = track->selectedModel;
-	if (currentModel.isEmpty())
-		currentModel = AiModelDefinitions::getAvailableModels()[0];
+	auto modelColour = getCurrentModelColour();
 
-	auto modelColour = AiModelDefinitions::getColourForModel(currentModel);
+	if (modelColour == cachedModelColour)
+	{
+		return;
+	}
+
+	cachedModelColour = modelColour;
+
 	bool darkText = modelColour.getBrightness() > 0.6f;
 	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
 
@@ -1948,12 +1953,6 @@ void TrackComponent::updateModelUI()
 
 	generateButton.setColour(juce::TextButton::buttonColourId, modelColour);
 	generateButton.setColour(juce::TextButton::textColourOffId, textColour);
-
-	previewButton.setColour(juce::TextButton::textColourOffId, modelColour);
-	originalSyncButton.setColour(juce::TextButton::textColourOffId, modelColour);
-	randomRetriggerButton.setColour(juce::TextButton::textColourOffId, modelColour);
-	randomDurationToggle.setColour(juce::TextButton::textColourOffId, modelColour);
-	drawButton.setColour(juce::TextButton::textColourOffId, modelColour);
 
 	auto setupToggleColours = [&](IconButton& btn)
 		{
@@ -1970,5 +1969,5 @@ void TrackComponent::updateModelUI()
 	if (sequencer)
 		sequencer->setAccentColour(modelColour);
 
-	repaint();
+	syncBorderOverlay();
 }

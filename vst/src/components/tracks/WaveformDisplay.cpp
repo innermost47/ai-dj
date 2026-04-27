@@ -16,6 +16,7 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackDa
 	horizontalScrollBar = std::make_unique<juce::ScrollBar>(false);
 	horizontalScrollBar->setRangeLimits(0.0, 1.0);
 	horizontalScrollBar->addListener(this);
+	cachedModelColour = getModelAccentColour();
 }
 
 WaveformDisplay::~WaveformDisplay()
@@ -23,10 +24,43 @@ WaveformDisplay::~WaveformDisplay()
 	setVisible(false);
 }
 
+void WaveformDisplay::invalidateAllCaches()
+{
+	waveformCacheDirty = true;
+	gridCacheDirty = true;
+}
+
+void WaveformDisplay::invalidateWaveformCache()
+{
+	waveformCacheDirty = true;
+}
+
+void WaveformDisplay::invalidateGridCache()
+{
+	gridCacheDirty = true;
+}
+
+void WaveformDisplay::resized()
+{
+	invalidateAllCaches();
+	if (scrollBarVisible && horizontalScrollBar)
+		horizontalScrollBar->setBounds(0, getHeight() - 8, getWidth(), 12);
+}
+
 void WaveformDisplay::setSampleBpm(float bpm)
 {
+	if (std::abs(sampleBpm - bpm) < 0.001f)
+		return;
+
 	sampleBpm = bpm;
+	float oldRatio = stretchRatio;
 	calculateStretchRatio();
+
+	if (std::abs(stretchRatio - oldRatio) >= 0.001f)
+	{
+		invalidateAllCaches();
+	}
+
 	juce::MessageManager::callAsync(
 		[safeThis = juce::Component::SafePointer<WaveformDisplay>(this)]()
 		{
@@ -37,7 +71,15 @@ void WaveformDisplay::setSampleBpm(float bpm)
 
 void WaveformDisplay::setOriginalBpm(float bpm)
 {
+	if (std::abs(originalBpm - bpm) < 0.001f)
+		return;
 	originalBpm = bpm;
+	float oldRatio = stretchRatio;
+	calculateStretchRatio();
+	if (std::abs(stretchRatio - oldRatio) >= 0.001f)
+	{
+		invalidateAllCaches();
+	}
 }
 
 void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffer, double newSampleRate)
@@ -50,6 +92,7 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffe
 		sampleRate = newSampleRate;
 		thumbnailLeft.clear();
 		thumbnailRight.clear();
+		invalidateAllCaches();
 		repaint();
 		return;
 	}
@@ -68,22 +111,33 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffe
 		viewStartTime = 0.0;
 
 		generateThumbnail();
+		invalidateAllCaches();
 		repaint();
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception&)
 	{
 		audioBuffer.setSize(0, 0);
 		sampleRate = newSampleRate;
 		thumbnailLeft.clear();
 		thumbnailRight.clear();
+		invalidateAllCaches();
 		repaint();
 	}
 }
 
 void WaveformDisplay::setLoopPoints(double startTime, double endTime)
 {
+	if (std::abs(loopStart - startTime) < 1e-6 && std::abs(loopEnd - endTime) < 1e-6)
+		return;
+
+	bool startChanged = std::abs(loopStart - startTime) >= 1e-6;
 	loopStart = startTime;
 	loopEnd = endTime;
+
+	if (startChanged)
+	{
+		invalidateGridCache();
+	}
 
 	if (juce::MessageManager::getInstance()->isThisTheMessageThread())
 	{
@@ -100,6 +154,8 @@ void WaveformDisplay::setLoopPoints(double startTime, double endTime)
 
 void WaveformDisplay::lockLoopPoints(bool locked)
 {
+	if (loopPointsLocked == locked)
+		return;
 	loopPointsLocked = locked;
 	juce::MessageManager::callAsync([this]()
 		{ repaint(); });
@@ -117,26 +173,110 @@ void WaveformDisplay::calculateStretchRatio() const
 	}
 }
 
+void WaveformDisplay::repaintPlaybackHeadRegion(float oldX, float newX)
+{
+	const int margin = 50;
+	const int h = getHeight();
+
+	if (oldX >= 0)
+	{
+		auto oldRect = juce::Rectangle<int>(
+			static_cast<int>(oldX) - margin, 0,
+			margin * 2, h);
+		repaint(oldRect);
+	}
+
+	if (newX >= 0)
+	{
+		auto newRect = juce::Rectangle<int>(
+			static_cast<int>(newX) - margin, 0,
+			margin * 2, h);
+		repaint(newRect);
+	}
+}
+
 void WaveformDisplay::setPlaybackPosition(double timeInSeconds, bool isPlaying)
 {
+	if (!isPlaying && !isCurrentlyPlaying)
+		return;
+
+	if (std::abs(timeInSeconds - playbackPosition) < 0.005 && isPlaying == isCurrentlyPlaying)
+		return;
+
+	float oldX = (isCurrentlyPlaying && playbackPosition >= 0.0) ? timeToX(playbackPosition) : -1.0f;
+
 	playbackPosition = timeInSeconds;
+	bool wasPlaying = isCurrentlyPlaying;
 	isCurrentlyPlaying = isPlaying;
 
-	juce::MessageManager::callAsync([safe = juce::Component::SafePointer<WaveformDisplay>(this)]()
+	float newX = (isPlaying && playbackPosition >= 0.0) ? timeToX(playbackPosition) : -1.0f;
+
+	juce::MessageManager::callAsync([safe = juce::Component::SafePointer<WaveformDisplay>(this), oldX, newX, wasPlaying, isPlaying]()
 		{
-			if (safe != nullptr)
-				safe->repaint(); });
+			if (safe == nullptr) return;
+
+			if (wasPlaying != isPlaying)
+			{
+				safe->repaint();
+				safe->lastPlaybackHeadX = newX;
+				return;
+			}
+
+			safe->repaintPlaybackHeadRegion(oldX, newX);
+			safe->lastPlaybackHeadX = newX;
+		});
+}
+
+void WaveformDisplay::rebuildWaveformCache()
+{
+	if (getWidth() <= 0 || getHeight() <= 0)
+		return;
+
+	waveformCache = juce::Image(juce::Image::ARGB, getWidth(), getHeight(), true);
+	juce::Graphics g(waveformCache);
+	renderWaveformInto(g);
+	waveformCacheDirty = false;
+	cachedStretchRatioForColour = stretchRatio;
+	cachedModelColour = getModelAccentColour();
+}
+
+void WaveformDisplay::rebuildGridCache()
+{
+	if (getWidth() <= 0 || getHeight() <= 0)
+		return;
+
+	gridCache = juce::Image(juce::Image::ARGB, getWidth(), getHeight(), true);
+	juce::Graphics g(gridCache);
+	renderGridInto(g);
+	gridCacheDirty = false;
+}
+
+void WaveformDisplay::renderWaveformInto(juce::Graphics& g)
+{
+	g.setColour(ColourPalette::backgroundMid);
+	g.fillRect(getLocalBounds());
+
+	if (thumbnailLeft.empty() && thumbnailRight.empty())
+		return;
+
+	drawWaveform(g);
+}
+
+void WaveformDisplay::renderGridInto(juce::Graphics& g)
+{
+	if (thumbnailLeft.empty() && thumbnailRight.empty())
+		return;
+	drawBeatMarkers(g);
 }
 
 void WaveformDisplay::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds();
 
-	g.setColour(ColourPalette::backgroundMid);
-	g.fillRect(bounds);
-
 	if (thumbnailLeft.empty() && thumbnailRight.empty())
 	{
+		g.setColour(ColourPalette::backgroundMid);
+		g.fillRect(bounds);
 		g.setColour(ColourPalette::textSecondary);
 		g.setFont(12.0f);
 		g.drawText("No audio data", bounds.reduced(5).removeFromTop(20), juce::Justification::centred);
@@ -148,9 +288,27 @@ void WaveformDisplay::paint(juce::Graphics& g)
 		return;
 	}
 
-	drawWaveform(g);
+	auto currentColour = getModelAccentColour();
+	if (currentColour != cachedModelColour
+		|| std::abs(stretchRatio - cachedStretchRatioForColour) >= 0.001f)
+	{
+		invalidateAllCaches();
+	}
+
+	if (waveformCacheDirty || waveformCache.getWidth() != getWidth() || waveformCache.getHeight() != getHeight())
+	{
+		rebuildWaveformCache();
+	}
+
+	if (gridCacheDirty || gridCache.getWidth() != getWidth() || gridCache.getHeight() != getHeight())
+	{
+		rebuildGridCache();
+	}
+
+	g.drawImageAt(waveformCache, 0, 0);
+	g.drawImageAt(gridCache, 0, 0);
+
 	drawLoopMarkers(g);
-	drawBeatMarkers(g);
 	drawPlaybackHead(g);
 	drawVisibleBarLabels(g);
 
@@ -234,21 +392,30 @@ void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
 		if (draggingStart)
 		{
 			double newStart = xToTime(static_cast<float>(e.x));
-			loopStart = juce::jlimit(getViewStartTime(), loopEnd, newStart);
-			repaint();
-			if (onLoopPointsChanged)
+			double clamped = juce::jlimit(getViewStartTime(), loopEnd, newStart);
+			if (std::abs(clamped - loopStart) >= 1e-6)
 			{
-				onLoopPointsChanged(loopStart, loopEnd);
+				loopStart = clamped;
+				invalidateGridCache();
+				repaint();
+				if (onLoopPointsChanged)
+				{
+					onLoopPointsChanged(loopStart, loopEnd);
+				}
 			}
 		}
 		else if (draggingEnd)
 		{
 			double newEnd = xToTime(static_cast<float>(e.x));
-			loopEnd = juce::jlimit(loopStart, getViewEndTime(), newEnd);
-			repaint();
-			if (onLoopPointsChanged)
+			double clamped = juce::jlimit(loopStart, getViewEndTime(), newEnd);
+			if (std::abs(clamped - loopEnd) >= 1e-6)
 			{
-				onLoopPointsChanged(loopStart, loopEnd);
+				loopEnd = clamped;
+				repaint();
+				if (onLoopPointsChanged)
+				{
+					onLoopPointsChanged(loopStart, loopEnd);
+				}
 			}
 		}
 	}
@@ -259,7 +426,7 @@ void WaveformDisplay::setAudioFile(const juce::File& file)
 	currentAudioFile = file;
 }
 
-void WaveformDisplay::mouseUp(const juce::MouseEvent& /*e*/)
+void WaveformDisplay::mouseUp(const juce::MouseEvent&)
 {
 	draggingStart = false;
 	draggingEnd = false;
@@ -298,17 +465,23 @@ void WaveformDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::Mous
 
 		updateScrollBarVisibility();
 		generateThumbnail();
+		invalidateAllCaches();
 		repaint();
 	}
 	else if (zoomFactor > 1.0)
 	{
 		double viewDuration = getTotalDuration() / zoomFactor;
 		double scrollAmount = wheel.deltaY * viewDuration * 0.1;
+		double oldViewStart = viewStartTime;
 
 		setViewStartTime(viewStartTime - scrollAmount);
 
+		if (std::abs(viewStartTime - oldViewStart) < 1e-9)
+			return;
+
 		updateScrollBar();
 		generateThumbnail();
+		invalidateAllCaches();
 		repaint();
 	}
 }
@@ -361,9 +534,15 @@ void WaveformDisplay::scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, dou
 	{
 		double totalDuration = getTotalDuration();
 		double newViewStartTime = newRangeStart * totalDuration;
+		double oldViewStart = viewStartTime;
 
 		setViewStartTime(newViewStartTime);
+
+		if (std::abs(viewStartTime - oldViewStart) < 1e-9)
+			return;
+
 		generateThumbnail();
+		invalidateAllCaches();
 		repaint();
 	}
 }
