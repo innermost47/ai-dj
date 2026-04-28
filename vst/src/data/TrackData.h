@@ -56,6 +56,11 @@ struct TrackPage
 	std::atomic<bool> isLoaded{ false };
 	std::atomic<bool> isLoading{ false };
 
+	std::atomic<float> adsrAttack{ 0.01f };
+	std::atomic<float> adsrDecay{ 4.0f };
+	std::atomic<float> adsrSustain{ 1.0f };
+	std::atomic<float> adsrRelease{ 0.0f };
+
 	TrackPage() : generationBpm(126.0f) {}
 
 	TrackPage(const TrackPage& other)
@@ -65,6 +70,10 @@ struct TrackPage
 		hasOriginalVersion = other.hasOriginalVersion.load();
 		isLoaded = other.isLoaded.load();
 		isLoading = other.isLoading.load();
+		adsrAttack.store(other.adsrAttack.load());
+		adsrDecay.store(other.adsrDecay.load());
+		adsrSustain.store(other.adsrSustain.load());
+		adsrRelease.store(other.adsrRelease.load());
 	}
 
 	void reset()
@@ -88,6 +97,10 @@ struct TrackPage
 		originalStagingBuffer.setSize(0, 0);
 		isLoaded = false;
 		isLoading = false;
+		adsrAttack.store(0.01f);
+		adsrDecay.store(4.0f);
+		adsrSustain.store(1.0f);
+		adsrRelease.store(0.0f);
 	}
 
 	SequencerData sequences[8];

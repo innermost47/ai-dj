@@ -11,6 +11,7 @@ TrackComponent::TrackComponent(const juce::String& trackId, DjIaVstProcessor& pr
 	: trackId(trackId), track(nullptr), audioProcessor(processor)
 {
 	setupUI();
+	setupAdsrKnobs();
 }
 
 TrackComponent::~TrackComponent()
@@ -35,6 +36,11 @@ TrackComponent::~TrackComponent()
 	randomDurationToggle.setLookAndFeel(nullptr);
 	intervalKnob.setLookAndFeel(nullptr);
 	promptPresetSelector.setLookAndFeel(nullptr);
+
+	adsrAttackKnob.setLookAndFeel(nullptr);
+	adsrDecayKnob.setLookAndFeel(nullptr);
+	adsrSustainKnob.setLookAndFeel(nullptr);
+	adsrReleaseKnob.setLookAndFeel(nullptr);
 
 	sequencer.reset();
 	waveformDisplay.reset();
@@ -336,6 +342,7 @@ void TrackComponent::updateFromTrackData()
 	}
 
 	updateTrackInfo();
+	updateAdsrKnobsFromPage();
 }
 
 float TrackComponent::calculateEffectiveBpm()
@@ -410,6 +417,78 @@ void TrackComponent::setSamplePending(bool pending)
 	syncBorderOverlay();
 }
 
+void TrackComponent::setupAdsrKnobs()
+{
+	struct KnobDef {
+		MidiLearnableSlider& knob;
+		juce::Label& label;
+		const char* name;
+		float rangeMin, rangeMax, defaultVal;
+		const char* tooltip;
+	};
+
+	auto setupKnob = [&](MidiLearnableSlider& knob, juce::Label& label,
+		const char* name, float rMin, float rMax, float def,
+		const char* tooltip)
+		{
+			addAndMakeVisible(knob);
+			knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+			knob.setRange(rMin, rMax, 0.0);
+			knob.setSkewFactorFromMidPoint(rMin + (rMax - rMin) * 0.3f);
+			knob.setValue(def, juce::dontSendNotification);
+			knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+			knob.setTooltip(tooltip);
+			knob.onValueChange = [this]() { onAdsrChanged(); };
+
+			addAndMakeVisible(label);
+			label.setText(name, juce::dontSendNotification);
+			label.setJustificationType(juce::Justification::centred);
+			label.setFont(juce::FontOptions(9.0f));
+			label.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		};
+
+	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.01f, "ADSR Attack time (seconds)");
+	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", 0.001f, 4.0f, 0.1f, "ADSR Decay time (seconds)");
+	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", 0.0f, 1.0f, 0.8f, "ADSR Sustain level (0-1)");
+	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.2f, "ADSR Release time (seconds)");
+
+	adsrSustainKnob.setSkewFactor(1.0);
+}
+
+void TrackComponent::updateAdsrKnobsFromPage()
+{
+	if (!track) return;
+
+	const auto& page = track->getCurrentPage();
+	adsrAttackKnob.setValue(page.adsrAttack, juce::dontSendNotification);
+	adsrDecayKnob.setValue(page.adsrDecay, juce::dontSendNotification);
+	adsrSustainKnob.setValue(page.adsrSustain, juce::dontSendNotification);
+	adsrReleaseKnob.setValue(page.adsrRelease, juce::dontSendNotification);
+
+	syncAdsrToWaveform();
+}
+
+void TrackComponent::onAdsrChanged()
+{
+	if (!track) return;
+
+	auto& page = track->getCurrentPage();
+	page.adsrAttack = (float)adsrAttackKnob.getValue();
+	page.adsrDecay = (float)adsrDecayKnob.getValue();
+	page.adsrSustain = (float)adsrSustainKnob.getValue();
+	page.adsrRelease = (float)adsrReleaseKnob.getValue();
+
+	syncAdsrToWaveform();
+}
+
+void TrackComponent::syncAdsrToWaveform()
+{
+	if (!waveformDisplay || !track) return;
+	const auto& page = track->getCurrentPage();
+	waveformDisplay->setAdsrParams(page.adsrAttack, page.adsrDecay,
+		page.adsrSustain, page.adsrRelease);
+}
+
 void TrackComponent::resized()
 {
 	auto fullBounds = getLocalBounds();
@@ -435,7 +514,7 @@ void TrackComponent::resized()
 	}
 
 	{
-		const int selectorsWidth = 200;
+		const int selectorsWidth = 160;
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 
 		const int selectorHeight = 18;
@@ -459,23 +538,23 @@ void TrackComponent::resized()
 	headerArea.removeFromLeft(8);
 
 	{
-		const int createButtonWidth = 36;
+		const int createButtonWidth = 34;
 		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 		headerArea.removeFromRight(6);
 
 		drawButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
-	headerArea.removeFromRight(CLUSTER_GAP);
+	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
 	{
-		const int labelledButtonWidth = 38;
+		const int labelledButtonWidth = 36;
 		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 	}
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
-	const int iconBtnWidth = 38;
+	const int iconBtnWidth = 34;
 	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
@@ -483,8 +562,8 @@ void TrackComponent::resized()
 	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
 
 	{
-		auto knobArea = headerArea.removeFromRight(48);
-		const int knobDiameter = 36;
+		auto knobArea = headerArea.removeFromRight(38);
+		const int knobDiameter = 34;
 		const int labelHeight = 8;
 		const int stackHeight = knobDiameter + labelHeight;
 		int yOffset = (knobArea.getHeight() - stackHeight) / 2;
@@ -496,6 +575,32 @@ void TrackComponent::resized()
 			knobArea.getX(),
 			knobArea.getY() + yOffset + knobDiameter - 2,
 			knobArea.getWidth(), labelHeight);
+	}
+
+	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+	{
+		const int adsrKnobDiam = 32;
+		const int adsrLabelH = 8;
+		const int adsrStack = adsrKnobDiam + adsrLabelH;
+		const int adsrSpacing = 0;
+		const int adsrTotalW = (adsrKnobDiam + adsrSpacing) * 4;
+
+		auto adsrArea = headerArea.removeFromRight(adsrTotalW);
+		int yOffset = (adsrArea.getHeight() - adsrStack) / 2;
+
+		auto placeKnob = [&](MidiLearnableSlider& knob, juce::Label& label)
+			{
+				auto cell = adsrArea.removeFromLeft(adsrKnobDiam);
+				adsrArea.removeFromLeft(adsrSpacing);
+				knob.setBounds(cell.getX(), cell.getY() + yOffset, adsrKnobDiam, adsrKnobDiam);
+				label.setBounds(cell.getX(), cell.getY() + yOffset + adsrKnobDiam - 2,
+					adsrKnobDiam, adsrLabelH);
+			};
+
+		placeKnob(adsrAttackKnob, adsrAttackLabel);
+		placeKnob(adsrDecayKnob, adsrDecayLabel);
+		placeKnob(adsrSustainKnob, adsrSustainLabel);
+		placeKnob(adsrReleaseKnob, adsrReleaseLabel);
 	}
 
 	if (!waveformDisplay)
@@ -526,6 +631,35 @@ void TrackComponent::resized()
 						}
 					}
 				};
+
+			waveformDisplay->onAdsrAttackChanged = [this](float v)
+				{
+					if (!track) return;
+					track->getCurrentPage().adsrAttack.store(v);
+					if (waveformDisplay) waveformDisplay->repaint();
+				};
+
+			waveformDisplay->onAdsrDecayChanged = [this](float v)
+				{
+					if (!track) return;
+					track->getCurrentPage().adsrDecay.store(v);
+					if (waveformDisplay) waveformDisplay->repaint();
+				};
+
+			waveformDisplay->onAdsrSustainChanged = [this](float v)
+				{
+					if (!track) return;
+					track->getCurrentPage().adsrSustain.store(v);
+					if (waveformDisplay) waveformDisplay->repaint();
+				};
+
+			waveformDisplay->onAdsrReleaseChanged = [this](float v)
+				{
+					if (!track) return;
+					track->getCurrentPage().adsrRelease.store(v);
+					if (waveformDisplay) waveformDisplay->repaint();
+				};
+
 			addAndMakeVisible(*waveformDisplay);
 			if (track->numSamples > 0)
 			{
@@ -862,6 +996,7 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	updatePagesDisplay();
 	updateFromTrackData();
+	updateAdsrKnobsFromPage();
 	updateModelUI();
 
 	if (sequencer)
@@ -1953,6 +2088,15 @@ void TrackComponent::updateModelUI()
 
 	generateButton.setColour(juce::TextButton::buttonColourId, modelColour);
 	generateButton.setColour(juce::TextButton::textColourOffId, textColour);
+
+	adsrAttackKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	adsrAttackKnob.setColour(juce::Slider::thumbColourId, modelColour);
+	adsrDecayKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	adsrDecayKnob.setColour(juce::Slider::thumbColourId, modelColour);
+	adsrSustainKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	adsrSustainKnob.setColour(juce::Slider::thumbColourId, modelColour);
+	adsrReleaseKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	adsrReleaseKnob.setColour(juce::Slider::thumbColourId, modelColour);
 
 	auto setupToggleColours = [&](IconButton& btn)
 		{

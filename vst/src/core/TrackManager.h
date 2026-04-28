@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "JuceHeader.h"
 #include "data/TrackData.h"
 #include "config/AiModelDefinitions.h"
@@ -252,6 +252,10 @@ public:
 				pageState.setProperty("canvasState", page.canvasState, nullptr);
 				pageState.setProperty("selectedKeywords", page.selectedKeywords.joinIntoString("|"), nullptr);
 				pageState.setProperty("currentSequenceIndex", page.currentSequenceIndex, nullptr);
+				pageState.setProperty("adsrAttack", page.adsrAttack.load(), nullptr);
+				pageState.setProperty("adsrDecay", page.adsrDecay.load(), nullptr);
+				pageState.setProperty("adsrSustain", page.adsrSustain.load(), nullptr);
+				pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
 
 				for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
 				{
@@ -443,6 +447,10 @@ public:
 
 						page.isLoaded = false;
 						page.currentSequenceIndex = pageState.getProperty("currentSequenceIndex", 0);
+						page.adsrAttack.store(pageState.getProperty("adsrAttack", 0.01f));
+						page.adsrDecay.store(pageState.getProperty("adsrDecay", 4.0f));
+						page.adsrSustain.store(pageState.getProperty("adsrSustain", 1.0f));
+						page.adsrRelease.store(pageState.getProperty("adsrRelease", 0.0f));
 
 						for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
 						{
@@ -814,6 +822,10 @@ private:
 		double loopStartToUse = 0;
 		double loopEndToUse = 0;
 		float originalBpmToUse = 126.0f;
+		float adsrAttack = 0.01f;
+		float adsrDecay = 4.0f;
+		float adsrSustain = 1.0f;
+		float adsrRelease = 0.0f;
 
 		if (track.usePages.load())
 		{
@@ -824,6 +836,10 @@ private:
 			loopStartToUse = currentPage.loopStart;
 			loopEndToUse = currentPage.loopEnd;
 			originalBpmToUse = currentPage.originalBpm;
+			adsrAttack = currentPage.adsrAttack.load();
+			adsrDecay = currentPage.adsrDecay.load();
+			adsrSustain = currentPage.adsrSustain.load();
+			adsrRelease = currentPage.adsrRelease.load();
 		}
 		else
 		{
@@ -951,6 +967,51 @@ private:
 				break;
 			}
 
+			float adsrGain = 1.0f;
+			{
+				double posInSection = (absolutePosition - startSample) / sampleRateToUse;
+				double sectionDuration = sectionLength / sampleRateToUse;
+
+				float totalADR = adsrAttack + adsrDecay + adsrRelease;
+				float scale = 1.0f;
+				if (totalADR > (float)sectionDuration * 0.95f)
+					scale = (float)sectionDuration * 0.95f / totalADR;
+
+				float a = adsrAttack * scale;
+				float d = adsrDecay * scale;
+				float r = adsrRelease * scale;
+				double releaseStart = sectionDuration - (double)r;
+
+				if (posInSection < 0.0)
+				{
+					adsrGain = 0.0f;
+				}
+				else if (a > 0.0f && posInSection < (double)a)
+				{
+					adsrGain = (float)(posInSection / a);
+				}
+				else if (d > 0.0f && posInSection < (double)(a + d))
+				{
+					float t = (float)((posInSection - a) / d);
+					adsrGain = 1.0f - t * (1.0f - adsrSustain);
+				}
+				else if (posInSection < releaseStart)
+				{
+					adsrGain = adsrSustain;
+				}
+				else if (r > 0.0f && posInSection < sectionDuration)
+				{
+					float t = (float)((posInSection - releaseStart) / r);
+					adsrGain = adsrSustain * (1.0f - t);
+				}
+				else
+				{
+					adsrGain = 0.0f;
+				}
+
+				adsrGain = juce::jlimit(0.0f, 1.0f, adsrGain);
+			}
+
 			float fadeGain = 1.0f;
 			if (absolutePosition > fadeStartPosition)
 			{
@@ -958,11 +1019,13 @@ private:
 				fadeGain = juce::jlimit(0.0f, 1.0f, fadeGain);
 			}
 
+			float totalGain = adsrGain * fadeGain;
+
 			float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
 			float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
 
-			leftSample *= volume * leftGain * fadeGain;
-			rightSample *= volume * rightGain * fadeGain;
+			leftSample *= volume * leftGain * totalGain;
+			rightSample *= volume * rightGain * totalGain;
 
 			mixOutput.addSample(0, i, leftSample);
 			mixOutput.addSample(1, i, rightSample);

@@ -329,6 +329,16 @@ void WaveformDisplay::paint(juce::Graphics& g)
 
 void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
 {
+	if (!e.mods.isRightButtonDown() && !loopPointsLocked)
+	{
+		auto handle = hitTestAdsr(e.position);
+		if (handle != AdsrHandle::None)
+		{
+			activeHandle = handle;
+			updateAdsrFromMouse(e.position);
+			return;
+		}
+	}
 	if (e.mods.isRightButtonDown())
 	{
 		loopPointsLocked = !track.loopPointsLocked.load();
@@ -358,6 +368,11 @@ void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
 
 void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
 {
+	if (activeHandle != AdsrHandle::None)
+	{
+		updateAdsrFromMouse(e.position);
+		return;
+	}
 	if (!draggingStart && !draggingEnd && currentAudioFile.exists() && e.mods.isCtrlDown())
 	{
 		auto distanceFromStart = e.getDistanceFromDragStart();
@@ -428,6 +443,7 @@ void WaveformDisplay::setAudioFile(const juce::File& file)
 
 void WaveformDisplay::mouseUp(const juce::MouseEvent&)
 {
+	activeHandle = AdsrHandle::None;
 	draggingStart = false;
 	draggingEnd = false;
 	isDraggingAudio = false;
@@ -484,6 +500,106 @@ void WaveformDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::Mous
 		invalidateAllCaches();
 		repaint();
 	}
+}
+
+WaveformDisplay::AdsrHandle WaveformDisplay::hitTestAdsr(juce::Point<float> p) const
+{
+	if (!adsrLayout.valid) return AdsrHandle::None;
+
+	const float radius = 8.0f;
+	const float r2 = radius * radius;
+	auto dist2 = [](juce::Point<float> a, juce::Point<float> b) {
+		float dx = a.x - b.x, dy = a.y - b.y;
+		return dx * dx + dy * dy;
+		};
+
+	if (dist2(p, { adsrLayout.x1, adsrLayout.yPeak }) <= r2) return AdsrHandle::AttackPeak;
+	if (dist2(p, { adsrLayout.x2, adsrLayout.ySustain }) <= r2) return AdsrHandle::DecaySustain;
+	if (dist2(p, { adsrLayout.x3, adsrLayout.ySustain }) <= r2) return AdsrHandle::ReleaseStart;
+	return AdsrHandle::None;
+}
+
+void WaveformDisplay::updateAdsrFromMouse(juce::Point<float> p)
+{
+	if (!adsrLayout.valid || adsrLayout.scale <= 0.0f) return;
+
+	const float zoneWidth = adsrLayout.endX - adsrLayout.startX;
+	if (zoneWidth <= 0.0f) return;
+
+	const float pixPerSec = zoneWidth / (float)adsrLayout.sectionDuration;
+	if (pixPerSec <= 0.0f) return;
+
+	const float h = (float)getHeight();
+	const float margin = h * 0.08f;
+	auto yToAmp = [&](float y) -> float {
+		float amp = (h - margin - y) / (h - margin * 2.0f);
+		return juce::jlimit(0.0f, 1.0f, amp);
+		};
+
+	const float invScale = 1.0f / adsrLayout.scale;
+
+	const float maxParamSec = (float)adsrLayout.sectionDuration;
+
+	switch (activeHandle)
+	{
+	case AdsrHandle::AttackPeak:
+	{
+		float clampedX = juce::jlimit(adsrLayout.startX, adsrLayout.endX, p.x);
+		float attackPxDrawn = clampedX - adsrLayout.startX;
+		float attackSecDrawn = attackPxDrawn / pixPerSec;
+		float attackParam = juce::jlimit(0.0f, maxParamSec, attackSecDrawn * invScale);
+		if (onAdsrAttackChanged) onAdsrAttackChanged(attackParam);
+		break;
+	}
+	case AdsrHandle::DecaySustain:
+	{
+		float clampedX = juce::jlimit(adsrLayout.x1, adsrLayout.endX, p.x);
+		float decayPxDrawn = clampedX - adsrLayout.x1;
+		float decaySecDrawn = decayPxDrawn / pixPerSec;
+		float decayParam = juce::jlimit(0.0f, maxParamSec, decaySecDrawn * invScale);
+		if (onAdsrDecayChanged) onAdsrDecayChanged(decayParam);
+
+		float sustain = yToAmp(p.y);
+		if (onAdsrSustainChanged) onAdsrSustainChanged(sustain);
+		break;
+	}
+	case AdsrHandle::ReleaseStart:
+	{
+		float clampedX = juce::jlimit(adsrLayout.startX, adsrLayout.endX, p.x);
+		float releasePxDrawn = adsrLayout.endX - clampedX;
+		float releaseSecDrawn = releasePxDrawn / pixPerSec;
+		float releaseParam = juce::jlimit(0.0f, maxParamSec, releaseSecDrawn * invScale);
+		if (onAdsrReleaseChanged) onAdsrReleaseChanged(releaseParam);
+		break;
+	}
+	default: break;
+	}
+
+	repaint();
+}
+
+void WaveformDisplay::mouseDoubleClick(const juce::MouseEvent& e)
+{
+	auto handle = hitTestAdsr(e.position);
+	if (handle == AdsrHandle::None) return;
+
+	const float defA = 0.01f, defD = 4.0f, defS = 1.0f, defR = 0.0f;
+
+	switch (handle)
+	{
+	case AdsrHandle::AttackPeak:
+		if (onAdsrAttackChanged) onAdsrAttackChanged(defA);
+		break;
+	case AdsrHandle::DecaySustain:
+		if (onAdsrDecayChanged)   onAdsrDecayChanged(defD);
+		if (onAdsrSustainChanged) onAdsrSustainChanged(defS);
+		break;
+	case AdsrHandle::ReleaseStart:
+		if (onAdsrReleaseChanged) onAdsrReleaseChanged(defR);
+		break;
+	default: break;
+	}
+	repaint();
 }
 
 void WaveformDisplay::updateScrollBarVisibility()
@@ -843,6 +959,8 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 	}
 	g.fillRect(startX, 0.0f, endX - startX, (float)getHeight());
 
+	drawAdsrOverlay(g, startX, endX);
+
 	float lineWidth = loopPointsLocked ? 3.0f : 2.0f;
 	g.setColour(loopColour);
 	float height = static_cast<float>(getHeight());
@@ -882,6 +1000,94 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 	{
 		drawLoopTimeLabels(g, startX, endX);
 	}
+}
+
+void WaveformDisplay::drawAdsrOverlay(juce::Graphics& g, float startX, float endX)
+{
+	float zoneWidth = endX - startX;
+	if (zoneWidth <= 0.0f) return;
+	float h = (float)getHeight();
+
+	double sectionDuration = loopEnd - loopStart;
+	if (sectionDuration <= 0.0) return;
+
+	float totalADR = adsrAttack + adsrDecay + adsrRelease;
+	float scale = 1.0f;
+	if (totalADR > (float)sectionDuration * 0.95f)
+		scale = (float)sectionDuration * 0.95f / totalADR;
+
+	float a = adsrAttack * scale;
+	float d = adsrDecay * scale;
+	float r = adsrRelease * scale;
+	double releaseStart = sectionDuration - (double)r;
+
+	float pixPerSec = zoneWidth / (float)sectionDuration;
+	float attackPx = a * pixPerSec;
+	float decayPx = d * pixPerSec;
+	float releasePx = r * pixPerSec;
+	float sustainPx = zoneWidth - attackPx - decayPx - releasePx;
+	if (sustainPx < 0.0f) sustainPx = 0.0f;
+
+	float margin = h * 0.08f;
+	auto ampToY = [&](float amp) -> float {
+		return h - margin - amp * (h - margin * 2.0f);
+		};
+
+	float x0 = startX;
+	float x1 = x0 + attackPx;
+	float x2 = x1 + decayPx;
+	float x3 = startX + (float)(releaseStart * pixPerSec);
+	float x4 = startX + zoneWidth;
+
+	float yBottom = ampToY(0.0f);
+	float yPeak = ampToY(1.0f);
+	float ySustain = ampToY(adsrSustain);
+
+	juce::Path adsrPath;
+	adsrPath.startNewSubPath(x0, yBottom);
+	adsrPath.lineTo(x1, yPeak);
+	adsrPath.lineTo(x2, ySustain);
+	adsrPath.lineTo(x3, ySustain);
+	adsrPath.lineTo(x4, yBottom);
+
+	juce::Path fillPath = adsrPath;
+	fillPath.lineTo(x4, yBottom);
+	fillPath.lineTo(x0, yBottom);
+	fillPath.closeSubPath();
+
+	juce::Colour modelColour = getModelAccentColour();
+	g.setColour(modelColour.withAlpha(0.25f));
+	g.fillPath(fillPath);
+	g.setColour(modelColour.withAlpha(0.9f));
+	g.strokePath(adsrPath, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved));
+
+	float dotR = 4.0f;
+	g.setColour(modelColour);
+	g.fillEllipse(x1 - dotR, yPeak - dotR, dotR * 2, dotR * 2);
+	g.fillEllipse(x2 - dotR, ySustain - dotR, dotR * 2, dotR * 2);
+	g.fillEllipse(x3 - dotR, ySustain - dotR, dotR * 2, dotR * 2);
+
+	g.setColour(modelColour.withAlpha(0.85f));
+	g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+	int labelY = (int)(yPeak)-14;
+	if (labelY < 2) labelY = 2;
+	g.drawText("A", (int)x0, labelY, (int)attackPx, 12, juce::Justification::centred);
+	g.drawText("D", (int)x1, labelY, (int)decayPx, 12, juce::Justification::centred);
+	if (sustainPx > 12.0f)
+		g.drawText("S", (int)x2, labelY, (int)sustainPx, 12, juce::Justification::centred);
+	if (releasePx > 12.0f)
+		g.drawText("R", (int)x3, labelY, (int)releasePx, 12, juce::Justification::centred);
+
+	adsrLayout.startX = startX;
+	adsrLayout.endX = endX;
+	adsrLayout.x1 = x1;
+	adsrLayout.x2 = x2;
+	adsrLayout.x3 = x3;
+	adsrLayout.yPeak = yPeak;
+	adsrLayout.ySustain = ySustain;
+	adsrLayout.scale = scale;
+	adsrLayout.sectionDuration = sectionDuration;
+	adsrLayout.valid = true;
 }
 
 void WaveformDisplay::drawLoopTimeLabels(juce::Graphics& g, float startX, float endX)
@@ -1154,6 +1360,15 @@ double WaveformDisplay::getViewEndTime() const
 {
 	return juce::jlimit(viewStartTime, getTotalDuration(),
 		viewStartTime + (getTotalDuration() / zoomFactor));
+}
+
+void WaveformDisplay::setAdsrParams(float attack, float decay, float sustain, float release)
+{
+	adsrAttack = attack;
+	adsrDecay = decay;
+	adsrSustain = sustain;
+	adsrRelease = release;
+	repaint();
 }
 
 juce::Colour WaveformDisplay::getModelAccentColour() const

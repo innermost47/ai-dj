@@ -8,6 +8,12 @@ public:
 	WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData);
 	~WaveformDisplay();
 	std::function<void(double, double)> onLoopPointsChanged;
+	std::function<void(float)> onAdsrAttackChanged;
+	std::function<void(float)> onAdsrDecayChanged;
+	std::function<void(float)> onAdsrSustainChanged;
+	std::function<void(float)> onAdsrReleaseChanged;
+
+	void mouseDoubleClick(const juce::MouseEvent& e) override;
 	void setOriginalBpm(float bpm);
 	void setSampleBpm(float bpm);
 	void lockLoopPoints(bool locked);
@@ -15,6 +21,7 @@ public:
 	void setAudioData(const juce::AudioBuffer<float>& newAudioBuffer, double newSampleRate);
 	void setLoopPoints(double startTime, double endTime);
 	void setAudioFile(const juce::File& file);
+	void setAdsrParams(float attack, float decay, float sustain, float release);
 private:
 	juce::AudioBuffer<float> audioBuffer;
 	juce::File currentAudioFile;
@@ -50,6 +57,30 @@ private:
 	juce::Colour cachedModelColour;
 	float cachedStretchRatioForColour = 1.0f;
 
+	float adsrAttack = 0.01f;
+	float adsrDecay = 4.0f;
+	float adsrSustain = 1.0f;
+	float adsrRelease = 0.0f;
+
+	enum class AdsrHandle { None, AttackPeak, DecaySustain, ReleaseStart };
+
+	struct AdsrLayout
+	{
+		float startX = 0.0f, endX = 0.0f;
+		float x1 = 0.0f, x2 = 0.0f, x3 = 0.0f;
+		float yPeak = 0.0f, ySustain = 0.0f;
+		float scale = 1.0f;
+		double sectionDuration = 0.0;
+		bool valid = false;
+	};
+
+	AdsrLayout adsrLayout;
+	AdsrHandle activeHandle = AdsrHandle::None;
+
+	AdsrHandle hitTestAdsr(juce::Point<float> p) const;
+	void updateAdsrFromMouse(juce::Point<float> p);
+
+	void drawAdsrOverlay(juce::Graphics& g, float startX, float endX);
 	void invalidateAllCaches();
 	void invalidateWaveformCache();
 	void invalidateGridCache();
@@ -58,7 +89,6 @@ private:
 	void repaintPlaybackHeadRegion(float oldX, float newX);
 	void renderWaveformInto(juce::Graphics& g);
 	void renderGridInto(juce::Graphics& g);
-
 	float getHostBpm() const;
 	float timeToX(double time);
 	void generateThumbnail();

@@ -60,7 +60,7 @@ public:
 	static const int ICON_BUTTON_WIDTH = 42;
 	static const int ICON_BUTTON_HEIGHT = 50;
 	static const int CLUSTER_GAP = 14;
-	static const int INTRA_CLUSTER_GAP = 4;
+	static const int INTRA_CLUSTER_GAP = 2;
 
 	TrackData* getTrack() const { return track; }
 
@@ -247,6 +247,11 @@ private:
 	IconButton randomDurationToggle{ "RandomDurationBtn", "RND" };
 
 	MidiLearnableSlider intervalKnob;
+	MidiLearnableSlider adsrAttackKnob;
+	MidiLearnableSlider adsrDecayKnob;
+	MidiLearnableSlider adsrSustainKnob;
+	MidiLearnableSlider adsrReleaseKnob;
+	juce::Label adsrAttackLabel, adsrDecayLabel, adsrSustainLabel, adsrReleaseLabel;
 
 	juce::ComboBox modelSelector;
 	juce::StringArray aiModels;
@@ -308,6 +313,10 @@ private:
 	void syncBorderOverlay();
 	juce::Colour getCurrentModelColour() const;
 	void mouseDown(const juce::MouseEvent& event) override;
+	void setupAdsrKnobs();
+	void updateAdsrKnobsFromPage();
+	void onAdsrChanged();
+	void syncAdsrToWaveform();
 
 	float calculateEffectiveBpm();
 
