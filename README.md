@@ -63,6 +63,7 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 - **8-track sampler** with MIDI triggering (C3-B3)
 - **4 pages per track** (A/B/C/D) — Switch variations instantly
+- **Per-page ADSR envelope** — Shape the dynamics of each variation independently, editable directly on the waveform
 - **8 sequences per page** — 256 total patterns for complex live sets
 - **16-step sequencer** with multi-measure support
 - **Quantized page changes** — Seamless transitions locked to measure boundaries
