@@ -24,7 +24,7 @@
 > **— Moteka, Electronic Music Producer**
 > [SoundCloud](https://soundcloud.com/moteka) · [Instagram](https://www.instagram.com/pmoteka/)
 
-## 🔥 What's New — April 2025: The Multi-Model Era
+## 🔥 What's New — April 2026: The Multi-Model Era
 
 OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks, each optimized for specific tempos and styles:
 
