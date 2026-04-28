@@ -400,6 +400,15 @@ void DjIaVstProcessor::loadParameters()
 		}
 	}
 
+	for (int i = 0; i < 8; ++i)
+	{
+		juce::String slotName = "slot" + juce::String(i + 1);
+		slotAdsrAttackParams[i] = parameters.getRawParameterValue(slotName + "AdsrAttack");
+		slotAdsrDecayParams[i] = parameters.getRawParameterValue(slotName + "AdsrDecay");
+		slotAdsrSustainParams[i] = parameters.getRawParameterValue(slotName + "AdsrSustain");
+		slotAdsrReleaseParams[i] = parameters.getRawParameterValue(slotName + "AdsrRelease");
+	}
+
 	nextTrackParam = parameters.getRawParameterValue("nextTrack");
 	prevTrackParam = parameters.getRawParameterValue("prevTrack");
 
@@ -909,6 +918,18 @@ void DjIaVstProcessor::sendFullStateFeedback()
 			track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 		sendMidiFeedback(MidiMapping::ccFeedbackSeq(slot),
 			track->getCurrentPage().currentSequenceIndex);
+		sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slot),
+			MidiMapping::adsrToMidi(slotAdsrAttackParams[slotIdx]->load(), 0.001f, 4.0f),
+			MidiMapping::feedbackChannelAdsr);
+		sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slot),
+			MidiMapping::adsrToMidi(slotAdsrDecayParams[slotIdx]->load(), 0.001f, 4.0f),
+			MidiMapping::feedbackChannelAdsr);
+		sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slot),
+			MidiMapping::adsrToMidi(slotAdsrSustainParams[slotIdx]->load(), 0.0f, 1.0f),
+			MidiMapping::feedbackChannelAdsr);
+		sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slot),
+			MidiMapping::adsrToMidi(slotAdsrReleaseParams[slotIdx]->load(), 0.001f, 4.0f),
+			MidiMapping::feedbackChannelAdsr);
 	}
 }
 
@@ -3863,10 +3884,15 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 	}
 }
 
-void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
+void DjIaVstProcessor::sendMidiFeedback(int cc, int value, int channel)
 {
 	juce::ScopedLock lock(feedbackMidiLock);
 	feedbackMidiBuffer.addEvent(
-		juce::MidiMessage::controllerEvent(MidiMapping::feedbackChannel + 1, cc, value),
+		juce::MidiMessage::controllerEvent(channel + 1, cc, value),
 		0);
+}
+
+void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
+{
+	sendMidiFeedback(cc, value, MidiMapping::feedbackChannel);
 }

@@ -403,6 +403,10 @@ private:
 	std::atomic<float>* slotBpmOffsetParams[8] = { nullptr };
 	std::atomic<float>* slotRandomRetriggerParams[8];
 	std::atomic<float>* slotRetriggerIntervalParams[8];
+	std::atomic<float>* slotAdsrAttackParams[8] = {};
+	std::atomic<float>* slotAdsrDecayParams[8] = {};
+	std::atomic<float>* slotAdsrSustainParams[8] = {};
+	std::atomic<float>* slotAdsrReleaseParams[8] = {};
 	std::atomic<float> pendingDetectedBpm{ -1.0f };
 
 	static juce::File getGlobalConfigFile()
@@ -446,6 +450,7 @@ private:
 	void loadSampleToBankPage(const juce::String& trackId, int pageIndex, const juce::File& sampleFile, const juce::String& sampleId);
 	void loadAudioFileForPageSwitch(const juce::String& trackId, int pageIndex, const juce::File& audioFile);
 	void sendMidiFeedback(int cc, int value);
+	void sendMidiFeedback(int cc, int value, int channel);
 	void notifyPageChangedFeedback(int slotNumber, int pageIndex);
 	void sendFullStateFeedback();
 

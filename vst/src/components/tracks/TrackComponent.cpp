@@ -53,6 +53,10 @@ TrackComponent::~TrackComponent()
 		removeListener("Generate");
 		removeListener("RandomRetrigger");
 		removeListener("RetriggerInterval");
+		removeListener("AdsrAttack");
+		removeListener("AdsrDecay");
+		removeListener("AdsrSustain");
+		removeListener("AdsrRelease");
 	}
 
 	track = nullptr;
@@ -63,6 +67,10 @@ void TrackComponent::addEventListeners()
 	addListener("Generate");
 	addListener("RandomRetrigger");
 	addListener("RetriggerInterval");
+	addListener("AdsrAttack");
+	addListener("AdsrDecay");
+	addListener("AdsrSustain");
+	addListener("AdsrRelease");
 }
 
 void TrackComponent::setTrackData(TrackData* trackData)
@@ -127,6 +135,34 @@ void TrackComponent::updateUIFromParameter(const juce::String& paramName,
 		{
 			track->randomRetriggerInterval = (int)denormalizedValue;
 		}
+	}
+	else if (paramName == slotPrefix + " ADSR Attack")
+	{
+		// newValue est normalisé 0→1, convertir vers le range réel 0.001→4.0
+		float denorm = 0.001f + newValue * (4.0f - 0.001f);
+		adsrAttackKnob.setValue(denorm, juce::dontSendNotification);
+		if (track) track->getCurrentPage().adsrAttack.store(denorm);
+		syncAdsrToWaveform();
+	}
+	else if (paramName == slotPrefix + " ADSR Decay")
+	{
+		float denorm = 0.001f + newValue * (4.0f - 0.001f);
+		adsrDecayKnob.setValue(denorm, juce::dontSendNotification);
+		if (track) track->getCurrentPage().adsrDecay.store(denorm);
+		syncAdsrToWaveform();
+	}
+	else if (paramName == slotPrefix + " ADSR Sustain")
+	{
+		adsrSustainKnob.setValue(newValue, juce::dontSendNotification);
+		if (track) track->getCurrentPage().adsrSustain.store(newValue);
+		syncAdsrToWaveform();
+	}
+	else if (paramName == slotPrefix + " ADSR Release")
+	{
+		float denorm = 0.001f + newValue * (4.0f - 0.001f);
+		adsrReleaseKnob.setValue(denorm, juce::dontSendNotification);
+		if (track) track->getCurrentPage().adsrRelease.store(denorm);
+		syncAdsrToWaveform();
 	}
 }
 
@@ -471,14 +507,17 @@ void TrackComponent::updateAdsrKnobsFromPage()
 void TrackComponent::onAdsrChanged()
 {
 	if (!track) return;
-
 	auto& page = track->getCurrentPage();
 	page.adsrAttack = (float)adsrAttackKnob.getValue();
 	page.adsrDecay = (float)adsrDecayKnob.getValue();
 	page.adsrSustain = (float)adsrSustainKnob.getValue();
 	page.adsrRelease = (float)adsrReleaseKnob.getValue();
-
 	syncAdsrToWaveform();
+
+	setSliderParameter("AdsrAttack", adsrAttackKnob);
+	setSliderParameter("AdsrDecay", adsrDecayKnob);
+	setSliderParameter("AdsrSustain", adsrSustainKnob);
+	setSliderParameter("AdsrRelease", adsrReleaseKnob);
 }
 
 void TrackComponent::syncAdsrToWaveform()
@@ -1717,6 +1756,10 @@ void TrackComponent::setSliderParameter(juce::String name, juce::Slider& slider)
 				{
 					value = (value - 1.0f) / 9.0f;
 				}
+				else if (name == "AdsrAttack" || name == "AdsrDecay" || name == "AdsrRelease")
+				{
+					value = (value - 0.001f) / (4.0f - 0.001f);
+				}
 				param->setValueNotifyingHost(value);
 			}
 		}
@@ -2011,6 +2054,42 @@ void TrackComponent::setupMidiLearn()
 	promptPresetSelector.onMidiRemove = [this, paramName]()
 		{
 			audioProcessor.getMidiLearnManager().removeMappingForParameter(paramName);
+		};
+
+	adsrAttackKnob.onMidiLearn = [this]()
+		{
+			learn("AdsrAttack", &adsrAttackKnob);
+		};
+	adsrAttackKnob.onMidiRemove = [this]()
+		{
+			removeMidiMapping("AdsrAttack");
+		};
+
+	adsrDecayKnob.onMidiLearn = [this]()
+		{
+			learn("AdsrDecay", &adsrDecayKnob);
+		};
+	adsrDecayKnob.onMidiRemove = [this]()
+		{
+			removeMidiMapping("AdsrDecay");
+		};
+
+	adsrSustainKnob.onMidiLearn = [this]()
+		{
+			learn("AdsrSustain", &adsrSustainKnob);
+		};
+	adsrSustainKnob.onMidiRemove = [this]()
+		{
+			removeMidiMapping("AdsrSustain");
+		};
+
+	adsrReleaseKnob.onMidiLearn = [this]()
+		{
+			learn("AdsrRelease", &adsrReleaseKnob);
+		};
+	adsrReleaseKnob.onMidiRemove = [this]()
+		{
+			removeMidiMapping("AdsrRelease");
 		};
 }
 

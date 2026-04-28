@@ -50,6 +50,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 		params.push_back(makeTrigg(slotId + "PageC", slotName + " Page C"));
 		params.push_back(makeTrigg(slotId + "PageD", slotName + " Page D"));
 
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			slotId + "AdsrAttack", slotName + " ADSR Attack",
+			juce::NormalisableRange<float>(0.001f, 4.0f), 0.01f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			slotId + "AdsrDecay", slotName + " ADSR Decay",
+			juce::NormalisableRange<float>(0.001f, 4.0f), 4.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			slotId + "AdsrSustain", slotName + " ADSR Sustain",
+			juce::NormalisableRange<float>(0.0f, 1.0f), 1.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			slotId + "AdsrRelease", slotName + " ADSR Release",
+			juce::NormalisableRange<float>(0.001f, 4.0f), 0.01f));
+
 		for (int j = 1; j <= 8; ++j)
 			params.push_back(makeTrigg(slotId + "Seq" + juce::String(j), slotName + " Sequence " + juce::String(j)));
 	}

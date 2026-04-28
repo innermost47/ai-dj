@@ -95,10 +95,10 @@ public:
 		if (learningMode && blinkState)
 		{
 			auto bounds = this->getLocalBounds();
-			g.setColour(ColourPalette::textAccent);
+			g.setColour(ColourPalette::textSecondary);
 			g.drawRect(bounds, 3);
 
-			g.setColour(ColourPalette::withAlpha(ColourPalette::textAccent, 0.2f));
+			g.setColour(ColourPalette::withAlpha(ColourPalette::textSecondary, 0.2f));
 			g.fillRect(bounds);
 		}
 	}

@@ -31,6 +31,19 @@ struct MidiMapping
 	static int ccFeedbackSolo(int slot) { return 109 + slot; }
 	static int ccFeedbackBeatRepeat(int slot) { return 118 + slot; }
 
+	static const int feedbackChannelAdsr = 2;
+
+	static int ccFeedbackAdsrAttack(int slot) { return 20 + slot; }
+	static int ccFeedbackAdsrDecay(int slot) { return 30 + slot; }
+	static int ccFeedbackAdsrSustain(int slot) { return 40 + slot; }
+	static int ccFeedbackAdsrRelease(int slot) { return 50 + slot; }
+
+	static int adsrToMidi(float value, float rangeMin, float rangeMax)
+	{
+		float normalized = (value - rangeMin) / (rangeMax - rangeMin);
+		return juce::jlimit(0, 127, juce::roundToInt(normalized * 127.0f));
+	}
+
 	static int volumeToMidi(float v) { return juce::roundToInt(v * 127.0f); }
 	static int panToMidi(float p) { return juce::roundToInt((p + 1.0f) / 2.0f * 127.0f); }
 	static int pitchToMidi(float p) { return juce::jlimit(0, 127, juce::roundToInt((p + 96.0f) / 192.0f * 127.0f)); }
