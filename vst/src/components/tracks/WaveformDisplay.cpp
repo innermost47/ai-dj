@@ -314,14 +314,14 @@ void WaveformDisplay::paint(juce::Graphics& g)
 
 	if (zoomFactor > 1.0)
 	{
-		g.setColour(ColourPalette::buttonWarning);
+		g.setColour(ColourPalette::textPrimary);
 		g.setFont(10.0f);
 		g.drawText("Zoom: " + juce::String(zoomFactor, 1) + "x", 5, getHeight() - 20, 60, 15, juce::Justification::left);
 	}
 
 	if (loopPointsLocked)
 	{
-		g.setColour(ColourPalette::muteActive);
+		g.setColour(ColourPalette::loopLocked);
 		g.setFont(10.0f);
 		g.drawText("LOCKED", getWidth() - 60, getHeight() - 20, 55, 15, juce::Justification::right);
 	}
@@ -606,10 +606,20 @@ void WaveformDisplay::updateScrollBarVisibility()
 {
 	bool shouldShow = (zoomFactor > 1.0);
 
+	const int barHeight = 5;
+	const int barY = getHeight() - barHeight;
+
+	auto applyScrollBarStyle = [this]()
+		{
+			juce::Colour modelColour = getModelAccentColour();
+			horizontalScrollBar->setColour(juce::ScrollBar::thumbColourId, modelColour.withAlpha(0.85f));
+		};
+
 	if (shouldShow && !scrollBarVisible)
 	{
 		addAndMakeVisible(*horizontalScrollBar);
-		horizontalScrollBar->setBounds(0, getHeight() - 8, getWidth(), 12);
+		horizontalScrollBar->setBounds(0, barY, getWidth(), barHeight);
+		applyScrollBarStyle();
 		scrollBarVisible = true;
 		updateScrollBar();
 	}
@@ -620,7 +630,8 @@ void WaveformDisplay::updateScrollBarVisibility()
 	}
 	else if (shouldShow)
 	{
-		horizontalScrollBar->setBounds(0, getHeight() - 8, getWidth(), 12);
+		horizontalScrollBar->setBounds(0, barY, getWidth(), barHeight);
+		applyScrollBarStyle();
 		updateScrollBar();
 	}
 }
@@ -947,19 +958,29 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 	float endX = timeToX(loopEnd);
 
 	juce::Colour modelColour = getModelAccentColour();
-	juce::Colour loopColour = loopPointsLocked ? ColourPalette::textAccent : modelColour;
+	juce::Colour loopColour = loopPointsLocked ? ColourPalette::loopLocked : modelColour;
+
+	drawAdsrOverlay(g, startX, endX);
 
 	if (loopPointsLocked)
 	{
-		g.setColour(loopColour.darker(0.3f).withAlpha(0.5f));
-	}
-	else
-	{
-		g.setColour(loopColour.withAlpha(0.15f));
-	}
-	g.fillRect(startX, 0.0f, endX - startX, (float)getHeight());
+		g.setColour(ColourPalette::loopLocked.withAlpha(0.22f));
+		g.fillRect(startX, 0.0f, endX - startX, (float)getHeight());
 
-	drawAdsrOverlay(g, startX, endX);
+		juce::Path hatchPath;
+		const float spacing = 14.0f;
+		const float zoneW = endX - startX;
+		const float h = (float)getHeight();
+		for (float offset = -h; offset < zoneW + h; offset += spacing)
+		{
+			hatchPath.startNewSubPath(startX + offset, h);
+			hatchPath.lineTo(startX + offset + h, 0.0f);
+		}
+		g.setColour(ColourPalette::loopLocked.withAlpha(0.18f));
+		juce::Graphics::ScopedSaveState save(g);
+		g.reduceClipRegion(juce::Rectangle<float>(startX, 0.0f, zoneW, h).toNearestInt());
+		g.strokePath(hatchPath, juce::PathStrokeType(1.0f));
+	}
 
 	float lineWidth = loopPointsLocked ? 3.0f : 2.0f;
 	g.setColour(loopColour);

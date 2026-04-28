@@ -83,8 +83,9 @@ public:
 
 	static const juce::Colour lime;
 	static const juce::Colour cyan;
+	static const juce::Colour loopLocked;
 
 	static juce::Colour getTrackColour(int trackIndex);
-	static juce::Colour withAlpha(const juce::Colour &colour, float alpha);
+	static juce::Colour withAlpha(const juce::Colour& colour, float alpha);
 	static juce::Colour getModelColourByIndex(int index);
 };

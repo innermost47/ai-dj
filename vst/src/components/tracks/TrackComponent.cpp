@@ -336,7 +336,7 @@ void TrackComponent::updateFromTrackData()
 
 	updateButtonsEnabledState();
 
-	if (track->isPlaying.load() && !isPreviewPlaying)
+	if (track->isCurrentlyPlaying.load() && !isPreviewPlaying)
 	{
 		previewButton.setEnabled(false);
 	}
@@ -436,10 +436,10 @@ void TrackComponent::setupAdsrKnobs()
 			knob.setRange(rMin, rMax, 0.0);
 			knob.setSkewFactorFromMidPoint(rMin + (rMax - rMin) * 0.3f);
 			knob.setValue(def, juce::dontSendNotification);
+			knob.setDoubleClickReturnValue(true, def);
 			knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 			knob.setTooltip(tooltip);
 			knob.onValueChange = [this]() { onAdsrChanged(); };
-
 			addAndMakeVisible(label);
 			label.setText(name, juce::dontSendNotification);
 			label.setJustificationType(juce::Justification::centred);
@@ -448,9 +448,9 @@ void TrackComponent::setupAdsrKnobs()
 		};
 
 	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.01f, "ADSR Attack time (seconds)");
-	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", 0.001f, 4.0f, 0.1f, "ADSR Decay time (seconds)");
-	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", 0.0f, 1.0f, 0.8f, "ADSR Sustain level (0-1)");
-	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.2f, "ADSR Release time (seconds)");
+	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", 0.001f, 4.0f, 4.0f, "ADSR Decay time (seconds)");
+	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", 0.0f, 1.0f, 1.0f, "ADSR Sustain level (0-1)");
+	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.01f, "ADSR Release time (seconds)");
 
 	adsrSustainKnob.setSkewFactor(1.0);
 }
@@ -535,7 +535,7 @@ void TrackComponent::resized()
 			selectorHeight);
 	}
 
-	headerArea.removeFromLeft(8);
+	headerArea.removeFromLeft(INTRA_CLUSTER_GAP);
 
 	{
 		const int createButtonWidth = 34;
@@ -612,6 +612,9 @@ void TrackComponent::resized()
 				{
 					if (track)
 					{
+						const double oldLoopStart = track->loopStart;
+						const double sr = track->sampleRate;
+
 						if (track->usePages.load())
 						{
 							auto& currentPage = track->getCurrentPage();
@@ -625,9 +628,24 @@ void TrackComponent::resized()
 							track->loopEnd = end;
 						}
 						waveformDisplay->setLoopPoints(start, end);
+
 						if (track->isPlaying.load())
 						{
-							track->readPosition = 0.0;
+							const double newStartSample = start * sr;
+							const double newEndSample = end * sr;
+							const double oldStartSample = oldLoopStart * sr;
+
+							double currentAbs = oldStartSample + track->readPosition.load();
+							double newRelative = currentAbs - newStartSample;
+
+							if (currentAbs < newStartSample || currentAbs >= newEndSample)
+							{
+								track->readPosition.store(0.0);
+							}
+							else
+							{
+								track->readPosition.store(newRelative);
+							}
 						}
 					}
 				};

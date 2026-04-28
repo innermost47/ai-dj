@@ -523,7 +523,7 @@ public:
 	}
 
 	void drawScrollbar(juce::Graphics& g,
-		juce::ScrollBar& /*scrollbar*/,
+		juce::ScrollBar& scrollbar,
 		int x, int y,
 		int width, int height,
 		bool isScrollbarVertical,
@@ -532,8 +532,8 @@ public:
 		bool isMouseOver,
 		bool isMouseDown) override
 	{
-		g.setColour(findColour(juce::ScrollBar::backgroundColourId));
-		g.fillRoundedRectangle((float)x, (float)y, (float)width, (float)height, 4.0f);
+		g.setColour(scrollbar.findColour(juce::ScrollBar::backgroundColourId));
+		g.fillRect((float)x, (float)y, (float)width, (float)height);
 
 		juce::Rectangle<float> thumbBounds;
 
@@ -548,7 +548,7 @@ public:
 				(float)thumbSize,
 				(float)height);
 
-		auto thumbColour = findColour(juce::ScrollBar::thumbColourId);
+		auto thumbColour = scrollbar.findColour(juce::ScrollBar::thumbColourId);
 
 		if (isMouseDown)
 			thumbColour = thumbColour.brighter(0.2f);
