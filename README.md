@@ -70,6 +70,8 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 - **Draw-to-sound** — Sketch your ideas visually and let AI interpret them musically
 - **Perfect DAW sync** — Auto time-stretch to project tempo
 - **Non-blocking generation** — No pre-recorded samples, renders in background
+- **4 pair crossfaders** — Blend each deck A/B pair independently with model-aware color morphing
+- **Global crossfader** — Master A/B mix across all pairs simultaneously
 
 **OBSIDIAN Neural is NOT a song generator** like Suno or Udio. It's a performance tool: you build your track loop by loop, you're the composer, AI is your loop generator.
 
