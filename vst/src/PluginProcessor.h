@@ -220,10 +220,29 @@ public:
 		"Vintage analog lead",
 	};
 
+	void  setCrossfaderValue(float v) { crossfaderValue.store(juce::jlimit(0.0f, 1.0f, v)); }
+	float getCrossfaderValue()  const { return crossfaderValue.load(); }
+	void  setCrossfadeMode(int m) { crossfadeMode.store(m); }
+	int   getCrossfadeMode()    const { return crossfadeMode.load(); }
+
+	void setPairCrossfaderValue(int pairIndex, float value);
+	float getPairCrossfaderValue(int pairIndex) const;
+	void setGlobalCrossfaderValue(float value);
+	float getGlobalCrossfaderValue() const;
+
+	std::pair<float, float> getCrossfadeGains() const;
+
 private:
 	DjIaVstEditor* currentEditor = nullptr;
 	SimpleEQ masterEQ;
 	MidiLearnManager midiLearnManager;
+	enum class CrossfadeMode { Linear, EqualPower, DJCurve };
+	std::atomic<float> crossfaderValue{ 0.5f };
+	std::atomic<int>   crossfadeMode{ 0 };
+	std::atomic<float> pairCrossfaderValue[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+	std::atomic<float> globalCrossfaderValue{ 0.5f };
+	float pairCrossfaderPrevious[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+	float globalCrossfaderPrevious = 0.5f;
 	DjIaClient apiClient;
 	GenerationListener* generationListener = nullptr;
 	juce::String projectId;

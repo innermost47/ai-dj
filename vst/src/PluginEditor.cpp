@@ -1207,8 +1207,8 @@ void DjIaVstEditor::resized()
 		return;
 	resizing = true;
 
-	const int spacing = 5;
-	const int padding = 10;
+	const int spacing = 4;
+	const int padding = 6;
 	const int reducing = 2;
 
 	auto fullBounds = getLocalBounds();
@@ -1225,28 +1225,28 @@ void DjIaVstEditor::resized()
 	auto area = fullBounds.reduced(padding);
 
 	const int bannerHeight = 80;
-
 	auto topArea = area.removeFromTop(bannerHeight);
 
 	const int column1Width = static_cast<int>(topArea.getWidth() * 0.50f);
 	auto column1 = topArea.removeFromLeft(column1Width);
 	layoutPromptSection(column1, spacing);
 
-	topArea.removeFromLeft(spacing * 2);
+	topArea.removeFromLeft(spacing);
 
 	const int column2Width = static_cast<int>(topArea.getWidth() * 0.45f);
 	auto column2 = topArea.removeFromLeft(column2Width);
 	layoutConfigSection(column2, reducing, spacing);
 
-	topArea.removeFromLeft(spacing * 2);
+	topArea.removeFromLeft(spacing);
 
 	auto column3 = topArea;
-	auto logoSpace = column3.removeFromLeft(80);
+	auto logoSpace = column3.removeFromLeft(64);
 	logoComponent.setBounds(logoSpace);
+
 	auto nameArea = column3;
-	auto titleArea = nameArea.removeFromTop(30);
-	auto devArea = nameArea.removeFromTop(10);
-	auto partnerArea = nameArea.removeFromTop(25);
+	auto titleArea = nameArea.removeFromTop(26);
+	auto devArea = nameArea.removeFromTop(12);
+	auto partnerArea = nameArea.removeFromTop(20);
 	pluginNameLabel.setBounds(titleArea);
 	developerLabel.setBounds(devArea);
 	stabilityLabel.setBounds(partnerArea);
@@ -1254,17 +1254,12 @@ void DjIaVstEditor::resized()
 	area.removeFromTop(spacing);
 
 	const int totalHeight = area.getHeight();
-	const int minTracksHeight = 480;
-	const int minMixerHeight = 215;
+	const int maxMixerHeight = 240;
+	const int minMixerHeight = 230;
 
-	int tracksHeight = static_cast<int>(totalHeight * 0.65f);
-	int mixerHeight = totalHeight - tracksHeight - spacing;
-
-	if (tracksHeight < minTracksHeight && totalHeight >= minTracksHeight + minMixerHeight + spacing)
-	{
-		tracksHeight = minTracksHeight;
-		mixerHeight = totalHeight - tracksHeight - spacing;
-	}
+	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight,
+		static_cast<int>(totalHeight * 0.28f));
+	int tracksHeight = totalHeight - mixerHeight - spacing;
 
 	auto tracksArea = area.removeFromTop(tracksHeight);
 	tracksViewport.setBounds(tracksArea);
@@ -1275,7 +1270,7 @@ void DjIaVstEditor::resized()
 	area.removeFromTop(spacing);
 
 	auto bottomRow = area;
-	const int controlPanelWidth = juce::jmax(220, juce::jmin(260, bottomRow.getWidth() / 7));
+	const int controlPanelWidth = juce::jmax(190, juce::jmin(220, bottomRow.getWidth() / 9));
 	auto controlPanelArea = bottomRow.removeFromRight(controlPanelWidth);
 	bottomRow.removeFromRight(spacing);
 
@@ -1287,7 +1282,6 @@ void DjIaVstEditor::resized()
 		mixerPanel->setBounds(0, 0, mixerW, bottomRow.getHeight());
 		mixerViewport.setVisible(true);
 	}
-
 	layoutControlPanel(controlPanelArea, spacing);
 
 	resizing = false;
@@ -1296,15 +1290,13 @@ void DjIaVstEditor::resized()
 void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
 {
 	area.removeFromLeft(8);
-	auto waveArea = area.removeFromTop(area.getHeight() - 75 - spacing - 30);
+	auto waveArea = area.removeFromTop(area.getHeight() - 65 - spacing - 30);
 	masterWaveformDisplay.setBounds(waveArea);
 
 	area.removeFromTop(spacing);
 
 	auto lcdArea = area.removeFromTop(60);
 	lcdScreen.setBounds(lcdArea);
-
-	area.removeFromBottom(10);
 
 	int btnW = (area.getWidth() - spacing * 6) / 7;
 	auto btnRow = area.removeFromBottom(32);
@@ -1347,20 +1339,29 @@ void DjIaVstEditor::layoutTracksGrid()
 
 	const int scrollbarAllowance = 12;
 	const int availableWidth = viewportBounds.getWidth() - scrollbarAllowance;
-
 	const int totalWidth = juce::jmax(minTotalWidth, availableWidth);
 	const int cellW = (totalWidth - spacing * (cols - 1)) / cols;
-
 	const int totalHeight = cellH * rows + spacing * (rows - 1);
+
 	tracksContainer.setSize(totalWidth, totalHeight);
 
-	for (int i = 0; i < (int)trackComponents.size(); ++i)
+	for (auto& comp : trackComponents)
 	{
-		int col = i % cols;
-		int row = i / cols;
+		TrackData* trackData = audioProcessor.getTrack(comp->getTrackId());
+		if (trackData == nullptr)
+			continue;
+
+		int slot = trackData->slotIndex;
+		if (slot < 0 || slot >= 8)
+			continue;
+
+		int col = (trackData->getDeckSide() == TrackData::DeckSide::A) ? 0 : 1;
+		int row = slot % 4;
+
 		int x = col * (cellW + spacing);
 		int y = row * (cellH + spacing);
-		trackComponents[i]->setBounds(x, y, cellW, cellH);
+
+		comp->setBounds(x, y, cellW, cellH);
 	}
 }
 

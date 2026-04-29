@@ -1,5 +1,6 @@
 #pragma once
 #include "components/ObsidianBase.h"
+#include "CrossfaderComponent.h"
 
 class MixerChannel;
 class DjIaVstProcessor;
@@ -30,13 +31,15 @@ public:
 
 private:
 	DjIaVstProcessor& audioProcessor;
-
+	std::unique_ptr<CrossfaderComponent> crossfader;
 	std::unique_ptr<MasterChannel> masterChannel;
 	float masterVolume = 0.8f;
 	float masterPan = 0.0f;
 
-	juce::Viewport channelsViewport;
-	juce::Component channelsContainer;
+	juce::Viewport deckAViewport;
+	juce::Component deckAContainer;
+	juce::Viewport deckBViewport;
+	juce::Component deckBContainer;
 	std::vector<std::unique_ptr<MixerChannel>> mixerChannels;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerPanel)

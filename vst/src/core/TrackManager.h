@@ -87,12 +87,16 @@ public:
 	}
 
 	void renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
-		std::vector<juce::AudioBuffer<float>>& individualOutputs, juce::AudioBuffer<float>& previewOutput,
-		double hostBpm)
+		std::vector<juce::AudioBuffer<float>>& individualOutputs,
+		juce::AudioBuffer<float>& previewOutput,
+		double hostBpm,
+		const float pairPrev[4],
+		const float pairCurrent[4],
+		float globalPrev,
+		float globalCurrent)
 	{
 		const int numSamples = outputBuffer.getNumSamples();
 		bool anyTrackSolo = false;
-
 		{
 			juce::ScopedLock lock(tracksLock);
 			for (const auto& pair : tracks)
@@ -104,7 +108,6 @@ public:
 				}
 			}
 		}
-
 		outputBuffer.clear();
 		for (auto& buffer : individualOutputs)
 		{
@@ -114,22 +117,41 @@ public:
 		for (const auto& pair : tracks)
 		{
 			auto* track = pair.second.get();
-
 			if (track->isEnabled.load() && track->numSamples > 0 &&
 				track->slotIndex >= 0 && track->slotIndex < individualOutputs.size())
 			{
 				int bufferIndex = track->slotIndex;
-
 				juce::AudioBuffer<float> tempMixBuffer(outputBuffer.getNumChannels(), numSamples);
 				juce::AudioBuffer<float> tempIndividualBuffer(2, numSamples);
 				tempMixBuffer.clear();
 				tempIndividualBuffer.clear();
-
 				renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer,
 					previewOutput, numSamples, bufferIndex, hostBpm);
 
+				float deckGainStart = 1.0f;
+				float deckGainEnd = 1.0f;
+
+				int pairIdx = track->getPairIndex();
+				if (pairIdx >= 0 && pairIdx < 4)
+				{
+					bool isA = track->isDeckA();
+
+					float pairXfStart = pairPrev[pairIdx];
+					float globalXfStart = globalPrev;
+					float pairGainStart = isA ? (1.0f - pairXfStart) : pairXfStart;
+					float globalGainStart = isA ? (1.0f - globalXfStart) : globalXfStart;
+					deckGainStart = pairGainStart * globalGainStart;
+
+					float pairXfEnd = pairCurrent[pairIdx];
+					float globalXfEnd = globalCurrent;
+					float pairGainEnd = isA ? (1.0f - pairXfEnd) : pairXfEnd;
+					float globalGainEnd = isA ? (1.0f - globalXfEnd) : globalXfEnd;
+					deckGainEnd = pairGainEnd * globalGainEnd;
+				}
+
 				bool shouldHearTrack = !track->isMuted.load() &&
 					(!anyTrackSolo || track->isSolo.load());
+
 				if (track->isPreviewMode.load())
 				{
 					if (previewOutput.getNumChannels() >= 2)
@@ -148,18 +170,33 @@ public:
 					if (shouldHearTrack)
 					{
 						for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
-							outputBuffer.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
+						{
+							outputBuffer.addFromWithRamp(ch, 0,
+								tempMixBuffer.getReadPointer(ch),
+								numSamples,
+								deckGainStart, deckGainEnd);
+						}
 					}
+
 					for (int ch = 0; ch < std::min(2, individualOutputs[bufferIndex].getNumChannels()); ++ch)
 					{
-						individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
 						if (!shouldHearTrack)
+						{
+							individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
 							individualOutputs[bufferIndex].applyGain(ch, 0, numSamples, 0.0f);
+						}
+						else
+						{
+							individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
+							individualOutputs[bufferIndex].applyGainRamp(ch, 0, numSamples,
+								deckGainStart, deckGainEnd);
+						}
 					}
 				}
 			}
 		}
 	}
+
 
 	juce::ValueTree saveState() const
 	{
