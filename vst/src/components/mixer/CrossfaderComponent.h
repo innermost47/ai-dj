@@ -39,6 +39,7 @@ private:
 	void setupSlider(MidiLearnableSlider& slider, const juce::String& tooltip);
 	void setupMidiLearn();
 	void updateSliderColour(MidiLearnableSlider& slider, int pairIdx);
+	void paintOverChildren(juce::Graphics& g) override;
 
 	juce::String getPairMidiId(int pairIndex) const
 	{

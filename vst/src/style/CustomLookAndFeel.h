@@ -417,7 +417,7 @@ public:
 	void drawLinearSlider(juce::Graphics& g,
 		int x, int y, int width, int height,
 		float sliderPos,
-		float minSliderPos, float maxSliderPos,
+		float /*minSliderPos*/, float /*maxSliderPos*/,
 		const juce::Slider::SliderStyle style,
 		juce::Slider& slider) override
 	{
@@ -448,8 +448,6 @@ public:
 			g.setColour(ColourPalette::backgroundMid);
 			g.fillRoundedRectangle(trackRect, trackWidth * 0.5f);
 
-			float denominator = maxSliderPos - minSliderPos;
-
 			if (isVertical)
 			{
 				float thumbY = sliderPos;
@@ -466,20 +464,6 @@ public:
 				{
 					g.setColour(accentColour.withAlpha(0.5f));
 					g.fillRoundedRectangle(fillRect, trackWidth * 0.5f);
-				}
-			}
-			else
-			{
-				if (std::abs(denominator) > 0.001f)
-				{
-					float fillRatio = juce::jlimit(0.0f, 1.0f, (sliderPos - minSliderPos) / denominator);
-					auto filledEnd = startPoint + (endPoint - startPoint) * fillRatio;
-					auto fillRect = juce::Rectangle<float>(startPoint, filledEnd).expanded(trackWidth * 0.5f);
-					if (fillRect.isFinite() && !fillRect.isEmpty())
-					{
-						g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
-						g.fillRoundedRectangle(fillRect, trackWidth * 0.5f);
-					}
 				}
 			}
 

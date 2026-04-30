@@ -173,13 +173,18 @@ void CrossfaderComponent::refreshFromProcessor()
 void CrossfaderComponent::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds().toFloat();
-
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds, 8.0f);
-
 	g.setColour(ColourPalette::sliderTrack);
 	g.drawRoundedRectangle(bounds.reduced(1.0f), 8.0f, 1.0f);
+	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
+	g.setColour(ColourPalette::textPrimary);
+	g.drawText("CROSSFADERS", bounds.toNearestInt().withHeight(12).translated(0, 6), juce::Justification::centred);
+}
 
+void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
+{
+	const float ledR = 4.0f;
 	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 9.0f, juce::Font::bold));
 
 	for (int i = 0; i < 4; ++i)
@@ -195,74 +200,33 @@ void CrossfaderComponent::paint(juce::Graphics& g)
 		if (trackLeft)  leftColour = AiModelDefinitions::getColourForModel(trackLeft->selectedModel);
 		if (trackRight) rightColour = AiModelDefinitions::getColourForModel(trackRight->selectedModel);
 
-		auto tagLeft = juce::Rectangle<int>(rowBounds.getX(), rowBounds.getCentreY() - 8, 18, 16);
-		g.setColour(leftColour.withAlpha(0.85f));
-		g.fillRoundedRectangle(tagLeft.toFloat(), 3.0f);
-		g.setColour(leftColour.getBrightness() > 0.55f ? juce::Colours::black : ColourPalette::textPrimary);
-		g.drawText(juce::String(i + 1), tagLeft, juce::Justification::centred);
+		float labelY = (float)rowBounds.getY() - 2.0f;
+		float rx = (float)rowBounds.getX();
+		float rr = (float)rowBounds.getRight();
 
-		auto tagRight = juce::Rectangle<int>(rowBounds.getRight() - 18, rowBounds.getCentreY() - 8, 18, 16);
-		g.setColour(rightColour.withAlpha(0.85f));
-		g.fillRoundedRectangle(tagRight.toFloat(), 3.0f);
-		g.setColour(rightColour.getBrightness() > 0.55f ? juce::Colours::black : ColourPalette::textPrimary);
-		g.drawText(juce::String(i + 5), tagRight, juce::Justification::centred);
+		g.setColour(leftColour.withAlpha(0.9f));
+		g.fillEllipse(rx + 2.0f, labelY + 2.0f, ledR * 2.0f, ledR * 2.0f);
+		g.setColour(ColourPalette::textSecondary);
+		g.drawText("T" + juce::String(i + 1),
+			juce::Rectangle<float>(rx + ledR * 2.0f + 5.0f, labelY, 20.0f, 12.0f).toNearestInt(),
+			juce::Justification::centredLeft);
+
+		g.setColour(ColourPalette::textSecondary);
+		g.drawText("T" + juce::String(i + 5),
+			juce::Rectangle<float>(rr - ledR * 2.0f - 24.0f, labelY, 20.0f, 12.0f).toNearestInt(),
+			juce::Justification::centredRight);
+		g.setColour(rightColour.withAlpha(0.9f));
+		g.fillEllipse(rr - ledR * 2.0f - 2.0f, labelY + 2.0f, ledR * 2.0f, ledR * 2.0f);
 	}
-
-	if (!globalRowBounds.isEmpty())
-	{
-		float sepY = globalRowBounds.getY() - 4.0f;
-		g.setColour(ColourPalette::backgroundLight.withAlpha(0.5f));
-		g.drawLine(bounds.getX() + 8.0f, sepY, bounds.getRight() - 8.0f, sepY, 0.8f);
-
-		auto tagA = juce::Rectangle<int>(globalRowBounds.getX(),
-			globalRowBounds.getCentreY() - 8, 18, 16);
-		g.setColour(ColourPalette::textPrimary.withAlpha(0.85f));
-		g.fillRoundedRectangle(tagA.toFloat(), 3.0f);
-		g.setColour(juce::Colours::black);
-		g.drawText("A", tagA, juce::Justification::centred);
-
-		auto tagB = juce::Rectangle<int>(globalRowBounds.getRight() - 18,
-			globalRowBounds.getCentreY() - 8, 18, 16);
-		g.setColour(ColourPalette::textPrimary.withAlpha(0.85f));
-		g.fillRoundedRectangle(tagB.toFloat(), 3.0f);
-		g.setColour(juce::Colours::black);
-		g.drawText("B", tagB, juce::Justification::centred);
-
-		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 8.0f, juce::Font::bold));
-		g.setColour(ColourPalette::textSecondary.withAlpha(0.85f));
-		auto labelBounds = juce::Rectangle<int>(
-			globalRowBounds.getX(), globalRowBounds.getBottom() - 4,
-			globalRowBounds.getWidth(), 10);
-		g.drawText("GLOBAL", labelBounds, juce::Justification::centred);
-	}
-
-	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
-	g.setColour(ColourPalette::textPrimary);
-	g.drawText("CROSSFADERS", bounds.toNearestInt().withHeight(12).translated(0, 6), juce::Justification::centred);
 }
 
 void CrossfaderComponent::resized()
 {
 	auto area = getLocalBounds().reduced(6, 4);
-	area.removeFromTop(20);
+	area.removeFromTop(28);
 
-	const int pairTagWidth = 18;
-	const int pairTagSpacing = 4;
-	const int globalRowHeight = 36;
-	const int globalLabelHeight = 10;
-	const int globalSeparator = 4;
-
-	auto globalArea = area.removeFromBottom(globalRowHeight + globalLabelHeight);
-	area.removeFromBottom(globalSeparator);
-
-	auto globalSliderRow = globalArea.removeFromTop(globalRowHeight);
-	globalRowBounds = globalSliderRow;
-	auto globalSliderArea = globalSliderRow;
-	globalSliderArea.removeFromLeft(pairTagWidth + pairTagSpacing);
-	globalSliderArea.removeFromRight(pairTagWidth + pairTagSpacing);
-	globalSlider.setBounds(globalSliderArea);
-
-	const int rowSpacing = 3;
+	const int sideW = 2;
+	const int rowSpacing = 4;
 	const int rowHeight = (area.getHeight() - rowSpacing * 3) / 4;
 
 	for (int i = 0; i < 4; ++i)
@@ -271,11 +235,13 @@ void CrossfaderComponent::resized()
 		pairRowBounds[i] = rowArea;
 
 		auto sliderArea = rowArea;
-		sliderArea.removeFromLeft(pairTagWidth + pairTagSpacing);
-		sliderArea.removeFromRight(pairTagWidth + pairTagSpacing);
+		sliderArea.removeFromLeft(sideW);
+		sliderArea.removeFromRight(sideW);
 		pairSliders[i].setBounds(sliderArea);
 
 		if (i < 3)
 			area.removeFromTop(rowSpacing);
 	}
+
+	globalSlider.setVisible(false);
 }
