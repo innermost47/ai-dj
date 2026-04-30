@@ -52,7 +52,7 @@ private:
 	int beatsPerMeasure = 4;
 	bool isPlaying = false;
 
-	juce::Slider measureSlider;
+	std::array<juce::TextButton, 4> measureButtons;
 	juce::Slider timeSignatureSlider;
 	std::array<MidiLearnableButton, 8> sequenceButtons;
 	juce::Colour accentColour = ColourPalette::buttonDanger;
@@ -74,6 +74,7 @@ private:
 	void setupSequenceButtons();
 	void layoutSequenceButtons(juce::Rectangle<int> area);
 	void onSequenceSelected(int seqIndex);
+	void updateMeasureButtonsDisplay();
 
 	double samplesPerStep;
 	double stepAccumulator;

@@ -1215,7 +1215,7 @@ void DjIaVstEditor::resized()
 
 	auto fullBounds = getLocalBounds();
 
-	const int bannerHeight = 44;
+	const int bannerHeight = 40;
 	auto headerArea = fullBounds.removeFromTop(bannerHeight);
 	headerArea.reduce(padding, 0);
 	layoutPromptSection(headerArea, spacing);
@@ -1234,8 +1234,8 @@ void DjIaVstEditor::resized()
 	auto area = fullBounds;
 
 	const int totalHeight = area.getHeight();
-	const int maxMixerHeight = 240;
-	const int minMixerHeight = 230;
+	const int maxMixerHeight = 220;
+	const int minMixerHeight = 220;
 
 	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight,
 		static_cast<int>(totalHeight * 0.28f));
@@ -1244,7 +1244,11 @@ void DjIaVstEditor::resized()
 	auto tracksArea = area.removeFromTop(tracksHeight);
 	tracksViewport.setBounds(tracksArea);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
-	tracksViewport.setScrollBarsShown(true, true);
+	const int totalContentHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
+	bool needsVertical = totalContentHeight > tracksArea.getHeight();
+	tracksViewport.setBounds(tracksArea);
+	tracksViewport.setViewedComponent(&tracksContainer, false);
+	tracksViewport.setScrollBarsShown(needsVertical, false);
 	layoutTracksGrid();
 
 	area.removeFromTop(spacing);
@@ -1307,22 +1311,21 @@ void DjIaVstEditor::updateLCD()
 
 void DjIaVstEditor::layoutTracksGrid()
 {
-	const int cols = 2;
-	const int rows = 4;
 	const int spacing = 5;
 	const int minCellW = 600;
-	const int cellH = 220;
-	const int minTotalWidth = cols * minCellW + spacing * (cols - 1);
+	const int minTotalWidth = TRACK_COLS * minCellW + spacing * (TRACK_COLS - 1);
 
 	auto viewportBounds = tracksViewport.getBounds();
 	if (viewportBounds.isEmpty())
 		return;
 
-	const int scrollbarAllowance = 12;
+	const int scrollbarAllowance = tracksViewport.isVerticalScrollBarShown()
+		? 12
+		: 0;
 	const int availableWidth = viewportBounds.getWidth() - scrollbarAllowance;
 	const int totalWidth = juce::jmax(minTotalWidth, availableWidth);
-	const int cellW = (totalWidth - spacing * (cols - 1)) / cols;
-	const int totalHeight = cellH * rows + spacing * (rows - 1);
+	const int cellW = (totalWidth - spacing * (TRACK_COLS - 1)) / TRACK_COLS;
+	const int totalHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
 
 	tracksContainer.setSize(totalWidth, totalHeight);
 
@@ -1340,9 +1343,9 @@ void DjIaVstEditor::layoutTracksGrid()
 		int row = slot % 4;
 
 		int x = col * (cellW + spacing);
-		int y = row * (cellH + spacing);
+		int y = row * (TRACK_CELL_H + spacing);
 
-		comp->setBounds(x, y, cellW, cellH);
+		comp->setBounds(x, y, cellW, TRACK_CELL_H);
 	}
 }
 

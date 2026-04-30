@@ -781,11 +781,11 @@ void MixerChannel::resized()
 	trackNameLabel.setBounds(area.removeFromTop(16));
 	area.removeFromTop(3);
 
-	auto bottomRow2 = area.removeFromBottom(28);
+	auto bottomRow2 = area.removeFromBottom(24);
 	muteButton.setBounds(bottomRow2.removeFromLeft(width / 2 - 2).reduced(1));
 	soloButton.setBounds(bottomRow2.removeFromLeft(width / 2 - 2).reduced(1));
 
-	auto bottomRow1 = area.removeFromBottom(28);
+	auto bottomRow1 = area.removeFromBottom(24);
 	playButton.setBounds(bottomRow1.removeFromLeft(width / 2 - 2).reduced(1));
 	stopButton.setBounds(bottomRow1.removeFromLeft(width / 2 - 2).reduced(1));
 
@@ -804,7 +804,7 @@ void MixerChannel::resized()
 		sliderBottom - sliderTop);
 	volumeSlider.setBounds(sliderBounds);
 
-	const int knobSectionH = 45;
+	const int knobSectionH = 42;
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label& label, juce::Slider& knob)
 		{
 			label.setBounds(secArea.removeFromTop(11));

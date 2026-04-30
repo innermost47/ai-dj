@@ -76,6 +76,9 @@ private:
 	juce::Image bannerImage;
 	juce::Rectangle<int> bannerArea;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;
+	static constexpr int TRACK_CELL_H = 140;
+	static constexpr int TRACK_ROWS = 4;
+	static constexpr int TRACK_COLS = 2;
 	bool sampleBankVisible = true;
 	enum KeyboardLayout
 	{

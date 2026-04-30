@@ -54,8 +54,8 @@ public:
 	void itemDropped(const SourceDetails& dragSourceDetails) override;
 
 	static const int BASE_HEIGHT = 80;
-	static const int WAVEFORM_HEIGHT = 65;
-	static const int SEQUENCER_HEIGHT = 90;
+	static const int WAVEFORM_HEIGHT = 40;
+	static const int SEQUENCER_HEIGHT = 45;
 	static const int PAGE_BUTTON_SIZE = 18;
 	static const int ICON_BUTTON_WIDTH = 42;
 	static const int ICON_BUTTON_HEIGHT = 50;

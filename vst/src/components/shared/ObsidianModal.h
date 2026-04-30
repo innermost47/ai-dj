@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 #include "style/ColourPalette.h"
 
@@ -228,7 +228,20 @@ public:
 
 	~ObsidianModalOverlay()
 	{
-		parent->removeChildComponent(this);
+		if (parent != nullptr)
+		{
+			parent->removeChildComponent(this);
+		}
+	}
+
+	void parentHierarchyChanged() override
+	{
+		if (parent != nullptr && !parent->isShowing())
+		{
+			parent = nullptr;
+			juce::Desktop::getInstance().getAnimator().cancelAllAnimations(false);
+			delete this;
+		}
 	}
 
 	void paint(juce::Graphics& g) override
