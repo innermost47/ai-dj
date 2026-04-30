@@ -154,8 +154,7 @@ private:
 	juce::Label apiKeyLabel;
 	juce::TextEditor apiKeyInput;
 	juce::TextButton playButton;
-	juce::Slider durationSlider;
-	juce::Label durationLabel;
+	juce::ComboBox durationSelector;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::Label tracksLabel;

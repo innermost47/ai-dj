@@ -613,23 +613,23 @@ public:
 
 		if (!textEditor.isEnabled())
 		{
-			g.setColour(ColourPalette::backgroundDark.withAlpha(0.5f));
+			g.setColour(ColourPalette::backgroundMid.withAlpha(0.5f));
 			g.fillRoundedRectangle(bounds, corner);
 			return;
 		}
 
 		g.setColour(juce::Colours::black.withAlpha(0.25f));
-		g.fillRoundedRectangle(bounds, corner);
+		g.fillRoundedRectangle(bounds.translated(0, 1.0f), corner);
 
 		juce::ColourGradient bgGradient(
-			ColourPalette::backgroundDark.darker(0.1f), bounds.getX(), bounds.getY(),
-			ColourPalette::backgroundDark.brighter(0.02f), bounds.getX(), bounds.getBottom(),
+			ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
+			ColourPalette::backgroundMid.darker(0.08f), bounds.getX(), bounds.getBottom(),
 			false);
 		g.setGradientFill(bgGradient);
-		g.fillRoundedRectangle(bounds.reduced(0.5f), corner);
+		g.fillRoundedRectangle(bounds, corner);
 
-		g.setColour(juce::Colours::white.withAlpha(0.02f));
-		auto topHighlight = bounds.withHeight(bounds.getHeight() * 0.4f).reduced(1.0f, 0.5f);
+		g.setColour(juce::Colours::white.withAlpha(0.04f));
+		auto topHighlight = bounds.withHeight(bounds.getHeight() * 0.45f);
 		g.fillRoundedRectangle(topHighlight, corner);
 	}
 
@@ -658,7 +658,7 @@ public:
 		}
 		else
 		{
-			g.setColour(ColourPalette::backgroundLight.withAlpha(0.6f));
+			g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
 			g.drawRoundedRectangle(bounds, corner, 0.8f);
 		}
 	}
