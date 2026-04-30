@@ -563,8 +563,10 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	float globalPrev = globalCrossfaderPrevious;
 	globalCrossfaderPrevious = globalCurrent;
 
+	int curveMode = crossfaderCurveMode.load();
 	trackManager.renderAllTracks(mainOutput, individualOutputBuffers, previewBus, hostBpm,
-		pairPrev, pairCurrent, globalPrev, globalCurrent);
+		pairPrev, pairCurrent, globalPrev, globalCurrent, curveMode);
+
 
 	copyTracksToIndividualOutputs(buffer);
 	applyMasterEffects(mainOutput);
@@ -2855,6 +2857,7 @@ void DjIaVstProcessor::getStateInformation(juce::MemoryBlock& destData)
 	state.setProperty("windowWidth", juce::var(savedWindowWidth), nullptr);
 	state.setProperty("windowHeight", juce::var(savedWindowHeight), nullptr);
 	state.setProperty("bankVisible", juce::var(savedBankVisible), nullptr);
+	state.setProperty("crossfaderCurveMode", juce::var(crossfaderCurveMode.load()), nullptr);
 
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = midiLearnManager.getAllMappings();
@@ -2962,6 +2965,7 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 	pairCrossfaderValue[2].store((float)state.getProperty("pairCrossfader2", juce::var(0.5f)));
 	pairCrossfaderValue[3].store((float)state.getProperty("pairCrossfader3", juce::var(0.5f)));
 	globalCrossfaderValue.store((float)state.getProperty("globalCrossfader", juce::var(0.5f)));
+	crossfaderCurveMode.store((int)state.getProperty("crossfaderCurveMode", juce::var(1)));
 
 	for (int i = 0; i < 4; ++i)
 		pairCrossfaderPrevious[i] = pairCrossfaderValue[i].load();

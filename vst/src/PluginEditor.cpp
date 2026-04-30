@@ -823,7 +823,6 @@ void DjIaVstEditor::setupUI()
 	{
 		mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
 		mixerViewport.setViewedComponent(mixerPanel.get(), false);
-		mixerViewport.setScrollBarsShown(false, true);
 		addAndMakeVisible(mixerViewport);
 		mixerPanel->onTrackRenamedFromMixer = [this](const juce::String& trackId,
 			const juce::String& newName)
@@ -1303,11 +1302,17 @@ void DjIaVstEditor::resized()
 	const int minMixerWidth = 1000;
 	if (mixerPanel)
 	{
+		int contentWidth = juce::jmax(minMixerWidth, bottomRow.getWidth());
+
+		bool needsHorizontalScroll = (contentWidth > bottomRow.getWidth());
+
+		int scrollbarH = needsHorizontalScroll ? (mixerViewport.getScrollBarThickness() + 6) : 6;
+
 		mixerViewport.setBounds(bottomRow);
-		int mixerW = juce::jmax(minMixerWidth, bottomRow.getWidth());
-		int scrollbarH = mixerViewport.isHorizontalScrollBarShown()
-			? mixerViewport.getScrollBarThickness() : 0;
-		mixerPanel->setBounds(0, 0, mixerW, bottomRow.getHeight() - scrollbarH);
+		mixerPanel->setSize(contentWidth, bottomRow.getHeight() - scrollbarH);
+
+		mixerViewport.setScrollBarsShown(false, needsHorizontalScroll);
+
 		mixerViewport.setVisible(true);
 	}
 	layoutControlPanel(controlPanelArea, spacing);

@@ -235,6 +235,11 @@ public:
 	float getPairCrossfaderValue(int pairIndex) const;
 	void setGlobalCrossfaderValue(float value);
 	float getGlobalCrossfaderValue() const;
+	void setCrossfaderCurveMode(int mode)
+	{
+		crossfaderCurveMode.store(juce::jlimit(0, 2, mode));
+	}
+	int getCrossfaderCurveMode() const { return crossfaderCurveMode.load(); }
 
 	std::pair<float, float> getCrossfadeGains() const;
 
@@ -247,6 +252,8 @@ private:
 	std::atomic<int>   crossfadeMode{ 0 };
 	std::atomic<float> pairCrossfaderValue[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 	std::atomic<float> globalCrossfaderValue{ 0.5f };
+	std::atomic<int> crossfaderCurveMode{ 1 };
+
 	float pairCrossfaderPrevious[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 	float globalCrossfaderPrevious = 0.5f;
 	int savedWindowWidth = 1620;

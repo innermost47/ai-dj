@@ -93,7 +93,8 @@ public:
 		const float pairPrev[4],
 		const float pairCurrent[4],
 		float globalPrev,
-		float globalCurrent)
+		float globalCurrent,
+		int curveMode)
 	{
 		const int numSamples = outputBuffer.getNumSamples();
 		bool anyTrackSolo = false;
@@ -130,7 +131,6 @@ public:
 
 				float deckGainStart = 1.0f;
 				float deckGainEnd = 1.0f;
-
 				int pairIdx = track->getPairIndex();
 				if (pairIdx >= 0 && pairIdx < 4)
 				{
@@ -138,14 +138,14 @@ public:
 
 					float pairXfStart = pairPrev[pairIdx];
 					float globalXfStart = globalPrev;
-					float pairGainStart = isA ? (1.0f - pairXfStart) : pairXfStart;
-					float globalGainStart = isA ? (1.0f - globalXfStart) : globalXfStart;
+					float pairGainStart = applyCrossfadeCurve(pairXfStart, isA, curveMode);
+					float globalGainStart = applyCrossfadeCurve(globalXfStart, isA, curveMode);
 					deckGainStart = pairGainStart * globalGainStart;
 
 					float pairXfEnd = pairCurrent[pairIdx];
 					float globalXfEnd = globalCurrent;
-					float pairGainEnd = isA ? (1.0f - pairXfEnd) : pairXfEnd;
-					float globalGainEnd = isA ? (1.0f - globalXfEnd) : globalXfEnd;
+					float pairGainEnd = applyCrossfadeCurve(pairXfEnd, isA, curveMode);
+					float globalGainEnd = applyCrossfadeCurve(globalXfEnd, isA, curveMode);
 					deckGainEnd = pairGainEnd * globalGainEnd;
 				}
 
@@ -177,7 +177,6 @@ public:
 								deckGainStart, deckGainEnd);
 						}
 					}
-
 					for (int ch = 0; ch < std::min(2, individualOutputs[bufferIndex].getNumChannels()); ++ch)
 					{
 						if (!shouldHearTrack)
@@ -196,6 +195,8 @@ public:
 			}
 		}
 	}
+
+
 
 
 	juce::ValueTree saveState() const
@@ -1084,4 +1085,28 @@ private:
 		float fraction = static_cast<float>(position - index);
 		return buffer[index] + fraction * (buffer[index + 1] - buffer[index]);
 	}
+
+	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode)
+	{
+		float x = isDeckA ? (1.0f - xfaderValue) : xfaderValue;
+		x = juce::jlimit(0.0f, 1.0f, x);
+
+		switch (curveMode)
+		{
+		case 0:
+			return x;
+
+		case 1:
+			return std::sin(x * juce::MathConstants<float>::halfPi);
+
+		case 2:
+			if (x >= 0.5f)
+				return 1.0f;
+			return std::sin(x * juce::MathConstants<float>::pi);
+
+		default:
+			return x;
+		}
+	}
+
 };

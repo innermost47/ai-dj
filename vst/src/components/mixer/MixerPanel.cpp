@@ -175,7 +175,7 @@ void MixerPanel::paint(juce::Graphics& g)
 void MixerPanel::resized()
 {
 	auto area = getLocalBounds();
-	const int channelH = getHeight() - 4;
+	const int channelH = getHeight();
 	const int masterWidth = 110;
 	auto masterArea = area.removeFromRight(masterWidth);
 	masterArea.setHeight(channelH);

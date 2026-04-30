@@ -1,12 +1,15 @@
 ﻿#include "CrossfaderComponent.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "BinaryData.h"
 
 CrossfaderComponent::CrossfaderComponent(DjIaVstProcessor& processor)
 	: audioProcessor(processor)
 {
 	setupUI();
+	setupCurveButtons();
 	setupMidiLearn();
+	setupCurveButtonsMidiLearn();
 	refreshFromProcessor();
 }
 
@@ -41,6 +44,60 @@ void CrossfaderComponent::setupUI()
 		};
 }
 
+void CrossfaderComponent::setupCurveButtons()
+{
+	auto setupCurveBtn = [](IconButton& btn)
+		{
+			btn.setClickingTogglesState(false);
+			btn.setHasAccentBar(true);
+			btn.setShowBackground(false);
+			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
+			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+			btn.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
+		};
+
+	addAndMakeVisible(curveLinearButton);
+	curveLinearButton.loadIcon(BinaryData::lin_svg, BinaryData::lin_svgSize);
+	curveLinearButton.setCompactMode(true);
+	setupCurveBtn(curveLinearButton);
+	curveLinearButton.setTooltip("Linear crossfade curve");
+	curveLinearButton.onClick = [this]() { selectCurveMode(0); };
+
+	addAndMakeVisible(curveEqualPowerButton);
+	curveEqualPowerButton.loadIcon(BinaryData::eq_svg, BinaryData::eq_svgSize);
+	curveEqualPowerButton.setCompactMode(true);
+	setupCurveBtn(curveEqualPowerButton);
+	curveEqualPowerButton.setTooltip("Equal Power crossfade curve (constant perceived volume)");
+	curveEqualPowerButton.onClick = [this]() { selectCurveMode(1); };
+
+	addAndMakeVisible(curveDjButton);
+	curveDjButton.loadIcon(BinaryData::dj_svg, BinaryData::dj_svgSize);
+	curveDjButton.setCompactMode(true);
+	setupCurveBtn(curveDjButton);
+	curveDjButton.setTooltip("DJ scratch curve (sharp transition)");
+	curveDjButton.onClick = [this]() { selectCurveMode(2); };
+}
+
+void CrossfaderComponent::selectCurveMode(int mode)
+{
+	mode = juce::jlimit(0, 2, mode);
+	audioProcessor.setCrossfaderCurveMode(mode);
+	refreshCurveButtons();
+}
+
+void CrossfaderComponent::refreshCurveButtons()
+{
+	int mode = audioProcessor.getCrossfaderCurveMode();
+	curveLinearButton.setToggleState(mode == 0, juce::dontSendNotification);
+	curveEqualPowerButton.setToggleState(mode == 1, juce::dontSendNotification);
+	curveDjButton.setToggleState(mode == 2, juce::dontSendNotification);
+
+	curveLinearButton.repaint();
+	curveEqualPowerButton.repaint();
+	curveDjButton.repaint();
+}
+
 void CrossfaderComponent::setupSlider(MidiLearnableSlider& slider, const juce::String& tooltip)
 {
 	slider.setRange(0.0, 1.0, 0.001);
@@ -62,7 +119,6 @@ static TrackData* getTrackBySlot(DjIaVstProcessor& processor, int slotIndex)
 	}
 	return nullptr;
 }
-
 
 void CrossfaderComponent::updateSliderColour(MidiLearnableSlider& slider, int pairIdx)
 {
@@ -157,6 +213,48 @@ void CrossfaderComponent::setupMidiLearn()
 		};
 }
 
+void CrossfaderComponent::setupCurveButtonsMidiLearn()
+{
+	auto setupCurveBtn = [this](IconButton& btn, int mode, const juce::String& displayName)
+		{
+			const juce::String midiId = getCurveMidiId(mode);
+
+			btn.onMidiLearn = [this, &btn, mode, midiId, displayName]()
+				{
+					if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
+					{
+						editor->statusLabel.setText("Learning MIDI for " + displayName + "...",
+							juce::dontSendNotification);
+						editor->updateLCD();
+					}
+					audioProcessor.getMidiLearnManager().startLearning(
+						midiId,
+						&audioProcessor,
+						[this, mode](float value)
+						{
+							if (value > 0.5f)
+							{
+								juce::MessageManager::callAsync([this, mode]()
+									{
+										selectCurveMode(mode);
+									});
+							}
+						},
+						displayName,
+						&btn);
+				};
+
+			btn.onMidiRemove = [this, midiId]()
+				{
+					audioProcessor.getMidiLearnManager().removeMappingForParameter(midiId);
+				};
+		};
+
+	setupCurveBtn(curveLinearButton, 0, "Curve Linear");
+	setupCurveBtn(curveEqualPowerButton, 1, "Curve Equal Power");
+	setupCurveBtn(curveDjButton, 2, "Curve DJ");
+}
+
 void CrossfaderComponent::refreshFromProcessor()
 {
 	for (int i = 0; i < 4; ++i)
@@ -166,6 +264,7 @@ void CrossfaderComponent::refreshFromProcessor()
 	globalSlider.setValue(audioProcessor.getGlobalCrossfaderValue(),
 		juce::dontSendNotification);
 
+	refreshCurveButtons();
 	updatePairColours();
 	repaint();
 }
@@ -177,9 +276,24 @@ void CrossfaderComponent::paint(juce::Graphics& g)
 	g.fillRoundedRectangle(bounds, 8.0f);
 	g.setColour(ColourPalette::sliderTrack);
 	g.drawRoundedRectangle(bounds.reduced(1.0f), 8.0f, 1.0f);
+
 	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
 	g.setColour(ColourPalette::textPrimary);
-	g.drawText("CROSSFADERS", bounds.toNearestInt().withHeight(12).translated(0, 6), juce::Justification::centred);
+	g.drawText("CROSSFADERS", bounds.toNearestInt().withHeight(12).translated(0, 6),
+		juce::Justification::centred);
+
+	if (!curveButtonsRowBounds.isEmpty())
+	{
+		float sepY = (float)curveButtonsRowBounds.getY() - 2.0f;
+
+		g.setColour(ColourPalette::sliderTrack.withAlpha(0.5f));
+		g.drawLine(bounds.getX(), sepY, bounds.getRight(), sepY, 1.0f);
+
+		auto expandedBounds = curveButtonsRowBounds.toFloat().expanded(5.0f, 2.0f);
+
+		g.setColour(ColourPalette::buttonInactive.withAlpha(0.2f));
+		g.fillRoundedRectangle(expandedBounds, 0.0f);
+	}
 }
 
 void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
@@ -223,7 +337,24 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
 void CrossfaderComponent::resized()
 {
 	auto area = getLocalBounds().reduced(6, 4);
-	area.removeFromTop(28);
+	area.removeFromTop(26);
+
+	const int curveButtonsHeight = 28;
+	const int curveButtonsBottomMargin = 4;
+
+	auto curveButtonsArea = area.removeFromBottom(curveButtonsHeight);
+	area.removeFromBottom(curveButtonsBottomMargin);
+	curveButtonsRowBounds = curveButtonsArea;
+
+	const int btnSpacing = 4;
+	const int totalBtnWidth = curveButtonsArea.getWidth();
+	const int btnW = (totalBtnWidth - btnSpacing * 2) / 3;
+
+	curveLinearButton.setBounds(curveButtonsArea.removeFromLeft(btnW));
+	curveButtonsArea.removeFromLeft(btnSpacing);
+	curveEqualPowerButton.setBounds(curveButtonsArea.removeFromLeft(btnW));
+	curveButtonsArea.removeFromLeft(btnSpacing);
+	curveDjButton.setBounds(curveButtonsArea);
 
 	const int sideW = 2;
 	const int rowSpacing = 4;
