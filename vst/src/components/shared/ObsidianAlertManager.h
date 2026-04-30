@@ -25,6 +25,7 @@ private:
 		}
 		void resized() override { label.setBounds(getLocalBounds()); }
 	};
+
 	static juce::Component* getSafePluginWindow(juce::Component* c)
 	{
 		auto* current = c;
@@ -36,6 +37,27 @@ private:
 			current = current->getParentComponent();
 		}
 		return c;
+	}
+
+	static ObsidianModalOverlay* createAndAttachOverlay(
+		juce::Component* parent,
+		std::unique_ptr<ObsidianModalWindow> modal)
+	{
+		auto* root = getSafePluginWindow(parent);
+		if (root == nullptr)
+			return nullptr;
+
+		auto* host = dynamic_cast<ModalHost*>(root);
+		if (host == nullptr)
+		{
+			jassertfalse;
+			return nullptr;
+		}
+
+		auto overlay = std::make_unique<ObsidianModalOverlay>(std::move(modal));
+		auto* overlayPtr = overlay.get();
+		host->addModal(std::move(overlay));
+		return overlayPtr;
 	}
 
 public:
@@ -68,17 +90,18 @@ public:
 		const juce::String& buttonText = "OK",
 		std::function<void()> onConfirm = nullptr)
 	{
-		auto* root = getSafePluginWindow(parent);
-		if (root == nullptr)
-			return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
-		overlay->modalWindow->addButton(buttonText, checkSvg, ColourPalette::buttonPrimary, [overlay, onConfirm]()
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
+
+		overlay->modalWindow->addButton(buttonText, checkSvg, ColourPalette::buttonPrimary,
+			[overlay, onConfirm]()
 			{
 				if (onConfirm) onConfirm();
-				overlay->close(); });
+				overlay->close();
+			});
 	}
 
 	static void showError(
@@ -86,15 +109,14 @@ public:
 		const juce::String& title,
 		const juce::String& message)
 	{
-		auto* root = getSafePluginWindow(parent);
-		if (root == nullptr)
-			return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
-		overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDanger, [overlay]()
-			{ overlay->close(); });
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
+
+		overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDanger,
+			[overlay]() { overlay->close(); });
 	}
 
 	static void showConfirm(
@@ -105,22 +127,25 @@ public:
 		const juce::String& cancelText,
 		std::function<void(bool confirmed)> callback)
 	{
-		auto* root = getSafePluginWindow(parent);
-		if (root == nullptr)
-			return;
 		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
 
-		overlay->modalWindow->addButton(cancelText, crossSvg, ColourPalette::buttonInactive, [overlay, callback]()
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
+
+		overlay->modalWindow->addButton(cancelText, crossSvg, ColourPalette::buttonInactive,
+			[overlay, callback]()
 			{
 				if (callback) callback(false);
-				overlay->close(); });
+				overlay->close();
+			});
 
-		overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::buttonDanger, [overlay, callback]()
+		overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::buttonDanger,
+			[overlay, callback]()
 			{
 				if (callback) callback(true);
-				overlay->close(); });
+				overlay->close();
+			});
 	}
 
 	static void showConfigDialog(
@@ -231,15 +256,19 @@ public:
 		auto* formPtr = formContent.get();
 		modal->setContent(std::move(formContent));
 
-		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
 
-		overlay->modalWindow->addButton(isFirstTime ? "Skip for now" : "Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]()
+		overlay->modalWindow->addButton(isFirstTime ? "Skip for now" : "Cancel", crossSvg, ColourPalette::buttonInactive,
+			[overlay, callback]()
 			{
 				ConfigDialogResult res{ false, false, "", "", 0 };
 				callback(res);
-				overlay->close(); });
+				overlay->close();
+			});
 
-		overlay->modalWindow->addButton(isFirstTime ? "Save & Continue" : "Update", checkSvg, ColourPalette::buttonPrimary, [overlay, formPtr, callback]()
+		overlay->modalWindow->addButton(isFirstTime ? "Save & Continue" : "Update", checkSvg, ColourPalette::buttonPrimary,
+			[overlay, formPtr, callback]()
 			{
 				ConfigDialogResult res;
 				res.confirmed = true;
@@ -254,7 +283,8 @@ public:
 				else res.timeoutMs = 300000;
 
 				callback(res);
-				overlay->close(); });
+				overlay->close();
+			});
 	}
 
 	static void showCategoryEditor(
@@ -264,25 +294,27 @@ public:
 		const std::vector<juce::String>& availableCategories,
 		std::function<void(const std::vector<juce::String>&)> onSave)
 	{
-		auto* root = getSafePluginWindow(parent);
-		if (root == nullptr) return;
-
 		auto modal = std::make_unique<ObsidianModalWindow>("Categories: " + sampleName, 480, 400);
 
 		auto categoryContent = std::make_unique<CategoryPanel>(currentCategories, availableCategories);
 		auto* panelPtr = categoryContent.get();
 		modal->setContent(std::move(categoryContent));
 
-		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
 
-		overlay->modalWindow->addButton("Clear All", crossSvg, ColourPalette::buttonInactive, [panelPtr]() {
-			panelPtr->clearAll();
+		overlay->modalWindow->addButton("Clear All", crossSvg, ColourPalette::buttonInactive,
+			[panelPtr]()
+			{
+				panelPtr->clearAll();
 			});
 
-		overlay->modalWindow->addButton("Done", checkSvg, ColourPalette::buttonPrimary, [overlay, panelPtr, onSave]() {
-			if (onSave)
-				onSave(panelPtr->getSelectedCategories());
-			overlay->close();
+		overlay->modalWindow->addButton("Done", checkSvg, ColourPalette::buttonPrimary,
+			[overlay, panelPtr, onSave]()
+			{
+				if (onSave)
+					onSave(panelPtr->getSelectedCategories());
+				overlay->close();
 			});
 	}
 
@@ -291,10 +323,6 @@ public:
 		const juce::String& currentPrompt,
 		std::function<void(const juce::String& newPrompt)> callback)
 	{
-		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt", 600, 400);
-		auto* root = getSafePluginWindow(parent);
-		if (root == nullptr)
-			return;
 		class EditPromptContent : public juce::Component
 		{
 		public:
@@ -313,22 +341,29 @@ public:
 			void resized() override { editor.setBounds(getLocalBounds().reduced(5)); }
 		};
 
+		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt", 600, 400);
+
 		auto content = std::make_unique<EditPromptContent>(currentPrompt);
 		auto* editorPtr = &content->editor;
 		modal->setContent(std::move(content));
 
-		auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
 
-		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive, [overlay, callback]()
+		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
+			[overlay, callback]()
 			{
 				if (callback) callback("");
-				overlay->close(); });
+				overlay->close();
+			});
 
-		overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary, [overlay, editorPtr, callback]()
+		overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary,
+			[overlay, editorPtr, callback]()
 			{
 				juce::String resultStr = editorPtr->getText();
 				if (callback && resultStr.isNotEmpty()) callback(resultStr);
-				overlay->close(); });
+				overlay->close();
+			});
 	}
 
 	static void showUpdateAvailable(
@@ -343,14 +378,18 @@ public:
 			"Download the latest version at:\ngithub.com/innermost47/ai-dj/releases/latest";
 
 		modal->setContent(std::make_unique<TextContent>(message));
-		auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
 
-		overlay->modalWindow->addButton("Later", crossSvg, ColourPalette::buttonInactive, [overlay]()
-			{ overlay->close(); });
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
 
-		overlay->modalWindow->addButton("Download Now", downloadSvg, ColourPalette::buttonPrimary, [overlay]()
+		overlay->modalWindow->addButton("Later", crossSvg, ColourPalette::buttonInactive,
+			[overlay]() { overlay->close(); });
+
+		overlay->modalWindow->addButton("Download Now", downloadSvg, ColourPalette::buttonPrimary,
+			[overlay]()
 			{
 				juce::URL("https://github.com/innermost47/ai-dj/releases/latest").launchInDefaultBrowser();
-				overlay->close(); });
+				overlay->close();
+			});
 	}
 };

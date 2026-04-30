@@ -79,6 +79,7 @@ DjIaVstEditor::~DjIaVstEditor()
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
 	audioProcessor.setGenerationListener(nullptr);
+	activeModals.clear();
 
 	for (auto& tc : trackComponents)
 		if (tc)
@@ -433,44 +434,68 @@ void DjIaVstEditor::showOnboardingStep(int step)
 
 	modal->setContent(std::make_unique<OnboardingContent>(info.message, info.illustrationSvg));
 
-	auto* overlay = new ObsidianModalOverlay(this, std::move(modal));
+	auto overlayOwned = std::make_unique<ObsidianModalOverlay>(std::move(modal));
+	auto* overlay = overlayOwned.get();
+	addModal(std::move(overlayOwned));
 
 	juce::String arrowSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>)";
 	juce::String skipSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>)";
 
-	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]()
+	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive,
+		[this, overlay]()
 		{
-			overlay->setVisible(false);
-			juce::MessageManager::callAsync([this, overlay]() {
-				delete overlay;
+			overlay->close();
+			audioProcessor.setOnboardingDone(true);
+			audioProcessor.saveGlobalConfig();
+		});
+
+	overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary,
+		[this, overlay, step, isLastStep]()
+		{
+			overlay->close();
+
+			if (!isLastStep)
+			{
+				juce::Component::SafePointer<DjIaVstEditor> safeThis(this);
+				juce::MessageManager::callAsync([safeThis, step]()
+					{
+						if (safeThis != nullptr)
+							safeThis->showOnboardingStep(step + 1);
+					});
+			}
+			else
+			{
 				audioProcessor.setOnboardingDone(true);
 				audioProcessor.saveGlobalConfig();
-				}); });
 
-			overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]()
-				{
+				statusLabel.setText(
+					juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
+					juce::dontSendNotification);
+				statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+				updateLCD();
+			}
+		});
+}
 
-					overlay->setVisible(false);
-					juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
+void DjIaVstEditor::addModal(std::unique_ptr<ObsidianModalOverlay> overlay)
+{
+	auto* raw = overlay.get();
+	addAndMakeVisible(raw);
+	raw->setBounds(getLocalBounds());
+	raw->toFront(false);
+	activeModals.push_back(std::move(overlay));
+	raw->startFadeIn();
+}
 
-						delete overlay;
-
-						if (!isLastStep)
-						{
-							showOnboardingStep(step + 1);
-						}
-						else
-						{
-							audioProcessor.setOnboardingDone(true);
-							audioProcessor.saveGlobalConfig();
-
-							statusLabel.setText(
-								juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
-								juce::dontSendNotification);
-							statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-							updateLCD();
-						}
-						}); });
+void DjIaVstEditor::removeModal(ObsidianModalOverlay* overlay)
+{
+	activeModals.erase(
+		std::remove_if(activeModals.begin(), activeModals.end(),
+			[overlay](const std::unique_ptr<ObsidianModalOverlay>& p)
+			{
+				return p.get() == overlay;
+			}),
+		activeModals.end());
 }
 
 void DjIaVstEditor::refreshUIForMode()

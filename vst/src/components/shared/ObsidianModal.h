@@ -209,39 +209,38 @@ private:
 	juce::OwnedArray<ObsidianSvgButton> buttons;
 };
 
+class ObsidianModalOverlay;
+
+class ModalHost
+{
+public:
+	virtual ~ModalHost() = default;
+	virtual void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) = 0;
+	virtual void removeModal(ObsidianModalOverlay* overlay) = 0;
+};
+
 class ObsidianModalOverlay : public juce::Component
 {
 public:
-	ObsidianModalOverlay(juce::Component* parentToOverlay,
-		std::unique_ptr<ObsidianModalWindow> modal)
-		: parent(parentToOverlay), modalWindow(std::move(modal))
+	ObsidianModalOverlay(std::unique_ptr<ObsidianModalWindow> modal)
+		: modalWindow(std::move(modal))
 	{
 		addAndMakeVisible(modalWindow.get());
-		parent->addAndMakeVisible(this);
-		toFront(false);
-		setBounds(parent->getLocalBounds());
 		setInterceptsMouseClicks(true, true);
-
 		setAlpha(0.0f);
+	}
+
+	~ObsidianModalOverlay() override
+	{
+		auto& animator = juce::Desktop::getInstance().getAnimator();
+		animator.cancelAnimation(this, false);
+		if (modalWindow != nullptr)
+			animator.cancelAnimation(modalWindow.get(), false);
+	}
+
+	void startFadeIn()
+	{
 		juce::Desktop::getInstance().getAnimator().fadeIn(this, 180);
-	}
-
-	~ObsidianModalOverlay()
-	{
-		if (parent != nullptr)
-		{
-			parent->removeChildComponent(this);
-		}
-	}
-
-	void parentHierarchyChanged() override
-	{
-		if (parent != nullptr && !parent->isShowing())
-		{
-			parent = nullptr;
-			juce::Desktop::getInstance().getAnimator().cancelAllAnimations(false);
-			delete this;
-		}
 	}
 
 	void paint(juce::Graphics& g) override
@@ -262,7 +261,6 @@ public:
 		{
 			int width = juce::jmin(modalWindow->targetWidth, getWidth() - 40);
 			int height = juce::jmin(modalWindow->targetHeight, getHeight() - 40);
-
 			modalWindow->setBounds(getLocalBounds().withSizeKeepingCentre(width, height));
 		}
 	}
@@ -271,27 +269,42 @@ public:
 	{
 		if (modalWindow != nullptr && !modalWindow->getBounds().contains(e.getPosition()))
 		{
+			juce::WeakReference<juce::Component> safeModal(modalWindow.get());
 			auto& animator = juce::Desktop::getInstance().getAnimator();
 			auto target = modalWindow->getBounds();
+
 			animator.animateComponent(modalWindow.get(),
 				target.translated(6, 0), 1.0f, 50, false, 1.0, 0.0);
-			animator.animateComponent(modalWindow.get(),
-				target.translated(-6, 0), 1.0f, 50, false, 1.0, 0.0);
-			animator.animateComponent(modalWindow.get(),
-				target, 1.0f, 50, false, 1.0, 0.0);
+			if (safeModal != nullptr)
+				animator.animateComponent(safeModal, target.translated(-6, 0), 1.0f, 50, false, 1.0, 0.0);
+			if (safeModal != nullptr)
+				animator.animateComponent(safeModal, target, 1.0f, 50, false, 1.0, 0.0);
 		}
 	}
 
 	void close()
 	{
-		auto& animator = juce::Desktop::getInstance().getAnimator();
-		animator.fadeOut(this, 150);
-		juce::MessageManager::callAsync([this]()
-			{ delete this; });
+		if (closing)
+			return;
+		closing = true;
+
+		juce::WeakReference<juce::Component> safeThis(this);
+		juce::Desktop::getInstance().getAnimator().fadeOut(this, 150);
+
+		juce::MessageManager::callAsync([safeThis]()
+			{
+				if (safeThis == nullptr)
+					return;
+
+				auto* self = static_cast<ObsidianModalOverlay*>(safeThis.get());
+				if (auto* host = self->findParentComponentOfClass<ModalHost>())
+					host->removeModal(self);
+			});
 	}
 
 	std::unique_ptr<ObsidianModalWindow> modalWindow;
 
 private:
-	juce::Component* parent;
+	bool closing = false;
+	JUCE_DECLARE_WEAK_REFERENCEABLE(ObsidianModalOverlay)
 };

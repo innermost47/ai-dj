@@ -4,6 +4,7 @@
 #include "components/mixer/MixerPanel.h"
 #include "midi/MidiLearnableComponents.h"
 #include "components/bank/SampleBankPanel.h"
+#include "components/shared/ObsidianModal.h"
 #include "style/CustomLookAndFeel.h"
 #include "components/mixer/LCDScreen.h"
 #include "components/shared/IconButton.h"
@@ -11,7 +12,11 @@
 
 class SequencerComponent;
 
-class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::Timer, public DjIaVstProcessor::GenerationListener, public juce::DragAndDropContainer
+class DjIaVstEditor : public juce::AudioProcessorEditor,
+	public juce::Timer,
+	public DjIaVstProcessor::GenerationListener,
+	public juce::DragAndDropContainer,
+	public ModalHost
 {
 public:
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
@@ -64,13 +69,15 @@ public:
 	void onSampleLoaded(const juce::String& trackId);
 	void reEnableCanvasForTrack();
 	void updateLCD();
-
+	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
+	void removeModal(ObsidianModalOverlay* overlay) override;
 	bool keyStateChanged(bool isKeyDown) override;
 
 private:
 	DjIaVstProcessor& audioProcessor;
 	CustomLookAndFeel customLookAndFeel;
 	MasterWaveformDisplay masterWaveformDisplay;
+	std::vector<std::unique_ptr<ObsidianModalOverlay>> activeModals;
 	juce::Image logoImage;
 	juce::ImageComponent logoComponent;
 	juce::Image bannerImage;

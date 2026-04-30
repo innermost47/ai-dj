@@ -475,7 +475,7 @@ public:
 				: 18.0f;
 			const float capsuleH = isVertical
 				? juce::jmax(8.0f, juce::jmin(14.0f, (float)height * 0.08f))
-				: juce::jmax(8.0f, (float)height * 0.65f);
+				: juce::jmax(8.0f, (float)height * 0.40f);
 			const float capsuleR = 3.0f;
 
 			juce::Rectangle<float> capsule;

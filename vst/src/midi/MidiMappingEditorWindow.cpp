@@ -413,10 +413,14 @@ void ObsidianAlertManager::showMidiMappingEditor(juce::Component* parent, MidiLe
 {
 	auto modal = std::make_unique<ObsidianModalWindow>("MIDI Mappings", 700, 600);
 	modal->setContent(std::make_unique<MidiMappingEditorWindow>(manager));
-	auto* overlay = new ObsidianModalOverlay(parent, std::move(modal));
+
+	auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr) return;
+
 	juce::Component::SafePointer<ObsidianModalOverlay> safeOverlay(overlay);
 
-	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive, [safeOverlay]()
+	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive,
+		[safeOverlay]()
 		{
 			if (safeOverlay != nullptr)
 				safeOverlay->close();
