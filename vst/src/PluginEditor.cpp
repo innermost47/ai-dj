@@ -280,6 +280,7 @@ void DjIaVstEditor::initUI()
 	if (isInitialized.load())
 		return;
 
+
 	setupUI();
 	refreshUIForMode();
 	serverUrlInput.setText(audioProcessor.getServerUrl(), juce::dontSendNotification);
@@ -835,7 +836,6 @@ void DjIaVstEditor::setupUI()
 	{
 		sampleBankPanel = std::make_unique<SampleBankPanel>(audioProcessor);
 		addChildComponent(*sampleBankPanel);
-		sampleBankPanel->setVisible(true);
 	}
 
 	addAndMakeVisible(openMidiEditorButton);
@@ -863,7 +863,6 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(toggleBankButton);
 	toggleBankButton.loadIcon(BinaryData::search_svg, BinaryData::search_svgSize);
 	toggleBankButton.setClickingTogglesState(true);
-	toggleBankButton.setToggleState(true, juce::dontSendNotification);
 	toggleBankButton.setTooltip("Toggle sample bank panel");
 
 	auto setupControlBtn = [](IconButtonSimple& btn)
@@ -885,6 +884,21 @@ void DjIaVstEditor::setupUI()
 
 	savePresetButton.setShowBorder(true);
 	generateButton.setShowBorder(true);
+	bypassSequencerButton.setShowBorder(true);
+	openMidiEditorButton.setShowBorder(true);
+	configButton.setShowBorder(true);
+	helpButton.setShowBorder(true);
+	toggleBankButton.setShowBorder(true);
+	autoLoadButton.setShowBorder(true);
+	loadSampleButton.setShowBorder(true);
+
+	setSize(audioProcessor.getSavedWindowWidth(),
+		audioProcessor.getSavedWindowHeight());
+
+	bool bankVisible = audioProcessor.getSavedBankVisible();
+	toggleBankButton.setToggleState(bankVisible, juce::dontSendNotification);
+	if (sampleBankPanel)
+		sampleBankPanel->setVisible(bankVisible);
 
 	refreshTrackComponents();
 	addEventListeners();
@@ -1048,6 +1062,7 @@ void DjIaVstEditor::addEventListeners()
 			bool visible = toggleBankButton.getToggleState();
 			if (sampleBankPanel)
 				sampleBankPanel->setVisible(visible);
+			audioProcessor.setBankVisible(visible);
 			resized();
 		};
 }
@@ -1269,6 +1284,7 @@ void DjIaVstEditor::resized()
 	layoutControlPanel(controlPanelArea, spacing);
 
 	resizing = false;
+	audioProcessor.setWindowSize(getWidth(), getHeight());
 }
 
 void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)

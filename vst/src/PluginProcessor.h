@@ -225,6 +225,12 @@ public:
 	void  setCrossfadeMode(int m) { crossfadeMode.store(m); }
 	int   getCrossfadeMode()    const { return crossfadeMode.load(); }
 
+	void setWindowSize(int w, int h) { savedWindowWidth = w; savedWindowHeight = h; }
+	void setBankVisible(bool visible) { savedBankVisible = visible; }
+	int getSavedWindowWidth() const { return savedWindowWidth; }
+	int getSavedWindowHeight() const { return savedWindowHeight; }
+	bool getSavedBankVisible() const { return savedBankVisible; }
+
 	void setPairCrossfaderValue(int pairIndex, float value);
 	float getPairCrossfaderValue(int pairIndex) const;
 	void setGlobalCrossfaderValue(float value);
@@ -243,6 +249,9 @@ private:
 	std::atomic<float> globalCrossfaderValue{ 0.5f };
 	float pairCrossfaderPrevious[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 	float globalCrossfaderPrevious = 0.5f;
+	int savedWindowWidth = 1620;
+	int savedWindowHeight = 840;
+	bool savedBankVisible = true;
 	DjIaClient apiClient;
 	GenerationListener* generationListener = nullptr;
 	juce::String projectId;

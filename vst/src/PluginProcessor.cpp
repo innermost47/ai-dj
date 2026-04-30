@@ -2852,7 +2852,9 @@ void DjIaVstProcessor::getStateInformation(juce::MemoryBlock& destData)
 	state.setProperty("pairCrossfader2", juce::var(pairCrossfaderValue[2].load()), nullptr);
 	state.setProperty("pairCrossfader3", juce::var(pairCrossfaderValue[3].load()), nullptr);
 	state.setProperty("globalCrossfader", juce::var(globalCrossfaderValue.load()), nullptr);
-
+	state.setProperty("windowWidth", juce::var(savedWindowWidth), nullptr);
+	state.setProperty("windowHeight", juce::var(savedWindowHeight), nullptr);
+	state.setProperty("bankVisible", juce::var(savedBankVisible), nullptr);
 
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = midiLearnManager.getAllMappings();
@@ -2927,6 +2929,10 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 	isGenerating = state.getProperty("isGenerating", false);
 	generatingTrackId = state.getProperty("generatingTrackId", "").toString();
 	autoLoadEnabled.store(state.getProperty("autoLoadEnabled", true));
+	savedWindowWidth = state.getProperty("windowWidth", 1620);
+	savedWindowHeight = state.getProperty("windowHeight", 840);
+	savedBankVisible = state.getProperty("bankVisible", true);
+
 	bool bypassValue = state.getProperty("bypassSequencer", false);
 	setBypassSequencer(bypassValue);
 	auto tracksState = state.getChildWithName("TrackManager");

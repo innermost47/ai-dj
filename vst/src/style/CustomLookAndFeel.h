@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 #include "style/ColourPalette.h"
 
@@ -427,11 +427,11 @@ public:
 
 		if (style == juce::Slider::LinearVertical || style == juce::Slider::LinearHorizontal)
 		{
-			auto trackWidth = juce::jmin(6.0f, (float)(style == juce::Slider::LinearVertical ? width : height) * 0.25f);
+			const bool isVertical = (style == juce::Slider::LinearVertical);
+			auto trackWidth = juce::jmin(4.0f, (float)(isVertical ? width : height) * 0.20f);
 
 			juce::Point<float> startPoint, endPoint;
-
-			if (style == juce::Slider::LinearVertical)
+			if (isVertical)
 			{
 				auto cx = (float)x + (float)width * 0.5f;
 				startPoint = { cx, (float)y };
@@ -445,39 +445,103 @@ public:
 			}
 
 			auto trackRect = juce::Rectangle<float>(startPoint, endPoint).expanded(trackWidth * 0.5f);
-
 			g.setColour(ColourPalette::backgroundMid);
 			g.fillRoundedRectangle(trackRect, trackWidth * 0.5f);
 
-			g.setColour(ColourPalette::backgroundLight.withAlpha(0.8f));
-			g.drawRoundedRectangle(trackRect, trackWidth * 0.5f, 0.8f);
-
 			float denominator = maxSliderPos - minSliderPos;
-			if (std::abs(denominator) > 0.001f)
+
+			if (isVertical)
 			{
-				float fillRatio = juce::jlimit(0.0f, 1.0f, (sliderPos - minSliderPos) / denominator);
-				auto filledEnd = startPoint + (endPoint - startPoint) * fillRatio;
+				float thumbY = sliderPos;
+				float bottomY = (float)(y + height);
+				float cx = (float)x + (float)width * 0.5f;
 
-				if (std::isfinite(filledEnd.x) && std::isfinite(filledEnd.y))
+				auto fillRect = juce::Rectangle<float>(
+					cx - trackWidth * 0.5f,
+					thumbY,
+					trackWidth,
+					bottomY - thumbY);
+
+				if (fillRect.getHeight() > 0.5f)
 				{
+					g.setColour(accentColour.withAlpha(0.5f));
+					g.fillRoundedRectangle(fillRect, trackWidth * 0.5f);
+				}
+			}
+			else
+			{
+				if (std::abs(denominator) > 0.001f)
+				{
+					float fillRatio = juce::jlimit(0.0f, 1.0f, (sliderPos - minSliderPos) / denominator);
+					auto filledEnd = startPoint + (endPoint - startPoint) * fillRatio;
 					auto fillRect = juce::Rectangle<float>(startPoint, filledEnd).expanded(trackWidth * 0.5f);
-
 					if (fillRect.isFinite() && !fillRect.isEmpty())
 					{
-						g.setColour(accentColour);
+						g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
 						g.fillRoundedRectangle(fillRect, trackWidth * 0.5f);
 					}
 				}
 			}
+
+			g.setColour(ColourPalette::backgroundLight.withAlpha(0.5f));
+			g.drawRoundedRectangle(trackRect, trackWidth * 0.5f, 0.6f);
+
+			const float capsuleW = isVertical
+				? juce::jmax(4.0f, (float)width * 0.45f)
+				: 18.0f;
+			const float capsuleH = isVertical
+				? juce::jmax(8.0f, juce::jmin(14.0f, (float)height * 0.08f))
+				: juce::jmax(8.0f, (float)height * 0.65f);
+			const float capsuleR = 3.0f;
+
+			juce::Rectangle<float> capsule;
+			if (isVertical)
+				capsule = juce::Rectangle<float>(capsuleW, capsuleH)
+				.withCentre({ (float)x + (float)width * 0.5f, sliderPos });
+			else
+				capsule = juce::Rectangle<float>(capsuleW, capsuleH)
+				.withCentre({ sliderPos, (float)y + (float)height * 0.5f });
+
+			g.setColour(juce::Colours::black.withAlpha(0.35f));
+			g.fillRoundedRectangle(capsule.translated(0, 1.5f), capsuleR);
+
+			juce::ColourGradient bodyGradient(
+				ColourPalette::backgroundLight.brighter(0.05f), capsule.getX(), capsule.getY(),
+				ColourPalette::backgroundMid.darker(0.1f), capsule.getX(), capsule.getBottom(),
+				false);
+			g.setGradientFill(bodyGradient);
+			g.fillRoundedRectangle(capsule, capsuleR);
+
+			g.setColour(juce::Colours::white.withAlpha(0.07f));
+			g.fillRoundedRectangle(capsule.withHeight(capsule.getHeight() * 0.45f), capsuleR);
+
+			bool isActive = slider.isMouseOverOrDragging();
+			g.setColour(isActive
+				? ColourPalette::backgroundLight.withAlpha(0.9f)
+				: ColourPalette::backgroundLight.withAlpha(0.5f));
+			g.drawRoundedRectangle(capsule.reduced(0.5f), capsuleR, 0.8f);
+
+			const float lineThick = 2.0f;
+			if (isVertical)
+			{
+				float lx = capsule.getCentreX() - lineThick * 0.5f;
+				float ly = capsule.getY() + 2.0f;
+				float lh = capsule.getHeight() - 4.0f;
+				if (lh > 1.0f)
+				{
+					g.setColour(accentColour.withAlpha(isActive ? 1.0f : 0.8f));
+					g.fillRoundedRectangle(lx, ly, lineThick, lh, lineThick * 0.5f);
+				}
+			}
+			else
+			{
+				float ly = capsule.getCentreY() - lineThick * 0.5f;
+				float lx = capsule.getX() + 2.0f;
+				float lw = capsule.getWidth() - 4.0f;
+				g.setColour(accentColour.withAlpha(isActive ? 1.0f : 0.8f));
+				g.fillRoundedRectangle(lx, ly, lw, lineThick, lineThick * 0.5f);
+			}
 		}
-
-		auto thumbWidth = 16.0f;
-		g.setColour(accentColour);
-
-		if (style == juce::Slider::LinearVertical)
-			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ (float)x + (float)width * 0.5f, sliderPos }));
-		else
-			g.fillEllipse(juce::Rectangle<float>(thumbWidth, thumbWidth).withCentre({ sliderPos, (float)y + (float)height * 0.5f }));
 	}
 
 	void drawRotarySlider(juce::Graphics& g,

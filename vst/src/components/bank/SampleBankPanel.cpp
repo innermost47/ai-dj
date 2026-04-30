@@ -829,7 +829,18 @@ void SampleBankPanel::timerCallback()
 
 void SampleBankPanel::paint(juce::Graphics& g)
 {
-	g.fillAll(ColourPalette::backgroundDark);
+	auto bounds = getLocalBounds().toFloat();
+	const float radius = 6.0f;
+
+	juce::Path bgPath;
+	bgPath.addRoundedRectangle(
+		bounds.getX(), bounds.getY(),
+		bounds.getWidth(), bounds.getHeight(),
+		radius, radius,
+		false, true,
+		false, false);
+	g.setColour(ColourPalette::backgroundDark);
+	g.fillPath(bgPath);
 
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.8f));
 	juce::Path listBg;
@@ -838,8 +849,8 @@ void SampleBankPanel::paint(juce::Graphics& g)
 		4.0f, 4.0f, true, true, false, false);
 	g.fillPath(listBg);
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
-	g.drawRect(getLocalBounds(), 1);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(0.6f));
+	g.strokePath(bgPath, juce::PathStrokeType(1.0f));
 
 	if (isLoading.load())
 		drawLoader(g);
