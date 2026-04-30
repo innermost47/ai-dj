@@ -1260,10 +1260,12 @@ void DjIaVstEditor::resized()
 	tracksViewport.setBounds(tracksArea);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
 	const int totalContentHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
-	bool needsVertical = totalContentHeight > tracksArea.getHeight();
 	tracksViewport.setBounds(tracksArea);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
-	tracksViewport.setScrollBarsShown(needsVertical, false);
+	const int totalContentWidth = TRACK_COLS * 600 + spacing * (TRACK_COLS - 1);
+	bool needsHorizontal = totalContentWidth > tracksArea.getWidth();
+	bool needsVertical = totalContentHeight + (needsHorizontal ? 12 : 0) > tracksArea.getHeight();
+	tracksViewport.setScrollBarsShown(needsVertical, needsHorizontal);
 	layoutTracksGrid();
 
 	area.removeFromTop(spacing);
@@ -1278,7 +1280,9 @@ void DjIaVstEditor::resized()
 	{
 		mixerViewport.setBounds(bottomRow);
 		int mixerW = juce::jmax(minMixerWidth, bottomRow.getWidth());
-		mixerPanel->setBounds(0, 0, mixerW, bottomRow.getHeight());
+		int scrollbarH = mixerViewport.isHorizontalScrollBarShown()
+			? mixerViewport.getScrollBarThickness() : 0;
+		mixerPanel->setBounds(0, 0, mixerW, bottomRow.getHeight() - scrollbarH);
 		mixerViewport.setVisible(true);
 	}
 	layoutControlPanel(controlPanelArea, spacing);
@@ -1335,14 +1339,12 @@ void DjIaVstEditor::layoutTracksGrid()
 	if (viewportBounds.isEmpty())
 		return;
 
-	const int scrollbarAllowance = tracksViewport.isVerticalScrollBarShown()
-		? 12
-		: 0;
+	const int scrollbarAllowance = tracksViewport.isVerticalScrollBarShown() ? 12 : 0;
+	const int scrollbarBottomAllowance = tracksViewport.isHorizontalScrollBarShown() ? 4 : 0;
 	const int availableWidth = viewportBounds.getWidth() - scrollbarAllowance;
 	const int totalWidth = juce::jmax(minTotalWidth, availableWidth);
 	const int cellW = (totalWidth - spacing * (TRACK_COLS - 1)) / TRACK_COLS;
-	const int totalHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
-
+	const int totalHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1) + scrollbarBottomAllowance;
 	tracksContainer.setSize(totalWidth, totalHeight);
 
 	for (auto& comp : trackComponents)
