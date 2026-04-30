@@ -50,7 +50,6 @@ public:
 
 	void paint(juce::Graphics&) override;
 	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
-	void layoutConfigSection(juce::Rectangle<int> area, int reducing, int spacing);
 	void resized() override;
 	void timerCallback() override;
 	void refreshTrackComponents();
@@ -72,6 +71,7 @@ public:
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
 	void removeModal(ObsidianModalOverlay* overlay) override;
 	bool keyStateChanged(bool isKeyDown) override;
+	MixerPanel* getMixerPanel() { return mixerPanel.get(); }
 
 private:
 	DjIaVstProcessor& audioProcessor;
@@ -124,7 +124,6 @@ private:
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
 	void checkForUpdates();
-	void layoutControlPanel(juce::Rectangle<int> area, int spacing);
 	void layoutTracksGrid();
 	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
 	bool keyPressed(const juce::KeyPress& key) override;

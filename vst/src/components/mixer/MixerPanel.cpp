@@ -169,38 +169,92 @@ void MixerPanel::refreshMixerChannels()
 
 void MixerPanel::paint(juce::Graphics& g)
 {
-	juce::ignoreUnused(g);
+	if (crossfader && masterChannel && masterWaveform)
+	{
+		auto unified = crossfader->getBounds()
+			.getUnion(masterWaveform->getBounds())
+			.getUnion(lcdScreen->getBounds())
+			.getUnion(masterChannel->getBounds())
+			.expanded(4, 2);
+
+		g.setColour(ColourPalette::backgroundDeep.brighter(0.04f));
+		g.fillRoundedRectangle(unified.toFloat(), 6.0f);
+
+		g.setColour(ColourPalette::sliderTrack);
+		g.drawRoundedRectangle(unified.toFloat().reduced(0.5f), 6.0f, 1.0f);
+	}
+}
+
+void MixerPanel::setMasterWaveform(MasterWaveformDisplay* wf)
+{
+	masterWaveform = wf;
+	if (masterWaveform != nullptr)
+		addAndMakeVisible(*masterWaveform);
+	resized();
+}
+
+void MixerPanel::setLCDScreen(LCDScreen* lcd)
+{
+	lcdScreen = lcd;
+	if (lcdScreen != nullptr)
+		addAndMakeVisible(*lcdScreen);
+	resized();
 }
 
 void MixerPanel::resized()
 {
 	auto area = getLocalBounds();
 	const int channelH = getHeight();
-	const int masterWidth = 110;
-	auto masterArea = area.removeFromRight(masterWidth);
-	masterArea.setHeight(channelH);
-	masterChannel->setBounds(masterArea);
-	area.removeFromRight(10);
-
 	const int spacing = 4;
-	const int numDecks = 8;
-	const int totalSpacing = spacing * (numDecks);
 
-	const float chWf = (area.getWidth() - totalSpacing) / 9.5f;
-	const int channelWidth = juce::jlimit(40, 100, (int)chWf);
-	const int xfaderWidth = juce::jmax(channelWidth + 20, (int)(channelWidth * 1.5f));
+	const int crossfaderWidth = 160;
+	const int masterChannelWidth = 120;
+	const int waveformWidth = 220;
+	const int centerInternalPad = 10;
+	const int centerOuterMargin = 4;
+	const int centerBlockWidth = crossfaderWidth + waveformWidth + masterChannelWidth + centerInternalPad * 2;
 
+	const int totalCenterFootprint = centerBlockWidth + centerOuterMargin * 2;
+	const int sideWidth = (area.getWidth() - totalCenterFootprint) / 2;
+	const int channelWidth = juce::jlimit(40, 100, (sideWidth - spacing * 3) / 4);
 	auto deckAArea = area.removeFromLeft(channelWidth * 4 + spacing * 3);
-	area.removeFromLeft(spacing);
-	auto xfaderArea = area.removeFromLeft(xfaderWidth);
-	area.removeFromLeft(spacing);
+	area.removeFromLeft(centerOuterMargin);
+
+	auto centerBlock = area.removeFromLeft(centerBlockWidth);
+	area.removeFromLeft(centerOuterMargin);
+
 	auto deckBArea = area;
 
-	crossfader->setBounds(xfaderArea.getX(), 0, xfaderWidth, channelH);
+	centerBlock.reduce(centerInternalPad, 3);
+
+	auto cfArea = centerBlock.removeFromLeft(crossfaderWidth);
+	centerBlock.removeFromLeft(centerInternalPad);
+	auto mcArea = centerBlock.removeFromRight(masterChannelWidth);
+	centerBlock.removeFromRight(centerInternalPad);
+	auto centerStack = centerBlock;
+
+	crossfader->setBounds(cfArea);
+	masterChannel->setBounds(mcArea);
+
+	if (lcdScreen && masterWaveform)
+	{
+		centerStack.removeFromTop(6);
+		centerStack.removeFromBottom(6);
+
+		const int lcdHeight = juce::jmin(48, centerStack.getHeight() / 3);
+		auto lcdArea = centerStack.removeFromBottom(lcdHeight);
+		centerStack.removeFromBottom(6);
+
+		masterWaveform->setBounds(centerStack);
+		lcdScreen->setBounds(lcdArea);
+	}
+	else if (masterWaveform)
+	{
+		masterWaveform->setBounds(centerStack);
+	}
 
 	deckAViewport.setBounds(deckAArea);
 	deckAContainer.setSize(channelWidth * 4 + spacing * 3, channelH);
-
 	deckBViewport.setBounds(deckBArea);
 	deckBContainer.setSize(channelWidth * 4 + spacing * 3, channelH);
 
@@ -209,7 +263,6 @@ void MixerPanel::resized()
 	{
 		TrackData* track = audioProcessor.getTrack(ch->getTrackId());
 		if (!track) continue;
-
 		if (track->getDeckSide() == TrackData::DeckSide::A)
 		{
 			ch->setBounds(xA, 0, channelWidth, channelH);

@@ -230,7 +230,7 @@ void MasterChannel::setupUI()
 	masterLabel.setText("MASTER", juce::dontSendNotification);
 	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	masterLabel.setJustificationType(juce::Justification::centred);
-	masterLabel.setFont(juce::FontOptions(14.0f, juce::Font::bold));
+	masterLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
 
 	addAndMakeVisible(highLabel);
 	highLabel.setText("HIGH", juce::dontSendNotification);
@@ -268,8 +268,6 @@ void MasterChannel::paint(juce::Graphics& g)
 	auto bounds = getLocalBounds();
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds.toFloat(), 8.0f);
-	g.setColour(ColourPalette::sliderTrack);
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 8.0f, 1.0f);
 	drawMasterVUMeterStereo(g, bounds);
 }
 

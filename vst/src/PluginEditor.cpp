@@ -878,6 +878,8 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(logoComponent);
 
 	addAndMakeVisible(masterWaveformDisplay);
+	mixerPanel->setMasterWaveform(&masterWaveformDisplay);
+	mixerPanel->setLCDScreen(&lcdScreen);
 	audioProcessor.onMasterOutput = [this](const float* l, const float* r, int n, double ppq)
 		{
 			masterWaveformDisplay.pushSamples(l, r, n);
@@ -1225,20 +1227,67 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
 
 	const int genBtnW = 50;
 	const int saveBtnW = 34;
-	const int keyW = 180;
-	const int durW = 100;
-	const int presetW = 480;
+	const int ctrlBtnW = 36;
+
+	const int idealKeyW = 180;
+	const int idealDurW = 100;
+	const int idealPresetW = 600;
+	const int idealPromptW = 600;
+
+	const int minKeyW = 120;
+	const int minDurW = 80;
+	const int minPresetW = 280;
+	const int minPromptW = 280;
+
+	configButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	toggleBankButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	helpButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	openMidiEditorButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	loadSampleButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	autoLoadButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
 
 	generateButton.setBounds(area.removeFromRight(genBtnW));
 	area.removeFromRight(spacing);
 	savePresetButton.setBounds(area.removeFromRight(saveBtnW));
 	area.removeFromRight(spacing);
+
+	const int remaining = area.getWidth();
+	const int idealTotal = idealKeyW + idealDurW + idealPresetW + idealPromptW + spacing * 3;
+
+	int keyW, durW, presetW, promptW;
+
+	if (remaining >= idealTotal)
+	{
+		keyW = idealKeyW;
+		durW = idealDurW;
+		const int extra = remaining - idealTotal;
+		presetW = idealPresetW + extra / 2;
+		promptW = remaining - keyW - durW - presetW - spacing * 3;
+	}
+	else
+	{
+		const float scale = (float)remaining / (float)idealTotal;
+		keyW = juce::jmax(minKeyW, (int)(idealKeyW * scale));
+		durW = juce::jmax(minDurW, (int)(idealDurW * scale));
+		presetW = juce::jmax(minPresetW, (int)(idealPresetW * scale));
+		promptW = juce::jmax(minPromptW, remaining - keyW - durW - presetW - spacing * 3);
+	}
+
 	keySelector.setBounds(area.removeFromRight(keyW));
 	area.removeFromRight(spacing);
 	durationSelector.setBounds(area.removeFromRight(durW));
 	area.removeFromRight(spacing);
 	promptPresetSelector.setBounds(area.removeFromRight(presetW));
 	area.removeFromRight(spacing);
+
 	promptInput.setBounds(area);
 }
 
@@ -1248,17 +1297,13 @@ void DjIaVstEditor::resized()
 	if (resizing)
 		return;
 	resizing = true;
-
 	const int spacing = 4;
 	const int padding = 6;
-
 	auto fullBounds = getLocalBounds();
-
 	const int bannerHeight = 40;
 	auto headerArea = fullBounds.removeFromTop(bannerHeight);
 	headerArea.reduce(padding, 0);
 	layoutPromptSection(headerArea, spacing);
-
 	const int bankWidth = (sampleBankPanel && sampleBankPanel->isVisible())
 		? juce::jmax(290, fullBounds.getWidth() / 6)
 		: 0;
@@ -1267,88 +1312,41 @@ void DjIaVstEditor::resized()
 		auto bankArea = fullBounds.removeFromLeft(bankWidth);
 		sampleBankPanel->setBounds(bankArea);
 	}
-
 	fullBounds.removeFromLeft(padding);
 	fullBounds.removeFromRight(padding);
 	auto area = fullBounds;
-
 	const int totalHeight = area.getHeight();
 	const int maxMixerHeight = 220;
 	const int minMixerHeight = 220;
-
 	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight,
 		static_cast<int>(totalHeight * 0.28f));
 	int tracksHeight = totalHeight - mixerHeight - spacing;
-
 	auto tracksArea = area.removeFromTop(tracksHeight);
 	tracksViewport.setBounds(tracksArea);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
 	const int totalContentHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
-	tracksViewport.setBounds(tracksArea);
-	tracksViewport.setViewedComponent(&tracksContainer, false);
 	const int totalContentWidth = TRACK_COLS * 600 + spacing * (TRACK_COLS - 1);
 	bool needsHorizontal = totalContentWidth > tracksArea.getWidth();
 	bool needsVertical = totalContentHeight + (needsHorizontal ? 12 : 0) > tracksArea.getHeight();
 	tracksViewport.setScrollBarsShown(needsVertical, needsHorizontal);
 	layoutTracksGrid();
-
 	area.removeFromTop(spacing);
 
 	auto bottomRow = area;
-	const int controlPanelWidth = juce::jmax(210, juce::jmin(240, bottomRow.getWidth() / 8));
-	auto controlPanelArea = bottomRow.removeFromRight(controlPanelWidth);
-	bottomRow.removeFromRight(spacing);
+	const int minMixerWidth = 1300;
 
-	const int minMixerWidth = 1000;
 	if (mixerPanel)
 	{
 		int contentWidth = juce::jmax(minMixerWidth, bottomRow.getWidth());
-
 		bool needsHorizontalScroll = (contentWidth > bottomRow.getWidth());
-
 		int scrollbarH = needsHorizontalScroll ? (mixerViewport.getScrollBarThickness() + 6) : 6;
-
 		mixerViewport.setBounds(bottomRow);
 		mixerPanel->setSize(contentWidth, bottomRow.getHeight() - scrollbarH);
-
 		mixerViewport.setScrollBarsShown(false, needsHorizontalScroll);
-
 		mixerViewport.setVisible(true);
 	}
-	layoutControlPanel(controlPanelArea, spacing);
-
 	resizing = false;
 	audioProcessor.setWindowSize(getWidth(), getHeight());
-}
-
-void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
-{
-	area.removeFromLeft(8);
-	auto waveArea = area.removeFromTop(area.getHeight() - 71 - spacing - 30);
-	masterWaveformDisplay.setBounds(waveArea);
-
-	area.removeFromTop(spacing);
-	area.removeFromBottom(6);
-
-	auto lcdArea = area.removeFromTop(60);
-	lcdScreen.setBounds(lcdArea);
-
-	int btnW = (area.getWidth() - spacing * 6) / 7;
-	auto btnRow = area.removeFromBottom(32);
-
-	bypassSequencerButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	autoLoadButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	loadSampleButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	openMidiEditorButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	helpButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	toggleBankButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	configButton.setBounds(btnRow.reduced(1));
 }
 
 void DjIaVstEditor::updateLCD()

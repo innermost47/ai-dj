@@ -409,6 +409,18 @@ void DjIaVstProcessor::loadParameters()
 		slotAdsrReleaseParams[i] = parameters.getRawParameterValue(slotName + "AdsrRelease");
 	}
 
+	globalCrossfaderParam = parameters.getRawParameterValue("globalCrossfader");
+	crossfaderCurveModeParam = parameters.getRawParameterValue("crossfaderCurveMode");
+
+	for (int i = 0; i < 4; ++i)
+	{
+		juce::String pairId = "pairCrossfader" + juce::String(i + 1);
+		pairCrossfaderParams[i] = parameters.getRawParameterValue(pairId);
+		parameters.addParameterListener(pairId, this);
+	}
+	parameters.addParameterListener("globalCrossfader", this);
+	parameters.addParameterListener("crossfaderCurveMode", this);
+
 	nextTrackParam = parameters.getRawParameterValue("nextTrack");
 	prevTrackParam = parameters.getRawParameterValue("prevTrack");
 
@@ -555,15 +567,15 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	float pairPrev[4];
 	for (int i = 0; i < 4; ++i)
 	{
-		pairCurrent[i] = pairCrossfaderValue[i].load();
+		pairCurrent[i] = pairCrossfaderParams[i] ? pairCrossfaderParams[i]->load() : 0.5f;
 		pairPrev[i] = pairCrossfaderPrevious[i];
 		pairCrossfaderPrevious[i] = pairCurrent[i];
 	}
-	float globalCurrent = globalCrossfaderValue.load();
+	float globalCurrent = globalCrossfaderParam ? globalCrossfaderParam->load() : 0.5f;
 	float globalPrev = globalCrossfaderPrevious;
 	globalCrossfaderPrevious = globalCurrent;
 
-	int curveMode = crossfaderCurveMode.load();
+	int curveMode = crossfaderCurveModeParam ? juce::jlimit(0, 2, (int)crossfaderCurveModeParam->load()) : 1;
 	trackManager.renderAllTracks(mainOutput, individualOutputBuffers, previewBus, hostBpm,
 		pairPrev, pairCurrent, globalPrev, globalCurrent, curveMode);
 
@@ -616,27 +628,43 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	}
 	checkIfUIUpdateNeeded(midiMessages);
 }
-
-void DjIaVstProcessor::setPairCrossfaderValue(int pairIndex, float value)
+void DjIaVstProcessor::setPairCrossfaderValue(int pairIdx, float value)
 {
-	if (pairIndex < 0 || pairIndex >= 4) return;
-	pairCrossfaderValue[pairIndex].store(juce::jlimit(0.0f, 1.0f, value));
+	if (pairIdx < 0 || pairIdx >= 4) return;
+	juce::String pairId = "pairCrossfader" + juce::String(pairIdx + 1);
+	if (auto* p = parameters.getParameter(pairId))
+		p->setValueNotifyingHost(juce::jlimit(0.0f, 1.0f, value));
 }
 
-float DjIaVstProcessor::getPairCrossfaderValue(int pairIndex) const
+float DjIaVstProcessor::getPairCrossfaderValue(int pairIdx) const
 {
-	if (pairIndex < 0 || pairIndex >= 4) return 0.5f;
-	return pairCrossfaderValue[pairIndex].load();
+	if (pairIdx < 0 || pairIdx >= 4) return 0.5f;
+	return pairCrossfaderParams[pairIdx] ? pairCrossfaderParams[pairIdx]->load() : 0.5f;
 }
 
 void DjIaVstProcessor::setGlobalCrossfaderValue(float value)
 {
-	globalCrossfaderValue.store(juce::jlimit(0.0f, 1.0f, value));
+	if (auto* p = parameters.getParameter("globalCrossfader"))
+		p->setValueNotifyingHost(juce::jlimit(0.0f, 1.0f, value));
 }
 
 float DjIaVstProcessor::getGlobalCrossfaderValue() const
 {
-	return globalCrossfaderValue.load();
+	return globalCrossfaderParam ? globalCrossfaderParam->load() : 0.5f;
+}
+
+void DjIaVstProcessor::setCrossfaderCurveMode(int mode)
+{
+	if (auto* p = parameters.getParameter("crossfaderCurveMode"))
+	{
+		p->setValueNotifyingHost(juce::jlimit(0, 2, mode) / 2.0f);
+	}
+}
+
+int DjIaVstProcessor::getCrossfaderCurveMode() const
+{
+	if (!crossfaderCurveModeParam) return 1;
+	return juce::jlimit(0, 2, (int)crossfaderCurveModeParam->load());
 }
 
 void DjIaVstProcessor::addSequencerMidiMessage(const juce::MidiMessage& message)
@@ -2849,15 +2877,9 @@ void DjIaVstProcessor::getStateInformation(juce::MemoryBlock& destData)
 	state.setProperty("bypassSequencer", juce::var(getBypassSequencer()), nullptr);
 	state.setProperty("crossfaderValue", juce::var(crossfaderValue.load()), nullptr);
 	state.setProperty("crossfadeMode", juce::var(crossfadeMode.load()), nullptr);
-	state.setProperty("pairCrossfader0", juce::var(pairCrossfaderValue[0].load()), nullptr);
-	state.setProperty("pairCrossfader1", juce::var(pairCrossfaderValue[1].load()), nullptr);
-	state.setProperty("pairCrossfader2", juce::var(pairCrossfaderValue[2].load()), nullptr);
-	state.setProperty("pairCrossfader3", juce::var(pairCrossfaderValue[3].load()), nullptr);
-	state.setProperty("globalCrossfader", juce::var(globalCrossfaderValue.load()), nullptr);
 	state.setProperty("windowWidth", juce::var(savedWindowWidth), nullptr);
 	state.setProperty("windowHeight", juce::var(savedWindowHeight), nullptr);
 	state.setProperty("bankVisible", juce::var(savedBankVisible), nullptr);
-	state.setProperty("crossfaderCurveMode", juce::var(crossfaderCurveMode.load()), nullptr);
 
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = midiLearnManager.getAllMappings();
@@ -2960,16 +2982,39 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 	}
 	crossfaderValue.store((float)state.getProperty("crossfaderValue", juce::var(0.5f)));
 	crossfadeMode.store((int)state.getProperty("crossfadeMode", juce::var(0)));
-	pairCrossfaderValue[0].store((float)state.getProperty("pairCrossfader0", juce::var(0.5f)));
-	pairCrossfaderValue[1].store((float)state.getProperty("pairCrossfader1", juce::var(0.5f)));
-	pairCrossfaderValue[2].store((float)state.getProperty("pairCrossfader2", juce::var(0.5f)));
-	pairCrossfaderValue[3].store((float)state.getProperty("pairCrossfader3", juce::var(0.5f)));
-	globalCrossfaderValue.store((float)state.getProperty("globalCrossfader", juce::var(0.5f)));
-	crossfaderCurveMode.store((int)state.getProperty("crossfaderCurveMode", juce::var(1)));
+
+	auto paramsCheck = state.getChildWithName("Parameters");
+	const bool needsCrossfaderMigration = !paramsCheck.isValid()
+		|| !paramsCheck.hasProperty("globalCrossfader");
+
+	if (needsCrossfaderMigration)
+	{
+		if (state.hasProperty("globalCrossfader"))
+		{
+			if (auto* p = parameters.getParameter("globalCrossfader"))
+				p->setValueNotifyingHost((float)state.getProperty("globalCrossfader", 0.5f));
+		}
+		for (int i = 0; i < 4; ++i)
+		{
+			juce::String oldKey = "pairCrossfader" + juce::String(i);
+			juce::String newId = "pairCrossfader" + juce::String(i + 1);
+			if (state.hasProperty(oldKey))
+			{
+				if (auto* p = parameters.getParameter(newId))
+					p->setValueNotifyingHost((float)state.getProperty(oldKey, 0.5f));
+			}
+		}
+		if (state.hasProperty("crossfaderCurveMode"))
+		{
+			int mode = juce::jlimit(0, 2, (int)state.getProperty("crossfaderCurveMode", 1));
+			if (auto* p = parameters.getParameter("crossfaderCurveMode"))
+				p->setValueNotifyingHost(mode / 2.0f);
+		}
+	}
 
 	for (int i = 0; i < 4; ++i)
-		pairCrossfaderPrevious[i] = pairCrossfaderValue[i].load();
-	globalCrossfaderPrevious = globalCrossfaderValue.load();
+		pairCrossfaderPrevious[i] = pairCrossfaderParams[i] ? pairCrossfaderParams[i]->load() : 0.5f;
+	globalCrossfaderPrevious = globalCrossfaderParam ? globalCrossfaderParam->load() : 0.5f;
 
 	juce::ValueTree midiMappingsState = state.getChildWithName("MidiMappings");
 	if (midiMappingsState.isValid())
@@ -3156,6 +3201,42 @@ void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float n
 				auto* param = parameters.getParameter(parameterID);
 				if (param)
 					param->setValueNotifyingHost(0.0f); });
+	}
+	else if (parameterID == "globalCrossfader")
+	{
+		juce::MessageManager::callAsync([this]()
+			{
+				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
+				{
+					if (auto* mixer = editor->getMixerPanel())
+						if (auto* cf = mixer->getCrossfader())
+							cf->refreshFromProcessor();
+				}
+			});
+	}
+	else if (parameterID.startsWith("pairCrossfader"))
+	{
+		juce::MessageManager::callAsync([this]()
+			{
+				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
+				{
+					if (auto* mixer = editor->getMixerPanel())
+						if (auto* cf = mixer->getCrossfader())
+							cf->refreshFromProcessor();
+				}
+			});
+	}
+	else if (parameterID == "crossfaderCurveMode")
+	{
+		juce::MessageManager::callAsync([this]()
+			{
+				if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor()))
+				{
+					if (auto* mixer = editor->getMixerPanel())
+						if (auto* cf = mixer->getCrossfader())
+							cf->refreshCurveButtons();
+				}
+			});
 	}
 }
 
@@ -3952,7 +4033,7 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 
 std::pair<float, float> DjIaVstProcessor::getCrossfadeGains() const
 {
-	float x = globalCrossfaderValue.load();
+	float x = globalCrossfaderParam ? globalCrossfaderParam->load() : 0.5f;
 	return { 1.0f - x, x };
 }
 

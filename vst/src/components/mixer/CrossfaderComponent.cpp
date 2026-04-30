@@ -50,7 +50,9 @@ void CrossfaderComponent::setupCurveButtons()
 		{
 			btn.setClickingTogglesState(false);
 			btn.setHasAccentBar(true);
+			btn.setCompactMode(true);
 			btn.setShowBackground(false);
+			btn.setShowBorder(false);
 			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
 			btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
 			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
@@ -59,21 +61,18 @@ void CrossfaderComponent::setupCurveButtons()
 
 	addAndMakeVisible(curveLinearButton);
 	curveLinearButton.loadIcon(BinaryData::lin_svg, BinaryData::lin_svgSize);
-	curveLinearButton.setCompactMode(true);
 	setupCurveBtn(curveLinearButton);
 	curveLinearButton.setTooltip("Linear crossfade curve");
 	curveLinearButton.onClick = [this]() { selectCurveMode(0); };
 
 	addAndMakeVisible(curveEqualPowerButton);
 	curveEqualPowerButton.loadIcon(BinaryData::eq_svg, BinaryData::eq_svgSize);
-	curveEqualPowerButton.setCompactMode(true);
 	setupCurveBtn(curveEqualPowerButton);
 	curveEqualPowerButton.setTooltip("Equal Power crossfade curve (constant perceived volume)");
 	curveEqualPowerButton.onClick = [this]() { selectCurveMode(1); };
 
 	addAndMakeVisible(curveDjButton);
 	curveDjButton.loadIcon(BinaryData::dj_svg, BinaryData::dj_svgSize);
-	curveDjButton.setCompactMode(true);
 	setupCurveBtn(curveDjButton);
 	curveDjButton.setTooltip("DJ scratch curve (sharp transition)");
 	curveDjButton.onClick = [this]() { selectCurveMode(2); };
@@ -152,10 +151,11 @@ void CrossfaderComponent::setupMidiLearn()
 	for (int i = 0; i < 4; ++i)
 	{
 		const int pairIdx = i;
-		const juce::String midiId = getPairMidiId(pairIdx);
-		const juce::String displayName = getPairDisplayName(pairIdx);
+		const juce::String paramId = "pairCrossfader" + juce::String(pairIdx + 1);
+		const juce::String displayName = "Crossfader " + juce::String(pairIdx + 1)
+			+ " <-> " + juce::String(pairIdx + 5);
 
-		pairSliders[pairIdx].onMidiLearn = [this, pairIdx, midiId, displayName]()
+		pairSliders[pairIdx].onMidiLearn = [this, pairIdx, paramId, displayName]()
 			{
 				if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
 				{
@@ -164,7 +164,7 @@ void CrossfaderComponent::setupMidiLearn()
 					editor->updateLCD();
 				}
 				audioProcessor.getMidiLearnManager().startLearning(
-					midiId,
+					paramId,
 					&audioProcessor,
 					[this, pairIdx](float value)
 					{
@@ -177,15 +177,14 @@ void CrossfaderComponent::setupMidiLearn()
 					&pairSliders[pairIdx]);
 			};
 
-		pairSliders[pairIdx].onMidiRemove = [this, midiId]()
+		pairSliders[pairIdx].onMidiRemove = [this, paramId]()
 			{
-				audioProcessor.getMidiLearnManager().removeMappingForParameter(midiId);
+				audioProcessor.getMidiLearnManager().removeMappingForParameter(paramId);
 			};
 	}
 
-	const juce::String globalMidiId = getGlobalMidiId();
-
-	globalSlider.onMidiLearn = [this, globalMidiId]()
+	const juce::String globalParamId = "globalCrossfader";
+	globalSlider.onMidiLearn = [this, globalParamId]()
 		{
 			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
 			{
@@ -194,7 +193,7 @@ void CrossfaderComponent::setupMidiLearn()
 				editor->updateLCD();
 			}
 			audioProcessor.getMidiLearnManager().startLearning(
-				globalMidiId,
+				globalParamId,
 				&audioProcessor,
 				[this](float value)
 				{
@@ -207,9 +206,9 @@ void CrossfaderComponent::setupMidiLearn()
 				&globalSlider);
 		};
 
-	globalSlider.onMidiRemove = [this, globalMidiId]()
+	globalSlider.onMidiRemove = [this, globalParamId]()
 		{
-			audioProcessor.getMidiLearnManager().removeMappingForParameter(globalMidiId);
+			audioProcessor.getMidiLearnManager().removeMappingForParameter(globalParamId);
 		};
 }
 
@@ -217,9 +216,9 @@ void CrossfaderComponent::setupCurveButtonsMidiLearn()
 {
 	auto setupCurveBtn = [this](IconButton& btn, int mode, const juce::String& displayName)
 		{
-			const juce::String midiId = getCurveMidiId(mode);
+			const juce::String paramId = "crossfaderCurveMode";
 
-			btn.onMidiLearn = [this, &btn, mode, midiId, displayName]()
+			btn.onMidiLearn = [this, &btn, mode, paramId, displayName]()
 				{
 					if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
 					{
@@ -228,7 +227,7 @@ void CrossfaderComponent::setupCurveButtonsMidiLearn()
 						editor->updateLCD();
 					}
 					audioProcessor.getMidiLearnManager().startLearning(
-						midiId,
+						paramId,
 						&audioProcessor,
 						[this, mode](float value)
 						{
@@ -244,9 +243,9 @@ void CrossfaderComponent::setupCurveButtonsMidiLearn()
 						&btn);
 				};
 
-			btn.onMidiRemove = [this, midiId]()
+			btn.onMidiRemove = [this, paramId]()
 				{
-					audioProcessor.getMidiLearnManager().removeMappingForParameter(midiId);
+					audioProcessor.getMidiLearnManager().removeMappingForParameter(paramId);
 				};
 		};
 
@@ -274,26 +273,11 @@ void CrossfaderComponent::paint(juce::Graphics& g)
 	auto bounds = getLocalBounds().toFloat();
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds, 8.0f);
-	g.setColour(ColourPalette::sliderTrack);
-	g.drawRoundedRectangle(bounds.reduced(1.0f), 8.0f, 1.0f);
 
 	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
 	g.setColour(ColourPalette::textPrimary);
 	g.drawText("CROSSFADERS", bounds.toNearestInt().withHeight(12).translated(0, 6),
 		juce::Justification::centred);
-
-	if (!curveButtonsRowBounds.isEmpty())
-	{
-		float sepY = (float)curveButtonsRowBounds.getY() - 2.0f;
-
-		g.setColour(ColourPalette::sliderTrack.withAlpha(0.5f));
-		g.drawLine(bounds.getX(), sepY, bounds.getRight(), sepY, 1.0f);
-
-		auto expandedBounds = curveButtonsRowBounds.toFloat().expanded(5.0f, 2.0f);
-
-		g.setColour(ColourPalette::buttonInactive.withAlpha(0.2f));
-		g.fillRoundedRectangle(expandedBounds, 0.0f);
-	}
 }
 
 void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
@@ -314,7 +298,7 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
 		if (trackLeft)  leftColour = AiModelDefinitions::getColourForModel(trackLeft->selectedModel);
 		if (trackRight) rightColour = AiModelDefinitions::getColourForModel(trackRight->selectedModel);
 
-		float labelY = (float)rowBounds.getY() - 2.0f;
+		float labelY = (float)rowBounds.getY() - 4.0f;
 		float rx = (float)rowBounds.getX();
 		float rr = (float)rowBounds.getRight();
 
@@ -337,10 +321,10 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
 void CrossfaderComponent::resized()
 {
 	auto area = getLocalBounds().reduced(6, 4);
-	area.removeFromTop(26);
+	area.removeFromTop(28);
 
-	const int curveButtonsHeight = 28;
-	const int curveButtonsBottomMargin = 4;
+	const int curveButtonsHeight = 32;
+	const int curveButtonsBottomMargin = 2;
 
 	auto curveButtonsArea = area.removeFromBottom(curveButtonsHeight);
 	area.removeFromBottom(curveButtonsBottomMargin);
@@ -357,12 +341,12 @@ void CrossfaderComponent::resized()
 	curveDjButton.setBounds(curveButtonsArea);
 
 	const int sideW = 2;
-	const int rowSpacing = 4;
+	const int rowSpacing = 2;
 	const int rowHeight = (area.getHeight() - rowSpacing * 3) / 4;
 
 	for (int i = 0; i < 4; ++i)
 	{
-		auto rowArea = area.removeFromTop(rowHeight);
+		auto rowArea = (i == 3) ? area : area.removeFromTop(rowHeight);
 		pairRowBounds[i] = rowArea;
 
 		auto sliderArea = rowArea;
