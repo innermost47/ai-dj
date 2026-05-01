@@ -491,7 +491,7 @@ void DetailPanel::updatePlayButton()
 	else
 	{
 		playButton.setToggleState(false, juce::dontSendNotification);
-		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
+		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::mossGreen);
 	}
 	playButton.repaint();
 }
@@ -631,7 +631,7 @@ void SampleBankPanel::setupUI()
 
 	addAndMakeVisible(addCategoryButton);
 	addCategoryButton.loadIcon(BinaryData::plus_svg, BinaryData::plus_svgSize);
-	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::emerald);
+	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::mossGreen);
 	addCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 
 	addCategoryButton.onClick = [this]()
