@@ -138,30 +138,29 @@ void TrackComponent::updateUIFromParameter(const juce::String& paramName,
 	}
 	else if (paramName == slotPrefix + " ADSR Attack")
 	{
-		// newValue est normalisé 0→1, convertir vers le range réel 0.001→4.0
 		float denorm = 0.001f + newValue * (4.0f - 0.001f);
-		adsrAttackKnob.setValue(denorm, juce::dontSendNotification);
-		if (track) track->getCurrentPage().adsrAttack.store(denorm);
+		if (!adsrAttackKnob.isMouseButtonDown())
+			adsrAttackKnob.setValue(denorm, juce::dontSendNotification);
 		syncAdsrToWaveform();
 	}
 	else if (paramName == slotPrefix + " ADSR Decay")
 	{
 		float denorm = 0.001f + newValue * (4.0f - 0.001f);
-		adsrDecayKnob.setValue(denorm, juce::dontSendNotification);
-		if (track) track->getCurrentPage().adsrDecay.store(denorm);
+		if (!adsrDecayKnob.isMouseButtonDown())
+			adsrDecayKnob.setValue(denorm, juce::dontSendNotification);
 		syncAdsrToWaveform();
 	}
 	else if (paramName == slotPrefix + " ADSR Sustain")
 	{
-		adsrSustainKnob.setValue(newValue, juce::dontSendNotification);
-		if (track) track->getCurrentPage().adsrSustain.store(newValue);
+		if (!adsrSustainKnob.isMouseButtonDown())
+			adsrSustainKnob.setValue(newValue, juce::dontSendNotification);
 		syncAdsrToWaveform();
 	}
 	else if (paramName == slotPrefix + " ADSR Release")
 	{
 		float denorm = 0.001f + newValue * (4.0f - 0.001f);
-		adsrReleaseKnob.setValue(denorm, juce::dontSendNotification);
-		if (track) track->getCurrentPage().adsrRelease.store(denorm);
+		if (!adsrReleaseKnob.isMouseButtonDown())
+			adsrReleaseKnob.setValue(denorm, juce::dontSendNotification);
 		syncAdsrToWaveform();
 	}
 }
@@ -183,17 +182,8 @@ void TrackComponent::parameterValueChanged(int parameterIndex, float newValue)
 		auto* param = allParams[parameterIndex];
 		juce::String paramName = param->getName(256);
 
-		if (juce::MessageManager::getInstance()->isThisTheMessageThread())
-		{
-			juce::Timer::callAfterDelay(50, [this, paramName, slotPrefix, newValue]()
-				{ updateUIFromParameter(paramName, slotPrefix, newValue); });
-		}
-		else
-		{
-			juce::MessageManager::callAsync([this, paramName, slotPrefix, newValue]()
-				{ juce::Timer::callAfterDelay(50, [this, paramName, slotPrefix, newValue]()
-					{ updateUIFromParameter(paramName, slotPrefix, newValue); }); });
-		}
+		juce::MessageManager::callAsync([this, paramName, slotPrefix, newValue]()
+			{ updateUIFromParameter(paramName, slotPrefix, newValue); });
 	}
 }
 
@@ -455,14 +445,6 @@ void TrackComponent::setSamplePending(bool pending)
 
 void TrackComponent::setupAdsrKnobs()
 {
-	struct KnobDef {
-		MidiLearnableSlider& knob;
-		juce::Label& label;
-		const char* name;
-		float rangeMin, rangeMax, defaultVal;
-		const char* tooltip;
-	};
-
 	auto setupKnob = [&](MidiLearnableSlider& knob, juce::Label& label,
 		const char* name, float rMin, float rMax, float def,
 		const char* tooltip)
@@ -475,7 +457,6 @@ void TrackComponent::setupAdsrKnobs()
 			knob.setDoubleClickReturnValue(true, def);
 			knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 			knob.setTooltip(tooltip);
-			knob.onValueChange = [this]() { onAdsrChanged(); };
 			addAndMakeVisible(label);
 			label.setText(name, juce::dontSendNotification);
 			label.setJustificationType(juce::Justification::centred);
@@ -489,6 +470,35 @@ void TrackComponent::setupAdsrKnobs()
 	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.01f, "ADSR Release time (seconds)");
 
 	adsrSustainKnob.setSkewFactor(1.0);
+
+	adsrAttackKnob.onValueChange = [this]()
+		{
+			if (!track) return;
+			track->getCurrentPage().adsrAttack = (float)adsrAttackKnob.getValue();
+			syncAdsrToWaveform();
+			setSliderParameter("AdsrAttack", adsrAttackKnob);
+		};
+	adsrDecayKnob.onValueChange = [this]()
+		{
+			if (!track) return;
+			track->getCurrentPage().adsrDecay = (float)adsrDecayKnob.getValue();
+			syncAdsrToWaveform();
+			setSliderParameter("AdsrDecay", adsrDecayKnob);
+		};
+	adsrSustainKnob.onValueChange = [this]()
+		{
+			if (!track) return;
+			track->getCurrentPage().adsrSustain = (float)adsrSustainKnob.getValue();
+			syncAdsrToWaveform();
+			setSliderParameter("AdsrSustain", adsrSustainKnob);
+		};
+	adsrReleaseKnob.onValueChange = [this]()
+		{
+			if (!track) return;
+			track->getCurrentPage().adsrRelease = (float)adsrReleaseKnob.getValue();
+			syncAdsrToWaveform();
+			setSliderParameter("AdsrRelease", adsrReleaseKnob);
+		};
 }
 
 void TrackComponent::updateAdsrKnobsFromPage()
@@ -502,22 +512,6 @@ void TrackComponent::updateAdsrKnobsFromPage()
 	adsrReleaseKnob.setValue(page.adsrRelease, juce::dontSendNotification);
 
 	syncAdsrToWaveform();
-}
-
-void TrackComponent::onAdsrChanged()
-{
-	if (!track) return;
-	auto& page = track->getCurrentPage();
-	page.adsrAttack = (float)adsrAttackKnob.getValue();
-	page.adsrDecay = (float)adsrDecayKnob.getValue();
-	page.adsrSustain = (float)adsrSustainKnob.getValue();
-	page.adsrRelease = (float)adsrReleaseKnob.getValue();
-	syncAdsrToWaveform();
-
-	setSliderParameter("AdsrAttack", adsrAttackKnob);
-	setSliderParameter("AdsrDecay", adsrDecayKnob);
-	setSliderParameter("AdsrSustain", adsrSustainKnob);
-	setSliderParameter("AdsrRelease", adsrReleaseKnob);
 }
 
 void TrackComponent::syncAdsrToWaveform()

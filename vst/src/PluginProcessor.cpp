@@ -408,6 +408,15 @@ void DjIaVstProcessor::loadParameters()
 		slotAdsrReleaseParams[i] = parameters.getRawParameterValue(slotName + "AdsrRelease");
 	}
 
+	for (int i = 1; i <= 8; ++i)
+	{
+		juce::String slotName = "slot" + juce::String(i);
+		parameters.addParameterListener(slotName + "AdsrAttack", this);
+		parameters.addParameterListener(slotName + "AdsrDecay", this);
+		parameters.addParameterListener(slotName + "AdsrSustain", this);
+		parameters.addParameterListener(slotName + "AdsrRelease", this);
+	}
+
 	globalCrossfaderParam = parameters.getRawParameterValue("globalCrossfader");
 	crossfaderCurveModeParam = parameters.getRawParameterValue("crossfaderCurveMode");
 
@@ -3267,6 +3276,42 @@ void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float n
 						if (auto* cf = mixer->getCrossfader())
 							cf->refreshCurveButtons();
 				} });
+	}
+	else if (parameterID.startsWith("slot") &&
+		(parameterID.endsWith("AdsrAttack") ||
+			parameterID.endsWith("AdsrDecay") ||
+			parameterID.endsWith("AdsrSustain") ||
+			parameterID.endsWith("AdsrRelease")))
+	{
+		int slotNum = parameterID.substring(4, 5).getIntValue();
+		if (slotNum < 1 || slotNum > 8) return;
+
+		auto trackIds = trackManager.getAllTrackIds();
+		for (const auto& tid : trackIds)
+		{
+			TrackData* t = trackManager.getTrack(tid);
+			if (!t || t->slotIndex != slotNum - 1) continue;
+
+			auto& page = t->getCurrentPage();
+
+			if (parameterID.endsWith("AdsrAttack"))
+			{
+				page.adsrAttack.store(newValue);
+			}
+			else if (parameterID.endsWith("AdsrDecay"))
+			{
+				page.adsrDecay.store(newValue);
+			}
+			else if (parameterID.endsWith("AdsrSustain"))
+			{
+				page.adsrSustain.store(newValue);
+			}
+			else if (parameterID.endsWith("AdsrRelease"))
+			{
+				page.adsrRelease.store(newValue);
+			}
+			break;
+		}
 	}
 }
 

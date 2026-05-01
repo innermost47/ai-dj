@@ -315,7 +315,6 @@ private:
 	void mouseDown(const juce::MouseEvent& event) override;
 	void setupAdsrKnobs();
 	void updateAdsrKnobsFromPage();
-	void onAdsrChanged();
 	void syncAdsrToWaveform();
 
 	float calculateEffectiveBpm();
