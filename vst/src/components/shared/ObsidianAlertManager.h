@@ -195,8 +195,8 @@ public:
 					};
 
 				styleLabel(modeLbl, "Generation Mode:");
-				modeCombo.addItem("Server/API (Full features + stems separation)", 1);
-				modeCombo.addItem("Local Model (Basic - requires manual setup)", 2);
+				modeCombo.addItem("Server/API", 1);
+				modeCombo.addItem("Local Model", 2);
 				modeCombo.setSelectedId(useLocal ? 2 : 1);
 				styleCombo(modeCombo);
 				addAndMakeVisible(modeCombo);

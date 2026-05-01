@@ -49,7 +49,7 @@ public:
 	LCDScreen lcdScreen;
 
 	void paint(juce::Graphics&) override;
-	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
+	void layoutPromptSection(juce::Rectangle<int> area, int spacing, int controlsZoneW);
 	void resized() override;
 	void timerCallback() override;
 	void refreshTrackComponents();

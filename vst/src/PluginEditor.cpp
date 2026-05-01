@@ -1219,15 +1219,33 @@ void DjIaVstEditor::paint(juce::Graphics& g)
 	g.fillAll(ColourPalette::backgroundDeep);
 }
 
-void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
+void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing, int controlsZoneW)
 {
 	const int itemH = 28;
 	const int vPad = (area.getHeight() - itemH) / 2;
 	area = area.reduced(0, vPad);
 
+	constexpr int numCtrl = 7;
+	const int totalCtrlSpacing = numCtrl * spacing;
+	const int ctrlBtnW = juce::jmax(24, (controlsZoneW - totalCtrlSpacing) / numCtrl);
+
+	configButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	toggleBankButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	helpButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	openMidiEditorButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	loadSampleButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	autoLoadButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	if (sampleBankPanel && sampleBankPanel->isVisible()) {
+		area.removeFromLeft(2);
+	}
+
 	const int genBtnW = 50;
 	const int saveBtnW = 34;
-	const int ctrlBtnW = 36;
+
+	area.removeFromRight(2);
+	generateButton.setBounds(area.removeFromRight(genBtnW));  area.removeFromRight(spacing);
+	savePresetButton.setBounds(area.removeFromRight(saveBtnW)); area.removeFromRight(spacing);
 
 	const int idealKeyW = 180;
 	const int idealDurW = 100;
@@ -1238,26 +1256,6 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
 	const int minDurW = 80;
 	const int minPresetW = 280;
 	const int minPromptW = 280;
-
-	configButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	toggleBankButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	helpButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	openMidiEditorButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	loadSampleButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	autoLoadButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-
-	generateButton.setBounds(area.removeFromRight(genBtnW));
-	area.removeFromRight(spacing);
-	savePresetButton.setBounds(area.removeFromRight(saveBtnW));
-	area.removeFromRight(spacing);
 
 	const int remaining = area.getWidth();
 	const int idealTotal = idealKeyW + idealDurW + idealPresetW + idealPromptW + spacing * 3;
@@ -1274,19 +1272,16 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
 	}
 	else
 	{
-		const float scale = (float)remaining / (float)idealTotal;
-		keyW = juce::jmax(minKeyW, (int)(idealKeyW * scale));
-		durW = juce::jmax(minDurW, (int)(idealDurW * scale));
-		presetW = juce::jmax(minPresetW, (int)(idealPresetW * scale));
+		const float scale = static_cast<float>(remaining) / static_cast<float>(idealTotal);
+		keyW = juce::jmax(minKeyW, static_cast<int>(idealKeyW * scale));
+		durW = juce::jmax(minDurW, static_cast<int>(idealDurW * scale));
+		presetW = juce::jmax(minPresetW, static_cast<int>(idealPresetW * scale));
 		promptW = juce::jmax(minPromptW, remaining - keyW - durW - presetW - spacing * 3);
 	}
 
-	keySelector.setBounds(area.removeFromRight(keyW));
-	area.removeFromRight(spacing);
-	durationSelector.setBounds(area.removeFromRight(durW));
-	area.removeFromRight(spacing);
-	promptPresetSelector.setBounds(area.removeFromRight(presetW));
-	area.removeFromRight(spacing);
+	keySelector.setBounds(area.removeFromRight(keyW));    area.removeFromRight(spacing);
+	durationSelector.setBounds(area.removeFromRight(durW));    area.removeFromRight(spacing);
+	promptPresetSelector.setBounds(area.removeFromRight(presetW)); area.removeFromRight(spacing);
 
 	promptInput.setBounds(area);
 }
@@ -1301,12 +1296,18 @@ void DjIaVstEditor::resized()
 	const int padding = 6;
 	auto fullBounds = getLocalBounds();
 	const int bannerHeight = 40;
+
+	const int bankWidth = (sampleBankPanel && sampleBankPanel->isVisible())
+		? juce::jmax(288, fullBounds.getWidth() / 6)
+		: 0;
+
 	auto headerArea = fullBounds.removeFromTop(bannerHeight);
 	headerArea.reduce(padding, 0);
-	layoutPromptSection(headerArea, spacing);
-	const int bankWidth = (sampleBankPanel && sampleBankPanel->isVisible())
-		? juce::jmax(290, fullBounds.getWidth() / 6)
-		: 0;
+
+	const int ctrlZoneW = 290;
+
+	layoutPromptSection(headerArea, spacing, ctrlZoneW);
+
 	if (sampleBankPanel && sampleBankPanel->isVisible())
 	{
 		auto bankArea = fullBounds.removeFromLeft(bankWidth);
