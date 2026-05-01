@@ -69,11 +69,10 @@ DjIaVstProcessor::DjIaVstProcessor()
 			if (!stateLoaded)
 			{
 				stateLoaded = true;
-			}
-		});
+			} });
 
-	juce::Timer::callAfterDelay(1000, [this]()
-		{ performMigrationIfNeeded(); });
+			juce::Timer::callAfterDelay(1000, [this]()
+				{ performMigrationIfNeeded(); });
 }
 
 void DjIaVstProcessor::performMigrationIfNeeded()
@@ -579,7 +578,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	trackManager.renderAllTracks(mainOutput, individualOutputBuffers, previewBus, hostBpm,
 		pairPrev, pairCurrent, globalPrev, globalCurrent, curveMode);
 
-
 	copyTracksToIndividualOutputs(buffer);
 	applyMasterEffects(mainOutput);
 	{
@@ -628,17 +626,25 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 	}
 	checkIfUIUpdateNeeded(midiMessages);
 }
+
 void DjIaVstProcessor::setPairCrossfaderValue(int pairIdx, float value)
 {
-	if (pairIdx < 0 || pairIdx >= 4) return;
+	if (pairIdx < 0 || pairIdx >= 4)
+		return;
 	juce::String pairId = "pairCrossfader" + juce::String(pairIdx + 1);
 	if (auto* p = parameters.getParameter(pairId))
+	{
 		p->setValueNotifyingHost(juce::jlimit(0.0f, 1.0f, value));
+		sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(pairIdx),
+			MidiMapping::volumeToMidi(value),
+			MidiMapping::feedbackChannelShaping);
+	}
 }
 
 float DjIaVstProcessor::getPairCrossfaderValue(int pairIdx) const
 {
-	if (pairIdx < 0 || pairIdx >= 4) return 0.5f;
+	if (pairIdx < 0 || pairIdx >= 4)
+		return 0.5f;
 	return pairCrossfaderParams[pairIdx] ? pairCrossfaderParams[pairIdx]->load() : 0.5f;
 }
 
@@ -658,12 +664,16 @@ void DjIaVstProcessor::setCrossfaderCurveMode(int mode)
 	if (auto* p = parameters.getParameter("crossfaderCurveMode"))
 	{
 		p->setValueNotifyingHost(juce::jlimit(0, 2, mode) / 2.0f);
+		sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve,
+			mode,
+			MidiMapping::feedbackChannelShaping);
 	}
 }
 
 int DjIaVstProcessor::getCrossfaderCurveMode() const
 {
-	if (!crossfaderCurveModeParam) return 1;
+	if (!crossfaderCurveModeParam)
+		return 1;
 	return juce::jlimit(0, 2, (int)crossfaderCurveModeParam->load());
 }
 
@@ -957,17 +967,14 @@ void DjIaVstProcessor::sendFullStateFeedback()
 			continue;
 		int slot = track->slotIndex + 1;
 		int slotIdx = track->slotIndex;
-
 		if (track->isCurrentlyPlaying.load())
 			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackActive);
 		else if (track->isArmed.load())
 			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackPending);
 		else
 			sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackIdle);
-
 		if (track->usePages.load())
 			sendMidiFeedback(MidiMapping::ccFeedbackPage(slot), track->currentPageIndex.load());
-
 		sendMidiFeedback(MidiMapping::ccFeedbackVolume(slot),
 			MidiMapping::volumeToMidi(slotVolumeParams[slotIdx]->load()));
 		sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
@@ -986,17 +993,30 @@ void DjIaVstProcessor::sendFullStateFeedback()
 			track->getCurrentPage().currentSequenceIndex);
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slot),
 			MidiMapping::adsrToMidi(slotAdsrAttackParams[slotIdx]->load(), 0.001f, 4.0f),
-			MidiMapping::feedbackChannelAdsr);
+			MidiMapping::feedbackChannelShaping);
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slot),
 			MidiMapping::adsrToMidi(slotAdsrDecayParams[slotIdx]->load(), 0.001f, 4.0f),
-			MidiMapping::feedbackChannelAdsr);
+			MidiMapping::feedbackChannelShaping);
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slot),
 			MidiMapping::adsrToMidi(slotAdsrSustainParams[slotIdx]->load(), 0.0f, 1.0f),
-			MidiMapping::feedbackChannelAdsr);
+			MidiMapping::feedbackChannelShaping);
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slot),
 			MidiMapping::adsrToMidi(slotAdsrReleaseParams[slotIdx]->load(), 0.001f, 4.0f),
-			MidiMapping::feedbackChannelAdsr);
+			MidiMapping::feedbackChannelShaping);
 	}
+
+	for (int p = 0; p < 4; ++p)
+	{
+		sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(p),
+			MidiMapping::volumeToMidi(getPairCrossfaderValue(p)),
+			MidiMapping::feedbackChannelShaping);
+	}
+	sendMidiFeedback(MidiMapping::ccFeedbackGlobalCrossfader,
+		MidiMapping::volumeToMidi(getGlobalCrossfaderValue()),
+		MidiMapping::feedbackChannelShaping);
+	sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve,
+		getCrossfaderCurveMode() * 63,
+		MidiMapping::feedbackChannelShaping);
 }
 
 void DjIaVstProcessor::previewTrack(const juce::String& trackId)
@@ -2984,8 +3004,7 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 	crossfadeMode.store((int)state.getProperty("crossfadeMode", juce::var(0)));
 
 	auto paramsCheck = state.getChildWithName("Parameters");
-	const bool needsCrossfaderMigration = !paramsCheck.isValid()
-		|| !paramsCheck.hasProperty("globalCrossfader");
+	const bool needsCrossfaderMigration = !paramsCheck.isValid() || !paramsCheck.hasProperty("globalCrossfader");
 
 	if (needsCrossfaderMigration)
 	{
@@ -3151,17 +3170,31 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 						sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(rawFine));
 						sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
 							track->getCurrentPage().currentSequenceIndex);
+						sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slotNumber), MidiMapping::adsrToMidi(slotAdsrAttackParams[track->slotIndex]->load(), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
+						sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slotNumber), MidiMapping::adsrToMidi(slotAdsrDecayParams[track->slotIndex]->load(), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
+						sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slotNumber), MidiMapping::adsrToMidi(slotAdsrSustainParams[track->slotIndex]->load(), 0.0f, 1.0f), MidiMapping::feedbackChannelShaping);
+						sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slotNumber), MidiMapping::adsrToMidi(slotAdsrReleaseParams[track->slotIndex]->load(), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
+					}
+
+					for (int p = 0; p < 4; ++p)
+					{
+						sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(p),
+							MidiMapping::volumeToMidi(getPairCrossfaderValue(p)),
+							MidiMapping::feedbackChannelShaping);
+					}
+
+					sendMidiFeedback(MidiMapping::ccFeedbackGlobalCrossfader, MidiMapping::volumeToMidi(getGlobalCrossfaderValue()), MidiMapping::feedbackChannelShaping);
+					sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve, getCrossfaderCurveMode() * 63, MidiMapping::feedbackChannelShaping);
+				});
+			midiLearnManager.restoreUICallbacks();
+			stateLoaded = true;
+			isLoadingState.store(false);
+			juce::MessageManager::callAsync([this]()
+				{
+					if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor())) {
+						editor->refreshTrackComponents();
+						editor->updateUIFromProcessor();
 					} });
-					midiLearnManager.restoreUICallbacks();
-					stateLoaded = true;
-					isLoadingState.store(false);
-					juce::MessageManager::callAsync([this]()
-						{
-							if (auto* editor = dynamic_cast<DjIaVstEditor*>(getActiveEditor())) {
-								editor->refreshTrackComponents();
-								editor->updateUIFromProcessor();
-							}
-						});
 }
 
 void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float newValue)
@@ -3211,8 +3244,7 @@ void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float n
 					if (auto* mixer = editor->getMixerPanel())
 						if (auto* cf = mixer->getCrossfader())
 							cf->refreshFromProcessor();
-				}
-			});
+				} });
 	}
 	else if (parameterID.startsWith("pairCrossfader"))
 	{
@@ -3223,8 +3255,7 @@ void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float n
 					if (auto* mixer = editor->getMixerPanel())
 						if (auto* cf = mixer->getCrossfader())
 							cf->refreshFromProcessor();
-				}
-			});
+				} });
 	}
 	else if (parameterID == "crossfaderCurveMode")
 	{
@@ -3235,8 +3266,7 @@ void DjIaVstProcessor::parameterChanged(const juce::String& parameterID, float n
 					if (auto* mixer = editor->getMixerPanel())
 						if (auto* cf = mixer->getCrossfader())
 							cf->refreshCurveButtons();
-				}
-			});
+				} });
 	}
 }
 
@@ -3309,8 +3339,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 									trackComp->performPageChange(pageIndex);
 									break;
 								}
-							}
-						});
+							} });
 				}
 				return;
 			}
@@ -3336,8 +3365,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 									trackComp->performPageChange(pageIndex);
 									break;
 								}
-							}
-						});
+							} });
 				}
 				sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);
 				sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
@@ -3366,8 +3394,7 @@ void DjIaVstProcessor::handlePageChange(const juce::String& parameterID)
 										" will switch at next measure", 3000);
 									break;
 								}
-							}
-						});
+							} });
 				}
 			}
 			break;
@@ -4041,11 +4068,10 @@ void DjIaVstProcessor::sendMidiFeedback(int cc, int value, int channel)
 {
 	juce::ScopedLock lock(feedbackMidiLock);
 	feedbackMidiBuffer.addEvent(
-		juce::MidiMessage::controllerEvent(channel + 1, cc, value),
+		juce::MidiMessage::controllerEvent(channel, cc, value),
 		0);
 }
-
 void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
 {
-	sendMidiFeedback(cc, value, MidiMapping::feedbackChannel);
+	sendMidiFeedback(cc, value, MidiMapping::feedbackChannelMixer);
 }
