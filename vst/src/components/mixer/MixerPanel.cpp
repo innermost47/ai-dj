@@ -210,7 +210,7 @@ void MixerPanel::resized()
 	const int crossfaderWidth = 220;
 	const int masterChannelWidth = 120;
 	const int waveformWidth = 200;
-	const int centerInternalPad = 2;
+	const int centerInternalPad = 8;
 	const int centerOuterMargin = 4;
 	const int centerBlockWidth = crossfaderWidth + waveformWidth + masterChannelWidth + centerInternalPad * 2;
 

@@ -285,11 +285,11 @@ void CrossfaderComponent::refreshFromProcessor()
 void CrossfaderComponent::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds, 8.0f);
 
-	g.setColour(juce::Colours::white.withAlpha(0.04f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), 8.0f, 1.0f);
+	auto borderBounds = bounds.reduced(0.0f, 2.0f);
+
+	g.setColour(ColourPalette::backgroundDark);
+	g.fillRoundedRectangle(borderBounds, 8.0f);
 
 	drawSegmentedCurveBackground(g);
 }
@@ -380,10 +380,10 @@ void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics& g) const
 
 	auto track = curveButtonsRowBounds.toFloat();
 
-	g.setColour(ColourPalette::backgroundDeep);
+	g.setColour(juce::Colours::black.withAlpha(0.4f));
 	g.fillRoundedRectangle(track, 5.0f);
 
-	g.setColour(juce::Colours::black.withAlpha(0.4f));
+	g.setColour(ColourPalette::backgroundLight);
 	g.drawRoundedRectangle(track.reduced(0.5f), 5.0f, 0.8f);
 
 	int activeMode = audioProcessor.getCrossfaderCurveMode();

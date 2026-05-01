@@ -44,8 +44,8 @@ private:
 	juce::Rectangle<int> globalRowBounds;
 	juce::Rectangle<int> curveButtonsRowBounds;
 
-	static constexpr int ledDiameter = 10;
-	static constexpr int ledPadX = 2;
+	static constexpr int ledDiameter = 12;
+	static constexpr int ledPadX = 3;
 	static constexpr int labelWidth = 14;
 	static constexpr int ledZoneWidth = ledPadX + ledDiameter + 4 + labelWidth + 4;
 
