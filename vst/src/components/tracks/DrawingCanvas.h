@@ -1353,22 +1353,22 @@ inline DrawingCanvas* ObsidianAlertManager::showDrawingCanvas(juce::Component* p
 	std::function<void(const juce::String&)> onGenerate,
 	std::function<void(DrawingCanvas*)> onClose)
 {
-	auto* root = getSafePluginWindow(parent);
-	if (root == nullptr) return nullptr;
-
 	auto modal = std::make_unique<ObsidianModalWindow>("Draw to Audio", 980, 980);
+
 	auto canvasContent = std::make_unique<DrawingCanvas>(processor);
 	auto* canvasPtr = canvasContent.get();
-
 	canvasPtr->onGenerate = onGenerate;
 	modal->setContent(std::move(canvasContent));
 
-	auto* overlay = new ObsidianModalOverlay(root, std::move(modal));
+	auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr) return nullptr;
+
 	juce::Component::SafePointer<ObsidianModalOverlay> safeOverlay(overlay);
 
 	overlay->modalWindow->addButton("Close", ObsidianAlertManager::crossSvg,
 		ColourPalette::buttonInactive,
-		[safeOverlay, canvasPtr, onClose]() {
+		[safeOverlay, canvasPtr, onClose]()
+		{
 			if (onClose) onClose(canvasPtr);
 			if (safeOverlay != nullptr)
 				safeOverlay->close();

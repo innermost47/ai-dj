@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
 #include "engines/DjIaClient.h"
 
@@ -147,6 +147,38 @@ struct TrackData
 	std::atomic<bool> preservedLoopLocked{ false };
 
 	int slotIndex = -1;
+
+	enum class DeckSide { A, B };
+
+	DeckSide getDeckSide() const
+	{
+		return (slotIndex >= 0 && slotIndex < 4) ? DeckSide::A : DeckSide::B;
+	}
+
+	int getPairIndex() const
+	{
+		if (slotIndex < 0 || slotIndex >= 8)
+			return -1;
+		return slotIndex % 4;
+	}
+
+	int getPartnerSlotIndex() const
+	{
+		if (slotIndex < 0 || slotIndex >= 8)
+			return -1;
+		return (slotIndex < 4) ? slotIndex + 4 : slotIndex - 4;
+	}
+
+	bool isDeckA() const
+	{
+		return getDeckSide() == DeckSide::A;
+	}
+
+	bool isDeckB() const
+	{
+		return getDeckSide() == DeckSide::B;
+	}
+
 	std::atomic<int> currentPageIndex{ 0 };
 	int timeStretchMode = 4;
 	int midiNote = 60;

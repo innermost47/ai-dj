@@ -532,7 +532,7 @@ void TrackComponent::resized()
 {
 	auto fullBounds = getLocalBounds();
 	auto area = fullBounds.reduced(6);
-	auto headerArea = area.removeFromTop(36);
+	auto headerArea = area.removeFromTop(32);
 
 	if (pagesMode)
 	{
@@ -2172,6 +2172,8 @@ void TrackComponent::updateModelUI()
 
 	if (modelColour == cachedModelColour)
 	{
+		if (onModelChanged)
+			onModelChanged(trackId);
 		return;
 	}
 

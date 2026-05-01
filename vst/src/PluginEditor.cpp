@@ -15,7 +15,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor& p)
 {
 	setResizable(true, true);
 	setResizeLimits(1100, 800, 2400, 1600);
-	setSize(1580, 800);
+	setSize(1620, 840);
 	setScaleFactor(1.0f);
 	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());
 	ObsidianAlertManager::initialize();
@@ -79,6 +79,7 @@ DjIaVstEditor::~DjIaVstEditor()
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
 	audioProcessor.setGenerationListener(nullptr);
+	activeModals.clear();
 
 	for (auto& tc : trackComponents)
 		if (tc)
@@ -280,6 +281,7 @@ void DjIaVstEditor::initUI()
 	if (isInitialized.load())
 		return;
 
+
 	setupUI();
 	refreshUIForMode();
 	serverUrlInput.setText(audioProcessor.getServerUrl(), juce::dontSendNotification);
@@ -432,53 +434,74 @@ void DjIaVstEditor::showOnboardingStep(int step)
 
 	modal->setContent(std::make_unique<OnboardingContent>(info.message, info.illustrationSvg));
 
-	auto* overlay = new ObsidianModalOverlay(this, std::move(modal));
+	auto overlayOwned = std::make_unique<ObsidianModalOverlay>(std::move(modal));
+	auto* overlay = overlayOwned.get();
+	addModal(std::move(overlayOwned));
 
 	juce::String arrowSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>)";
 	juce::String skipSvg = R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>)";
 
-	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive, [this, overlay]()
+	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive,
+		[this, overlay]()
 		{
-			overlay->setVisible(false);
-			juce::MessageManager::callAsync([this, overlay]() {
-				delete overlay;
+			overlay->close();
+			audioProcessor.setOnboardingDone(true);
+			audioProcessor.saveGlobalConfig();
+		});
+
+	overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary,
+		[this, overlay, step, isLastStep]()
+		{
+			overlay->close();
+
+			if (!isLastStep)
+			{
+				juce::Component::SafePointer<DjIaVstEditor> safeThis(this);
+				juce::MessageManager::callAsync([safeThis, step]()
+					{
+						if (safeThis != nullptr)
+							safeThis->showOnboardingStep(step + 1);
+					});
+			}
+			else
+			{
 				audioProcessor.setOnboardingDone(true);
 				audioProcessor.saveGlobalConfig();
-				}); });
 
-			overlay->modalWindow->addButton(info.buttonNext, arrowSvg, ColourPalette::buttonPrimary, [this, overlay, step, isLastStep]()
-				{
+				statusLabel.setText(
+					juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
+					juce::dontSendNotification);
+				statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
+				updateLCD();
+			}
+		});
+}
 
-					overlay->setVisible(false);
-					juce::MessageManager::callAsync([this, overlay, step, isLastStep]() {
+void DjIaVstEditor::addModal(std::unique_ptr<ObsidianModalOverlay> overlay)
+{
+	auto* raw = overlay.get();
+	addAndMakeVisible(raw);
+	raw->setBounds(getLocalBounds());
+	raw->toFront(false);
+	activeModals.push_back(std::move(overlay));
+	raw->startFadeIn();
+}
 
-						delete overlay;
-
-						if (!isLastStep)
-						{
-							showOnboardingStep(step + 1);
-						}
-						else
-						{
-							audioProcessor.setOnboardingDone(true);
-							audioProcessor.saveGlobalConfig();
-
-							statusLabel.setText(
-								juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
-								juce::dontSendNotification);
-							statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-							updateLCD();
-						}
-						}); });
+void DjIaVstEditor::removeModal(ObsidianModalOverlay* overlay)
+{
+	activeModals.erase(
+		std::remove_if(activeModals.begin(), activeModals.end(),
+			[overlay](const std::unique_ptr<ObsidianModalOverlay>& p)
+			{
+				return p.get() == overlay;
+			}),
+		activeModals.end());
 }
 
 void DjIaVstEditor::refreshUIForMode()
 {
 	bool isLocalMode = audioProcessor.getUseLocalModel();
-
-	durationSlider.setEnabled(!isLocalMode);
-	durationLabel.setEnabled(!isLocalMode);
-
+	durationSelector.setEnabled(!isLocalMode);
 	resized();
 }
 
@@ -645,6 +668,9 @@ void DjIaVstEditor::setupUI()
 	promptInput.setReturnKeyStartsNewLine(false);
 	promptInput.setTextToShowWhenEmpty("Enter custom prompt or select preset...", ColourPalette::textSecondary);
 	promptInput.setText(audioProcessor.getGlobalPrompt(), juce::dontSendNotification);
+	promptInput.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundMid);
+	promptInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::trackSelected.withAlpha(0.4f));
+	promptInput.setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::trackSelected);
 
 	addAndMakeVisible(keySelector);
 	keySelector.addItem("C Ionian", 1);
@@ -757,21 +783,14 @@ void DjIaVstEditor::setupUI()
 	keySelector.addItem("B Minor", 108);
 	keySelector.setText(audioProcessor.getGlobalKey(), juce::dontSendNotification);
 
-	addAndMakeVisible(durationSlider);
-	durationSlider.setRange(2.0, 30.0, 1.0);
-	durationSlider.setValue(audioProcessor.getGlobalDuration(), juce::dontSendNotification);
-	durationSlider.setColour(juce::Slider::backgroundColourId, juce::Colours::black);
-	durationSlider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
-	durationSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
-	durationSlider.setColour(juce::Slider::textBoxTextColourId, ColourPalette::textPrimary);
-	durationSlider.setColour(juce::Slider::textBoxBackgroundColourId, ColourPalette::backgroundDark);
-	durationSlider.setColour(juce::Slider::textBoxOutlineColourId, ColourPalette::backgroundDark.darker(0.3f).withAlpha(0.3f));
-	durationSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 50, 20);
-	durationSlider.setTextValueSuffix(" s");
-	durationSlider.setDoubleClickReturnValue(true, 6.0);
-
-	addAndMakeVisible(durationLabel);
-	durationLabel.setText("Duration", juce::dontSendNotification);
+	addAndMakeVisible(durationSelector);
+	for (int s : {2, 4, 6, 8, 10, 12, 16, 20, 24, 30})
+		durationSelector.addItem(juce::String(s) + " s", s);
+	int currentDur = juce::roundToInt(audioProcessor.getGlobalDuration());
+	durationSelector.setSelectedId(currentDur, juce::dontSendNotification);
+	if (durationSelector.getSelectedId() == 0)
+		durationSelector.setSelectedId(6, juce::dontSendNotification);
+	durationSelector.setTooltip("Generation duration in seconds");
 
 	addAndMakeVisible(generateButton);
 	generateButton.loadIcon(BinaryData::zap_svg, BinaryData::zap_svgSize);
@@ -804,7 +823,6 @@ void DjIaVstEditor::setupUI()
 	{
 		mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
 		mixerViewport.setViewedComponent(mixerPanel.get(), false);
-		mixerViewport.setScrollBarsShown(false, true);
 		addAndMakeVisible(mixerViewport);
 		mixerPanel->onTrackRenamedFromMixer = [this](const juce::String& trackId,
 			const juce::String& newName)
@@ -833,7 +851,6 @@ void DjIaVstEditor::setupUI()
 	promptInput.setTooltip("Enter your custom prompt for audio generation");
 	savePresetButton.setTooltip("Save current prompt as custom preset");
 	keySelector.setTooltip("Select musical key and mode for generation");
-	durationSlider.setTooltip("Generation duration in seconds (2-30s) - (unavailable with local TFLite models)");
 	generateButton.setTooltip("Generate audio loop for selected track (Right-click for MIDI learn)");
 	configButton.setTooltip("Configure API settings and generation mode");
 	autoLoadButton.setTooltip("Automatically load generated samples (disable for manual control)");
@@ -843,7 +860,6 @@ void DjIaVstEditor::setupUI()
 	{
 		sampleBankPanel = std::make_unique<SampleBankPanel>(audioProcessor);
 		addChildComponent(*sampleBankPanel);
-		sampleBankPanel->setVisible(true);
 	}
 
 	addAndMakeVisible(openMidiEditorButton);
@@ -862,6 +878,8 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(logoComponent);
 
 	addAndMakeVisible(masterWaveformDisplay);
+	mixerPanel->setMasterWaveform(&masterWaveformDisplay);
+	mixerPanel->setLCDScreen(&lcdScreen);
 	audioProcessor.onMasterOutput = [this](const float* l, const float* r, int n, double ppq)
 		{
 			masterWaveformDisplay.pushSamples(l, r, n);
@@ -871,7 +889,6 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(toggleBankButton);
 	toggleBankButton.loadIcon(BinaryData::search_svg, BinaryData::search_svgSize);
 	toggleBankButton.setClickingTogglesState(true);
-	toggleBankButton.setToggleState(true, juce::dontSendNotification);
 	toggleBankButton.setTooltip("Toggle sample bank panel");
 
 	auto setupControlBtn = [](IconButtonSimple& btn)
@@ -890,6 +907,24 @@ void DjIaVstEditor::setupUI()
 	setupControlBtn(configButton);
 	setupControlBtn(helpButton);
 	setupControlBtn(toggleBankButton);
+
+	savePresetButton.setShowBorder(true);
+	generateButton.setShowBorder(true);
+	bypassSequencerButton.setShowBorder(true);
+	openMidiEditorButton.setShowBorder(true);
+	configButton.setShowBorder(true);
+	helpButton.setShowBorder(true);
+	toggleBankButton.setShowBorder(true);
+	autoLoadButton.setShowBorder(true);
+	loadSampleButton.setShowBorder(true);
+
+	setSize(audioProcessor.getSavedWindowWidth(),
+		audioProcessor.getSavedWindowHeight());
+
+	bool bankVisible = audioProcessor.getSavedBankVisible();
+	toggleBankButton.setToggleState(bankVisible, juce::dontSendNotification);
+	if (sampleBankPanel)
+		sampleBankPanel->setVisible(bankVisible);
 
 	refreshTrackComponents();
 	addEventListeners();
@@ -919,10 +954,14 @@ void DjIaVstEditor::addEventListeners()
 			audioProcessor.setGlobalKey(keySelector.getText());
 		};
 
-	durationSlider.onValueChange = [this]()
+	durationSelector.onChange = [this]()
 		{
-			audioProcessor.setLastDuration(durationSlider.getValue());
-			audioProcessor.setGlobalDuration((int)durationSlider.getValue());
+			int val = durationSelector.getSelectedId();
+			if (val > 0)
+			{
+				audioProcessor.setLastDuration((float)val);
+				audioProcessor.setGlobalDuration(val);
+			}
 		};
 
 	promptPresetSelector.onChange = [this]()
@@ -1049,6 +1088,7 @@ void DjIaVstEditor::addEventListeners()
 			bool visible = toggleBankButton.getToggleState();
 			if (sampleBankPanel)
 				sampleBankPanel->setVisible(visible);
+			audioProcessor.setBankVisible(visible);
 			resized();
 		};
 }
@@ -1129,7 +1169,10 @@ void DjIaVstEditor::updateUIFromProcessor()
 	apiKeyInput.setText(audioProcessor.getApiKey(), juce::dontSendNotification);
 
 	promptInput.setText(audioProcessor.getGlobalPrompt(), juce::dontSendNotification);
-	durationSlider.setValue(audioProcessor.getGlobalDuration(), juce::dontSendNotification);
+	int currentDur = juce::roundToInt(audioProcessor.getGlobalDuration());
+	durationSelector.setSelectedId(currentDur, juce::dontSendNotification);
+	if (durationSelector.getSelectedId() == 0)
+		durationSelector.setSelectedId(6, juce::dontSendNotification);
 
 	keySelector.setText(audioProcessor.getGlobalKey(), juce::dontSendNotification);
 
@@ -1178,26 +1221,74 @@ void DjIaVstEditor::paint(juce::Graphics& g)
 
 void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing)
 {
-	auto row1 = area.removeFromTop(35);
-	int saveButtonWidth = 50;
-	promptPresetSelector.setBounds(row1.removeFromLeft(area.getWidth() - saveButtonWidth - spacing));
-	row1.removeFromLeft(spacing);
-	savePresetButton.setBounds(row1.removeFromLeft(saveButtonWidth));
-	area.removeFromTop(spacing);
-	auto row2 = area.removeFromTop(35);
-	int generateButtonWidth = 50;
-	promptInput.setBounds(row2.removeFromLeft(row2.getWidth() - generateButtonWidth - spacing));
-	row2.removeFromLeft(spacing);
-	generateButton.setBounds(row2);
-}
+	const int itemH = 28;
+	const int vPad = (area.getHeight() - itemH) / 2;
+	area = area.reduced(0, vPad);
 
-void DjIaVstEditor::layoutConfigSection(juce::Rectangle<int> area, int reducing, int spacing)
-{
-	auto durationRow = area.removeFromTop(35);
-	durationSlider.setBounds(durationRow.reduced(reducing));
-	area.removeFromTop(spacing);
-	auto keyRow = area.removeFromTop(35);
-	keySelector.setBounds(keyRow.reduced(reducing));
+	const int genBtnW = 50;
+	const int saveBtnW = 34;
+	const int ctrlBtnW = 36;
+
+	const int idealKeyW = 180;
+	const int idealDurW = 100;
+	const int idealPresetW = 600;
+	const int idealPromptW = 600;
+
+	const int minKeyW = 120;
+	const int minDurW = 80;
+	const int minPresetW = 280;
+	const int minPromptW = 280;
+
+	configButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	toggleBankButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	helpButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	openMidiEditorButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	loadSampleButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	autoLoadButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+	bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW));
+	area.removeFromLeft(spacing);
+
+	generateButton.setBounds(area.removeFromRight(genBtnW));
+	area.removeFromRight(spacing);
+	savePresetButton.setBounds(area.removeFromRight(saveBtnW));
+	area.removeFromRight(spacing);
+
+	const int remaining = area.getWidth();
+	const int idealTotal = idealKeyW + idealDurW + idealPresetW + idealPromptW + spacing * 3;
+
+	int keyW, durW, presetW, promptW;
+
+	if (remaining >= idealTotal)
+	{
+		keyW = idealKeyW;
+		durW = idealDurW;
+		const int extra = remaining - idealTotal;
+		presetW = idealPresetW + extra / 2;
+		promptW = remaining - keyW - durW - presetW - spacing * 3;
+	}
+	else
+	{
+		const float scale = (float)remaining / (float)idealTotal;
+		keyW = juce::jmax(minKeyW, (int)(idealKeyW * scale));
+		durW = juce::jmax(minDurW, (int)(idealDurW * scale));
+		presetW = juce::jmax(minPresetW, (int)(idealPresetW * scale));
+		promptW = juce::jmax(minPromptW, remaining - keyW - durW - presetW - spacing * 3);
+	}
+
+	keySelector.setBounds(area.removeFromRight(keyW));
+	area.removeFromRight(spacing);
+	durationSelector.setBounds(area.removeFromRight(durW));
+	area.removeFromRight(spacing);
+	promptPresetSelector.setBounds(area.removeFromRight(presetW));
+	area.removeFromRight(spacing);
+
+	promptInput.setBounds(area);
 }
 
 void DjIaVstEditor::resized()
@@ -1206,13 +1297,13 @@ void DjIaVstEditor::resized()
 	if (resizing)
 		return;
 	resizing = true;
-
-	const int spacing = 5;
-	const int padding = 10;
-	const int reducing = 2;
-
+	const int spacing = 4;
+	const int padding = 6;
 	auto fullBounds = getLocalBounds();
-
+	const int bannerHeight = 40;
+	auto headerArea = fullBounds.removeFromTop(bannerHeight);
+	headerArea.reduce(padding, 0);
+	layoutPromptSection(headerArea, spacing);
 	const int bankWidth = (sampleBankPanel && sampleBankPanel->isVisible())
 		? juce::jmax(290, fullBounds.getWidth() / 6)
 		: 0;
@@ -1221,107 +1312,41 @@ void DjIaVstEditor::resized()
 		auto bankArea = fullBounds.removeFromLeft(bankWidth);
 		sampleBankPanel->setBounds(bankArea);
 	}
-
-	auto area = fullBounds.reduced(padding);
-
-	const int bannerHeight = 80;
-
-	auto topArea = area.removeFromTop(bannerHeight);
-
-	const int column1Width = static_cast<int>(topArea.getWidth() * 0.50f);
-	auto column1 = topArea.removeFromLeft(column1Width);
-	layoutPromptSection(column1, spacing);
-
-	topArea.removeFromLeft(spacing * 2);
-
-	const int column2Width = static_cast<int>(topArea.getWidth() * 0.45f);
-	auto column2 = topArea.removeFromLeft(column2Width);
-	layoutConfigSection(column2, reducing, spacing);
-
-	topArea.removeFromLeft(spacing * 2);
-
-	auto column3 = topArea;
-	auto logoSpace = column3.removeFromLeft(80);
-	logoComponent.setBounds(logoSpace);
-	auto nameArea = column3;
-	auto titleArea = nameArea.removeFromTop(30);
-	auto devArea = nameArea.removeFromTop(10);
-	auto partnerArea = nameArea.removeFromTop(25);
-	pluginNameLabel.setBounds(titleArea);
-	developerLabel.setBounds(devArea);
-	stabilityLabel.setBounds(partnerArea);
-
-	area.removeFromTop(spacing);
-
+	fullBounds.removeFromLeft(padding);
+	fullBounds.removeFromRight(padding);
+	auto area = fullBounds;
 	const int totalHeight = area.getHeight();
-	const int minTracksHeight = 480;
-	const int minMixerHeight = 215;
-
-	int tracksHeight = static_cast<int>(totalHeight * 0.65f);
-	int mixerHeight = totalHeight - tracksHeight - spacing;
-
-	if (tracksHeight < minTracksHeight && totalHeight >= minTracksHeight + minMixerHeight + spacing)
-	{
-		tracksHeight = minTracksHeight;
-		mixerHeight = totalHeight - tracksHeight - spacing;
-	}
-
+	const int maxMixerHeight = 220;
+	const int minMixerHeight = 220;
+	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight,
+		static_cast<int>(totalHeight * 0.28f));
+	int tracksHeight = totalHeight - mixerHeight - spacing;
 	auto tracksArea = area.removeFromTop(tracksHeight);
 	tracksViewport.setBounds(tracksArea);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
-	tracksViewport.setScrollBarsShown(true, true);
+	const int totalContentHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
+	const int totalContentWidth = TRACK_COLS * 600 + spacing * (TRACK_COLS - 1);
+	bool needsHorizontal = totalContentWidth > tracksArea.getWidth();
+	bool needsVertical = totalContentHeight + (needsHorizontal ? 12 : 0) > tracksArea.getHeight();
+	tracksViewport.setScrollBarsShown(needsVertical, needsHorizontal);
 	layoutTracksGrid();
-
 	area.removeFromTop(spacing);
 
 	auto bottomRow = area;
-	const int controlPanelWidth = juce::jmax(220, juce::jmin(260, bottomRow.getWidth() / 7));
-	auto controlPanelArea = bottomRow.removeFromRight(controlPanelWidth);
-	bottomRow.removeFromRight(spacing);
+	const int minMixerWidth = 1300;
 
-	const int minMixerWidth = 1000;
 	if (mixerPanel)
 	{
+		int contentWidth = juce::jmax(minMixerWidth, bottomRow.getWidth());
+		bool needsHorizontalScroll = (contentWidth > bottomRow.getWidth());
+		int scrollbarH = needsHorizontalScroll ? (mixerViewport.getScrollBarThickness() + 6) : 6;
 		mixerViewport.setBounds(bottomRow);
-		int mixerW = juce::jmax(minMixerWidth, bottomRow.getWidth());
-		mixerPanel->setBounds(0, 0, mixerW, bottomRow.getHeight());
+		mixerPanel->setSize(contentWidth, bottomRow.getHeight() - scrollbarH);
+		mixerViewport.setScrollBarsShown(false, needsHorizontalScroll);
 		mixerViewport.setVisible(true);
 	}
-
-	layoutControlPanel(controlPanelArea, spacing);
-
 	resizing = false;
-}
-
-void DjIaVstEditor::layoutControlPanel(juce::Rectangle<int> area, int spacing)
-{
-	area.removeFromLeft(8);
-	auto waveArea = area.removeFromTop(area.getHeight() - 75 - spacing - 30);
-	masterWaveformDisplay.setBounds(waveArea);
-
-	area.removeFromTop(spacing);
-
-	auto lcdArea = area.removeFromTop(60);
-	lcdScreen.setBounds(lcdArea);
-
-	area.removeFromBottom(10);
-
-	int btnW = (area.getWidth() - spacing * 6) / 7;
-	auto btnRow = area.removeFromBottom(32);
-
-	bypassSequencerButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	autoLoadButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	loadSampleButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	openMidiEditorButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	helpButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	toggleBankButton.setBounds(btnRow.removeFromLeft(btnW).reduced(1));
-	btnRow.removeFromLeft(spacing);
-	configButton.setBounds(btnRow.reduced(1));
+	audioProcessor.setWindowSize(getWidth(), getHeight());
 }
 
 void DjIaVstEditor::updateLCD()
@@ -1334,33 +1359,39 @@ void DjIaVstEditor::updateLCD()
 
 void DjIaVstEditor::layoutTracksGrid()
 {
-	const int cols = 2;
-	const int rows = 4;
 	const int spacing = 5;
 	const int minCellW = 600;
-	const int cellH = 220;
-	const int minTotalWidth = cols * minCellW + spacing * (cols - 1);
+	const int minTotalWidth = TRACK_COLS * minCellW + spacing * (TRACK_COLS - 1);
 
 	auto viewportBounds = tracksViewport.getBounds();
 	if (viewportBounds.isEmpty())
 		return;
 
-	const int scrollbarAllowance = 12;
+	const int scrollbarAllowance = tracksViewport.isVerticalScrollBarShown() ? 12 : 0;
+	const int scrollbarBottomAllowance = tracksViewport.isHorizontalScrollBarShown() ? 4 : 0;
 	const int availableWidth = viewportBounds.getWidth() - scrollbarAllowance;
-
 	const int totalWidth = juce::jmax(minTotalWidth, availableWidth);
-	const int cellW = (totalWidth - spacing * (cols - 1)) / cols;
-
-	const int totalHeight = cellH * rows + spacing * (rows - 1);
+	const int cellW = (totalWidth - spacing * (TRACK_COLS - 1)) / TRACK_COLS;
+	const int totalHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1) + scrollbarBottomAllowance;
 	tracksContainer.setSize(totalWidth, totalHeight);
 
-	for (int i = 0; i < (int)trackComponents.size(); ++i)
+	for (auto& comp : trackComponents)
 	{
-		int col = i % cols;
-		int row = i / cols;
+		TrackData* trackData = audioProcessor.getTrack(comp->getTrackId());
+		if (trackData == nullptr)
+			continue;
+
+		int slot = trackData->slotIndex;
+		if (slot < 0 || slot >= 8)
+			continue;
+
+		int col = (trackData->getDeckSide() == TrackData::DeckSide::A) ? 0 : 1;
+		int row = slot % 4;
+
 		int x = col * (cellW + spacing);
-		int y = row * (cellH + spacing);
-		trackComponents[i]->setBounds(x, y, cellW, cellH);
+		int y = row * (TRACK_CELL_H + spacing);
+
+		comp->setBounds(x, y, cellW, TRACK_CELL_H);
 	}
 }
 
@@ -1520,7 +1551,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 		currentPage.generationPrompt = promptInput.getText();
 		currentPage.generationBpm = (float)audioProcessor.getHostBpm();
 		currentPage.generationKey = keySelector.getText();
-		currentPage.generationDuration = (int)durationSlider.getValue();
+		currentPage.generationDuration = durationSelector.getSelectedId();
 		if (currentPage.selectedModel.isEmpty())
 			currentPage.selectedModel = "stable-audio-open-1.0";
 		track->syncLegacyProperties();
@@ -1530,7 +1561,8 @@ void DjIaVstEditor::onGenerateButtonClicked()
 		track->generationPrompt = promptInput.getText();
 		track->generationBpm = (float)audioProcessor.getHostBpm();
 		track->generationKey = keySelector.getText();
-		track->generationDuration = (int)durationSlider.getValue();
+		track->generationDuration = durationSelector.getSelectedId();
+		track->generationDuration = durationSelector.getSelectedId();
 		track->selectedPrompt.clear();
 		if (track->selectedModel.isEmpty())
 			track->selectedModel = "stable-audio-open-1.0";

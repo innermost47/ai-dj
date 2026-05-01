@@ -67,6 +67,7 @@ public:
 	static const juce::Colour teal;
 	static const juce::Colour amber;
 	static const juce::Colour textInactive;
+	static const juce::Colour mossGreen;
 
 	static const juce::Colour modelStableAudio;
 	static const juce::Colour modelFoundation;

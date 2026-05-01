@@ -26,6 +26,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterHigh", "Master High EQ", -12.0f, 12.0f, 0.0f));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterMid", "Master Mid EQ", -12.0f, 12.0f, 0.0f));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterLow", "Master Low EQ", -12.0f, 12.0f, 0.0f));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		"globalCrossfader", "Global Crossfader (Deck A/B)",
+		0.0f, 1.0f, 0.5f));
+
+	for (int i = 1; i <= 4; ++i)
+	{
+		juce::String pairId = "pairCrossfader" + juce::String(i);
+		juce::String pairName = "Crossfader " + juce::String(i) + " <-> " + juce::String(i + 4);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			pairId, pairName,
+			0.0f, 1.0f, 0.5f));
+	}
+
+	params.push_back(std::make_unique<juce::AudioParameterChoice>(
+		"crossfaderCurveMode", "Crossfader Curve",
+		juce::StringArray{ "Linear", "Equal Power", "DJ" }, 1));
 
 	for (int i = 1; i <= 8; ++i)
 	{

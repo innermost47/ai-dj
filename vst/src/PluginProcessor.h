@@ -220,10 +220,39 @@ public:
 		"Vintage analog lead",
 	};
 
+	void  setCrossfaderValue(float v) { crossfaderValue.store(juce::jlimit(0.0f, 1.0f, v)); }
+	float getCrossfaderValue()  const { return crossfaderValue.load(); }
+	void  setCrossfadeMode(int m) { crossfadeMode.store(m); }
+	int   getCrossfadeMode()    const { return crossfadeMode.load(); }
+
+	void setWindowSize(int w, int h) { savedWindowWidth = w; savedWindowHeight = h; }
+	void setBankVisible(bool visible) { savedBankVisible = visible; }
+	int getSavedWindowWidth() const { return savedWindowWidth; }
+	int getSavedWindowHeight() const { return savedWindowHeight; }
+	bool getSavedBankVisible() const { return savedBankVisible; }
+
+	void setPairCrossfaderValue(int pairIndex, float value);
+	float getPairCrossfaderValue(int pairIndex) const;
+	void setGlobalCrossfaderValue(float value);
+	float getGlobalCrossfaderValue() const;
+	void setCrossfaderCurveMode(int mode);
+	int getCrossfaderCurveMode() const;
+
+	std::pair<float, float> getCrossfadeGains() const;
+
 private:
 	DjIaVstEditor* currentEditor = nullptr;
 	SimpleEQ masterEQ;
 	MidiLearnManager midiLearnManager;
+	enum class CrossfadeMode { Linear, EqualPower, DJCurve };
+	std::atomic<float> crossfaderValue{ 0.5f };
+	std::atomic<int>   crossfadeMode{ 0 };
+
+	float pairCrossfaderPrevious[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
+	float globalCrossfaderPrevious = 0.5f;
+	int savedWindowWidth = 1620;
+	int savedWindowHeight = 840;
+	bool savedBankVisible = true;
 	DjIaClient apiClient;
 	GenerationListener* generationListener = nullptr;
 	juce::String projectId;
@@ -355,7 +384,11 @@ private:
 		"slot5Volume", "slot5Pan", "slot5Pitch", "slot5Fine", "slot5BpmOffset",
 		"slot6Volume", "slot6Pan", "slot6Pitch", "slot6Fine", "slot6BpmOffset",
 		"slot7Volume", "slot7Pan", "slot7Pitch", "slot7Fine", "slot7BpmOffset",
-		"slot8Volume", "slot8Pan", "slot8Pitch", "slot8Fine", "slot8BpmOffset" };
+		"slot8Volume", "slot8Pan", "slot8Pitch", "slot8Fine", "slot8BpmOffset",
+		"globalCrossfader",
+		"pairCrossfader1", "pairCrossfader2", "pairCrossfader3", "pairCrossfader4",
+		"crossfaderCurveMode"
+	};
 
 	juce::CriticalSection filesToDeleteLock;
 
@@ -407,6 +440,10 @@ private:
 	std::atomic<float>* slotAdsrDecayParams[8] = {};
 	std::atomic<float>* slotAdsrSustainParams[8] = {};
 	std::atomic<float>* slotAdsrReleaseParams[8] = {};
+	std::atomic<float>* globalCrossfaderParam = nullptr;
+	std::atomic<float>* pairCrossfaderParams[4] = { nullptr, nullptr, nullptr, nullptr };
+	std::atomic<float>* crossfaderCurveModeParam = nullptr;
+
 	std::atomic<float> pendingDetectedBpm{ -1.0f };
 
 	static juce::File getGlobalConfigFile()

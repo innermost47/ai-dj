@@ -34,6 +34,9 @@ constexpr auto SEQUENCER_BEAT = 0xff4A4A50;
 constexpr auto SEQUENCER_SUBBEAT = 0xff32323A;
 constexpr auto SAMPLE_PENDING = 0x40aaaaaa;
 
+constexpr auto MUTED_STEEL = 0xff5A6770;
+constexpr auto MOSS_GREEN = 0xff7B8A5E;
+
 const juce::Colour ColourPalette::track1(TERRACOTTA);
 const juce::Colour ColourPalette::track2(TEAL);
 const juce::Colour ColourPalette::track3(MAUVE);
@@ -73,12 +76,12 @@ const juce::Colour ColourPalette::vuGreen(SAGE_GREEN);
 const juce::Colour ColourPalette::vuOrange(AMBER);
 const juce::Colour ColourPalette::vuRed(TERRACOTTA_LIGHT);
 
-const juce::Colour ColourPalette::playActive(SAGE_GREEN);
+const juce::Colour ColourPalette::playActive(MOSS_GREEN);
 const juce::Colour ColourPalette::playArmed(AMBER_WARM);
-const juce::Colour ColourPalette::muteActive(TERRACOTTA_LIGHT);
-const juce::Colour ColourPalette::soloActive(TERRACOTTA);
+const juce::Colour ColourPalette::muteActive(MUTED_STEEL);
+const juce::Colour ColourPalette::soloActive(AMBER_WARM);
+const juce::Colour ColourPalette::stopActive(TERRACOTTA);
 const juce::Colour ColourPalette::soloText(WARM_WHITE);
-const juce::Colour ColourPalette::stopActive(TERRACOTTA_DARK);
 const juce::Colour ColourPalette::buttonInactive(DARK_GREY);
 const juce::Colour ColourPalette::trackSelected(STEEL_GREY);
 
@@ -98,6 +101,7 @@ const juce::Colour ColourPalette::amber(GOLD);
 const juce::Colour ColourPalette::charcoal(CHARCOAL);
 const juce::Colour ColourPalette::lime(LIME);
 const juce::Colour ColourPalette::cyan(CYAN);
+const juce::Colour ColourPalette::mossGreen(MOSS_GREEN);
 
 const juce::Colour ColourPalette::samplePending(SAMPLE_PENDING);
 const juce::Colour ColourPalette::loopLocked(COOL_GREY);

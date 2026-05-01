@@ -8,7 +8,7 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-project(OBSIDIAN-Neural VERSION 2.0.1)
+project(OBSIDIAN-Neural VERSION 2.1.0)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -130,7 +130,7 @@ endif()
 
 
 juce_add_plugin(ObsidianNeuralVST
-    VERSION "2.0.1"
+    VERSION "2.1.0"
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
     COMPANY_NAME "InnerMost47"
@@ -184,6 +184,9 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/wind.svg
         src/assets/icons/info.svg
         src/assets/icons/search.svg
+        src/assets/icons/dj.svg
+        src/assets/icons/eq.svg
+        src/assets/icons/lin.svg
 )
 
 target_sources(ObsidianNeuralVST PRIVATE
@@ -196,6 +199,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/mixer/MasterChannel.cpp
     src/components/tracks/WaveformDisplay.cpp
     src/components/tracks/SequencerComponent.cpp
+    src/components/mixer/CrossfaderComponent.cpp
     src/style/ColourPalette.cpp
     src/components/mixer/MixerPanel.cpp
     src/engines/StableAudioEngine.cpp

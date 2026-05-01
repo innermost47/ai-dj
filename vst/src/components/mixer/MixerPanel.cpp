@@ -4,21 +4,28 @@
 #include "MasterChannel.h"
 #include "PluginProcessor.h"
 
-MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
+MixerPanel::MixerPanel(DjIaVstProcessor& processor) : audioProcessor(processor)
 {
 	masterChannel = std::make_unique<MasterChannel>(audioProcessor);
 	addAndMakeVisible(*masterChannel);
 
-	addAndMakeVisible(channelsViewport);
-	channelsViewport.setViewedComponent(&channelsContainer, false);
-	channelsViewport.setScrollBarsShown(false, true);
+	addAndMakeVisible(deckAViewport);
+	deckAViewport.setViewedComponent(&deckAContainer, false);
+	deckAViewport.setScrollBarsShown(false, false);
+
+	addAndMakeVisible(deckBViewport);
+	deckBViewport.setViewedComponent(&deckBContainer, false);
+	deckBViewport.setScrollBarsShown(false, false);
+
+	crossfader = std::make_unique<CrossfaderComponent>(audioProcessor);
+	addAndMakeVisible(*crossfader);
 
 	refreshMixerChannels();
 }
 
 MixerPanel::~MixerPanel()
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 		if (channel)
 			channel->setVisible(false);
 	mixerChannels.clear();
@@ -27,9 +34,9 @@ MixerPanel::~MixerPanel()
 		masterChannel->setVisible(false);
 }
 
-void MixerPanel::updateTrackName(const juce::String &trackId, const juce::String &newName)
+void MixerPanel::updateTrackName(const juce::String& trackId, const juce::String& newName)
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		if (channel->getTrackId() == trackId)
 		{
@@ -39,9 +46,9 @@ void MixerPanel::updateTrackName(const juce::String &trackId, const juce::String
 	}
 }
 
-void MixerPanel::updateModelUI(const juce::String &trackId)
+void MixerPanel::updateModelUI(const juce::String& trackId)
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		if (channel->getTrackId() == trackId)
 		{
@@ -49,11 +56,13 @@ void MixerPanel::updateModelUI(const juce::String &trackId)
 			break;
 		}
 	}
+	if (crossfader)
+		crossfader->onModelChanged();
 }
 
 void MixerPanel::updateAllMixerComponents()
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		channel->updateVUMeters();
 	}
@@ -66,7 +75,7 @@ void MixerPanel::calculateMasterLevel()
 	float maxPeakLeft = 0.0f;
 	float maxPeakRight = 0.0f;
 
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		float channelPeakLeft = channel->getCurrentAudioLevelLeft();
 		float channelPeakRight = channel->getCurrentAudioLevelRight();
@@ -76,22 +85,22 @@ void MixerPanel::calculateMasterLevel()
 	}
 
 	auto dbToLinear = [](float normalized) -> float
-	{
-		float db = -60.0f + normalized * 60.0f;
-		return ::powf(10.0f, db / 20.0f);
-	};
+		{
+			float db = -60.0f + normalized * 60.0f;
+			return ::powf(10.0f, db / 20.0f);
+		};
 
 	auto linearToDb = [](float linear) -> float
-	{
-		if (linear <= 0.00001f)
-			return -100.0f;
-		return 20.0f * ::log10f(linear);
-	};
+		{
+			if (linear <= 0.00001f)
+				return -100.0f;
+			return 20.0f * ::log10f(linear);
+		};
 
 	auto dbToNormalized = [](float db) -> float
-	{
-		return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f);
-	};
+		{
+			return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f);
+		};
 
 	float linearLeft = dbToLinear(maxPeakLeft);
 	float linearRight = dbToLinear(maxPeakRight);
@@ -106,107 +115,170 @@ void MixerPanel::calculateMasterLevel()
 
 void MixerPanel::refreshMixerChannels()
 {
-	for (auto &mixerChannel : mixerChannels)
-		if (mixerChannel)
-			mixerChannel->cleanup();
+	for (auto& ch : mixerChannels)
+		if (ch) ch->cleanup();
 
-	channelsContainer.removeAllChildren();
+	deckAContainer.removeAllChildren();
+	deckBContainer.removeAllChildren();
 	mixerChannels.clear();
 
 	auto trackIds = audioProcessor.getAllTrackIds();
 	std::sort(trackIds.begin(), trackIds.end(),
-			  [this](const juce::String &a, const juce::String &b)
-			  {
-				  TrackData *trackA = audioProcessor.getTrack(a);
-				  TrackData *trackB = audioProcessor.getTrack(b);
-				  if (!trackA || !trackB)
-					  return false;
-				  return trackA->slotIndex < trackB->slotIndex;
-			  });
-
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *trackData = audioProcessor.getTrack(trackId);
-		if (!trackData)
-			continue;
-		auto mixerChannel = std::make_unique<MixerChannel>(
-			trackId, audioProcessor, static_cast<TrackData *>(trackData));
-
-		mixerChannel->setTrackName(trackData->trackName);
-
-		mixerChannel->onTrackRenamed = [this, trackId](const juce::String &newName)
+		[this](const juce::String& a, const juce::String& b)
 		{
-			if (auto *track = audioProcessor.getTrack(trackId))
-			{
-				track->trackName = newName;
-				if (onTrackRenamedFromMixer)
-					onTrackRenamedFromMixer(trackId, newName);
-			}
-		};
+			TrackData* ta = audioProcessor.getTrack(a);
+			TrackData* tb = audioProcessor.getTrack(b);
+			if (!ta || !tb) return false;
+			return ta->slotIndex < tb->slotIndex;
+		});
 
-		channelsContainer.addAndMakeVisible(mixerChannel.get());
-		mixerChannels.push_back(std::move(mixerChannel));
-	}
-
-	for (auto &channel : mixerChannels)
+	for (const auto& trackId : trackIds)
 	{
-		if (audioProcessor.getGeneratingTrackId() == channel->getTrackId() && audioProcessor.getIsGenerating())
-			channel->startGeneratingAnimation();
+		TrackData* trackData = audioProcessor.getTrack(trackId);
+		if (!trackData) continue;
+
+		auto ch = std::make_unique<MixerChannel>(trackId, audioProcessor, trackData);
+		ch->setTrackName(trackData->trackName);
+		ch->onTrackRenamed = [this, trackId](const juce::String& newName)
+			{
+				if (auto* track = audioProcessor.getTrack(trackId))
+				{
+					track->trackName = newName;
+					if (onTrackRenamedFromMixer)
+						onTrackRenamedFromMixer(trackId, newName);
+				}
+			};
+
+		if (trackData->getDeckSide() == TrackData::DeckSide::A)
+			deckAContainer.addAndMakeVisible(ch.get());
+		else
+			deckBContainer.addAndMakeVisible(ch.get());
+
+		mixerChannels.push_back(std::move(ch));
 	}
 
-	channelsContainer.setVisible(true);
+	for (auto& ch : mixerChannels)
+	{
+		if (audioProcessor.getGeneratingTrackId() == ch->getTrackId()
+			&& audioProcessor.getIsGenerating())
+			ch->startGeneratingAnimation();
+	}
+
 	resized();
 }
 
-void MixerPanel::paint(juce::Graphics &g)
+void MixerPanel::paint(juce::Graphics& g)
 {
-	int masterX = getWidth() - 100;
-	g.setColour(ColourPalette::backgroundLight);
-	g.drawLine(static_cast<float>(masterX - 5), 10.0f,
-			   static_cast<float>(masterX - 5),
-			   static_cast<float>(getHeight() - 10), 2.0f);
+	if (crossfader && masterChannel && masterWaveform)
+	{
+		auto unified = crossfader->getBounds()
+			.getUnion(masterWaveform->getBounds())
+			.getUnion(lcdScreen->getBounds())
+			.getUnion(masterChannel->getBounds())
+			.expanded(4, 2);
+
+		g.setColour(ColourPalette::backgroundDeep.brighter(0.04f));
+		g.fillRoundedRectangle(unified.toFloat(), 6.0f);
+
+		g.setColour(ColourPalette::sliderTrack);
+		g.drawRoundedRectangle(unified.toFloat().reduced(0.5f), 6.0f, 1.0f);
+	}
+}
+
+void MixerPanel::setMasterWaveform(MasterWaveformDisplay* wf)
+{
+	masterWaveform = wf;
+	if (masterWaveform != nullptr)
+		addAndMakeVisible(*masterWaveform);
+	resized();
+}
+
+void MixerPanel::setLCDScreen(LCDScreen* lcd)
+{
+	lcdScreen = lcd;
+	if (lcdScreen != nullptr)
+		addAndMakeVisible(*lcdScreen);
+	resized();
 }
 
 void MixerPanel::resized()
 {
 	auto area = getLocalBounds();
-	auto masterArea = area.removeFromRight(120);
-	area.removeFromRight(10);
-	channelsViewport.setBounds(area);
+	const int channelH = getHeight();
+	const int spacing = 4;
 
-	const int channelHeight = getHeight() - 10;
-	const int channelSpacing = 5;
-	const int numChannels = (int)mixerChannels.size();
+	const int crossfaderWidth = 220;
+	const int masterChannelWidth = 120;
+	const int waveformWidth = 200;
+	const int centerInternalPad = 8;
+	const int centerOuterMargin = 4;
+	const int centerBlockWidth = crossfaderWidth + waveformWidth + masterChannelWidth + centerInternalPad * 2;
 
-	const int availableWidth = area.getWidth() - 10;
-	const int minChannelWidth = 60;
-	const int maxChannelWidth = 120;
+	const int totalCenterFootprint = centerBlockWidth + centerOuterMargin * 2;
+	const int sideWidth = (area.getWidth() - totalCenterFootprint) / 2;
+	const int channelWidth = juce::jlimit(40, 100, (sideWidth - spacing * 3) / 4);
+	auto deckAArea = area.removeFromLeft(channelWidth * 4 + spacing * 3);
+	area.removeFromLeft(centerOuterMargin);
 
-	const int channelWidth = numChannels > 0
-								 ? juce::jlimit(minChannelWidth, maxChannelWidth,
-												(availableWidth - (numChannels - 1) * channelSpacing) / numChannels)
-								 : minChannelWidth;
+	auto centerBlock = area.removeFromLeft(centerBlockWidth);
+	area.removeFromLeft(centerOuterMargin);
 
-	const int totalChannelsWidth = numChannels * channelWidth + (numChannels - 1) * channelSpacing + 10;
+	auto deckBArea = area;
 
-	channelsContainer.setSize(totalChannelsWidth, channelHeight);
+	centerBlock.reduce(centerInternalPad, 3);
 
-	masterChannel->setBounds(masterArea.getX() + 5,
-							 masterArea.getY(),
-							 masterArea.getWidth() - 10,
-							 channelHeight);
+	auto cfArea = centerBlock.removeFromLeft(crossfaderWidth);
+	centerBlock.removeFromLeft(centerInternalPad);
+	auto mcArea = centerBlock.removeFromRight(masterChannelWidth);
+	centerBlock.removeFromRight(centerInternalPad);
+	auto centerStack = centerBlock;
 
-	int xPos = 5;
-	for (auto &channel : mixerChannels)
+	crossfader->setBounds(cfArea);
+	masterChannel->setBounds(mcArea);
+
+	if (lcdScreen && masterWaveform)
 	{
-		channel->setBounds(xPos, 0, channelWidth, channelHeight);
-		xPos += channelWidth + channelSpacing;
+		centerStack.removeFromTop(6);
+		centerStack.removeFromBottom(6);
+
+		const int lcdHeight = juce::jmin(48, centerStack.getHeight() / 3);
+		auto lcdArea = centerStack.removeFromBottom(lcdHeight);
+		centerStack.removeFromBottom(6);
+
+		masterWaveform->setBounds(centerStack);
+		lcdScreen->setBounds(lcdArea);
+	}
+	else if (masterWaveform)
+	{
+		masterWaveform->setBounds(centerStack);
+	}
+
+	deckAViewport.setBounds(deckAArea);
+	deckAContainer.setSize(channelWidth * 4 + spacing * 3, channelH);
+	deckBViewport.setBounds(deckBArea);
+	deckBContainer.setSize(channelWidth * 4 + spacing * 3, channelH);
+
+	int xA = 0, xB = 0;
+	for (auto& ch : mixerChannels)
+	{
+		TrackData* track = audioProcessor.getTrack(ch->getTrackId());
+		if (!track) continue;
+		if (track->getDeckSide() == TrackData::DeckSide::A)
+		{
+			ch->setBounds(xA, 0, channelWidth, channelH);
+			xA += channelWidth + spacing;
+		}
+		else
+		{
+			ch->setBounds(xB, 0, channelWidth, channelH);
+			xB += channelWidth + spacing;
+		}
 	}
 }
 
 void MixerPanel::refreshAllChannels()
 {
-	for (auto &mixerChannel : mixerChannels)
+	for (auto& mixerChannel : mixerChannels)
 	{
 		if (mixerChannel && mixerChannel->track)
 		{
@@ -217,18 +289,18 @@ void MixerPanel::refreshAllChannels()
 	}
 }
 
-void MixerPanel::trackSelected(const juce::String &trackId)
+void MixerPanel::trackSelected(const juce::String& trackId)
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		bool isThisTrackSelected = (channel->getTrackId() == trackId);
 		channel->setSelected(isThisTrackSelected);
 	}
 }
 
-void MixerPanel::startGeneratingAnimationForTrack(const juce::String &trackId)
+void MixerPanel::startGeneratingAnimationForTrack(const juce::String& trackId)
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		if (channel->getTrackId() == trackId)
 		{
@@ -238,9 +310,9 @@ void MixerPanel::startGeneratingAnimationForTrack(const juce::String &trackId)
 	}
 }
 
-void MixerPanel::clearSamplePending(const juce::String &trackId)
+void MixerPanel::clearSamplePending(const juce::String& trackId)
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		if (channel->getTrackId() == trackId)
 		{
@@ -250,9 +322,9 @@ void MixerPanel::clearSamplePending(const juce::String &trackId)
 	}
 }
 
-void MixerPanel::stopGeneratingAnimationForTrack(const juce::String &trackId)
+void MixerPanel::stopGeneratingAnimationForTrack(const juce::String& trackId)
 {
-	for (auto &channel : mixerChannels)
+	for (auto& channel : mixerChannels)
 	{
 		if (channel->getTrackId() == trackId)
 		{

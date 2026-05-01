@@ -4,6 +4,7 @@
 #include "components/mixer/MixerPanel.h"
 #include "midi/MidiLearnableComponents.h"
 #include "components/bank/SampleBankPanel.h"
+#include "components/shared/ObsidianModal.h"
 #include "style/CustomLookAndFeel.h"
 #include "components/mixer/LCDScreen.h"
 #include "components/shared/IconButton.h"
@@ -11,7 +12,11 @@
 
 class SequencerComponent;
 
-class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::Timer, public DjIaVstProcessor::GenerationListener, public juce::DragAndDropContainer
+class DjIaVstEditor : public juce::AudioProcessorEditor,
+	public juce::Timer,
+	public DjIaVstProcessor::GenerationListener,
+	public juce::DragAndDropContainer,
+	public ModalHost
 {
 public:
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
@@ -45,7 +50,6 @@ public:
 
 	void paint(juce::Graphics&) override;
 	void layoutPromptSection(juce::Rectangle<int> area, int spacing);
-	void layoutConfigSection(juce::Rectangle<int> area, int reducing, int spacing);
 	void resized() override;
 	void timerCallback() override;
 	void refreshTrackComponents();
@@ -64,18 +68,24 @@ public:
 	void onSampleLoaded(const juce::String& trackId);
 	void reEnableCanvasForTrack();
 	void updateLCD();
-
+	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
+	void removeModal(ObsidianModalOverlay* overlay) override;
 	bool keyStateChanged(bool isKeyDown) override;
+	MixerPanel* getMixerPanel() { return mixerPanel.get(); }
 
 private:
 	DjIaVstProcessor& audioProcessor;
 	CustomLookAndFeel customLookAndFeel;
 	MasterWaveformDisplay masterWaveformDisplay;
+	std::vector<std::unique_ptr<ObsidianModalOverlay>> activeModals;
 	juce::Image logoImage;
 	juce::ImageComponent logoComponent;
 	juce::Image bannerImage;
 	juce::Rectangle<int> bannerArea;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;
+	static constexpr int TRACK_CELL_H = 140;
+	static constexpr int TRACK_ROWS = 4;
+	static constexpr int TRACK_COLS = 2;
 	bool sampleBankVisible = true;
 	enum KeyboardLayout
 	{
@@ -114,7 +124,6 @@ private:
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
 	void checkForUpdates();
-	void layoutControlPanel(juce::Rectangle<int> area, int spacing);
 	void layoutTracksGrid();
 	bool keyMatches(const juce::KeyPress& pressed, const juce::KeyPress& expected);
 	bool keyPressed(const juce::KeyPress& key) override;
@@ -154,8 +163,7 @@ private:
 	juce::Label apiKeyLabel;
 	juce::TextEditor apiKeyInput;
 	juce::TextButton playButton;
-	juce::Slider durationSlider;
-	juce::Label durationLabel;
+	juce::ComboBox durationSelector;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::Label tracksLabel;

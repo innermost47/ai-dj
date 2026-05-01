@@ -713,49 +713,76 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor* processor)
 	if (!mappings.empty())
 		return;
 
-	auto addNote = [&](const juce::String& param, int note, const juce::String& desc)
+	const int CH_PERF = 0;
+	const int CH_SHAPE = 1;
+	const int CH_XFADER = 2;
+
+	auto addNote = [&](const juce::String& param, int note, int channel,
+		const juce::String& desc)
 		{
 			MidiMapping m;
 			m.midiType = 0;
 			m.midiNumber = note;
-			m.midiChannel = 0;
+			m.midiChannel = channel;
 			m.processor = processor;
 			m.parameterName = param;
 			m.description = desc;
 			mappings.push_back(m);
 		};
 
-	auto addCC = [&](const juce::String& param, int cc, const juce::String& desc)
+	auto addCC = [&](const juce::String& param, int cc, int channel,
+		const juce::String& desc)
 		{
 			MidiMapping m;
 			m.midiType = 1;
 			m.midiNumber = cc;
-			m.midiChannel = 0;
+			m.midiChannel = channel;
 			m.processor = processor;
 			m.parameterName = param;
 			m.description = desc;
 			mappings.push_back(m);
 		};
 
-	addCC("masterVolume", 7, "Master Volume");
-	addCC("masterPan", 10, "Master Pan");
+	addCC("masterVolume", 7, CH_PERF, "Master Volume");
+	addCC("masterPan", 10, CH_PERF, "Master Pan");
 
 	for (int i = 1; i <= 8; ++i)
 	{
-		juce::String s = "slot" + juce::String(i);
+		const juce::String s = "slot" + juce::String(i);
+		const juce::String d = "Slot " + juce::String(i);
 
-		addNote(s + "Play", 35 + i, "Slot " + juce::String(i) + " Play");
+		addNote(s + "Play", 35 + i, CH_PERF, d + " Play");
 
-		addCC(s + "Volume", 19 + i, "Slot " + juce::String(i) + " Volume");
-		addCC(s + "Pan", 29 + i, "Slot " + juce::String(i) + " Pan");
-		addCC(s + "Mute", 39 + i, "Slot " + juce::String(i) + " Mute");
-		addCC(s + "Solo", 49 + i, "Slot " + juce::String(i) + " Solo");
-		addCC(s + "Generate", 59 + i, "Slot " + juce::String(i) + " Generate");
-		addCC(s + "Pitch", 99 + i, "Slot " + juce::String(i) + " Pitch");
-		addCC(s + "Fine", 109 + i, "Slot " + juce::String(i) + " Fine");
-		addCC(s + "RandomRetrigger", 119 + i, "Slot " + juce::String(i) + " Beat Repeat");
-
-		addCC(s + "Page", 89 + i, "Slot " + juce::String(i) + " Page");
-		addCC(s + "Seq", 15 + i, "Slot " + juce::String(i) + " Seq");
+		addCC(s + "Volume", 19 + i, CH_PERF, d + " Volume");
+		addCC(s + "Pan", 29 + i, CH_PERF, d + " Pan");
+		addCC(s + "Mute", 39 + i, CH_PERF, d + " Mute");
+		addCC(s + "Solo", 49 + i, CH_PERF, d + " Solo");
+		addCC(s + "Generate", 59 + i, CH_PERF, d + " Generate");
 	}
+
+	for (int i = 1; i <= 8; ++i)
+	{
+		const juce::String s = "slot" + juce::String(i);
+		const juce::String d = "Slot " + juce::String(i);
+
+		addCC(s + "Pitch", 19 + i, CH_SHAPE, d + " Pitch");
+		addCC(s + "Fine", 29 + i, CH_SHAPE, d + " Fine");
+		addCC(s + "AdsrAttack", 39 + i, CH_SHAPE, d + " ADSR Attack");
+		addCC(s + "AdsrDecay", 49 + i, CH_SHAPE, d + " ADSR Decay");
+		addCC(s + "AdsrSustain", 59 + i, CH_SHAPE, d + " ADSR Sustain");
+		addCC(s + "AdsrRelease", 69 + i, CH_SHAPE, d + " ADSR Release");
+		addCC(s + "RandomRetrigger", 79 + i, CH_SHAPE, d + " Beat Repeat");
+		addCC(s + "Page", 89 + i, CH_SHAPE, d + " Page");
+		addCC(s + "Seq", 99 + i, CH_SHAPE, d + " Seq");
+	}
+
+	addCC("pairCrossfader1", 20, CH_XFADER, "Crossfader 1 <-> 5");
+	addCC("pairCrossfader2", 21, CH_XFADER, "Crossfader 2 <-> 6");
+	addCC("pairCrossfader3", 22, CH_XFADER, "Crossfader 3 <-> 7");
+	addCC("pairCrossfader4", 23, CH_XFADER, "Crossfader 4 <-> 8");
+	addCC("globalCrossfader", 24, CH_XFADER, "Global Crossfader (Deck A/B)");
+	addCC("crossfaderCurveMode", 25, CH_XFADER, "Crossfader Curve Mode");
+	addCC("masterHigh", 26, CH_XFADER, "Master High EQ");
+	addCC("masterMid", 27, CH_XFADER, "Master Mid EQ");
+	addCC("masterLow", 28, CH_XFADER, "Master Low EQ");
 }

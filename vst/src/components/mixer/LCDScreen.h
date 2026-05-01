@@ -10,7 +10,7 @@ public:
 		setInterceptsMouseClicks(false, false);
 	}
 
-	void setLines(const juce::String &line1, const juce::String &line2, const juce::String &line3)
+	void setLines(const juce::String& line1, const juce::String& line2, const juce::String& line3)
 	{
 		lineTop = line1;
 		lineMid = line2;
@@ -18,14 +18,11 @@ public:
 		repaint();
 	}
 
-	void paint(juce::Graphics &g) override
+	void paint(juce::Graphics& g) override
 	{
 		auto bounds = getLocalBounds().toFloat();
 
-		g.setColour(ColourPalette::backgroundDeep);
-		g.fillRoundedRectangle(bounds, 4.0f);
-
-		g.setColour(ColourPalette::backgroundDark);
+		g.setColour(juce::Colours::black.withAlpha(0.35f));
 		g.fillRoundedRectangle(bounds.reduced(2.0f), 3.0f);
 
 		g.setColour(ColourPalette::backgroundLight);
@@ -41,17 +38,17 @@ public:
 		g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
 		g.setColour(ColourPalette::textSecondary);
 		g.drawText(lineTop, textArea.removeFromTop(lineH),
-				   juce::Justification::centredLeft, true);
+			juce::Justification::centredLeft, true);
 
 		g.setFont(juce::FontOptions("Courier New", 12.0f, juce::Font::bold));
 		g.setColour(ColourPalette::textPrimary);
 		g.drawText(lineMid, textArea.removeFromTop(lineH),
-				   juce::Justification::centredLeft, true);
+			juce::Justification::centredLeft, true);
 
 		g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
 		g.setColour(ColourPalette::textAccent);
 		g.drawText(lineBot, textArea,
-				   juce::Justification::centredLeft, true);
+			juce::Justification::centredLeft, true);
 	}
 
 private:
