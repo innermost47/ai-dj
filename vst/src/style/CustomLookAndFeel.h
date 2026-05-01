@@ -414,6 +414,18 @@ public:
 		return juce::BorderSize<int>(1, 5, 1, 5);
 	}
 
+	static const juce::Identifier& getDrawTicksPropertyId()
+	{
+		static const juce::Identifier id("drawTicks");
+		return id;
+	}
+
+	static const juce::Identifier& getDrawTicksSmallPropertyId()
+	{
+		static const juce::Identifier id("drawTicksSmall");
+		return id;
+	}
+
 	void drawLinearSlider(juce::Graphics& g,
 		int x, int y, int width, int height,
 		float sliderPos,
@@ -428,7 +440,7 @@ public:
 		if (style == juce::Slider::LinearVertical || style == juce::Slider::LinearHorizontal)
 		{
 			const bool isVertical = (style == juce::Slider::LinearVertical);
-			auto trackWidth = juce::jmin(4.0f, (float)(isVertical ? width : height) * 0.20f);
+			auto trackWidth = juce::jmin(5.0f, (float)(isVertical ? width : height) * 0.20f);
 
 			juce::Point<float> startPoint, endPoint;
 			if (isVertical)
@@ -445,6 +457,15 @@ public:
 			}
 
 			auto trackRect = juce::Rectangle<float>(startPoint, endPoint).expanded(trackWidth * 0.5f);
+
+			const auto& props = slider.getProperties();
+			int numTicks = props[getDrawTicksPropertyId()];
+			if (numTicks >= 2)
+			{
+				const bool small = (bool)props[getDrawTicksSmallPropertyId()];
+				drawGraduationTicks(g, trackRect, numTicks, isVertical, small);
+			}
+
 			g.setColour(ColourPalette::backgroundMid);
 			g.fillRoundedRectangle(trackRect, trackWidth * 0.5f);
 
@@ -470,13 +491,18 @@ public:
 			g.setColour(ColourPalette::backgroundLight.withAlpha(0.5f));
 			g.drawRoundedRectangle(trackRect, trackWidth * 0.5f, 0.6f);
 
-			const float capsuleW = isVertical
-				? juce::jmax(4.0f, (float)width * 0.45f)
-				: 18.0f;
-			const float capsuleH = isVertical
-				? juce::jmax(8.0f, juce::jmin(14.0f, (float)height * 0.08f))
-				: juce::jmax(8.0f, (float)height * 0.40f);
-			const float capsuleR = 3.0f;
+			float capsuleW, capsuleH;
+			if (isVertical)
+			{
+				capsuleW = juce::jmax(14.0f, juce::jmin(20.0f, (float)width * 0.7f));
+				capsuleH = 14.0f;
+			}
+			else
+			{
+				capsuleW = 22.0f;
+				capsuleH = juce::jmax(20.0f, juce::jmin(30.0f, (float)height * 0.75f));
+			}
+			const float capsuleR = 4.0f;
 
 			juce::Rectangle<float> capsule;
 			if (isVertical)
@@ -486,48 +512,115 @@ public:
 				capsule = juce::Rectangle<float>(capsuleW, capsuleH)
 				.withCentre({ sliderPos, (float)y + (float)height * 0.5f });
 
-			g.setColour(juce::Colours::black.withAlpha(0.35f));
-			g.fillRoundedRectangle(capsule.translated(0, 1.5f), capsuleR);
+			g.setColour(juce::Colours::black.withAlpha(0.5f));
+			g.fillRoundedRectangle(capsule.translated(0, 2.0f), capsuleR);
+			g.setColour(juce::Colours::black.withAlpha(0.3f));
+			g.fillRoundedRectangle(capsule.translated(0, 1.0f), capsuleR);
 
 			juce::ColourGradient bodyGradient(
-				ColourPalette::backgroundLight.brighter(0.05f), capsule.getX(), capsule.getY(),
-				ColourPalette::backgroundMid.darker(0.1f), capsule.getX(), capsule.getBottom(),
+				ColourPalette::backgroundLight.brighter(0.15f), capsule.getX(), capsule.getY(),
+				ColourPalette::backgroundMid.darker(0.2f), capsule.getX(), capsule.getBottom(),
 				false);
+			bodyGradient.addColour(0.5, ColourPalette::backgroundLight.darker(0.05f));
 			g.setGradientFill(bodyGradient);
 			g.fillRoundedRectangle(capsule, capsuleR);
 
-			g.setColour(juce::Colours::white.withAlpha(0.07f));
+			g.setColour(juce::Colours::white.withAlpha(0.10f));
 			g.fillRoundedRectangle(capsule.withHeight(capsule.getHeight() * 0.45f), capsuleR);
 
 			bool isActive = slider.isMouseOverOrDragging();
 			g.setColour(isActive
-				? ColourPalette::backgroundLight.withAlpha(0.9f)
-				: ColourPalette::backgroundLight.withAlpha(0.5f));
+				? ColourPalette::backgroundLight.withAlpha(0.95f)
+				: ColourPalette::backgroundLight.withAlpha(0.55f));
 			g.drawRoundedRectangle(capsule.reduced(0.5f), capsuleR, 0.8f);
 
-			const float lineThick = 2.0f;
 			if (isVertical)
 			{
+				const float lineThick = 2.0f;
 				float lx = capsule.getCentreX() - lineThick * 0.5f;
 				float ly = capsule.getY() + 2.0f;
 				float lh = capsule.getHeight() - 4.0f;
 				if (lh > 1.0f)
 				{
-					g.setColour(accentColour.withAlpha(isActive ? 1.0f : 0.8f));
+					g.setColour(accentColour.withAlpha(isActive ? 1.0f : 0.85f));
 					g.fillRoundedRectangle(lx, ly, lineThick, lh, lineThick * 0.5f);
 				}
 			}
 			else
 			{
-				float ly = capsule.getCentreY() - lineThick * 0.5f;
-				float lx = capsule.getX() + 2.0f;
-				float lw = capsule.getWidth() - 4.0f;
-				g.setColour(accentColour.withAlpha(isActive ? 1.0f : 0.8f));
-				g.fillRoundedRectangle(lx, ly, lw, lineThick, lineThick * 0.5f);
+				const float lineThick = 2.0f;
+				float lx = capsule.getCentreX() - lineThick * 0.5f;
+				float ly = capsule.getY() + 4.0f;
+				float lh = capsule.getHeight() - 8.0f;
+				if (lh > 1.0f)
+				{
+					g.setColour(accentColour.withAlpha(isActive ? 1.0f : 0.9f));
+					g.fillRoundedRectangle(lx, ly, lineThick, lh, lineThick * 0.5f);
+
+					g.setColour(accentColour.withAlpha(isActive ? 0.4f : 0.25f));
+					g.fillRoundedRectangle(lx - 1.0f, ly, lineThick + 2.0f, lh, (lineThick + 2.0f) * 0.5f);
+				}
 			}
 		}
 	}
 
+private:
+	void drawGraduationTicks(juce::Graphics& g,
+		juce::Rectangle<float> trackRect,
+		int numTicks,
+		bool isVertical,
+		bool small = false)
+	{
+		const float majorLen = small ? 5.0f : 9.0f;
+		const float minorLen = small ? 3.0f : 5.0f;
+		const float majorThick = small ? 1.0f : 1.5f;
+		const float minorThick = small ? 0.8f : 1.0f;
+		const float majorAlpha = 0.65f;
+		const float centreAlpha = 0.85f;
+		const float minorAlpha = 0.32f;
+		const float gap = small ? 2.0f : 3.0f;
+
+		const int lastIdx = numTicks - 1;
+		const int midIdx = lastIdx / 2;
+
+		auto colour = ColourPalette::textPrimary;
+
+		for (int i = 0; i < numTicks; ++i)
+		{
+			const float t = (float)i / (float)lastIdx;
+
+			const bool isEdge = (i == 0 || i == lastIdx);
+			const bool isMid = (i == midIdx && (numTicks % 2) == 1);
+			const bool isMajor = (isEdge || isMid);
+
+			const float len = isMajor ? majorLen : minorLen;
+			const float thick = isMajor ? majorThick : minorThick;
+			float alpha = minorAlpha;
+			if (isMid) alpha = centreAlpha;
+			else if (isEdge) alpha = majorAlpha;
+
+			g.setColour(colour.withAlpha(alpha));
+
+			if (isVertical)
+			{
+				const float ty = trackRect.getY() + t * trackRect.getHeight();
+				g.fillRect(juce::Rectangle<float>(
+					trackRect.getX() - gap - len, ty - thick * 0.5f, len, thick));
+				g.fillRect(juce::Rectangle<float>(
+					trackRect.getRight() + gap, ty - thick * 0.5f, len, thick));
+			}
+			else
+			{
+				const float tx = trackRect.getX() + t * trackRect.getWidth();
+				g.fillRect(juce::Rectangle<float>(
+					tx - thick * 0.5f, trackRect.getY() - gap - len, thick, len));
+				g.fillRect(juce::Rectangle<float>(
+					tx - thick * 0.5f, trackRect.getBottom() + gap, thick, len));
+			}
+		}
+	}
+
+public:
 	void drawRotarySlider(juce::Graphics& g,
 		int x, int y, int width, int height,
 		float sliderPosProportional,

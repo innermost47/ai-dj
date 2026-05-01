@@ -11,10 +11,28 @@ CrossfaderComponent::CrossfaderComponent(DjIaVstProcessor& processor)
 	setupMidiLearn();
 	setupCurveButtonsMidiLearn();
 	refreshFromProcessor();
+	startTimerHz(30);
 }
 
 CrossfaderComponent::~CrossfaderComponent()
 {
+	setVisible(false);
+	stopTimer();
+}
+
+void CrossfaderComponent::timerCallback()
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		if (!pairRowBounds[i].isEmpty())
+		{
+			auto rb = pairRowBounds[i];
+			repaint(rb.getX(), rb.getY(),
+				ledZoneWidth, rb.getHeight());
+			repaint(rb.getRight() - ledZoneWidth, rb.getY(),
+				ledZoneWidth, rb.getHeight());
+		}
+	}
 }
 
 void CrossfaderComponent::setupUI()
@@ -25,6 +43,9 @@ void CrossfaderComponent::setupUI()
 		setupSlider(pairSliders[i],
 			"Crossfader " + juce::String(i + 1) + " <-> " + juce::String(i + 5)
 			+ " (Right-click for MIDI learn)");
+
+		pairSliders[i].getProperties().set(
+			CustomLookAndFeel::getDrawTicksPropertyId(), 9);
 
 		const int pairIdx = i;
 		pairSliders[i].onValueChange = [this, pairIdx]()
@@ -49,30 +70,25 @@ void CrossfaderComponent::setupCurveButtons()
 	auto setupCurveBtn = [](IconButton& btn)
 		{
 			btn.setClickingTogglesState(false);
-			btn.setHasAccentBar(true);
-			btn.setCompactMode(true);
+			btn.setHasAccentBar(false);
 			btn.setShowBackground(false);
-			btn.setShowBorder(false);
-			btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-			btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
-			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+			btn.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+			btn.setColour(juce::TextButton::buttonOnColourId, juce::Colours::transparentBlack);
+			btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 			btn.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 		};
 
 	addAndMakeVisible(curveLinearButton);
-	curveLinearButton.loadIcon(BinaryData::lin_svg, BinaryData::lin_svgSize);
 	setupCurveBtn(curveLinearButton);
 	curveLinearButton.setTooltip("Linear crossfade curve");
 	curveLinearButton.onClick = [this]() { selectCurveMode(0); };
 
 	addAndMakeVisible(curveEqualPowerButton);
-	curveEqualPowerButton.loadIcon(BinaryData::eq_svg, BinaryData::eq_svgSize);
 	setupCurveBtn(curveEqualPowerButton);
 	curveEqualPowerButton.setTooltip("Equal Power crossfade curve (constant perceived volume)");
 	curveEqualPowerButton.onClick = [this]() { selectCurveMode(1); };
 
 	addAndMakeVisible(curveDjButton);
-	curveDjButton.loadIcon(BinaryData::dj_svg, BinaryData::dj_svgSize);
 	setupCurveBtn(curveDjButton);
 	curveDjButton.setTooltip("DJ scratch curve (sharp transition)");
 	curveDjButton.onClick = [this]() { selectCurveMode(2); };
@@ -92,9 +108,7 @@ void CrossfaderComponent::refreshCurveButtons()
 	curveEqualPowerButton.setToggleState(mode == 1, juce::dontSendNotification);
 	curveDjButton.setToggleState(mode == 2, juce::dontSendNotification);
 
-	curveLinearButton.repaint();
-	curveEqualPowerButton.repaint();
-	curveDjButton.repaint();
+	repaint();
 }
 
 void CrossfaderComponent::setupSlider(MidiLearnableSlider& slider, const juce::String& tooltip)
@@ -274,16 +288,169 @@ void CrossfaderComponent::paint(juce::Graphics& g)
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds, 8.0f);
 
-	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
-	g.setColour(ColourPalette::textPrimary);
-	g.drawText("CROSSFADERS", bounds.toNearestInt().withHeight(12).translated(0, 6),
-		juce::Justification::centred);
+	g.setColour(juce::Colours::white.withAlpha(0.04f));
+	g.drawRoundedRectangle(bounds.reduced(0.5f), 8.0f, 1.0f);
+
+	drawSegmentedCurveBackground(g);
+}
+
+void CrossfaderComponent::drawHardwareLED(juce::Graphics& g,
+	juce::Rectangle<float> bounds,
+	juce::Colour colour,
+	float intensity,
+	bool playing) const
+{
+	const float cx = bounds.getCentreX();
+	const float cy = bounds.getCentreY();
+	const float radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
+
+	const float i = juce::jlimit(0.0f, 1.0f, intensity);
+
+	if (i > 0.05f)
+	{
+		const float pulse = playing ? i : juce::jmin(1.0f, i + 0.15f);
+
+		g.setColour(colour.withAlpha(0.15f * pulse));
+		g.fillEllipse(cx - radius * 2.4f, cy - radius * 2.4f,
+			radius * 4.8f, radius * 4.8f);
+
+		g.setColour(colour.withAlpha(0.30f * pulse));
+		g.fillEllipse(cx - radius * 1.7f, cy - radius * 1.7f,
+			radius * 3.4f, radius * 3.4f);
+
+		g.setColour(colour.withAlpha(0.50f * pulse));
+		g.fillEllipse(cx - radius * 1.25f, cy - radius * 1.25f,
+			radius * 2.5f, radius * 2.5f);
+	}
+
+	juce::ColourGradient bezelGrad(
+		ColourPalette::backgroundLight.brighter(0.1f),
+		cx - radius * 0.5f, cy - radius * 0.5f,
+		ColourPalette::backgroundDeep,
+		cx + radius * 0.5f, cy + radius * 0.5f,
+		false);
+	g.setGradientFill(bezelGrad);
+	g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+
+	g.setColour(juce::Colours::black.withAlpha(0.5f));
+	g.drawEllipse(cx - radius + 0.5f, cy - radius + 0.5f,
+		radius * 2.0f - 1.0f, radius * 2.0f - 1.0f, 1.0f);
+
+	g.setColour(juce::Colours::white.withAlpha(0.12f));
+	juce::Path topHL;
+	topHL.addEllipse(cx - radius * 0.85f, cy - radius * 0.85f,
+		radius * 1.7f, radius * 0.7f);
+	g.fillPath(topHL);
+
+	const float domeR = radius * 0.55f;
+	juce::Rectangle<float> dome(cx - domeR, cy - domeR, domeR * 2.0f, domeR * 2.0f);
+
+	if (i > 0.05f)
+	{
+		auto bright = colour.brighter(0.4f);
+		auto mid = colour;
+		auto dark = colour.darker(0.6f);
+
+		juce::ColourGradient domeGrad(
+			bright,
+			dome.getX() + domeR * 0.7f, dome.getY() + domeR * 0.6f,
+			dark,
+			dome.getCentreX(), dome.getCentreY() + domeR,
+			true);
+		domeGrad.addColour(0.6, mid);
+		g.setGradientFill(domeGrad);
+		g.fillEllipse(dome);
+
+		g.setColour(juce::Colours::white.withAlpha(0.6f * i));
+		g.fillEllipse(dome.getX() + domeR * 0.55f,
+			dome.getY() + domeR * 0.45f,
+			domeR * 0.5f, domeR * 0.4f);
+	}
+	else
+	{
+		g.setColour(colour.withAlpha(0.35f).darker(0.6f));
+		g.fillEllipse(dome);
+	}
+}
+
+void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics& g) const
+{
+	if (curveButtonsRowBounds.isEmpty())
+		return;
+
+	auto track = curveButtonsRowBounds.toFloat();
+
+	g.setColour(ColourPalette::backgroundDeep);
+	g.fillRoundedRectangle(track, 5.0f);
+
+	g.setColour(juce::Colours::black.withAlpha(0.4f));
+	g.drawRoundedRectangle(track.reduced(0.5f), 5.0f, 0.8f);
+
+	int activeMode = audioProcessor.getCrossfaderCurveMode();
+	juce::Rectangle<int> activeBounds;
+	if (activeMode == 0) activeBounds = curveLinearButton.getBounds();
+	else if (activeMode == 1) activeBounds = curveEqualPowerButton.getBounds();
+	else activeBounds = curveDjButton.getBounds();
+
+	if (!activeBounds.isEmpty())
+	{
+		auto active = activeBounds.toFloat().reduced(2.0f);
+
+		g.setColour(juce::Colours::black.withAlpha(0.4f));
+		g.fillRoundedRectangle(active.translated(0, 1.0f), 4.0f);
+
+		juce::ColourGradient bodyGrad(
+			ColourPalette::trackSelected.withAlpha(0.45f),
+			active.getX(), active.getY(),
+			ColourPalette::trackSelected.withAlpha(0.20f),
+			active.getX(), active.getBottom(),
+			false);
+		g.setGradientFill(bodyGrad);
+		g.fillRoundedRectangle(active, 4.0f);
+
+		g.setColour(juce::Colours::white.withAlpha(0.06f));
+		g.fillRoundedRectangle(active.withHeight(active.getHeight() * 0.45f), 4.0f);
+
+		g.setColour(ColourPalette::trackSelected.withAlpha(0.7f));
+		g.drawRoundedRectangle(active.reduced(0.5f), 4.0f, 1.0f);
+	}
 }
 
 void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
 {
-	const float ledR = 4.0f;
-	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 9.0f, juce::Font::bold));
+	juce::Font monoBold(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(),
+		12.0f, juce::Font::bold));
+	g.setFont(monoBold);
+
+	bool hostIsPlaying = false;
+	double currentPpq = 0.0;
+
+	if (auto* ph = audioProcessor.getPlayHead())
+	{
+		if (auto pos = ph->getPosition())
+		{
+			hostIsPlaying = pos->getIsPlaying();
+			if (auto ppq = pos->getPpqPosition())
+				currentPpq = *ppq;
+		}
+	}
+
+	float beatPhaseLocal = (float)(currentPpq - std::floor(currentPpq));
+
+	float pulseIntensity;
+	if (hostIsPlaying)
+	{
+		pulseIntensity = std::pow(1.0f - beatPhaseLocal, 2.5f);
+		pulseIntensity = juce::jmax(0.25f, pulseIntensity);
+	}
+	else
+	{
+		pulseIntensity = 1.0f;
+	}
+
+	float globalX = audioProcessor.getGlobalCrossfaderValue();
+	float deckAGain = 1.0f - globalX;
+	float deckBGain = globalX;
 
 	for (int i = 0; i < 4; ++i)
 	{
@@ -298,49 +465,69 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
 		if (trackLeft)  leftColour = AiModelDefinitions::getColourForModel(trackLeft->selectedModel);
 		if (trackRight) rightColour = AiModelDefinitions::getColourForModel(trackRight->selectedModel);
 
-		float labelY = (float)rowBounds.getY() - 4.0f;
-		float rx = (float)rowBounds.getX();
-		float rr = (float)rowBounds.getRight();
+		float pairX = audioProcessor.getPairCrossfaderValue(i);
+		float leftPairGain = 1.0f - pairX;
+		float rightPairGain = pairX;
 
-		g.setColour(leftColour.withAlpha(0.9f));
-		g.fillEllipse(rx + 2.0f, labelY + 2.0f, ledR * 2.0f, ledR * 2.0f);
-		g.setColour(ColourPalette::textSecondary);
-		g.drawText("T" + juce::String(i + 1),
-			juce::Rectangle<float>(rx + ledR * 2.0f + 5.0f, labelY, 20.0f, 12.0f).toNearestInt(),
+		float leftIntensity = juce::jmax(0.0f, deckAGain * leftPairGain * pulseIntensity);
+		float rightIntensity = juce::jmax(0.0f, deckBGain * rightPairGain * pulseIntensity);
+
+		const float ledD = (float)ledDiameter;
+		const int rowH = rowBounds.getHeight();
+		const int rowCY = rowBounds.getCentreY();
+
+		juce::Rectangle<float> ledLeftBounds(
+			(float)(rowBounds.getX() + ledPadX),
+			(float)(rowCY)-ledD * 0.5f,
+			ledD, ledD);
+		drawHardwareLED(g, ledLeftBounds, leftColour, leftIntensity, hostIsPlaying);
+
+		g.setColour(ColourPalette::textPrimary);
+		juce::Rectangle<int> labelLeft(
+			(int)(ledLeftBounds.getRight() + 6.0f),
+			rowBounds.getY(),
+			labelWidth,
+			rowH);
+		g.drawText("T" + juce::String(i + 1), labelLeft,
 			juce::Justification::centredLeft);
 
-		g.setColour(ColourPalette::textSecondary);
-		g.drawText("T" + juce::String(i + 5),
-			juce::Rectangle<float>(rr - ledR * 2.0f - 24.0f, labelY, 20.0f, 12.0f).toNearestInt(),
+		juce::Rectangle<float> ledRightBounds(
+			(float)(rowBounds.getRight() - ledPadX) - ledD,
+			(float)(rowCY)-ledD * 0.5f,
+			ledD, ledD);
+		drawHardwareLED(g, ledRightBounds, rightColour, rightIntensity, hostIsPlaying);
+
+		juce::Rectangle<int> labelRight(
+			(int)(ledRightBounds.getX() - 6.0f - labelWidth),
+			rowBounds.getY(),
+			labelWidth,
+			rowH);
+		g.setColour(ColourPalette::textPrimary);
+		g.drawText("T" + juce::String(i + 5), labelRight,
 			juce::Justification::centredRight);
-		g.setColour(rightColour.withAlpha(0.9f));
-		g.fillEllipse(rr - ledR * 2.0f - 2.0f, labelY + 2.0f, ledR * 2.0f, ledR * 2.0f);
 	}
 }
 
 void CrossfaderComponent::resized()
 {
-	auto area = getLocalBounds().reduced(6, 4);
-	area.removeFromTop(28);
+	auto area = getLocalBounds().reduced(8, 6);
 
-	const int curveButtonsHeight = 32;
-	const int curveButtonsBottomMargin = 2;
+	const int segmentedH = 26;
+	const int segmentedTopGap = 6;
 
-	auto curveButtonsArea = area.removeFromBottom(curveButtonsHeight);
-	area.removeFromBottom(curveButtonsBottomMargin);
-	curveButtonsRowBounds = curveButtonsArea;
+	auto segmentedBand = area.removeFromBottom(segmentedH);
+	curveButtonsRowBounds = segmentedBand;
 
-	const int btnSpacing = 4;
-	const int totalBtnWidth = curveButtonsArea.getWidth();
-	const int btnW = (totalBtnWidth - btnSpacing * 2) / 3;
+	const int innerPad = 3;
+	auto innerSeg = segmentedBand.reduced(innerPad);
+	const int segW = innerSeg.getWidth() / 3;
 
-	curveLinearButton.setBounds(curveButtonsArea.removeFromLeft(btnW));
-	curveButtonsArea.removeFromLeft(btnSpacing);
-	curveEqualPowerButton.setBounds(curveButtonsArea.removeFromLeft(btnW));
-	curveButtonsArea.removeFromLeft(btnSpacing);
-	curveDjButton.setBounds(curveButtonsArea);
+	curveLinearButton.setBounds(innerSeg.removeFromLeft(segW));
+	curveEqualPowerButton.setBounds(innerSeg.removeFromLeft(segW));
+	curveDjButton.setBounds(innerSeg);
 
-	const int sideW = 2;
+	area.removeFromBottom(segmentedTopGap);
+
 	const int rowSpacing = 2;
 	const int rowHeight = (area.getHeight() - rowSpacing * 3) / 4;
 
@@ -349,6 +536,7 @@ void CrossfaderComponent::resized()
 		auto rowArea = (i == 3) ? area : area.removeFromTop(rowHeight);
 		pairRowBounds[i] = rowArea;
 
+		const int sideW = ledZoneWidth;
 		auto sliderArea = rowArea;
 		sliderArea.removeFromLeft(sideW);
 		sliderArea.removeFromRight(sideW);

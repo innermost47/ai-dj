@@ -987,6 +987,10 @@ void MixerChannel::setupUI()
 	volumeSlider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
 	volumeSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
 	volumeSlider.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	volumeSlider.getProperties().set(
+		CustomLookAndFeel::getDrawTicksPropertyId(), 9);
+	volumeSlider.getProperties().set(
+		CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
 
 	addAndMakeVisible(pitchKnob);
 	pitchKnob.setRange(-12.0, 12.0, 0.01);

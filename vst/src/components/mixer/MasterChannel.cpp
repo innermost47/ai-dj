@@ -193,6 +193,10 @@ void MasterChannel::setupUI()
 	masterVolumeSlider.setColour(juce::Slider::thumbColourId, ColourPalette::playArmed);
 	masterVolumeSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
 	masterVolumeSlider.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	masterVolumeSlider.getProperties().set(
+		CustomLookAndFeel::getDrawTicksPropertyId(), 9);
+	masterVolumeSlider.getProperties().set(
+		CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
 
 	addAndMakeVisible(masterPanKnob);
 	masterPanKnob.setRange(-1.0, 1.0, 0.01);

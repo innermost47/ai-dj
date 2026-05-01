@@ -105,13 +105,21 @@ protected:
 			}
 		}
 
+		auto* drawable = (toggled && hasToggledIcon && iconDrawableToggled)
+			? iconDrawableToggled.get()
+			: iconDrawable.get();
+		const bool hasIcon = (drawable != nullptr);
+
 		const float topPadding = 3.0f;
 		const float bottomPadding = 2.0f;
 		const float accentBarSlot = hasAccentBar ? 3.0f : 0.0f;
 		const float accentGap = hasAccentBar ? 2.0f : 0.0f;
 		const bool drawAccentBar = hasAccentBar && toggled && enabled;
-		const float labelHeight = labelText.isNotEmpty() ? (isCompact ? 8.0f : 10.0f) : 0.0f;
-		const float labelGap = (labelHeight > 0.0f) ? 2.0f : 0.0f;
+		const float labelHeight = labelText.isNotEmpty()
+			? (hasIcon ? (isCompact ? 8.0f : 10.0f)
+				: (isCompact ? 10.0f : 12.0f))
+			: 0.0f;
+		const float labelGap = (labelHeight > 0.0f && hasIcon) ? 2.0f : 0.0f;
 
 		auto contentArea = fullBounds.reduced(2.0f, 0.0f);
 		contentArea.removeFromTop(topPadding);
@@ -135,15 +143,18 @@ protected:
 		juce::Rectangle<float> labelArea;
 		if (labelHeight > 0.0f)
 		{
-			labelArea = contentArea.removeFromBottom(labelHeight);
-			contentArea.removeFromBottom(labelGap);
+			if (hasIcon)
+			{
+				labelArea = contentArea.removeFromBottom(labelHeight);
+				contentArea.removeFromBottom(labelGap);
+			}
+			else
+			{
+				labelArea = contentArea;
+			}
 		}
 
-		auto* drawable = (toggled && hasToggledIcon && iconDrawableToggled)
-			? iconDrawableToggled.get()
-			: iconDrawable.get();
-
-		if (drawable && contentArea.getHeight() > 2.0f)
+		if (hasIcon && contentArea.getHeight() > 2.0f)
 		{
 			const float marginH = isCompact ? 0.10f : 0.18f;
 			const float marginV = isCompact ? 0.05f : 0.10f;
@@ -204,7 +215,12 @@ protected:
 				? btn.findColour(juce::TextButton::textColourOnId)
 				: btn.findColour(juce::TextButton::textColourOffId);
 			g.setColour(enabled ? labelCol : labelCol.withAlpha(0.3f));
-			g.setFont(juce::FontOptions(isCompact ? 6.5f : 8.5f, juce::Font::bold));
+
+			const float fontSize = hasIcon
+				? (isCompact ? 6.5f : 8.5f)
+				: (isCompact ? 9.0f : 11.0f);
+
+			g.setFont(juce::FontOptions(fontSize, juce::Font::bold));
 			g.drawText(labelText, labelArea.toNearestInt(),
 				juce::Justification::centred, false);
 		}
