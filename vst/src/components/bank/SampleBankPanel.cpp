@@ -372,7 +372,7 @@ void DetailPanel::drawWaveform(juce::Graphics& g)
 				top.lineTo(x, centerY - h);
 				bot.lineTo(x, centerY + h);
 			}
-			g.setColour(ColourPalette::buttonDanger);
+			g.setColour(ColourPalette::textPrimary.withAlpha(0.85f));
 			g.strokePath(top, juce::PathStrokeType(1.0f));
 			g.strokePath(bot, juce::PathStrokeType(1.0f));
 		};

@@ -310,7 +310,6 @@ void WaveformDisplay::paint(juce::Graphics& g)
 
 	drawLoopMarkers(g);
 	drawPlaybackHead(g);
-	drawVisibleBarLabels(g);
 
 	if (zoomFactor > 1.0)
 	{
@@ -581,25 +580,59 @@ void WaveformDisplay::updateAdsrFromMouse(juce::Point<float> p)
 void WaveformDisplay::mouseDoubleClick(const juce::MouseEvent& e)
 {
 	auto handle = hitTestAdsr(e.position);
-	if (handle == AdsrHandle::None) return;
-
-	const float defA = 0.01f, defD = 4.0f, defS = 1.0f, defR = 0.0f;
-
-	switch (handle)
+	if (handle != AdsrHandle::None)
 	{
-	case AdsrHandle::AttackPeak:
-		if (onAdsrAttackChanged) onAdsrAttackChanged(defA);
-		break;
-	case AdsrHandle::DecaySustain:
-		if (onAdsrDecayChanged)   onAdsrDecayChanged(defD);
-		if (onAdsrSustainChanged) onAdsrSustainChanged(defS);
-		break;
-	case AdsrHandle::ReleaseStart:
-		if (onAdsrReleaseChanged) onAdsrReleaseChanged(defR);
-		break;
-	default: break;
+		const float defA = 0.01f, defD = 4.0f, defS = 1.0f, defR = 0.0f;
+
+		switch (handle)
+		{
+		case AdsrHandle::AttackPeak:
+			if (onAdsrAttackChanged) onAdsrAttackChanged(defA);
+			break;
+		case AdsrHandle::DecaySustain:
+			if (onAdsrDecayChanged)   onAdsrDecayChanged(defD);
+			if (onAdsrSustainChanged) onAdsrSustainChanged(defS);
+			break;
+		case AdsrHandle::ReleaseStart:
+			if (onAdsrReleaseChanged) onAdsrReleaseChanged(defR);
+			break;
+		default: break;
+		}
+		repaint();
+		return;
 	}
-	repaint();
+
+	if (loopPointsLocked)
+		return;
+
+	float startX = timeToX(loopStart);
+	float endX = timeToX(loopEnd);
+
+	if ((float)e.x < startX)
+	{
+		double newStart = xToTime((float)e.x);
+		newStart = juce::jlimit(getViewStartTime(), loopEnd, newStart);
+		if (std::abs(newStart - loopStart) >= 1e-6)
+		{
+			loopStart = newStart;
+			invalidateGridCache();
+			repaint();
+			if (onLoopPointsChanged)
+				onLoopPointsChanged(loopStart, loopEnd);
+		}
+	}
+	else if ((float)e.x > endX)
+	{
+		double newEnd = xToTime((float)e.x);
+		newEnd = juce::jlimit(loopStart, getViewEndTime(), newEnd);
+		if (std::abs(newEnd - loopEnd) >= 1e-6)
+		{
+			loopEnd = newEnd;
+			repaint();
+			if (onLoopPointsChanged)
+				onLoopPointsChanged(loopStart, loopEnd);
+		}
+	}
 }
 
 void WaveformDisplay::updateScrollBarVisibility()
@@ -989,13 +1022,16 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 	g.drawLine(startX, 0.0f, startX, height, lineWidth);
 	g.drawLine(endX, 0.0f, endX, height, lineWidth);
 
-	int triangleSize = 12;
+	const int markerSize = 12;
+	const int scrollBarReserve = scrollBarVisible ? 4 : 0;
+	const float markerBottom = height - scrollBarReserve;
+	const float markerTop = markerBottom - markerSize;
 
 	juce::Path startTriangle;
 	startTriangle.addTriangle(
-		startX, 0.0f,
-		startX, static_cast<float>(triangleSize),
-		startX + triangleSize, triangleSize / 2.0f);
+		startX, markerTop,
+		startX, markerBottom,
+		startX + markerSize, markerBottom);
 
 	g.setColour(loopColour);
 	g.fillPath(startTriangle);
@@ -1004,9 +1040,9 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 
 	juce::Path endTriangle;
 	endTriangle.addTriangle(
-		endX, 0.0f,
-		endX, static_cast<float>(triangleSize),
-		endX - triangleSize, triangleSize / 2.0f);
+		endX, markerTop,
+		endX, markerBottom,
+		endX - markerSize, markerBottom);
 
 	g.setColour(loopColour);
 	g.fillPath(endTriangle);
@@ -1134,43 +1170,6 @@ void WaveformDisplay::drawLoopBarLabels(juce::Graphics& g, float startX, float e
 		juce::Justification::left);
 	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, textY, 48, 15,
 		juce::Justification::right);
-}
-
-void WaveformDisplay::drawVisibleBarLabels(juce::Graphics& g)
-{
-	if (trackBpm <= 0.0f)
-		return;
-
-	int numerator = audioProcessor.getTimeSignatureNumerator();
-
-	float effectiveBpm = trackBpm;
-	if (stretchRatio > 0.0f && stretchRatio != 1.0f)
-	{
-		effectiveBpm = trackBpm * stretchRatio;
-	}
-
-	double beatDuration = 60.0 / effectiveBpm;
-	double barDuration = beatDuration * numerator;
-
-	double viewStart = getViewStartTime();
-	double viewEnd = getViewEndTime();
-
-	int leftBar = (int)(viewStart / barDuration) + 1;
-	int rightBar = (int)(viewEnd / barDuration) + 1;
-
-	if (fmod(viewEnd, barDuration) < 0.01)
-	{
-		rightBar--;
-	}
-
-	int visibleBars = rightBar - leftBar + 1;
-	if (visibleBars > 1)
-	{
-		g.setColour(ColourPalette::textSecondary);
-		g.setFont(10.0f);
-		g.drawText("(" + juce::String(visibleBars) + " bars visible)",
-			getWidth() / 2 - 40, 2, 80, 15, juce::Justification::centred);
-	}
 }
 
 void WaveformDisplay::drawPlaybackHead(juce::Graphics& g)

@@ -103,7 +103,6 @@ private:
 	void calculateStretchRatio() const;
 	void updateScrollBarVisibility();
 	void updateScrollBar();
-	void drawVisibleBarLabels(juce::Graphics& g);
 	void setViewStartTime(double newViewStartTime);
 	void drawMeasureLine(double time, juce::Graphics& g, float barDuration, double viewDuration);
 	void drawBeatLine(double time, juce::Graphics& g, double viewDuration);
