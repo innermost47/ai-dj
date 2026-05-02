@@ -1661,6 +1661,12 @@ bool DjIaVstEditor::keyMatches(const juce::KeyPress& pressed, const juce::KeyPre
 	return false;
 }
 
+void DjIaVstEditor::refreshAllPromptLists()
+{
+	loadPromptPresets();
+	notifyTracksPromptUpdate();
+}
+
 bool DjIaVstEditor::keyPressed(const juce::KeyPress& key)
 {
 	KeyboardLayout layout = detectKeyboardLayout();

@@ -31,6 +31,8 @@ public:
 	std::function<void(SampleBankEntry*)> onDeleteRequested;
 	std::function<void(SampleBankEntry*, const std::vector<juce::String>&)> onCategoriesChanged;
 	std::function<std::vector<juce::String>()> getCategoriesList;
+	std::function<void(SampleBankEntry*)> onPromptEditRequested;
+	std::function<juce::Colour(const juce::String&)> categoryColourResolver;
 
 private:
 	SampleBankEntry* sampleEntry;
@@ -74,6 +76,7 @@ struct CategoryInfo
 {
 	int id;
 	juce::String name;
+	juce::Colour colour{ juce::Colour(0) };
 };
 
 class DetailPanel : public juce::Component, public juce::Timer
@@ -91,6 +94,7 @@ public:
 	std::function<void(SampleBankEntry*)> onPlayRequested;
 	std::function<void()> onStopRequested;
 	std::function<void(const juce::String&)> onDeleteRequested;
+	std::function<juce::Colour(const juce::String&)> categoryColourResolver;
 
 	void loadAudio();
 
@@ -160,7 +164,7 @@ private:
 	IconButtonSimple deleteCategoryButton{ "DeleteCategory", "" };
 
 	juce::ListBox sampleListBox;
-	static constexpr int ROW_HEIGHT = 28;
+	static constexpr int ROW_HEIGHT = 44;
 
 	DetailPanel detailPanel;
 	static constexpr int DETAIL_HEIGHT = 105;
@@ -210,6 +214,12 @@ private:
 	void saveCategoriesConfig();
 	void loadCategoriesConfig();
 	int getNextCategoryId();
+	void showAddCategoryDialog();
+	void showEditCategoryDialog();
+
+	juce::Colour resolveCategoryColour(const juce::String& name) const;
+
+	void showEditPromptDialog(SampleBankEntry* entry);
 
 	void drawLoader(juce::Graphics& g);
 	void drawEmptyState(juce::Graphics& g);
@@ -227,8 +237,7 @@ public:
 
 	void resized() override
 	{
-		auto b = getLocalBounds().reduced(0, 1);
-		b.removeFromRight(4);
+		auto b = getLocalBounds();
 		item->setBounds(b);
 	}
 	SampleBankItem* getItem() const { return item.get(); }

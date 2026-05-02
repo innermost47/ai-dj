@@ -71,6 +71,7 @@ public:
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
 	void removeModal(ObsidianModalOverlay* overlay) override;
 	bool keyStateChanged(bool isKeyDown) override;
+	void refreshAllPromptLists();
 	MixerPanel* getMixerPanel() { return mixerPanel.get(); }
 
 private:

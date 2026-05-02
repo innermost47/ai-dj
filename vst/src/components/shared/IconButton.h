@@ -111,7 +111,7 @@ protected:
 		const bool hasIcon = (drawable != nullptr);
 
 		const float topPadding = 3.0f;
-		const float bottomPadding = (hasAccentBar && showBorder ? 4.0f : 0.0f);
+		const float bottomPadding = (hasAccentBar && showBorder ? 4.0f : 2.0f);
 		const float accentBarSlot = hasAccentBar ? 3.0f : 0.0f;
 		const float accentGap = hasAccentBar ? 2.0f : 0.0f;
 		const bool drawAccentBar = hasAccentBar && toggled && enabled;
