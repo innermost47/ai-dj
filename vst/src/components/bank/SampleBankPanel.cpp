@@ -8,11 +8,6 @@
 SampleBankItem::SampleBankItem(SampleBankEntry* entry, DjIaVstProcessor& processor)
 	: sampleEntry(entry), audioProcessor(processor)
 {
-	addAndMakeVisible(nameLabel);
-	nameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	nameLabel.setFont(juce::FontOptions(13.0f));
-	nameLabel.setText(entry->originalPrompt, juce::dontSendNotification);
-	nameLabel.setInterceptsMouseClicks(false, false);
 	setSize(400, 52);
 }
 
@@ -48,6 +43,33 @@ void SampleBankItem::paint(juce::Graphics& g)
 		g.fillRect(0.0f, 0.0f, 4.0f, (float)bounds.getHeight());
 	}
 
+	{
+		auto nameArea = bounds.removeFromTop(20).withTrimmedLeft(12).withTrimmedRight(48);
+
+		juce::AttributedString attr;
+		attr.setJustification(juce::Justification::centredLeft);
+
+		attr.append(sampleEntry->originalPrompt,
+			juce::FontOptions(13.0f, juce::Font::bold),
+			ColourPalette::textPrimary);
+
+		attr.draw(g, nameArea.toFloat());
+	}
+
+	auto modelArea = bounds.removeFromTop(12).withTrimmedLeft(12).withTrimmedRight(48);
+
+	auto circleArea = modelArea.removeFromLeft(18);
+	circleArea = circleArea.withSizeKeepingCentre(6, 6);
+
+	g.setColour(ColourPalette::textPrimary.withAlpha(0.6f));
+	g.fillEllipse(circleArea.toFloat());
+
+	juce::String displayName = sampleEntry->modelName.isNotEmpty() ? sampleEntry->modelName : "Unknown model";
+
+	g.setFont(juce::FontOptions(11.5f, juce::Font::italic));
+	g.setColour(ColourPalette::textPrimary);
+	g.drawText(displayName, modelArea, juce::Justification::centredLeft, true);
+
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
 	g.drawLine(4.0f, (float)bounds.getBottom() - 1.0f,
 		(float)bounds.getWidth() - 4.0f, (float)bounds.getBottom() - 1.0f, 0.5f);
@@ -78,9 +100,6 @@ void SampleBankItem::paint(juce::Graphics& g)
 	else
 		parts.add(juce::String(usageCount) + " project(s)");
 
-	if (sampleEntry->modelName.isNotEmpty())
-		parts.add("[" + sampleEntry->modelName + "]");
-
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.75f));
 	g.setFont(juce::FontOptions(10.5f));
 	g.drawText(parts.joinIntoString(" - "), metaArea, juce::Justification::centredLeft, true);
@@ -96,8 +115,7 @@ void SampleBankItem::paint(juce::Graphics& g)
 
 void SampleBankItem::resized()
 {
-	auto b = getLocalBounds().withTrimmedLeft(8).withTrimmedRight(4);
-	nameLabel.setBounds(b.removeFromTop(28));
+
 }
 
 juce::Colour SampleBankItem::getCategoryColor(const juce::String& category)
@@ -224,7 +242,7 @@ DetailPanel::DetailPanel()
 {
 	addAndMakeVisible(nameLabel);
 	nameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	nameLabel.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+	nameLabel.setFont(juce::FontOptions(13.0f));
 
 	addAndMakeVisible(metaLabel);
 	metaLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
@@ -293,7 +311,11 @@ void DetailPanel::setEntry(SampleBankEntry* e)
 		metaLabel.setText("", juce::dontSendNotification);
 		return;
 	}
-	nameLabel.setText(entry->originalPrompt, juce::dontSendNotification);
+
+	juce::String nameText = entry->originalPrompt;
+	if (entry->modelName.isNotEmpty())
+		nameText += " - " + entry->modelName;
+	nameLabel.setText(nameText, juce::dontSendNotification);
 
 	juce::StringArray parts;
 	parts.add(formatDuration(entry->duration));
@@ -399,15 +421,25 @@ void DetailPanel::paint(juce::Graphics& g)
 	g.fillRoundedRectangle(bounds.toFloat(), 4.0f);
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.4f));
 	g.drawLine(0.0f, 0.5f, (float)bounds.getWidth(), 0.5f, 1.0f);
+
 	if (entry && !entry->categories.empty())
 	{
-		auto nb = nameLabel.getBounds();
-		float cy = nb.toFloat().getCentreY();
-		juce::Colour col = this->categoryColourResolver ? this->categoryColourResolver(entry->categories[0])
+		float cy = 6.0f + 18.0f * 0.5f;
+		juce::Colour col = this->categoryColourResolver
+			? this->categoryColourResolver(entry->categories[0])
 			: getCategoryColor(entry->categories[0]);
 		g.setColour(col);
 		g.fillEllipse(8.0f, cy - 4.0f, 8.0f, 8.0f);
 	}
+
+	if (entry)
+	{
+		auto nameArea = juce::Rectangle<int>(20, 6, getWidth() - 80, 18);
+		g.setColour(ColourPalette::textPrimary);
+		g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+		g.drawText(entry->originalPrompt, nameArea, juce::Justification::centredLeft, true);
+	}
+
 	drawWaveform(g);
 }
 
@@ -492,21 +524,12 @@ void DetailPanel::drawWaveform(juce::Graphics& g)
 void DetailPanel::resized()
 {
 	auto area = getLocalBounds().reduced(6, 4);
-
-	auto topRow = area.removeFromTop(18);
-	nameLabel.setBounds(topRow.withTrimmedLeft(20));
-
-	area.removeFromTop(2);
-
-	auto metaRow = area.removeFromTop(14);
-	metaLabel.setBounds(metaRow.withTrimmedLeft(4));
-
-	area.removeFromTop(3);
-
+	auto titleRow = area.removeFromTop(24);
 	auto bottomRow = area;
 
 	auto btnCol = bottomRow.removeFromRight(36);
 	bottomRow.removeFromRight(4);
+
 	playButton.setBounds(btnCol.removeFromTop(bottomRow.getHeight() / 2).reduced(2));
 	deleteButton.setBounds(btnCol.reduced(2));
 
@@ -678,7 +701,7 @@ void SampleBankPanel::setupUI()
 	sortMenu.addItem("Sort: Usage", SortType::Usage);
 	sortMenu.addItem("Sort: BPM", SortType::BPM);
 	sortMenu.addItem("Sort: Duration", SortType::Duration);
-	sortMenu.setSelectedId(SortType::Prompt);
+	sortMenu.setSelectedId(SortType::Time);
 	sortMenu.onChange = [this]()
 		{
 			currentSortType = static_cast<SortType>(sortMenu.getSelectedId());

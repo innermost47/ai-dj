@@ -38,7 +38,6 @@ private:
 	SampleBankEntry* sampleEntry;
 	DjIaVstProcessor& audioProcessor;
 
-	juce::Label nameLabel;
 	bool selected = false;
 	bool isDragging = false;
 
@@ -164,10 +163,10 @@ private:
 	IconButtonSimple deleteCategoryButton{ "DeleteCategory", "" };
 
 	juce::ListBox sampleListBox;
-	static constexpr int ROW_HEIGHT = 44;
+	static constexpr int ROW_HEIGHT = 50;
 
 	DetailPanel detailPanel;
-	static constexpr int DETAIL_HEIGHT = 105;
+	static constexpr int DETAIL_HEIGHT = 86;
 
 	SampleBankEntry* selectedEntry = nullptr;
 	SampleBankEntry* currentPreviewEntry = nullptr;
