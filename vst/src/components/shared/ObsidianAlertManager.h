@@ -3,6 +3,7 @@
 #include "style/ColourPalette.h"
 #include "ObsidianModal.h"
 #include "components/bank/CategoryPanel.h"
+#include "components/shared/ColourPicker.h"
 
 class DjIaVstProcessor;
 class DrawingCanvas;
@@ -74,6 +75,153 @@ public:
 		std::function<void(const juce::String&)> onGenerate,
 		std::function<void(DrawingCanvas*)> onClose = nullptr);
 
+	static void showAddCategoryDialog(
+		juce::Component* parent,
+		std::function<void(const juce::String& name, juce::Colour colour)> onAdd)
+	{
+		class CategoryDialogContent : public juce::Component
+		{
+		public:
+			juce::TextEditor nameEditor;
+			juce::Label nameLbl, colourLbl;
+			ColourPicker colourPicker;
+
+			CategoryDialogContent(const juce::String& initialName, juce::Colour initialColour)
+			{
+				nameLbl.setText("Name:", juce::dontSendNotification);
+				nameLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+				addAndMakeVisible(nameLbl);
+
+				nameEditor.setText(initialName);
+				nameEditor.setTextToShowWhenEmpty("Category name...", ColourPalette::textSecondary);
+				nameEditor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
+				nameEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+				nameEditor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+				addAndMakeVisible(nameEditor);
+
+				colourLbl.setText("Colour:", juce::dontSendNotification);
+				colourLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+				addAndMakeVisible(colourLbl);
+
+				colourPicker.setSelectedColour(initialColour);
+				addAndMakeVisible(colourPicker);
+			}
+
+			juce::Colour getSelectedColour() const noexcept { return colourPicker.getSelectedColour(); }
+
+			void resized() override
+			{
+				auto area = getLocalBounds().reduced(12);
+				nameLbl.setBounds(area.removeFromTop(18));
+				area.removeFromTop(4);
+				nameEditor.setBounds(area.removeFromTop(30));
+				area.removeFromTop(12);
+				colourLbl.setBounds(area.removeFromTop(18));
+				area.removeFromTop(4);
+				colourPicker.setBounds(area.removeFromTop(colourPicker.getPreferredHeight()));
+			}
+		};
+
+		auto modal = std::make_unique<ObsidianModalWindow>("Add Category", 480, 320);
+		auto content = std::make_unique<CategoryDialogContent>("", ColourPalette::indigo);
+		auto* contentPtr = content.get();
+		modal->setContent(std::move(content));
+
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
+
+		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
+			[overlay]() { overlay->close(); });
+
+		overlay->modalWindow->addButton("Add", checkSvg, ColourPalette::emerald,
+			[overlay, contentPtr, onAdd, parent]()
+			{
+				juce::String name = contentPtr->nameEditor.getText().trim();
+				if (name.isEmpty())
+				{
+					showError(parent, "Add Category", "Please enter a name.");
+					return;
+				}
+				if (onAdd) onAdd(name, contentPtr->getSelectedColour());
+				overlay->close();
+			});
+	}
+
+	static void showEditCategoryDialog(
+		juce::Component* parent,
+		const juce::String& currentName,
+		juce::Colour currentColour,
+		std::function<void(const juce::String& newName, juce::Colour newColour)> onSave)
+	{
+
+		class CategoryDialogContent : public juce::Component
+		{
+		public:
+			juce::TextEditor nameEditor;
+			juce::Label nameLbl, colourLbl;
+			ColourPicker colourPicker;
+
+			CategoryDialogContent(const juce::String& initialName, juce::Colour initialColour)
+			{
+				nameLbl.setText("Name:", juce::dontSendNotification);
+				nameLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+				addAndMakeVisible(nameLbl);
+
+				nameEditor.setText(initialName);
+				nameEditor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
+				nameEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+				nameEditor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+				addAndMakeVisible(nameEditor);
+
+				colourLbl.setText("Colour:", juce::dontSendNotification);
+				colourLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+				addAndMakeVisible(colourLbl);
+
+				colourPicker.setSelectedColour(initialColour);
+				addAndMakeVisible(colourPicker);
+			}
+
+			juce::Colour getSelectedColour() const noexcept { return colourPicker.getSelectedColour(); }
+
+			void resized() override
+			{
+				auto area = getLocalBounds().reduced(12);
+				nameLbl.setBounds(area.removeFromTop(18));
+				area.removeFromTop(4);
+				nameEditor.setBounds(area.removeFromTop(30));
+				area.removeFromTop(12);
+				colourLbl.setBounds(area.removeFromTop(18));
+				area.removeFromTop(4);
+				colourPicker.setBounds(area.removeFromTop(colourPicker.getPreferredHeight()));
+			}
+		};
+
+		auto modal = std::make_unique<ObsidianModalWindow>("Edit Category", 480, 320);
+		auto content = std::make_unique<CategoryDialogContent>(currentName, currentColour);
+		auto* contentPtr = content.get();
+		modal->setContent(std::move(content));
+
+		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
+		if (overlay == nullptr) return;
+
+		overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
+			[overlay]() { overlay->close(); });
+
+		overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::amber,
+			[overlay, contentPtr, onSave, parent]()
+			{
+				juce::String name = contentPtr->nameEditor.getText().trim();
+				if (name.isEmpty())
+				{
+					showError(parent, "Edit Category", "Please enter a name.");
+					return;
+				}
+				if (onSave) onSave(name, contentPtr->getSelectedColour());
+				overlay->close();
+			});
+	}
+
+
 	struct ConfigDialogResult
 	{
 		bool confirmed;
@@ -82,6 +230,7 @@ public:
 		juce::String apiKey;
 		int timeoutMs;
 	};
+
 
 	static void showInfo(
 		juce::Component* parent,
@@ -109,7 +258,7 @@ public:
 		const juce::String& title,
 		const juce::String& message)
 	{
-		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
+		auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 260);
 		modal->setContent(std::make_unique<TextContent>(message));
 
 		auto* overlay = createAndAttachOverlay(parent, std::move(modal));
@@ -341,7 +490,7 @@ public:
 			void resized() override { editor.setBounds(getLocalBounds().reduced(5)); }
 		};
 
-		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt", 600, 400);
+		auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt", 520, 220);
 
 		auto content = std::make_unique<EditPromptContent>(currentPrompt);
 		auto* editorPtr = &content->editor;

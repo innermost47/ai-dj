@@ -12,21 +12,23 @@ SampleBank::SampleBank()
 	}
 }
 
-juce::String SampleBank::addSample(const juce::String &prompt,
-								   const juce::File &audioFile,
-								   float bpm,
-								   const juce::String &key)
+juce::String SampleBank::addSample(const juce::String& prompt,
+	const juce::File& audioFile,
+	float bpm,
+	const juce::String& key,
+	const juce::String& modelName)
 {
 	juce::ScopedLock lock(bankLock);
 
 	auto entry = std::make_unique<SampleBankEntry>();
 	entry->id = juce::Uuid().toString();
 	entry->originalPrompt = prompt;
+	entry->modelName = modelName;
 	entry->creationTime = juce::Time::getCurrentTime();
 	entry->bpm = bpm;
 	entry->key = key;
 
-	auto &categories = entry->categories;
+	auto& categories = entry->categories;
 
 	juce::String lowerPrompt = prompt.toLowerCase();
 	if (lowerPrompt.contains("ambient") || lowerPrompt.contains("pad"))
@@ -68,7 +70,7 @@ juce::String SampleBank::addSample(const juce::String &prompt,
 	return sampleId;
 }
 
-bool SampleBank::removeSample(const juce::String &sampleId)
+bool SampleBank::removeSample(const juce::String& sampleId)
 {
 	juce::File fileToDelete;
 	bool needsCallback = false;
@@ -77,10 +79,10 @@ bool SampleBank::removeSample(const juce::String &sampleId)
 		juce::ScopedLock lock(bankLock);
 
 		auto it = std::find_if(samples.begin(), samples.end(),
-							   [&sampleId](const std::unique_ptr<SampleBankEntry> &entry)
-							   {
-								   return entry->id == sampleId;
-							   });
+			[&sampleId](const std::unique_ptr<SampleBankEntry>& entry)
+			{
+				return entry->id == sampleId;
+			});
 
 		if (it == samples.end())
 			return false;
@@ -106,25 +108,25 @@ bool SampleBank::removeSample(const juce::String &sampleId)
 	return true;
 }
 
-SampleBankEntry *SampleBank::getSample(const juce::String &sampleId)
+SampleBankEntry* SampleBank::getSample(const juce::String& sampleId)
 {
 	juce::ScopedLock lock(bankLock);
 
 	auto it = std::find_if(samples.begin(), samples.end(),
-						   [&sampleId](const std::unique_ptr<SampleBankEntry> &entry)
-						   {
-							   return entry->id == sampleId;
-						   });
+		[&sampleId](const std::unique_ptr<SampleBankEntry>& entry)
+		{
+			return entry->id == sampleId;
+		});
 
 	return (it != samples.end()) ? it->get() : nullptr;
 }
 
-std::vector<SampleBankEntry *> SampleBank::getAllSamples()
+std::vector<SampleBankEntry*> SampleBank::getAllSamples()
 {
 	juce::ScopedLock lock(bankLock);
 
-	std::vector<SampleBankEntry *> result;
-	for (auto &entry : samples)
+	std::vector<SampleBankEntry*> result;
+	for (auto& entry : samples)
 	{
 		result.push_back(entry.get());
 	}
@@ -136,7 +138,7 @@ std::vector<juce::String> SampleBank::getUnusedSamples() const
 	juce::ScopedLock lock(bankLock);
 
 	std::vector<juce::String> unused;
-	for (const auto &entry : samples)
+	for (const auto& entry : samples)
 	{
 		if (entry->usedInProjects.empty())
 		{
@@ -151,7 +153,7 @@ int SampleBank::removeUnusedSamples()
 	auto unusedIds = getUnusedSamples();
 	int removedCount = 0;
 
-	for (const auto &id : unusedIds)
+	for (const auto& id : unusedIds)
 	{
 		if (removeSample(id))
 			removedCount++;
@@ -160,7 +162,7 @@ int SampleBank::removeUnusedSamples()
 	if (removedCount > 0 && onBankChanged)
 	{
 		juce::MessageManager::callAsync([this]()
-										{
+			{
 				if (onBankChanged)
 					onBankChanged(); });
 	}
@@ -168,7 +170,7 @@ int SampleBank::removeUnusedSamples()
 	return removedCount;
 }
 
-void SampleBank::markSampleAsUsed(const juce::String &sampleId, const juce::String &projectId)
+void SampleBank::markSampleAsUsed(const juce::String& sampleId, const juce::String& projectId)
 {
 	bool needsSave = false;
 
@@ -176,14 +178,14 @@ void SampleBank::markSampleAsUsed(const juce::String &sampleId, const juce::Stri
 		juce::ScopedLock lock(bankLock);
 
 		auto it = std::find_if(samples.begin(), samples.end(),
-							   [&sampleId](const std::unique_ptr<SampleBankEntry> &entry)
-							   {
-								   return entry->id == sampleId;
-							   });
+			[&sampleId](const std::unique_ptr<SampleBankEntry>& entry)
+			{
+				return entry->id == sampleId;
+			});
 
 		if (it != samples.end())
 		{
-			auto &projects = (*it)->usedInProjects;
+			auto& projects = (*it)->usedInProjects;
 			if (std::find(projects.begin(), projects.end(), projectId) == projects.end())
 			{
 				projects.push_back(projectId);
@@ -198,27 +200,27 @@ void SampleBank::markSampleAsUsed(const juce::String &sampleId, const juce::Stri
 	}
 }
 
-void SampleBank::markSampleAsUnused(const juce::String &sampleId, const juce::String &projectId)
+void SampleBank::markSampleAsUnused(const juce::String& sampleId, const juce::String& projectId)
 {
 	juce::ScopedLock lock(bankLock);
 
-	auto *entry = getSample(sampleId);
+	auto* entry = getSample(sampleId);
 	if (entry)
 	{
-		auto &projects = entry->usedInProjects;
+		auto& projects = entry->usedInProjects;
 		projects.erase(std::remove(projects.begin(), projects.end(), projectId), projects.end());
 		saveBankData();
 	}
 }
 
-juce::String SampleBank::createSafeFilename(const juce::String &prompt, const juce::Time &timestamp)
+juce::String SampleBank::createSafeFilename(const juce::String& prompt, const juce::Time& timestamp)
 {
 	juce::String snakePrompt = promptToSnakeCase(prompt);
 	juce::String timeString = timestamp.formatted("%Y%m%d_%H%M%S");
 	return snakePrompt + "_" + timeString + ".wav";
 }
 
-juce::String SampleBank::promptToSnakeCase(const juce::String &prompt)
+juce::String SampleBank::promptToSnakeCase(const juce::String& prompt)
 {
 	juce::String result = prompt.toLowerCase();
 
@@ -246,7 +248,7 @@ juce::String SampleBank::promptToSnakeCase(const juce::String &prompt)
 	return result.isEmpty() ? "sample" : result;
 }
 
-void SampleBank::analyzeSampleFile(SampleBankEntry *entry, const juce::File &audioFile)
+void SampleBank::analyzeSampleFile(SampleBankEntry* entry, const juce::File& audioFile)
 {
 	juce::AudioFormatManager formatManager;
 	formatManager.registerBasicFormats();
@@ -290,7 +292,7 @@ void SampleBank::saveBankData()
 		juce::DynamicObject::Ptr bankData = new juce::DynamicObject();
 		juce::Array<juce::var> samplesArray;
 
-		for (const auto &entry : samples)
+		for (const auto& entry : samples)
 		{
 			if (!entry)
 				continue;
@@ -300,6 +302,8 @@ void SampleBank::saveBankData()
 			sampleData->setProperty("id", entry->id.isEmpty() ? juce::Uuid().toString() : entry->id);
 			sampleData->setProperty("filename", entry->filename);
 			sampleData->setProperty("originalPrompt", entry->originalPrompt);
+			sampleData->setProperty("description", entry->description);
+			sampleData->setProperty("modelName", entry->modelName);
 			sampleData->setProperty("filePath", entry->filePath);
 			sampleData->setProperty("creationTime", entry->creationTime.toMilliseconds());
 			sampleData->setProperty("duration", static_cast<double>(entry->duration));
@@ -310,7 +314,7 @@ void SampleBank::saveBankData()
 			sampleData->setProperty("numSamples", static_cast<int>(entry->numSamples));
 
 			juce::Array<juce::var> categoriesArray;
-			for (const auto &category : entry->categories)
+			for (const auto& category : entry->categories)
 			{
 				if (!category.isEmpty())
 					categoriesArray.add(category);
@@ -318,7 +322,7 @@ void SampleBank::saveBankData()
 			sampleData->setProperty("categories", categoriesArray);
 
 			juce::Array<juce::var> projectsArray;
-			for (const auto &project : entry->usedInProjects)
+			for (const auto& project : entry->usedInProjects)
 			{
 				if (!project.isEmpty())
 					projectsArray.add(project);
@@ -354,7 +358,7 @@ void SampleBank::loadBankData()
 	if (!bankJson.isObject())
 		return;
 
-	auto *bankObj = bankJson.getDynamicObject();
+	auto* bankObj = bankJson.getDynamicObject();
 	if (!bankObj)
 		return;
 
@@ -362,7 +366,7 @@ void SampleBank::loadBankData()
 	if (!samplesVar.isArray())
 		return;
 
-	auto *samplesArray = samplesVar.getArray();
+	auto* samplesArray = samplesVar.getArray();
 	samples.clear();
 
 	for (int i = 0; i < samplesArray->size(); ++i)
@@ -371,7 +375,7 @@ void SampleBank::loadBankData()
 		if (!sampleVar.isObject())
 			continue;
 
-		auto *sampleObj = sampleVar.getDynamicObject();
+		auto* sampleObj = sampleVar.getDynamicObject();
 		if (!sampleObj)
 			continue;
 
@@ -379,6 +383,8 @@ void SampleBank::loadBankData()
 		entry->id = sampleObj->getProperty("id").toString();
 		entry->filename = sampleObj->getProperty("filename").toString();
 		entry->originalPrompt = sampleObj->getProperty("originalPrompt").toString();
+		entry->description = sampleObj->getProperty("description").toString();
+		entry->modelName = sampleObj->getProperty("modelName").toString();
 		entry->filePath = sampleObj->getProperty("filePath").toString();
 		auto creationTimeVar = sampleObj->getProperty("creationTime");
 		entry->creationTime = juce::Time(creationTimeVar.isVoid() ? 0 : (juce::int64)creationTimeVar);
@@ -392,7 +398,7 @@ void SampleBank::loadBankData()
 		auto categoriesVar = sampleObj->getProperty("categories");
 		if (categoriesVar.isArray())
 		{
-			auto *categoriesArray = categoriesVar.getArray();
+			auto* categoriesArray = categoriesVar.getArray();
 			for (int j = 0; j < categoriesArray->size(); ++j)
 				entry->categories.push_back(categoriesArray->getUnchecked(j).toString());
 		}
@@ -400,7 +406,7 @@ void SampleBank::loadBankData()
 		auto projectsVar = sampleObj->getProperty("usedInProjects");
 		if (projectsVar.isArray())
 		{
-			auto *projectsArray = projectsVar.getArray();
+			auto* projectsArray = projectsVar.getArray();
 			for (int j = 0; j < projectsArray->size(); ++j)
 				entry->usedInProjects.push_back(projectsArray->getUnchecked(j).toString());
 		}

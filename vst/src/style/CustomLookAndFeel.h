@@ -25,7 +25,7 @@ public:
 		setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::buttonPrimary.withAlpha(0.6f));
 		setColour(juce::TextEditor::highlightColourId, ColourPalette::buttonPrimary.withAlpha(0.3f));
 		setColour(juce::TextEditor::shadowColourId, juce::Colours::transparentBlack);
-		setColour(juce::ScrollBar::thumbColourId, ColourPalette::sliderThumb);
+		setColour(juce::ScrollBar::thumbColourId, ColourPalette::muteActive);
 		setColour(juce::ScrollBar::backgroundColourId, ColourPalette::backgroundDeep);
 		setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
 		setColour(juce::PopupMenu::backgroundColourId, ColourPalette::backgroundDark);

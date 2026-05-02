@@ -2616,6 +2616,7 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 		juce::String prompt;
 		float bpm = 126.0f;
 		juce::String key = "Unknown";
+		juce::String modelName;
 
 		if (track->usePages.load())
 		{
@@ -2625,6 +2626,7 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 				prompt = currentPage.selectedPrompt;
 			bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : currentPage.originalBpm;
 			key = currentPage.generationKey.isEmpty() ? "Unknown" : currentPage.generationKey;
+			modelName = currentPage.selectedModel;
 		}
 		else
 		{
@@ -2633,6 +2635,7 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 				prompt = track->selectedPrompt;
 			bpm = track->generationBpm > 0 ? track->generationBpm : track->originalBpm;
 			key = track->generationKey.isEmpty() ? "Unknown" : track->generationKey;
+			modelName = track->selectedModel;
 		}
 
 		if (prompt.isEmpty())
@@ -2645,7 +2648,7 @@ void DjIaVstProcessor::saveBufferToFile(const juce::AudioBuffer<float>& buffer,
 			sampleBank->markSampleAsUnused(track->currentSampleId, projectId);
 		}
 
-		juce::String sampleId = sampleBank->addSample(prompt, outputFile, bpm, key);
+		juce::String sampleId = sampleBank->addSample(prompt, outputFile, bpm, key, modelName);
 
 		if (!sampleId.isEmpty())
 		{

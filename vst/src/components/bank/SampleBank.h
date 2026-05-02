@@ -2,12 +2,15 @@
 #include "JuceHeader.h"
 #include <vector>
 #include <memory>
+#include <functional>
 
 struct SampleBankEntry
 {
 	juce::String id;
 	juce::String filename;
 	juce::String originalPrompt;
+	juce::String description;
+	juce::String modelName;
 	juce::String filePath;
 	juce::Time creationTime;
 	float duration;
@@ -37,7 +40,8 @@ public:
 	juce::String addSample(const juce::String& prompt,
 		const juce::File& audioFile,
 		float bpm = 126.0f,
-		const juce::String& key = "");
+		const juce::String& key = "",
+		const juce::String& modelName = "");
 
 	bool removeSample(const juce::String& sampleId);
 	SampleBankEntry* getSample(const juce::String& sampleId);
