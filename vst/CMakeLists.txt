@@ -174,6 +174,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/upload.svg
         src/assets/icons/refresh.svg
         src/assets/icons/cpu.svg
+        src/assets/icons/cpuregular.svg
         src/assets/icons/piano.svg
         src/assets/icons/broadcast.svg
         src/assets/icons/undo.svg
@@ -187,6 +188,8 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/dj.svg
         src/assets/icons/eq.svg
         src/assets/icons/lin.svg
+        src/assets/icons/robotregular.svg
+        src/assets/icons/robotfill.svg
 )
 
 target_sources(ObsidianNeuralVST PRIVATE

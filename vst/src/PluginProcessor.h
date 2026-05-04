@@ -117,6 +117,7 @@ public:
 	void setLastPrompt(const juce::String& prompt) { lastPrompt = prompt; }
 	void setLastPresetIndex(int index) { lastPresetIndex = index; }
 	void setAutoLoadEnabled(bool enabled);
+	void setBypassLLM(bool bypassed);
 	void setGeneratingTrackId(const juce::String& trackId) { generatingTrackId = trackId; }
 	void handleSampleParams(int slot, TrackData* track);
 	void loadGlobalConfig();
@@ -190,6 +191,7 @@ public:
 	bool previewSampleFromBank(const juce::String& sampleId);
 	bool isStateReady() const { return stateLoaded; }
 	bool getAutoLoadEnabled() const { return autoLoadEnabled.load(); }
+	bool getBypassLLM() const { return bypassLLM.load(); }
 
 	std::atomic<bool> isLoadingState{ false };
 
@@ -238,6 +240,10 @@ public:
 	void setCrossfaderCurveMode(int mode);
 	int getCrossfaderCurveMode() const;
 
+	float getPeakLevelLeft() const { return peakLevelLeft.load(); }
+	float getPeakLevelRight() const { return peakLevelRight.load(); }
+	void setPeakLevels(float left, float right) { peakLevelLeft.store(left); peakLevelRight.store(right); }
+
 	std::pair<float, float> getCrossfadeGains() const;
 
 private:
@@ -248,6 +254,7 @@ private:
 	std::atomic<float> crossfaderValue{ 0.5f };
 	std::atomic<int>   crossfadeMode{ 0 };
 
+	std::atomic<float> peakLevelLeft{ 0.0f }, peakLevelRight{ 0.0f };
 	float pairCrossfaderPrevious[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 	float globalCrossfaderPrevious = 0.5f;
 	int savedWindowWidth = 1620;
@@ -268,6 +275,7 @@ private:
 	std::atomic<double> lastHostBpmForQuantization{ 120.0 };
 
 	std::atomic<bool> isPreviewPlaying{ false };
+	std::atomic<bool> bypassLLM{ false };
 	juce::AudioBuffer<float> previewBuffer;
 	std::atomic<double> previewPosition{ 0.0 };
 	std::atomic<double> previewSampleRate{ 44100.0 };

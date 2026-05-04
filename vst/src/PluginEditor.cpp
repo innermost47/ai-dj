@@ -842,10 +842,30 @@ void DjIaVstEditor::setupUI()
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
 	addAndMakeVisible(bypassSequencerButton);
-	bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
 	bypassSequencerButton.setClickingTogglesState(true);
 	bypassSequencerButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
+	if (audioProcessor.getBypassSequencer())
+	{
+		bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
+	}
+	else
+	{
+		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
+	}
 	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
+
+	addAndMakeVisible(bypassLLMButton);
+	bypassLLMButton.setClickingTogglesState(true);
+	bypassLLMButton.setToggleState(audioProcessor.getBypassLLM(), juce::dontSendNotification);
+	if (audioProcessor.getBypassLLM())
+	{
+		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
+	}
+	else
+	{
+		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
+	}
+	bypassLLMButton.setTooltip("Disables prompt enhancement for faster, raw generation");
 
 	promptPresetSelector.setTooltip("Select a preset prompt (Right-click for MIDI learn, Ctrl+Right-click to edit custom prompts)");
 	promptInput.setTooltip("Enter your custom prompt for audio generation");
@@ -907,6 +927,7 @@ void DjIaVstEditor::setupUI()
 	setupControlBtn(configButton);
 	setupControlBtn(helpButton);
 	setupControlBtn(toggleBankButton);
+	setupControlBtn(bypassLLMButton);
 
 	savePresetButton.setShowBorder(true);
 	generateButton.setShowBorder(true);
@@ -917,6 +938,7 @@ void DjIaVstEditor::setupUI()
 	toggleBankButton.setShowBorder(true);
 	autoLoadButton.setShowBorder(true);
 	loadSampleButton.setShowBorder(true);
+	bypassLLMButton.setShowBorder(true);
 
 	setSize(audioProcessor.getSavedWindowWidth(),
 		audioProcessor.getSavedWindowHeight());
@@ -1039,13 +1061,36 @@ void DjIaVstEditor::addEventListeners()
 			if (isBypassed)
 			{
 				bypassSequencerButton.setButtonText("Composition Mode");
+				bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
 				statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
 				updateLCD();
 			}
 			else
 			{
 				bypassSequencerButton.setButtonText("Sequencer Mode");
+				bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
 				statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
+				updateLCD();
+			}
+		};
+
+	bypassLLMButton.onClick = [this]()
+		{
+			bool isBypassed = bypassLLMButton.getToggleState();
+			audioProcessor.setBypassLLM(isBypassed);
+
+			if (isBypassed)
+			{
+				bypassLLMButton.setButtonText("Direct Mode");
+				bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
+				statusLabel.setText("Direct Mode: Raw input, direct generation", juce::dontSendNotification);
+				updateLCD();
+			}
+			else
+			{
+				bypassLLMButton.setButtonText("Enhanced Mode");
+				bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
+				statusLabel.setText("Enhanced Mode: AI-optimized prompt routing", juce::dontSendNotification);
 				updateLCD();
 			}
 		};
@@ -1195,10 +1240,26 @@ void DjIaVstEditor::updateUIFromProcessor()
 	if (bypassOn)
 	{
 		bypassSequencerButton.setButtonText("Composition Mode");
+		bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
 	}
 	else
 	{
 		bypassSequencerButton.setButtonText("Sequencer Mode");
+		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
+	}
+
+	bool bypassLLMOn = audioProcessor.getBypassLLM();
+	bypassLLMButton.setToggleState(bypassLLMOn, juce::dontSendNotification);
+
+	if (bypassLLMOn)
+	{
+		bypassLLMButton.setButtonText("Direct Mode");
+		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
+	}
+	else
+	{
+		bypassLLMButton.setButtonText("Enhanced Mode");
+		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
 	}
 
 	int presetIndex = audioProcessor.getLastPresetIndex();
@@ -1225,7 +1286,7 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing, 
 	const int vPad = (area.getHeight() - itemH) / 2;
 	area = area.reduced(0, vPad);
 
-	constexpr int numCtrl = 7;
+	constexpr int numCtrl = 8;
 	const int totalCtrlSpacing = numCtrl * spacing;
 	const int ctrlBtnW = juce::jmax(24, (controlsZoneW - totalCtrlSpacing) / numCtrl);
 
@@ -1236,6 +1297,7 @@ void DjIaVstEditor::layoutPromptSection(juce::Rectangle<int> area, int spacing, 
 	loadSampleButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
 	autoLoadButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
 	bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
+	bypassLLMButton.setBounds(area.removeFromLeft(ctrlBtnW)); area.removeFromLeft(spacing);
 	if (sampleBankPanel && sampleBankPanel->isVisible()) {
 		area.removeFromLeft(2);
 	}
@@ -1298,7 +1360,7 @@ void DjIaVstEditor::resized()
 	const int bannerHeight = 40;
 
 	const int bankWidth = (sampleBankPanel && sampleBankPanel->isVisible())
-		? juce::jmax(288, fullBounds.getWidth() / 6)
+		? juce::jmax(290, fullBounds.getWidth() / 6)
 		: 0;
 
 	auto headerArea = fullBounds.removeFromTop(bannerHeight);

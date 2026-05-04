@@ -72,24 +72,6 @@ void MixerPanel::updateAllMixerComponents()
 
 void MixerPanel::calculateMasterLevel()
 {
-	float maxPeakLeft = 0.0f;
-	float maxPeakRight = 0.0f;
-
-	for (auto& channel : mixerChannels)
-	{
-		float channelPeakLeft = channel->getCurrentAudioLevelLeft();
-		float channelPeakRight = channel->getCurrentAudioLevelRight();
-
-		maxPeakLeft = std::max(maxPeakLeft, channelPeakLeft);
-		maxPeakRight = std::max(maxPeakRight, channelPeakRight);
-	}
-
-	auto dbToLinear = [](float normalized) -> float
-		{
-			float db = -60.0f + normalized * 60.0f;
-			return ::powf(10.0f, db / 20.0f);
-		};
-
 	auto linearToDb = [](float linear) -> float
 		{
 			if (linear <= 0.00001f)
@@ -102,11 +84,8 @@ void MixerPanel::calculateMasterLevel()
 			return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f);
 		};
 
-	float linearLeft = dbToLinear(maxPeakLeft);
-	float linearRight = dbToLinear(maxPeakRight);
-
-	linearLeft *= masterVolume;
-	linearRight *= masterVolume;
+	float linearLeft = audioProcessor.getPeakLevelLeft();
+	float linearRight = audioProcessor.getPeakLevelRight();
 
 	masterChannel->setRealAudioLevelStereo(
 		dbToNormalized(linearToDb(linearLeft)),

@@ -2,6 +2,7 @@
 #include "components/ObsidianBase.h"
 #include "PluginProcessor.h"
 #include "midi/MidiLearnableComponents.h"
+#include "components/mixer/VUMeter.h"
 
 class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParameter::Listener
 {
@@ -17,7 +18,7 @@ public:
 
 private:
 	DjIaVstProcessor& audioProcessor;
-
+	VuMeter vuMeter;
 	MidiLearnableSlider masterVolumeSlider;
 	MidiLearnableSlider masterPanKnob;
 	MidiLearnableSlider highKnob, midKnob, lowKnob;
@@ -58,10 +59,6 @@ private:
 	void addEventListeners();
 	void setSliderParameter(juce::String name, juce::Slider& slider);
 	void updateUIFromParameter(const juce::String& paramName, float newValue);
-	void drawMasterVUMeterStereo(juce::Graphics& g, juce::Rectangle<int> bounds) const;
-	void fillMasterMeterSegment(juce::Graphics& g, juce::Rectangle<float>& vuArea,
-		int i, float segmentHeight, int numSegments,
-		float currentLevel) const;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterChannel)
 };
