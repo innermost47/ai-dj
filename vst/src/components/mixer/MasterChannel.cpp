@@ -260,6 +260,8 @@ void MasterChannel::setupUI()
 	panLabel.setJustificationType(juce::Justification::centred);
 	panLabel.setFont(juce::FontOptions(9.0f));
 
+	addAndMakeVisible(vuMeter);
+
 	masterVolumeSlider.setTooltip("Master output volume");
 	masterPanKnob.setTooltip("Master pan balance");
 	highKnob.setTooltip("High frequency EQ (-12dB to +12dB)");
@@ -272,106 +274,6 @@ void MasterChannel::paint(juce::Graphics& g)
 	auto bounds = getLocalBounds();
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds.toFloat(), 8.0f);
-	drawMasterVUMeterStereo(g, bounds);
-}
-
-void MasterChannel::drawMasterVUMeterStereo(juce::Graphics& g, juce::Rectangle<int> /* bounds */) const
-{
-	if (masterVUBounds.isEmpty())
-		return;
-
-	float meterWidth = 5.0f;
-	float meterSpacing = 2.0f;
-	float totalWidth = meterWidth * 2 + meterSpacing;
-
-	float startX = masterVUBounds.getX() + (masterVUBounds.getWidth() - totalWidth) / 2.0f;
-	float vuStartY = static_cast<float>(masterVUBounds.getY()) + 4.0f;
-	float vuHeight = static_cast<float>(masterVUBounds.getHeight()) - 4.0f;
-
-	auto vuAreaLeft = juce::Rectangle<float>(startX, vuStartY, meterWidth, vuHeight);
-	auto vuAreaRight = juce::Rectangle<float>(startX + meterWidth + meterSpacing, vuStartY, meterWidth, vuHeight);
-
-	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(vuAreaLeft, 2.0f);
-	g.fillRoundedRectangle(vuAreaRight, 2.0f);
-
-	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(vuAreaLeft, 2.0f, 0.5f);
-	g.drawRoundedRectangle(vuAreaRight, 2.0f, 0.5f);
-
-	int numSegments = 20;
-	float segmentHeight = (vuAreaLeft.getHeight() - 4) / numSegments;
-
-	for (int i = 0; i < numSegments; ++i)
-		fillMasterMeterSegment(g, vuAreaLeft, i, segmentHeight, numSegments, masterLevelLeft);
-
-	if (masterPeakHoldLeft > 0.0f)
-	{
-		int peakSegment = (int)(masterPeakHoldLeft * numSegments);
-		if (peakSegment < numSegments)
-		{
-			float peakY = vuAreaLeft.getBottom() - 2 - (peakSegment + 1) * segmentHeight;
-			g.setColour(ColourPalette::vuPeak);
-			g.fillRect(juce::Rectangle<float>(vuAreaLeft.getX() + 1, peakY, vuAreaLeft.getWidth() - 2, 2));
-		}
-	}
-
-	for (int i = 0; i < numSegments; ++i)
-		fillMasterMeterSegment(g, vuAreaRight, i, segmentHeight, numSegments, masterLevelRight);
-
-	if (masterPeakHoldRight > 0.0f)
-	{
-		int peakSegment = (int)(masterPeakHoldRight * numSegments);
-		if (peakSegment < numSegments)
-		{
-			float peakY = vuAreaRight.getBottom() - 2 - (peakSegment + 1) * segmentHeight;
-			g.setColour(ColourPalette::vuPeak);
-			g.fillRect(juce::Rectangle<float>(vuAreaRight.getX() + 1, peakY, vuAreaRight.getWidth() - 2, 2));
-		}
-	}
-
-	if (masterLevelLeft >= 0.98f || masterLevelRight >= 0.98f)
-	{
-		auto clipRect = juce::Rectangle<float>(
-			startX - 2, vuStartY - 12, totalWidth + 4, 8);
-		g.setColour((juce::Time::getCurrentTime().toMilliseconds() % 500 < 250)
-			? ColourPalette::buttonDangerLight
-			: ColourPalette::buttonDangerDark);
-		g.fillRoundedRectangle(clipRect, 4.0f);
-		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions(8.0f, juce::Font::bold));
-		g.drawText("CLIP", clipRect, juce::Justification::centred);
-	}
-}
-
-void MasterChannel::fillMasterMeterSegment(juce::Graphics& g, juce::Rectangle<float>& vuArea,
-	int i, float segmentHeight, int numSegments,
-	float currentLevel) const
-{
-	float segmentY = vuArea.getBottom() - 2 - (i + 1) * segmentHeight;
-	float segmentLevel = (float)i / numSegments;
-
-	juce::Rectangle<float> segmentRect(
-		vuArea.getX() + 1, segmentY, vuArea.getWidth() - 2, segmentHeight - 1);
-
-	juce::Colour segmentColour;
-	if (segmentLevel < 0.67f)
-		segmentColour = ColourPalette::vuGreen;
-	else if (segmentLevel < 0.90f)
-		segmentColour = ColourPalette::vuOrange;
-	else
-		segmentColour = ColourPalette::vuRed;
-
-	if (currentLevel >= segmentLevel)
-	{
-		g.setColour(segmentColour);
-		g.fillRoundedRectangle(segmentRect, 1.0f);
-	}
-	else
-	{
-		g.setColour(segmentColour.withAlpha(0.1f));
-		g.fillRoundedRectangle(segmentRect, 1.0f);
-	}
 }
 
 void MasterChannel::resized()
@@ -412,7 +314,7 @@ void MasterChannel::resized()
 	int faderWidth = juce::jmax(38, centerCol.getWidth() * 3 / 4);
 	int centerX = centerCol.getX() + (centerCol.getWidth() - faderWidth) / 2;
 	masterVolumeSlider.setBounds(centerX, centerCol.getY() + 8,
-		faderWidth, centerCol.getHeight() - 16);
+		faderWidth, centerCol.getHeight() - 8);
 
 	const int panAreaH = 55;
 	auto panArea = rightCol.removeFromBottom(panAreaH);
@@ -422,62 +324,19 @@ void MasterChannel::resized()
 	int panKnobSize = juce::jmin(36, panArea.getWidth());
 	masterPanKnob.setBounds(panArea.withSizeKeepingCentre(panKnobSize, panKnobSize));
 
-	masterVUBounds = vuArea.reduced(vuArea.getWidth() / 4, 8);
+	auto vBounds = vuArea.reduced(vuArea.getWidth() / 4, 8);
+	float meterTotalWidth = 12.0f;
+
+	float startX = vBounds.getX() + (vBounds.getWidth() - meterTotalWidth) / 2;
+	int vuStartY = vBounds.getY() + 6;
+	int vuHeight = vBounds.getHeight();
+
+	vuMeter.setBounds(static_cast<int>(startX), vuStartY, static_cast<int>(meterTotalWidth), vuHeight);
 }
 
 void MasterChannel::updateMasterLevels()
 {
-	float instantLevelLeft = realAudioLevelLeft;
-	float instantLevelRight = realAudioLevelRight;
-
-	if (instantLevelLeft > masterLevelLeft)
-	{
-		masterLevelLeft = instantLevelLeft;
-	}
-	else
-	{
-		masterLevelLeft = masterLevelLeft * 0.92f + instantLevelLeft * 0.08f;
-	}
-
-	if (masterLevelLeft > masterPeakHoldLeft)
-	{
-		masterPeakHoldLeft = masterLevelLeft;
-		masterPeakHoldTimerLeft = 45;
-	}
-	else if (masterPeakHoldTimerLeft > 0)
-	{
-		masterPeakHoldTimerLeft--;
-	}
-	else
-	{
-		masterPeakHoldLeft *= 0.98f;
-	}
-
-	if (instantLevelRight > masterLevelRight)
-	{
-		masterLevelRight = instantLevelRight;
-	}
-	else
-	{
-		masterLevelRight = masterLevelRight * 0.92f + instantLevelRight * 0.08f;
-	}
-
-	if (masterLevelRight > masterPeakHoldRight)
-	{
-		masterPeakHoldRight = masterLevelRight;
-		masterPeakHoldTimerRight = 45;
-	}
-	else if (masterPeakHoldTimerRight > 0)
-	{
-		masterPeakHoldTimerRight--;
-	}
-	else
-	{
-		masterPeakHoldRight *= 0.98f;
-	}
-
-	juce::MessageManager::callAsync([this]()
-		{ repaint(); });
+	vuMeter.updateFromRawLevels(realAudioLevelLeft, realAudioLevelRight);
 }
 
 void MasterChannel::learn(juce::String param, juce::String description, MidiLearnableBase* component, std::function<void(float)> uiCallback)

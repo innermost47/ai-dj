@@ -653,124 +653,6 @@ void MixerChannel::paint(juce::Graphics& g)
 
 	g.setColour(borderColour);
 	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 8.0f, borderWidth);
-
-	drawVUMeter(g, bounds);
-}
-
-void MixerChannel::drawVUMeter(juce::Graphics& g, juce::Rectangle<int> /* bounds */)
-{
-	float meterWidth = 5.0f;
-	float meterSpacing = 2.0f;
-	float vuStartY = static_cast<float>(sliderBounds.getY()) + 8.0f;
-	float vuHeight = static_cast<float>(sliderBounds.getHeight()) - 16.0f;
-	float startX = static_cast<float>(sliderBounds.getRight()) + 3.0f;
-
-	auto vuAreaLeft = juce::Rectangle<float>(
-		startX,
-		vuStartY,
-		meterWidth,
-		vuHeight);
-	auto vuAreaRight = juce::Rectangle<float>(
-		startX + meterWidth + meterSpacing,
-		vuStartY,
-		meterWidth,
-		vuHeight);
-
-	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(vuAreaLeft, 2.0f);
-	g.fillRoundedRectangle(vuAreaRight, 2.0f);
-
-	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(vuAreaLeft, 2.0f, 0.5f);
-	g.drawRoundedRectangle(vuAreaRight, 2.0f, 0.5f);
-
-	if (!track)
-		return;
-
-	int numSegments = 20;
-	float segmentHeight = (vuAreaLeft.getHeight() - 4) / numSegments;
-
-	for (int i = 0; i < numSegments; ++i)
-	{
-		fillMeterSegment(g, vuAreaLeft, i, segmentHeight, numSegments, currentAudioLevelLeft);
-	}
-
-	if (peakHoldLeft > 0.0f)
-	{
-		int peakSegment = (int)(peakHoldLeft * numSegments);
-		if (peakSegment < numSegments)
-		{
-			float peakY = vuAreaLeft.getBottom() - 2 - (peakSegment + 1) * segmentHeight;
-			juce::Rectangle<float> peakRect(
-				vuAreaLeft.getX() + 1, peakY, vuAreaLeft.getWidth() - 2, 2);
-			g.setColour(ColourPalette::vuPeak);
-			g.fillRect(peakRect);
-		}
-	}
-
-	if (currentAudioLevelLeft >= 0.95f)
-	{
-		auto clipRect = juce::Rectangle<float>(vuAreaLeft.getX(), vuAreaLeft.getY() - 8,
-			vuAreaLeft.getWidth(), 4);
-		g.setColour(ColourPalette::vuClipping);
-		g.fillRoundedRectangle(clipRect, 2.0f);
-	}
-
-	for (int i = 0; i < numSegments; ++i)
-	{
-		fillMeterSegment(g, vuAreaRight, i, segmentHeight, numSegments, currentAudioLevelRight);
-	}
-
-	if (peakHoldRight > 0.0f)
-	{
-		int peakSegment = (int)(peakHoldRight * numSegments);
-		if (peakSegment < numSegments)
-		{
-			float peakY = vuAreaRight.getBottom() - 2 - (peakSegment + 1) * segmentHeight;
-			juce::Rectangle<float> peakRect(
-				vuAreaRight.getX() + 1, peakY, vuAreaRight.getWidth() - 2, 2);
-			g.setColour(ColourPalette::vuPeak);
-			g.fillRect(peakRect);
-		}
-	}
-
-	if (currentAudioLevelRight >= 0.95f)
-	{
-		auto clipRect = juce::Rectangle<float>(vuAreaRight.getX(), vuAreaRight.getY() - 8,
-			vuAreaRight.getWidth(), 4);
-		g.setColour(ColourPalette::vuClipping);
-		g.fillRoundedRectangle(clipRect, 2.0f);
-	}
-}
-
-void MixerChannel::fillMeterSegment(juce::Graphics& g, juce::Rectangle<float>& vuArea,
-	int i, float segmentHeight, int numSegments,
-	float currentLevel)
-{
-	float segmentY = vuArea.getBottom() - 2 - (i + 1) * segmentHeight;
-	float segmentLevel = (float)i / numSegments;
-
-	juce::Rectangle<float> segmentRect(
-		vuArea.getX() + 1, segmentY, vuArea.getWidth() - 2, segmentHeight - 1);
-
-	juce::Colour segmentColour;
-	if (segmentLevel < 0.67f)
-		segmentColour = ColourPalette::vuGreen;
-	else if (segmentLevel < 0.90f)
-		segmentColour = ColourPalette::vuOrange;
-	else
-		segmentColour = ColourPalette::vuRed;
-
-	if (currentLevel >= segmentLevel)
-	{
-		g.setColour(segmentColour);
-		g.fillRoundedRectangle(segmentRect, 1.0f);
-	}
-	else
-	{
-		g.setColour(segmentColour.withAlpha(0.1f));
-		g.fillRoundedRectangle(segmentRect, 1.0f);
-	}
 }
 
 void MixerChannel::resized()
@@ -804,6 +686,13 @@ void MixerChannel::resized()
 		sliderBottom - sliderTop);
 	volumeSlider.setBounds(sliderBounds);
 
+	int meterTotalWidth = 12;
+
+	int customHeight = sliderBounds.getHeight() - 12;
+	int customY = sliderBounds.getY() + 8;
+
+	vuMeter.setBounds(sliderBounds.getRight() + 3, customY, meterTotalWidth, customHeight);
+
 	const int knobSectionH = 42;
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label& label, juce::Slider& knob)
 		{
@@ -818,117 +707,19 @@ void MixerChannel::resized()
 
 void MixerChannel::updateVUMeter()
 {
-	if (!track || !track->isPlaying.load())
+	if (track)
 	{
-		currentAudioLevelLeft *= 0.88f;
-		currentAudioLevelRight *= 0.88f;
-
-		if (peakHoldTimerLeft > 0)
-		{
-			peakHoldTimerLeft--;
-			if (peakHoldTimerLeft == 0)
-				peakHoldLeft *= 0.9f;
-		}
-
-		if (peakHoldTimerRight > 0)
-		{
-			peakHoldTimerRight--;
-			if (peakHoldTimerRight == 0)
-				peakHoldRight *= 0.9f;
-		}
-		return;
-	}
-
-	auto levels = calculateInstantLevel();
-
-	if (levels.left > currentAudioLevelLeft)
-	{
-		currentAudioLevelLeft = levels.left;
+		vuMeter.updateMeter(
+			&track->audioBuffer,
+			track->readPosition.load(),
+			track->volume.load(),
+			track->isPlaying.load()
+		);
 	}
 	else
 	{
-		currentAudioLevelLeft = currentAudioLevelLeft * 0.92f + levels.left * 0.08f;
+		vuMeter.updateMeter(nullptr, 0.0, 0.0f, false);
 	}
-
-	if (currentAudioLevelLeft > peakHoldLeft)
-	{
-		peakHoldLeft = currentAudioLevelLeft;
-		peakHoldTimerLeft = 45;
-	}
-
-	if (levels.right > currentAudioLevelRight)
-	{
-		currentAudioLevelRight = levels.right;
-	}
-	else
-	{
-		currentAudioLevelRight = currentAudioLevelRight * 0.92f + levels.right * 0.08f;
-	}
-
-	if (currentAudioLevelRight > peakHoldRight)
-	{
-		peakHoldRight = currentAudioLevelRight;
-		peakHoldTimerRight = 45;
-	}
-}
-
-StereoLevel MixerChannel::calculateInstantLevel()
-{
-
-	if (!track || track->numSamples == 0)
-		return { 0.0f, 0.0f };
-
-	double readPos = track->readPosition.load();
-	int sampleIndex = (int)(readPos);
-
-	if (sampleIndex >= 0 && sampleIndex < track->numSamples)
-	{
-		int numChannels = track->audioBuffer.getNumChannels();
-		int windowSize = 8;
-		int endSample = std::min(sampleIndex + windowSize, track->numSamples);
-
-		float peakLeft = 0.0f;
-		float peakRight = 0.0f;
-
-		for (int i = sampleIndex; i < endSample; ++i)
-		{
-			if (numChannels >= 1)
-			{
-				peakLeft = std::max(peakLeft, std::abs(track->audioBuffer.getSample(0, i)));
-			}
-
-			if (numChannels >= 2)
-			{
-				peakRight = std::max(peakRight, std::abs(track->audioBuffer.getSample(1, i)));
-			}
-			else
-			{
-				peakRight = peakLeft;
-			}
-		}
-
-		float volume = track->volume.load();
-		peakLeft *= volume;
-		peakRight *= volume;
-
-		auto linearToDb = [](float linear) -> float
-			{
-				if (linear <= 0.00001f)
-					return -100.0f;
-				return 20.0f * ::log10f(linear);
-			};
-
-		auto dbToNormalized = [](float db) -> float
-			{
-				return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f);
-			};
-
-		return {
-			dbToNormalized(linearToDb(peakLeft)),
-			dbToNormalized(linearToDb(peakRight)) };
-	}
-
-	return { 0.0f, 0.0f };
 }
 
 void MixerChannel::setSelected(bool selected)
@@ -1033,6 +824,8 @@ void MixerChannel::setupUI()
 	panLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	panLabel.setJustificationType(juce::Justification::centred);
 	panLabel.setFont(juce::FontOptions(9.0f));
+
+	addAndMakeVisible(vuMeter);
 
 	playButton.setTooltip("Arm/disarm track for playback");
 	stopButton.setTooltip("Stop track playback");

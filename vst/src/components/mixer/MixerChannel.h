@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 #include "midi/MidiLearnableComponents.h"
 #include "components/shared/IconButton.h"
+#include "VuMeter.h"
 
 struct StereoLevel
 {
@@ -28,8 +29,8 @@ public:
 	void addEventListeners();
 	void startGeneratingAnimation();
 	void stopGeneratingAnimation();
-	float getCurrentAudioLevelLeft() const { return currentAudioLevelLeft; }
-	float getCurrentAudioLevelRight() const { return currentAudioLevelRight; }
+	float getCurrentAudioLevelLeft() const { return vuMeter.getLevelLeft(); }
+	float getCurrentAudioLevelRight() const { return vuMeter.getLevelRight(); }
 	void setSamplePending(bool pending)
 	{
 		hasSamplePending = pending;
@@ -40,6 +41,7 @@ public:
 
 private:
 	DjIaVstProcessor& audioProcessor;
+	VuMeter vuMeter;
 	std::atomic<bool> isDestroyed{ false };
 	juce::String trackId;
 
@@ -87,7 +89,6 @@ private:
 	std::vector<float> levelHistoryRight;
 
 	void paint(juce::Graphics& g) override;
-	void drawVUMeter(juce::Graphics& g, juce::Rectangle<int> bounds);
 	void resized() override;
 	void updateVUMeter();
 	StereoLevel calculateInstantLevel();
@@ -106,9 +107,6 @@ private:
 		float newValue);
 	void removeMidiMapping(const juce::String& param);
 	void stopTrackImmediatly();
-	void fillMeterSegment(juce::Graphics& g, juce::Rectangle<float>& vuArea,
-		int i, float segmentHeight, int numSegments,
-		float currentLevel);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerChannel);
 	JUCE_DECLARE_WEAK_REFERENCEABLE(MixerChannel);
