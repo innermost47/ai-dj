@@ -842,15 +842,29 @@ void DjIaVstEditor::setupUI()
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
 	addAndMakeVisible(bypassSequencerButton);
-	bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
 	bypassSequencerButton.setClickingTogglesState(true);
 	bypassSequencerButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
+	if (audioProcessor.getBypassSequencer())
+	{
+		bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
+	}
+	else
+	{
+		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
+	}
 	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
 
 	addAndMakeVisible(bypassLLMButton);
-	bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
 	bypassLLMButton.setClickingTogglesState(true);
-	bypassLLMButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
+	bypassLLMButton.setToggleState(audioProcessor.getBypassLLM(), juce::dontSendNotification);
+	if (audioProcessor.getBypassLLM())
+	{
+		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
+	}
+	else
+	{
+		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
+	}
 	bypassLLMButton.setTooltip("Disables prompt enhancement for faster, raw generation");
 
 	promptPresetSelector.setTooltip("Select a preset prompt (Right-click for MIDI learn, Ctrl+Right-click to edit custom prompts)");

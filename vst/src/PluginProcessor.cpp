@@ -633,6 +633,23 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 			buffer.getNumSamples(),
 			ppq);
 	}
+	{
+		float currentPeakL = 0.0f;
+		float currentPeakR = 0.0f;
+
+		const float* leftData = buffer.getReadPointer(0);
+		const float* rightData = buffer.getNumChannels() > 1 ? buffer.getReadPointer(1) : leftData;
+
+		for (int s = 0; s < buffer.getNumSamples(); ++s)
+		{
+			float absL = std::abs(leftData[s]);
+			float absR = std::abs(rightData[s]);
+
+			if (absL > currentPeakL) currentPeakL = absL;
+			if (absR > currentPeakR) currentPeakR = absR;
+		}
+		setPeakLevels(currentPeakL, currentPeakR);
+	}
 	checkIfUIUpdateNeeded(midiMessages);
 }
 

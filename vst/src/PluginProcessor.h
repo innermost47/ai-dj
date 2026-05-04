@@ -240,6 +240,10 @@ public:
 	void setCrossfaderCurveMode(int mode);
 	int getCrossfaderCurveMode() const;
 
+	float getPeakLevelLeft() const { return peakLevelLeft.load(); }
+	float getPeakLevelRight() const { return peakLevelRight.load(); }
+	void setPeakLevels(float left, float right) { peakLevelLeft.store(left); peakLevelRight.store(right); }
+
 	std::pair<float, float> getCrossfadeGains() const;
 
 private:
@@ -250,6 +254,7 @@ private:
 	std::atomic<float> crossfaderValue{ 0.5f };
 	std::atomic<int>   crossfadeMode{ 0 };
 
+	std::atomic<float> peakLevelLeft{ 0.0f }, peakLevelRight{ 0.0f };
 	float pairCrossfaderPrevious[4]{ 0.5f, 0.5f, 0.5f, 0.5f };
 	float globalCrossfaderPrevious = 0.5f;
 	int savedWindowWidth = 1620;

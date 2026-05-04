@@ -209,8 +209,13 @@ public:
 			peakHoldTimerRight = 45;
 		}
 
-		juce::MessageManager::callAsync([this]() {
-			repaint();
+		juce::Component::SafePointer<VuMeter> safeThis(this);
+
+		juce::MessageManager::callAsync([safeThis]() {
+			if (safeThis != nullptr)
+			{
+				safeThis->repaint();
+			}
 			});
 	}
 
