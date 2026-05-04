@@ -2,7 +2,7 @@
 #include "components/ObsidianBase.h"
 #include "PluginProcessor.h"
 #include "midi/MidiLearnableComponents.h"
-#include "VuMeter.h"
+#include "components/mixer/VUMeter.h"
 
 class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParameter::Listener
 {
