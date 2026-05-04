@@ -4,18 +4,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 {
 	std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-	auto makeTrigg = [](const juce::String& id, const juce::String& name)
-		{
-			auto attributes = juce::AudioParameterFloatAttributes()
-				.withAutomatable(false)
-				.withMeta(true);
-			return std::make_unique<juce::AudioParameterFloat>(
-				id, name,
-				juce::NormalisableRange<float>(0.0f, 1.0f),
-				0.0f,
-				attributes
-			);
-		};
+	auto makeTrigg = [](const juce::String &id, const juce::String &name)
+	{
+		auto attributes = juce::AudioParameterFloatAttributes()
+							  .withAutomatable(false)
+							  .withMeta(true);
+		return std::make_unique<juce::AudioParameterFloat>(
+			id, name,
+			juce::NormalisableRange<float>(0.0f, 1.0f),
+			0.0f,
+			attributes);
+	};
 
 	params.push_back(makeTrigg("generate", "Generate Loop"));
 	params.push_back(makeTrigg("play", "Play Loop"));
@@ -41,7 +40,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
 	params.push_back(std::make_unique<juce::AudioParameterChoice>(
 		"crossfaderCurveMode", "Crossfader Curve",
-		juce::StringArray{ "Linear", "Equal Power", "DJ" }, 1));
+		juce::StringArray{"Linear", "Equal Power", "DJ"}, 1));
 
 	for (int i = 1; i <= 8; ++i)
 	{
@@ -68,7 +67,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 			slotId + "AdsrAttack", slotName + " ADSR Attack",
-			juce::NormalisableRange<float>(0.001f, 4.0f), 0.01f));
+			juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 			slotId + "AdsrDecay", slotName + " ADSR Decay",
@@ -80,11 +79,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 			slotId + "AdsrRelease", slotName + " ADSR Release",
-			juce::NormalisableRange<float>(0.001f, 4.0f), 0.01f));
+			juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));
 
 		for (int j = 1; j <= 8; ++j)
 			params.push_back(makeTrigg(slotId + "Seq" + juce::String(j), slotName + " Sequence " + juce::String(j)));
 	}
 
-	return { params.begin(), params.end() };
+	return {params.begin(), params.end()};
 }

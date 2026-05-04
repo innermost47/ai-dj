@@ -464,10 +464,10 @@ void TrackComponent::setupAdsrKnobs()
 			label.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 		};
 
-	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.01f, "ADSR Attack time (seconds)");
+	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.0f, "ADSR Attack time (seconds)");
 	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", 0.001f, 4.0f, 4.0f, "ADSR Decay time (seconds)");
 	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", 0.0f, 1.0f, 1.0f, "ADSR Sustain level (0-1)");
-	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.01f, "ADSR Release time (seconds)");
+	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.0f, "ADSR Release time (seconds)");
 
 	adsrSustainKnob.setSkewFactor(1.0);
 

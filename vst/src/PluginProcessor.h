@@ -117,6 +117,7 @@ public:
 	void setLastPrompt(const juce::String& prompt) { lastPrompt = prompt; }
 	void setLastPresetIndex(int index) { lastPresetIndex = index; }
 	void setAutoLoadEnabled(bool enabled);
+	void setBypassLLM(bool bypassed);
 	void setGeneratingTrackId(const juce::String& trackId) { generatingTrackId = trackId; }
 	void handleSampleParams(int slot, TrackData* track);
 	void loadGlobalConfig();
@@ -190,6 +191,7 @@ public:
 	bool previewSampleFromBank(const juce::String& sampleId);
 	bool isStateReady() const { return stateLoaded; }
 	bool getAutoLoadEnabled() const { return autoLoadEnabled.load(); }
+	bool getBypassLLM() const { return bypassLLM.load(); }
 
 	std::atomic<bool> isLoadingState{ false };
 
@@ -268,6 +270,7 @@ private:
 	std::atomic<double> lastHostBpmForQuantization{ 120.0 };
 
 	std::atomic<bool> isPreviewPlaying{ false };
+	std::atomic<bool> bypassLLM{ false };
 	juce::AudioBuffer<float> previewBuffer;
 	std::atomic<double> previewPosition{ 0.0 };
 	std::atomic<double> previewSampleRate{ 44100.0 };

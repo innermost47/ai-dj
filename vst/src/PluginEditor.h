@@ -144,6 +144,7 @@ private:
 	IconButtonSimple openMidiEditorButton{ "MidiEditor", "" };
 	IconButtonSimple helpButton{ "Help", "" };
 	IconButtonSimple toggleBankButton{ "ToggleBank", "" };
+	IconButtonSimple bypassLLMButton{ "BypassLLM", "" };
 
 	juce::String generatingTrackId;
 	juce::String originalButtonText;

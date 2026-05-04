@@ -18,12 +18,12 @@ public:
 
 		LoopRequest()
 			: prompt(""),
-			  model(""),
-			  generationDuration(6.0f),
-			  bpm(120.0f),
-			  key(""),
-			  useImage(false),
-			  imageBase64("")
+			model(""),
+			generationDuration(6.0f),
+			bpm(120.0f),
+			key(""),
+			useImage(false),
+			imageBase64("")
 		{
 		}
 	};
@@ -57,12 +57,12 @@ public:
 		juce::String errorMessage = "";
 	};
 
-	DjIaClient(const juce::String &apiKey = "", const juce::String &baseUrl = "http://localhost:8000")
+	DjIaClient(const juce::String& apiKey = "", const juce::String& baseUrl = "http://localhost:8000")
 		: apiKey(apiKey), baseUrl(baseUrl + "/api/v1")
 	{
 	}
 
-	void setApiKey(const juce::String &newApiKey)
+	void setApiKey(const juce::String& newApiKey)
 	{
 		std::lock_guard<std::mutex> lock(mutex);
 		apiKey = newApiKey;
@@ -74,7 +74,7 @@ public:
 		return apiKey;
 	}
 
-	void setBaseUrl(const juce::String &newBaseUrl)
+	void setBaseUrl(const juce::String& newBaseUrl)
 	{
 		std::lock_guard<std::mutex> lock(mutex);
 		if (newBaseUrl.endsWith("/"))
@@ -118,10 +118,10 @@ public:
 
 			auto url = juce::URL(currentBaseUrl + "/auth/credits/check/vst");
 			auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-							   .withStatusCode(&statusCode)
-							   .withResponseHeaders(&responseHeaders)
-							   .withExtraHeaders(headerString)
-							   .withConnectionTimeoutMs(timeoutMS);
+				.withStatusCode(&statusCode)
+				.withResponseHeaders(&responseHeaders)
+				.withExtraHeaders(headerString)
+				.withConnectionTimeoutMs(timeoutMS);
 
 			auto response = url.createInputStream(options);
 
@@ -154,7 +154,7 @@ public:
 				throw std::runtime_error("Invalid JSON response");
 			}
 		}
-		catch (const std::exception &e)
+		catch (const std::exception& e)
 		{
 			result.success = false;
 			result.errorMessage = e.what();
@@ -163,7 +163,7 @@ public:
 		return result;
 	}
 
-	LoopResponse generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS)
+	LoopResponse generateLoop(const LoopRequest& request, double sampleRate, int requestTimeoutMS, bool bypassLLM)
 	{
 		try
 		{
@@ -177,6 +177,7 @@ public:
 			jsonRequest.getDynamicObject()->setProperty("bpm", bpm);
 			jsonRequest.getDynamicObject()->setProperty("key", request.key);
 			jsonRequest.getDynamicObject()->setProperty("model", request.model);
+			jsonRequest.getDynamicObject()->setProperty("bypass_llm", bypassLLM);
 			jsonRequest.getDynamicObject()->setProperty("sample_rate", sampleRate);
 			jsonRequest.getDynamicObject()->setProperty("generation_duration", request.generationDuration);
 			if (request.useImage && !request.imageBase64.isEmpty())
@@ -188,7 +189,7 @@ public:
 			if (request.keywords.size() > 0)
 			{
 				juce::Array<juce::var> keywordsArray;
-				for (const auto &keyword : request.keywords)
+				for (const auto& keyword : request.keywords)
 				{
 					keywordsArray.add(juce::var(keyword));
 				}
@@ -225,19 +226,19 @@ public:
 			int statusCode = 0;
 			juce::StringPairArray responseHeaders;
 			auto url = juce::URL(currentBaseUrl + "/generate")
-						   .withPOSTData(jsonString);
+				.withPOSTData(jsonString);
 			auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inPostData)
-							   .withStatusCode(&statusCode)
-							   .withResponseHeaders(&responseHeaders)
-							   .withExtraHeaders(headerString)
-							   .withConnectionTimeoutMs(requestTimeoutMS);
+				.withStatusCode(&statusCode)
+				.withResponseHeaders(&responseHeaders)
+				.withExtraHeaders(headerString)
+				.withConnectionTimeoutMs(requestTimeoutMS);
 
 			auto response = url.createInputStream(options);
 			if (!response)
 			{
 				throw std::runtime_error(("Cannot connect to server at " + currentBaseUrl +
-										  ". Please check: Server is running, URL is correct, Network connection")
-											 .toStdString());
+					". Please check: Server is running, URL is correct, Network connection")
+					.toStdString());
 			}
 
 			if (statusCode == 403)
@@ -309,7 +310,7 @@ public:
 
 			return result;
 		}
-		catch (const std::exception &e)
+		catch (const std::exception& e)
 		{
 			LoopResponse emptyResponse;
 			emptyResponse.errorMessage = e.what();

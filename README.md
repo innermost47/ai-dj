@@ -234,7 +234,7 @@ The winner of the 1-year Starter Pack (€143.88 value) was randomly drawn from 
 
 **Developed by InnerMost47 (Anthony Charretier)**
 
-Special thanks to **A.D.[167]** for the original draw-to-audio concept, **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
+Special thanks to **A.D** for the original draw-to-audio concept, **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
 
 ---
 

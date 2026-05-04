@@ -56,7 +56,7 @@ struct TrackPage
 	std::atomic<bool> isLoaded{ false };
 	std::atomic<bool> isLoading{ false };
 
-	std::atomic<float> adsrAttack{ 0.01f };
+	std::atomic<float> adsrAttack{ 0.0f };
 	std::atomic<float> adsrDecay{ 4.0f };
 	std::atomic<float> adsrSustain{ 1.0f };
 	std::atomic<float> adsrRelease{ 0.0f };
@@ -97,7 +97,7 @@ struct TrackPage
 		originalStagingBuffer.setSize(0, 0);
 		isLoaded = false;
 		isLoading = false;
-		adsrAttack.store(0.01f);
+		adsrAttack.store(0.0f);
 		adsrDecay.store(4.0f);
 		adsrSustain.store(1.0f);
 		adsrRelease.store(0.0f);

@@ -1216,7 +1216,7 @@ void DjIaVstProcessor::generateSampleWithImage(const juce::String& trackId, cons
 
 void DjIaVstProcessor::generateLoopWithImage(const DjIaClient::LoopRequest& request, const juce::String& trackId, int timeoutMS)
 {
-	auto response = apiClient.generateLoop(request, hostSampleRate, timeoutMS);
+	auto response = apiClient.generateLoop(request, hostSampleRate, timeoutMS, false);
 
 	try
 	{
@@ -1789,7 +1789,7 @@ void DjIaVstProcessor::generateLoop(const DjIaClient::LoopRequest& request, cons
 
 void DjIaVstProcessor::generateLoopAPI(const DjIaClient::LoopRequest& request, const juce::String& trackId)
 {
-	auto response = apiClient.generateLoop(request, hostSampleRate, requestTimeoutMS);
+	auto response = apiClient.generateLoop(request, hostSampleRate, requestTimeoutMS, bypassLLM);
 
 	try
 	{
@@ -2830,7 +2830,12 @@ void DjIaVstProcessor::clearPendingAudio()
 
 void DjIaVstProcessor::setAutoLoadEnabled(bool enabled)
 {
-	autoLoadEnabled = enabled;
+	autoLoadEnabled.store(enabled);
+}
+
+void DjIaVstProcessor::setBypassLLM(bool bypassed)
+{
+	bypassLLM.store(bypassed);
 }
 
 void DjIaVstProcessor::setApiKey(const juce::String& key)
@@ -2905,6 +2910,7 @@ void DjIaVstProcessor::getStateInformation(juce::MemoryBlock& destData)
 	state.setProperty("lastKeyIndex", juce::var(lastKeyIndex), nullptr);
 	state.setProperty("isGenerating", juce::var(isGenerating), nullptr);
 	state.setProperty("autoLoadEnabled", juce::var(autoLoadEnabled.load()), nullptr);
+	state.setProperty("bypassLLM", juce::var(bypassLLM.load()), nullptr);
 	state.setProperty("generatingTrackId", juce::var(generatingTrackId), nullptr);
 	state.setProperty("bypassSequencer", juce::var(getBypassSequencer()), nullptr);
 	state.setProperty("crossfaderValue", juce::var(crossfaderValue.load()), nullptr);
@@ -2986,6 +2992,7 @@ void DjIaVstProcessor::setStateInformation(const void* data, int sizeInBytes)
 	isGenerating = state.getProperty("isGenerating", false);
 	generatingTrackId = state.getProperty("generatingTrackId", "").toString();
 	autoLoadEnabled.store(state.getProperty("autoLoadEnabled", true));
+	bypassLLM.store(state.getProperty("bypassLLM", false));
 	savedWindowWidth = state.getProperty("windowWidth", 1620);
 	savedWindowHeight = state.getProperty("windowHeight", 840);
 	savedBankVisible = state.getProperty("bankVisible", true);
