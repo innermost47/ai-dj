@@ -12,7 +12,8 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackDa
 	zoomFactor = 1.0;
 	viewStartTime = 0.0;
 	sampleRate = 48000.0;
-	loopPointsLocked = track.loopPointsLocked.load();
+	auto& currentPage = track.getCurrentPage();
+	loopPointsLocked = currentPage.loopPointsLocked.load();
 	horizontalScrollBar = std::make_unique<juce::ScrollBar>(false);
 	horizontalScrollBar->setRangeLimits(0.0, 1.0);
 	horizontalScrollBar->addListener(this);
@@ -321,6 +322,7 @@ void WaveformDisplay::paint(juce::Graphics& g)
 
 void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
 {
+	auto& currentPage = track.getCurrentPage();
 	if (!e.mods.isRightButtonDown() && !loopPointsLocked)
 	{
 		auto handle = hitTestAdsr(e.position);
@@ -333,8 +335,8 @@ void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
 	}
 	if (e.mods.isRightButtonDown())
 	{
-		loopPointsLocked = !track.loopPointsLocked.load();
-		track.loopPointsLocked.store(loopPointsLocked);
+		loopPointsLocked = !currentPage.loopPointsLocked.load();
+		currentPage.loopPointsLocked.store(loopPointsLocked);
 		lockLoopPoints(loopPointsLocked);
 		return;
 	}
@@ -1412,10 +1414,7 @@ juce::Colour WaveformDisplay::getModelAccentColour() const
 {
 	juce::String modelName;
 
-	if (track.usePages.load())
-		modelName = track.getCurrentPage().selectedModel;
-	else
-		modelName = track.selectedModel;
+	modelName = track.getCurrentPage().selectedModel;
 
 	if (modelName.isEmpty())
 		return ColourPalette::buttonPrimary;

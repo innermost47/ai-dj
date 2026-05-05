@@ -333,7 +333,8 @@ void MixerChannel::setSliderParameter(juce::String name, juce::Slider& slider)
 
 void MixerChannel::setButtonParameter(juce::String name, juce::Button& button)
 {
-	if (!track || track->slotIndex == -1 || track->numSamples <= 0)
+	auto& currentPage = track->getCurrentPage();
+	if (!track || track->slotIndex == -1 || currentPage.numSamples <= 0)
 		return;
 	if (this == nullptr)
 		return;
@@ -373,7 +374,8 @@ void MixerChannel::addEventListeners()
 		};
 	playButton.onClick = [this]()
 		{
-			if (track && track->numSamples > 0)
+			auto& currentPage = track->getCurrentPage();
+			if (track && currentPage.numSamples > 0)
 			{
 				bool allStepsAreFalse = true;
 				auto& seqData = track->getCurrentSequencerData();
@@ -423,7 +425,8 @@ void MixerChannel::addEventListeners()
 
 	stopButton.onClick = [this]()
 		{
-			if (track && track->numSamples > 0)
+			auto& currentPage = track->getCurrentPage();
+			if (track && currentPage.numSamples > 0)
 			{
 				bool allStepsAreFalse = true;
 				auto& seqData = track->getCurrentSequencerData();
@@ -600,7 +603,8 @@ void MixerChannel::updateModelUI()
 	if (!track)
 		return;
 
-	auto modelColour = AiModelDefinitions::getColourForModel(track->selectedModel);
+	auto& currentPage = track->getCurrentPage();
+	auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
 	bool darkText = modelColour.getBrightness() > 0.6f;
 	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
 
@@ -631,7 +635,8 @@ void MixerChannel::paint(juce::Graphics& g)
 
 	if (isGenerating)
 	{
-		auto modelColour = AiModelDefinitions::getColourForModel(track->selectedModel);
+		auto& currentPage = track->getCurrentPage();
+		auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
 		borderColour = blinkState ? modelColour.brighter(0.4f) : modelColour.darker(0.4f);
 		borderWidth = 3.0f;
 	}
@@ -709,8 +714,9 @@ void MixerChannel::updateVUMeter()
 {
 	if (track)
 	{
+		auto& currentPage = track->getCurrentPage();
 		vuMeter.updateMeter(
-			&track->audioBuffer,
+			&currentPage.audioBuffer,
 			track->readPosition.load(),
 			track->volume.load(),
 			track->isPlaying.load()

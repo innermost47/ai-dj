@@ -22,38 +22,21 @@ juce::ValueTree StateManager::saveState() const
 			trackState.setProperty("name", track->trackName, nullptr);
 
 			trackState.setProperty("slotIndex", track->slotIndex, nullptr);
-			trackState.setProperty("prompt", track->prompt, nullptr);
 			trackState.setProperty("style", track->style, nullptr);
-			trackState.setProperty("bpm", track->bpm, nullptr);
-			trackState.setProperty("originalBpm", track->originalBpm, nullptr);
 			trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
-			trackState.setProperty("bpmOffset", track->bpmOffset.load(), nullptr);
 			trackState.setProperty("midiNote", track->midiNote, nullptr);
-			trackState.setProperty("loopStart", track->loopStart, nullptr);
-			trackState.setProperty("loopEnd", track->loopEnd, nullptr);
 			trackState.setProperty("volume", track->volume.load(), nullptr);
 			trackState.setProperty("pan", track->pan.load(), nullptr);
 			trackState.setProperty("muted", track->isMuted.load(), nullptr);
 			trackState.setProperty("solo", track->isSolo.load(), nullptr);
 			trackState.setProperty("enabled", track->isEnabled.load(), nullptr);
-			trackState.setProperty("fineOffset", track->fineOffset, nullptr);
 			trackState.setProperty("timeStretchRatio", track->timeStretchRatio, nullptr);
-			trackState.setProperty("stagingOriginalBpm", track->stagingOriginalBpm, nullptr);
 			trackState.setProperty("showWaveform", track->showWaveform.load(), nullptr);
 			trackState.setProperty("showSequencer", track->showSequencer.load(), nullptr);
 			trackState.setProperty("isPlaying", track->isPlaying.load(), nullptr);
 			trackState.setProperty("isArmed", track->isArmed.load(), nullptr);
 			trackState.setProperty("isArmedToStop", track->isArmedToStop.load(), nullptr);
 			trackState.setProperty("isCurrentlyPlaying", track->isCurrentlyPlaying.load(), nullptr);
-			trackState.setProperty("generationPrompt", track->generationPrompt, nullptr);
-			trackState.setProperty("generationBpm", track->generationBpm, nullptr);
-			trackState.setProperty("generationKey", track->generationKey, nullptr);
-			trackState.setProperty("generationDuration", track->generationDuration, nullptr);
-			trackState.setProperty("loopPointsLocked", track->loopPointsLocked.load(), nullptr);
-			trackState.setProperty("selectedPrompt", track->selectedPrompt, nullptr);
-			trackState.setProperty("selectedModel", track->selectedModel, nullptr);
-			trackState.setProperty("useOriginalFile", track->useOriginalFile.load(), nullptr);
-			trackState.setProperty("hasOriginalVersion", track->hasOriginalVersion.load(), nullptr);
 			trackState.setProperty("nextHasOriginalVersion", track->nextHasOriginalVersion.load(), nullptr);
 			trackState.setProperty("randomRetriggerEnabled", track->randomRetriggerEnabled.load(), nullptr);
 			trackState.setProperty("randomRetriggerInterval", track->randomRetriggerInterval.load(), nullptr);
@@ -64,11 +47,7 @@ juce::ValueTree StateManager::saveState() const
 			trackState.setProperty("beatRepeatEndPosition", track->beatRepeatEndPosition.load(), nullptr);
 			trackState.setProperty("beatRepeatActive", track->beatRepeatActive.load(), nullptr);
 			trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(), nullptr);
-			trackState.setProperty("usePages", track->usePages.load(), nullptr);
 			trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
-			trackState.setProperty("canvasData", track->canvasData, nullptr);
-			trackState.setProperty("canvasState", track->canvasState, nullptr);
-			trackState.setProperty("selectedKeywords", track->selectedKeywords.joinIntoString("|"), nullptr);
 
 			for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
 			{
@@ -100,6 +79,8 @@ juce::ValueTree StateManager::saveState() const
 				pageState.setProperty("adsrDecay", page.adsrDecay.load(), nullptr);
 				pageState.setProperty("adsrSustain", page.adsrSustain.load(), nullptr);
 				pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
+				pageState.setProperty("bpmOffset", page.bpmOffset.load(), nullptr);
+				pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
 
 				for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
 				{
@@ -131,34 +112,6 @@ juce::ValueTree StateManager::saveState() const
 				trackState.appendChild(pageState, nullptr);
 			}
 
-			if (track->numSamples > 0 && !track->audioFilePath.isEmpty())
-			{
-				trackState.setProperty("audioFilePath", track->audioFilePath, nullptr);
-				trackState.setProperty("sampleRate", track->sampleRate, nullptr);
-				trackState.setProperty("numSamples", track->numSamples, nullptr);
-				trackState.setProperty("numChannels", track->audioBuffer.getNumChannels(), nullptr);
-			}
-
-			juce::ValueTree legacySequencerState("Sequencer");
-			auto& currentSeq = track->getCurrentSequencerData();
-			legacySequencerState.setProperty("isPlaying", currentSeq.isPlaying, nullptr);
-			legacySequencerState.setProperty("currentStep", currentSeq.currentStep, nullptr);
-			legacySequencerState.setProperty("currentMeasure", currentSeq.currentMeasure, nullptr);
-			legacySequencerState.setProperty("numMeasures", currentSeq.numMeasures, nullptr);
-			legacySequencerState.setProperty("beatsPerMeasure", currentSeq.beatsPerMeasure, nullptr);
-			for (int m = 0; m < 4; ++m)
-			{
-				for (int s = 0; s < 16; ++s)
-				{
-					juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
-					legacySequencerState.setProperty(stepKey, currentSeq.steps[m][s], nullptr);
-
-					juce::String velocityKey = "velocity_" + juce::String(m) + "_" + juce::String(s);
-					legacySequencerState.setProperty(velocityKey, currentSeq.velocities[m][s], nullptr);
-				}
-			}
-			trackState.appendChild(legacySequencerState, nullptr);
-
 			state.appendChild(trackState, nullptr);
 		}
 	);
@@ -180,22 +133,15 @@ void StateManager::loadState(const juce::ValueTree& state)
 
 		track->trackId = trackState.getProperty("id", juce::Uuid().toString());
 		track->trackName = trackState.getProperty("name", "Track");
-		track->prompt = trackState.getProperty("prompt", "");
 		track->slotIndex = trackState.getProperty("slotIndex", -1);
 		track->style = trackState.getProperty("style", "");
-		track->bpm = trackState.getProperty("bpm", 126.0f);
-		track->originalBpm = trackState.getProperty("originalBpm", 126.0f);
 		track->timeStretchMode = 4;
-		track->bpmOffset = trackState.getProperty("bpmOffset", 0.0);
+		double legacyBpmOffset = trackState.getProperty("bpmOffset", 0.0);
 		track->midiNote = trackState.getProperty("midiNote", 60);
-		track->loopStart = trackState.getProperty("loopStart", 0.0);
-		track->loopEnd = trackState.getProperty("loopEnd", 4.0);
 		track->volume = trackState.getProperty("volume", 0.8f);
 		track->pan = trackState.getProperty("pan", 0.0f);
 		track->isEnabled = trackState.getProperty("enabled", true);
-		track->fineOffset = trackState.getProperty("fineOffset", 0.0f);
 		track->timeStretchRatio = trackState.getProperty("timeStretchRatio", 1.0);
-		track->stagingOriginalBpm = trackState.getProperty("stagingOriginalBpm", 126.0f);
 		track->showWaveform = trackState.getProperty("showWaveform", false);
 		track->showSequencer = trackState.getProperty("showSequencer", false);
 		track->isMuted = trackState.getProperty("muted", false);
@@ -204,17 +150,6 @@ void StateManager::loadState(const juce::ValueTree& state)
 		track->isArmed = trackState.getProperty("isArmed", false);
 		track->isArmedToStop = trackState.getProperty("isArmedToStop", false);
 		track->isCurrentlyPlaying = trackState.getProperty("isCurrentlyPlaying", false);
-		track->generationPrompt = trackState.getProperty("generationPrompt", "Generate a techno drum loop");
-		track->generationBpm = trackState.getProperty("generationBpm", 127.0f);
-		track->generationKey = trackState.getProperty("generationKey", "C Minor");
-		track->generationDuration = trackState.getProperty("generationDuration", 6);
-		track->loopPointsLocked = trackState.getProperty("loopPointsLocked", false);
-		track->selectedPrompt = trackState.getProperty("selectedPrompt", "");
-		track->selectedModel = trackState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
-		if (track->selectedModel.isEmpty())
-			track->selectedModel = "stable-audio-open-1.0";
-		track->useOriginalFile = trackState.getProperty("useOriginalFile", false);
-		track->hasOriginalVersion = trackState.getProperty("hasOriginalVersion", false);
 		track->nextHasOriginalVersion = trackState.getProperty("nextHasOriginalVersion", false);
 		track->randomRetriggerEnabled = trackState.getProperty("randomRetriggerEnabled", false);
 		track->randomRetriggerInterval = trackState.getProperty("randomRetriggerInterval", 3);
@@ -225,256 +160,155 @@ void StateManager::loadState(const juce::ValueTree& state)
 		track->beatRepeatEndPosition = trackState.getProperty("beatRepeatEndPosition", 0.0);
 		track->beatRepeatActive = trackState.getProperty("beatRepeatActive", false);
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
-		track->canvasData = trackState.getProperty("canvasData", "");
-		track->canvasState = trackState.getProperty("canvasState", "");
-		track->usePages = trackState.getProperty("usePages", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 
-		juce::String keywordsStr = trackState.getProperty("selectedKeywords", "");
-		if (keywordsStr.isNotEmpty())
+		for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
 		{
-			track->selectedKeywords.addTokens(keywordsStr, "|", "");
-		}
+			juce::ValueTree pageState;
 
-		if (track->usePages.load())
-		{
-			for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
+			for (int childIndex = 0; childIndex < trackState.getNumChildren(); ++childIndex)
 			{
-				juce::ValueTree pageState;
-
-				for (int childIndex = 0; childIndex < trackState.getNumChildren(); ++childIndex)
+				auto child = trackState.getChild(childIndex);
+				if (child.hasType("Page"))
 				{
-					auto child = trackState.getChild(childIndex);
-					if (child.hasType("Page"))
+					int storedPageIndex = child.getProperty("index", -1);
+					if (storedPageIndex == pageIndex)
 					{
-						int storedPageIndex = child.getProperty("index", -1);
-						if (storedPageIndex == pageIndex)
-						{
-							pageState = child;
-							break;
-						}
+						pageState = child;
+						break;
 					}
 				}
+			}
 
-				if (pageState.isValid())
+			if (pageState.isValid())
+			{
+				auto& page = track->pages[pageIndex];
+				page.audioFilePath = pageState.getProperty("audioFilePath", "").toString();
+				page.numSamples = pageState.getProperty("numSamples", 0);
+				page.sampleRate = pageState.getProperty("sampleRate", 48000.0);
+				page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
+				page.prompt = pageState.getProperty("prompt", "").toString();
+				page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
+				page.selectedModel = pageState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
+				if (page.selectedModel.isEmpty())
+					page.selectedModel = "stable-audio-open-1.0";
+				page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
+				page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
+				page.generationKey = pageState.getProperty("generationKey", "").toString();
+				page.generationDuration = pageState.getProperty("generationDuration", 6);
+				page.loopStart = pageState.getProperty("loopStart", 0.0);
+				page.loopEnd = pageState.getProperty("loopEnd", 4.0);
+				page.useOriginalFile = pageState.getProperty("useOriginalFile", false);
+				page.hasOriginalVersion = pageState.getProperty("hasOriginalVersion", false);
+				page.canvasData = pageState.getProperty("canvasData", "").toString();
+				page.canvasState = pageState.getProperty("canvasState", "").toString();
+				page.bpmOffset.store(pageState.getProperty("bpmOffset", legacyBpmOffset));
+				page.loopPointsLocked = pageState.getProperty("loopPointsLocked", false);
+
+				juce::String pageKeywordsStr = pageState.getProperty("selectedKeywords", "");
+				if (pageKeywordsStr.isNotEmpty())
 				{
-					auto& page = track->pages[pageIndex];
-					page.audioFilePath = pageState.getProperty("audioFilePath", "").toString();
-					page.numSamples = pageState.getProperty("numSamples", 0);
-					page.sampleRate = pageState.getProperty("sampleRate", 48000.0);
-					page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
-					page.prompt = pageState.getProperty("prompt", "").toString();
-					page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
-					page.selectedModel = pageState.getProperty("selectedModel", track->selectedModel).toString();
-					if (page.selectedModel.isEmpty())
-						page.selectedModel = track->selectedModel;
-					page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
-					page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
-					page.generationKey = pageState.getProperty("generationKey", "").toString();
-					page.generationDuration = pageState.getProperty("generationDuration", 6);
-					page.loopStart = pageState.getProperty("loopStart", 0.0);
-					page.loopEnd = pageState.getProperty("loopEnd", 4.0);
-					page.useOriginalFile = pageState.getProperty("useOriginalFile", false);
-					page.hasOriginalVersion = pageState.getProperty("hasOriginalVersion", false);
-					page.canvasData = pageState.getProperty("canvasData", "").toString();
-					page.canvasState = pageState.getProperty("canvasState", "").toString();
+					page.selectedKeywords.addTokens(pageKeywordsStr, "|", "");
+				}
 
-					juce::String pageKeywordsStr = pageState.getProperty("selectedKeywords", "");
-					if (pageKeywordsStr.isNotEmpty())
+				page.isLoaded = false;
+				page.currentSequenceIndex = pageState.getProperty("currentSequenceIndex", 0);
+				page.adsrAttack.store(pageState.getProperty("adsrAttack", 0.01f));
+				page.adsrDecay.store(pageState.getProperty("adsrDecay", 4.0f));
+				page.adsrSustain.store(pageState.getProperty("adsrSustain", 1.0f));
+				page.adsrRelease.store(pageState.getProperty("adsrRelease", 0.0f));
+
+				for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
+				{
+					juce::ValueTree sequencerState;
+
+					for (int childIndex = 0; childIndex < pageState.getNumChildren(); ++childIndex)
 					{
-						page.selectedKeywords.addTokens(pageKeywordsStr, "|", "");
-					}
-
-					page.isLoaded = false;
-					page.currentSequenceIndex = pageState.getProperty("currentSequenceIndex", 0);
-					page.adsrAttack.store(pageState.getProperty("adsrAttack", 0.01f));
-					page.adsrDecay.store(pageState.getProperty("adsrDecay", 4.0f));
-					page.adsrSustain.store(pageState.getProperty("adsrSustain", 1.0f));
-					page.adsrRelease.store(pageState.getProperty("adsrRelease", 0.0f));
-
-					for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
-					{
-						juce::ValueTree sequencerState;
-
-						for (int childIndex = 0; childIndex < pageState.getNumChildren(); ++childIndex)
+						auto child = pageState.getChild(childIndex);
+						if (child.hasType("Sequence"))
 						{
-							auto child = pageState.getChild(childIndex);
-							if (child.hasType("Sequence"))
+							int storedSeqIndex = child.getProperty("index", -1);
+							if (storedSeqIndex == seqIdx)
 							{
-								int storedSeqIndex = child.getProperty("index", -1);
-								if (storedSeqIndex == seqIdx)
-								{
-									sequencerState = child;
-									break;
-								}
-							}
-						}
-
-						if (sequencerState.isValid())
-						{
-							auto& seq = page.sequences[seqIdx];
-							seq.isPlaying = sequencerState.getProperty("isPlaying", false);
-							seq.currentStep = 0;
-							seq.currentMeasure = 0;
-							seq.numMeasures = sequencerState.getProperty("numMeasures", 1);
-							seq.beatsPerMeasure = sequencerState.getProperty("beatsPerMeasure", 4);
-
-							for (int m = 0; m < 4; ++m)
-							{
-								for (int s = 0; s < 16; ++s)
-								{
-									juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
-									seq.steps[m][s] = sequencerState.getProperty(stepKey, false);
-
-									juce::String velocityKey = "velocity_" + juce::String(m) + "_" + juce::String(s);
-									seq.velocities[m][s] = sequencerState.getProperty(velocityKey, 0.8f);
-								}
-							}
-						}
-						else
-						{
-							auto& seq = page.sequences[seqIdx];
-							if (seqIdx == 0)
-							{
-								seq.steps[0][0] = true;
-								seq.velocities[0][0] = 0.8f;
+								sequencerState = child;
+								break;
 							}
 						}
 					}
 
-					if (!page.audioFilePath.isEmpty())
+					if (sequencerState.isValid())
 					{
-						juce::File audioFile(page.audioFilePath);
-						if (audioFile.existsAsFile())
+						auto& seq = page.sequences[seqIdx];
+						seq.isPlaying = sequencerState.getProperty("isPlaying", false);
+						seq.currentStep = 0;
+						seq.currentMeasure = 0;
+						seq.numMeasures = sequencerState.getProperty("numMeasures", 1);
+						seq.beatsPerMeasure = sequencerState.getProperty("beatsPerMeasure", 4);
+
+						for (int m = 0; m < 4; ++m)
 						{
-							juce::File fileToLoad = audioFile;
-
-							if (page.useOriginalFile.load() && page.hasOriginalVersion.load())
+							for (int s = 0; s < 16; ++s)
 							{
-								char pageName = static_cast<char>('A' + pageIndex);
-								juce::String fileName = audioFile.getFileNameWithoutExtension();
-								juce::String legacySuffix = "_" + juce::String(65 + pageIndex);
-								juce::String newSuffix = "_" + juce::String::charToString(pageName);
+								juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
+								seq.steps[m][s] = sequencerState.getProperty(stepKey, false);
 
-								juce::String baseTrackId;
-								juce::String actualSuffix;
+								juce::String velocityKey = "velocity_" + juce::String(m) + "_" + juce::String(s);
+								seq.velocities[m][s] = sequencerState.getProperty(velocityKey, 0.8f);
+							}
+						}
+					}
+					else
+					{
+						auto& seq = page.sequences[seqIdx];
+						if (seqIdx == 0)
+						{
+							seq.steps[0][0] = true;
+							seq.velocities[0][0] = 0.8f;
+						}
+					}
+				}
 
-								if (fileName.endsWith(newSuffix))
-								{
-									baseTrackId = fileName.dropLastCharacters(newSuffix.length());
-									actualSuffix = newSuffix;
-								}
-								else if (fileName.endsWith(legacySuffix))
-								{
-									baseTrackId = fileName.dropLastCharacters(legacySuffix.length());
-									actualSuffix = legacySuffix;
-								}
-								if (baseTrackId.isNotEmpty())
-								{
-									juce::File originalFile = audioFile.getParentDirectory()
-										.getChildFile(baseTrackId + "_original" + actualSuffix + ".wav");
+				if (!page.audioFilePath.isEmpty())
+				{
+					juce::File audioFile(page.audioFilePath);
+					if (audioFile.existsAsFile())
+					{
+						juce::File fileToLoad = audioFile;
 
-									if (originalFile.existsAsFile())
-									{
-										fileToLoad = originalFile;
-									}
+						if (page.useOriginalFile.load() && page.hasOriginalVersion.load())
+						{
+							char pageName = static_cast<char>('A' + pageIndex);
+							juce::String fileName = audioFile.getFileNameWithoutExtension();
+							juce::String legacySuffix = "_" + juce::String(65 + pageIndex);
+							juce::String newSuffix = "_" + juce::String::charToString(pageName);
+
+							juce::String baseTrackId;
+							juce::String actualSuffix;
+
+							if (fileName.endsWith(newSuffix))
+							{
+								baseTrackId = fileName.dropLastCharacters(newSuffix.length());
+								actualSuffix = newSuffix;
+							}
+							else if (fileName.endsWith(legacySuffix))
+							{
+								baseTrackId = fileName.dropLastCharacters(legacySuffix.length());
+								actualSuffix = legacySuffix;
+							}
+							if (baseTrackId.isNotEmpty())
+							{
+								juce::File originalFile = audioFile.getParentDirectory()
+									.getChildFile(baseTrackId + "_original" + actualSuffix + ".wav");
+
+								if (originalFile.existsAsFile())
+								{
+									fileToLoad = originalFile;
 								}
 							}
-							audioProcessor.trackManager.loadAudioFileForPage(track.get(), pageIndex, fileToLoad);
 						}
+						audioProcessor.trackManager.loadAudioFileForPage(track.get(), pageIndex, fileToLoad);
 					}
 				}
-				else
-				{
-					track->pages[pageIndex].selectedModel = track->selectedModel;
-				}
-			}
-
-			track->syncLegacyProperties();
-		}
-		else
-		{
-			juce::String audioFilePath = trackState.getProperty("audioFilePath", "");
-			if (audioFilePath.isNotEmpty())
-			{
-				juce::File audioFile(audioFilePath);
-				if (audioFile.existsAsFile())
-				{
-					track->audioFilePath = audioFilePath;
-					track->sampleRate = trackState.getProperty("sampleRate", 48000.0);
-					track->numSamples = trackState.getProperty("numSamples", 0);
-
-					juce::File fileToLoad = audioFile;
-					if (track->useOriginalFile.load() && track->hasOriginalVersion.load())
-					{
-						juce::String originalPath = audioFilePath.replace(".wav", "_original.wav");
-						juce::File originalFile(originalPath);
-						if (originalFile.existsAsFile())
-						{
-							fileToLoad = originalFile;
-						}
-					}
-
-					audioProcessor.trackManager.loadAudioFileForTrack(track.get(), fileToLoad);
-				}
-			}
-		}
-
-		if (!track->usePages.load())
-		{
-			track->lastPpqPosition = -1.0;
-			track->customStepCounter = 0;
-			track->getCurrentSequencerData().stepAccumulator = 0.0;
-		}
-
-		auto legacySequencerState = trackState.getChildWithName("Sequencer");
-		if (legacySequencerState.isValid())
-		{
-			SequencerData tempSeqData;
-			tempSeqData.isPlaying = legacySequencerState.getProperty("isPlaying", false);
-			tempSeqData.currentStep = 0;
-			tempSeqData.currentMeasure = 0;
-			tempSeqData.numMeasures = legacySequencerState.getProperty("numMeasures", 1);
-			tempSeqData.beatsPerMeasure = legacySequencerState.getProperty("beatsPerMeasure", 4);
-
-			for (int m = 0; m < 4; ++m)
-			{
-				for (int s = 0; s < 16; ++s)
-				{
-					juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
-					tempSeqData.steps[m][s] = legacySequencerState.getProperty(stepKey, false);
-
-					juce::String velocityKey = "velocity_" + juce::String(m) + "_" + juce::String(s);
-					tempSeqData.velocities[m][s] = legacySequencerState.getProperty(velocityKey, 0.8f);
-				}
-			}
-
-			if (track->usePages.load())
-			{
-				auto& currentPage = track->pages[track->currentPageIndex.load()];
-				auto& seq = currentPage.sequences[0];
-
-				bool isEmpty = true;
-				for (int m = 0; m < 4 && isEmpty; ++m)
-				{
-					for (int s = 0; s < 16 && isEmpty; ++s)
-					{
-						if (seq.steps[m][s])
-						{
-							isEmpty = false;
-						}
-					}
-				}
-
-				if (isEmpty)
-				{
-					seq = tempSeqData;
-				}
-			}
-			else
-			{
-				auto& seq = track->pages[0].sequences[0];
-				seq = tempSeqData;
 			}
 		}
 
@@ -495,14 +329,12 @@ void StateManager::loadState(const juce::ValueTree& state)
 	{
 		auto track = std::make_unique<TrackData>();
 		track->trackName = "Track " + juce::String(i + 1);
-		track->bpmOffset = 0.0;
 		track->midiNote = 60 + i;
 		track->slotIndex = audioProcessor.trackManager.findFreeSlot();
-		track->selectedModel = "stable-audio-open-1.0";
-
+		for (int p = 0; p < 4; ++p)
+			track->pages[p].selectedModel = "stable-audio-open-1.0";
 		if (track->slotIndex >= 0 && track->slotIndex < 8)
 			audioProcessor.trackManager.setSlotUsed(track->slotIndex, true);
-
 		std::string stdId = track->trackId.toStdString();
 		audioProcessor.trackManager.addTrack(stdId, std::move(track));
 	}
@@ -749,83 +581,71 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 	{
 		audioProcessor.setMigrationCompleted(true);
 	}
-	juce::Timer::callAfterDelay(1000, [this]()
+
+	juce::Timer::callAfterDelay(2000, [this]()
 		{
 			auto trackIds = audioProcessor.getAllTrackIds();
-			for (const auto& trackId : trackIds) {
+			for (const auto& trackId : trackIds)
+			{
 				TrackData* track = audioProcessor.getTrack(trackId);
-				if (track) {
-					if (track->usePages.load()) {
-						continue;
-					}
-					if (track->numSamples == 0 && !track->audioFilePath.isEmpty()) {
-						juce::File audioFile(track->audioFilePath);
-						if (audioFile.existsAsFile()) {
-							audioProcessor.trackManager.loadAudioFileForTrack(track, audioFile);
-						}
-					}
-				}
-			} });
-			juce::Timer::callAfterDelay(2000, [this]()
-				{
-					auto trackIds = audioProcessor.getAllTrackIds();
-					for (const auto& trackId : trackIds)
-					{
-						TrackData* track = audioProcessor.getTrack(trackId);
-						if (!track) continue;
+				if (!track) continue;
 
-						int slotNumber = track->slotIndex + 1;
+				auto& currentPage = track->getCurrentPage();
 
-						if (track->isCurrentlyPlaying.load())
-							audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackActive);
-						else if (track->isArmed.load())
-							audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackPending);
-						else
-							audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
+				int slotNumber = track->slotIndex + 1;
 
-						if (track->usePages.load())
-							audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), track->currentPageIndex.load());
+				if (track->isCurrentlyPlaying.load())
+					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackActive);
+				else if (track->isArmed.load())
+					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackPending);
+				else
+					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
 
-						float vol = audioProcessor.getVolumeParam(track->slotIndex) ? audioProcessor.getVolumeParam(track->slotIndex) : track->volume.load();
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber), MidiMapping::volumeToMidi(vol));
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), track->currentPageIndex.load());
 
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber), MidiMapping::panToMidi(track->pan.load()));
+				float vol = audioProcessor.getVolumeParam(track->slotIndex) ? audioProcessor.getVolumeParam(track->slotIndex) : track->volume.load();
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber), MidiMapping::volumeToMidi(vol));
 
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
-							track->isMuted.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
-							track->isSolo.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
-							track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-						float rawPitch = audioProcessor.getPitchParam(track->slotIndex) ? audioProcessor.getPitchParam(track->slotIndex) * 8.0f : (float)track->bpmOffset;
-						float rawFine = audioProcessor.getFineParam(track->slotIndex) ? audioProcessor.getFineParam(track->slotIndex) * 2.0f : track->fineOffset;
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber), MidiMapping::pitchToMidi(rawPitch));
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(rawFine));
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
-							track->getCurrentPage().currentSequenceIndex);
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getAttackParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getDecayParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getSustainParam(track->slotIndex), 0.0f, 1.0f), MidiMapping::feedbackChannelShaping);
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getReleaseParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
-					}
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber), MidiMapping::panToMidi(track->pan.load()));
 
-					for (int p = 0; p < 4; ++p)
-					{
-						audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(p),
-							MidiMapping::volumeToMidi(audioProcessor.getPairCrossfaderValue(p)),
-							MidiMapping::feedbackChannelShaping);
-					}
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
+					track->isMuted.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
+					track->isSolo.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
+					track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 
-					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackGlobalCrossfader, MidiMapping::volumeToMidi(audioProcessor.getGlobalCrossfaderValue()), MidiMapping::feedbackChannelShaping);
-					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve, audioProcessor.getCrossfaderCurveMode() * 63, MidiMapping::feedbackChannelShaping);
-				});
-			audioProcessor.getMidiLearnManager().restoreUICallbacks();
-			audioProcessor.setStateReady(true);
-			audioProcessor.setIsLoadingState(false);
-			juce::MessageManager::callAsync([this]()
-				{
-					if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor())) {
-						editor->refreshTrackComponents();
-						editor->updateUIFromProcessor();
-					} });
+				float rawPitch = audioProcessor.getPitchParam(track->slotIndex) ? audioProcessor.getPitchParam(track->slotIndex) * 8.0f : (float)currentPage.bpmOffset.load();
+				float rawFine = audioProcessor.getFineParam(track->slotIndex) ? audioProcessor.getFineParam(track->slotIndex) * 2.0f : currentPage.fineOffset.load();
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber), MidiMapping::pitchToMidi(rawPitch));
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(rawFine));
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
+					track->getCurrentPage().currentSequenceIndex);
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getAttackParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getDecayParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getSustainParam(track->slotIndex), 0.0f, 1.0f), MidiMapping::feedbackChannelShaping);
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getReleaseParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
+			}
+
+			for (int p = 0; p < 4; ++p)
+			{
+				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(p),
+					MidiMapping::volumeToMidi(audioProcessor.getPairCrossfaderValue(p)),
+					MidiMapping::feedbackChannelShaping);
+			}
+
+			audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackGlobalCrossfader, MidiMapping::volumeToMidi(audioProcessor.getGlobalCrossfaderValue()), MidiMapping::feedbackChannelShaping);
+			audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve, audioProcessor.getCrossfaderCurveMode() * 63, MidiMapping::feedbackChannelShaping);
+		});
+
+	audioProcessor.getMidiLearnManager().restoreUICallbacks();
+	audioProcessor.setStateReady(true);
+	audioProcessor.setIsLoadingState(false);
+	juce::MessageManager::callAsync([this]()
+		{
+			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor())) {
+				editor->refreshTrackComponents();
+				editor->updateUIFromProcessor();
+			}
+		});
 }

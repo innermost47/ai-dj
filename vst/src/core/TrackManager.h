@@ -31,7 +31,6 @@ public:
 		int curveMode);
 
 	void loadAudioFileForPage(TrackData* track, int pageIndex, const juce::File& audioFile);
-	void loadAudioFileForTrack(TrackData* track, const juce::File& audioFile);
 	void addTrack(const std::string& trackId, std::unique_ptr<TrackData> track);
 	void clearAllTracks();
 	void forEachTrack(std::function<void(const std::string&, const TrackData*)> callback) const;

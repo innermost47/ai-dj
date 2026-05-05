@@ -267,7 +267,6 @@ private:
 	bool isSelected = false;
 	bool isDragOver = false;
 	bool hasSamplePending = false;
-	bool pagesMode = true;
 	bool pageBlinkState = false;
 	bool canvasIsGenerating = false;
 	bool isPreviewPlaying = false;

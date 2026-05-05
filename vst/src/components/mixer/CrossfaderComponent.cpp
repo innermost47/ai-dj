@@ -143,9 +143,15 @@ void CrossfaderComponent::updateSliderColour(MidiLearnableSlider& slider, int pa
 	juce::Colour rightColour = ColourPalette::sliderThumb;
 
 	if (trackLeft)
-		leftColour = AiModelDefinitions::getColourForModel(trackLeft->selectedModel);
+	{
+		auto& leftPage = trackLeft->getCurrentPage();
+		leftColour = AiModelDefinitions::getColourForModel(leftPage.selectedModel);
+	}
 	if (trackRight)
-		rightColour = AiModelDefinitions::getColourForModel(trackRight->selectedModel);
+	{
+		auto& rightPage = trackRight->getCurrentPage();
+		rightColour = AiModelDefinitions::getColourForModel(rightPage.selectedModel);
+	}
 
 	float pos = static_cast<float>(slider.getValue());
 	juce::Colour morphed = leftColour.interpolatedWith(rightColour, pos);
@@ -463,8 +469,10 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics& g)
 
 		juce::Colour leftColour = ColourPalette::sliderThumb;
 		juce::Colour rightColour = ColourPalette::sliderThumb;
-		if (trackLeft)  leftColour = AiModelDefinitions::getColourForModel(trackLeft->selectedModel);
-		if (trackRight) rightColour = AiModelDefinitions::getColourForModel(trackRight->selectedModel);
+		auto& leftPage = trackLeft->getCurrentPage();
+		auto& rightPage = trackRight->getCurrentPage();
+		if (trackLeft)  leftColour = AiModelDefinitions::getColourForModel(leftPage.selectedModel);
+		if (trackRight) rightColour = AiModelDefinitions::getColourForModel(rightPage.selectedModel);
 
 		float pairX = audioProcessor.getPairCrossfaderValue(i);
 		float leftPairGain = 1.0f - pairX;

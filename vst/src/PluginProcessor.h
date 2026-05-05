@@ -673,8 +673,6 @@ private:
 
 	juce::File getTrackPageAudioFile(const juce::String& trackId, int pageIndex);
 
-	juce::File getTrackAudioFile(const juce::String& trackId);
-
 	void updateTrackPathsAfterMigration();
 	void checkBeatRepeatWithSampleCounter();
 	void handlePageChange(const juce::String& parameterID);

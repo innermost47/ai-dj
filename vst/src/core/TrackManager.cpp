@@ -2,7 +2,6 @@
 #include "JuceHeader.h"
 #include "TrackManager.h"
 
-
 juce::String TrackManager::createTrack(const juce::String& name)
 {
 	juce::ScopedLock lock(tracksLock);
@@ -20,7 +19,6 @@ juce::String TrackManager::createTrack(const juce::String& name)
 
 	auto track = std::make_unique<TrackData>();
 	track->trackName = name + " " + juce::String(tracks.size() + 1);
-	track->bpmOffset = 0.0;
 	track->midiNote = 60 + static_cast<int>(tracks.size());
 	juce::String trackId = track->trackId;
 	std::string stdId = trackId.toStdString();
@@ -109,7 +107,8 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 	for (const auto& pair : tracks)
 	{
 		auto* track = pair.second.get();
-		if (track->isEnabled.load() && track->numSamples > 0 &&
+		auto& currentPage = track->getCurrentPage();
+		if (track->isEnabled.load() && currentPage.numSamples > 0 &&
 			track->slotIndex >= 0 && track->slotIndex < individualOutputs.size())
 		{
 			int bufferIndex = track->slotIndex;
@@ -251,33 +250,6 @@ void TrackManager::loadAudioFileForPage(TrackData* track, int pageIndex, const j
 	}
 }
 
-void TrackManager::loadAudioFileForTrack(TrackData* track, const juce::File& audioFile)
-{
-	juce::AudioFormatManager formatManager;
-	formatManager.registerBasicFormats();
-
-	std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
-
-	if (reader != nullptr)
-	{
-		int numChannels = reader->numChannels;
-		int numSamples = static_cast<int>(reader->lengthInSamples);
-
-		track->audioBuffer.setSize(2, numSamples);
-		reader->read(&track->audioBuffer, 0, numSamples, 0, true, true);
-
-		if (numChannels == 1)
-		{
-			track->audioBuffer.copyFrom(1, 0, track->audioBuffer, 0, 0, numSamples);
-		}
-
-		track->numSamples = track->audioBuffer.getNumSamples();
-		track->sampleRate = reader->sampleRate;
-
-		reader.reset();
-	}
-}
-
 size_t TrackManager::getNumTracks() const
 {
 	const juce::ScopedLock sl(tracksLock);
@@ -404,29 +376,17 @@ void TrackManager::renderSingleTrack(TrackData& track,
 	float adsrSustain = 1.0f;
 	float adsrRelease = 0.0f;
 
-	if (track.usePages.load())
-	{
-		const auto& currentPage = track.getCurrentPage();
-		bufferToUse = &currentPage.audioBuffer;
-		numSamplesToUse = currentPage.numSamples;
-		sampleRateToUse = currentPage.sampleRate;
-		loopStartToUse = currentPage.loopStart;
-		loopEndToUse = currentPage.loopEnd;
-		originalBpmToUse = currentPage.originalBpm;
-		adsrAttack = currentPage.adsrAttack.load();
-		adsrDecay = currentPage.adsrDecay.load();
-		adsrSustain = currentPage.adsrSustain.load();
-		adsrRelease = currentPage.adsrRelease.load();
-	}
-	else
-	{
-		bufferToUse = &track.audioBuffer;
-		numSamplesToUse = track.numSamples;
-		sampleRateToUse = track.sampleRate;
-		loopStartToUse = track.loopStart;
-		loopEndToUse = track.loopEnd;
-		originalBpmToUse = track.originalBpm;
-	}
+	const auto& currentPage = track.getCurrentPage();
+	bufferToUse = &currentPage.audioBuffer;
+	numSamplesToUse = currentPage.numSamples;
+	sampleRateToUse = currentPage.sampleRate;
+	loopStartToUse = currentPage.loopStart;
+	loopEndToUse = currentPage.loopEnd;
+	originalBpmToUse = currentPage.originalBpm;
+	adsrAttack = currentPage.adsrAttack.load();
+	adsrDecay = currentPage.adsrDecay.load();
+	adsrSustain = currentPage.adsrSustain.load();
+	adsrRelease = currentPage.adsrRelease.load();
 
 	if (numSamplesToUse == 0 || !track.isPlaying.load() || !bufferToUse)
 		return;
@@ -456,7 +416,7 @@ void TrackManager::renderSingleTrack(TrackData& track,
 	case 2:
 		if (originalBpmToUse > 0.0f)
 		{
-			float totalBpmAdjust = static_cast<float>(track.bpmOffset) + track.fineOffset;
+			float totalBpmAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
 			float adjustedBpm = originalBpmToUse + totalBpmAdjust;
 			adjustedBpm = juce::jlimit(1.0f, 1000.0f, adjustedBpm);
 			playbackRatio = adjustedBpm / originalBpmToUse;
@@ -471,7 +431,7 @@ void TrackManager::renderSingleTrack(TrackData& track,
 	case 4:
 		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
 		{
-			float totalManualAdjust = static_cast<float>(track.bpmOffset) + track.fineOffset;
+			float totalManualAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
 			float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
 			effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
 			playbackRatio = effectiveHostBpm / originalBpmToUse;
