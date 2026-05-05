@@ -2,6 +2,7 @@
 #include "JuceHeader.h"
 #include "core/TrackManager.h"
 #include "core/StateManager.h"
+#include "core/GenerationManager.h"
 #include "engines/DjIaClient.h"
 #include "midi/MidiLearnManager.h"
 #include "engines/ObsidianEngine.h"
@@ -41,6 +42,7 @@ public:
 
 	TrackManager trackManager;
 	StateManager stateManager;
+	GenerationManager generationManager;
 
 	MidiLearnManager& getMidiLearnManager() { return midiLearnManager; }
 
@@ -326,6 +328,13 @@ public:
 		return 0.5f;
 	}
 
+	float getSlotGenerateParam(int index) const {
+		if (index >= 0 && index < 8) {
+			return slotGenerateParams[index]->load();
+		}
+		return 0.0f;
+	}
+
 	float getGlobalCrossfaderPrevious() const {
 		return globalCrossfaderPrevious;
 	}
@@ -373,6 +382,58 @@ public:
 	int getLastKeyIndex() const { return lastKeyIndex; }
 
 	void performMigrationIfNeeded();
+
+	void setPendingTrackId(juce::String trackId) {
+		pendingTrackId = trackId;
+	}
+
+	void setPendingAudioFile(const juce::File& audioFile) {
+		pendingAudioFile = audioFile;
+	}
+
+	void setHasPendingAudioData(bool value) {
+		hasPendingAudioData.store(value);
+	}
+
+	void setWaitingForMidiToLoad(bool value) {
+		waitingForMidiToLoad.store(value);
+	}
+
+	void setTrackIdWaitingForLoad(juce::String trackId) {
+		trackIdWaitingForLoad = trackId;
+	}
+
+	void setCorrectMidiNoteReceived(bool value) {
+		correctMidiNoteReceived.store(value);
+	}
+
+	void clearTrackIdWaitingForLoad() {
+		trackIdWaitingForLoad.clear();
+	}
+
+	void clearPendingTrackId() {
+		pendingTrackId.clear();
+	}
+
+	double getHostSampleRate() {
+		return hostSampleRate;
+	}
+
+	void setPendingDetectedBpm(bool value) {
+		pendingDetectedBpm.store(value);
+	}
+
+	void setLastGeneratedTrackId(juce::String trackId) {
+		lastGeneratedTrackId = trackId;
+	}
+
+	void setPendingMessage(juce::String message) {
+		pendingMessage = message;
+	}
+
+	void setHasPendingNotification(bool value) {
+		hasPendingNotification = value;
+	}
 
 private:
 	DjIaVstEditor* currentEditor = nullptr;
@@ -475,7 +536,6 @@ private:
 	std::queue<PendingRequest> pendingRequests;
 	std::mutex requestsMutex;
 
-	juce::CriticalSection apiLock;
 	juce::CriticalSection sequencerMidiLock;
 
 	juce::File pendingAudioFile;
@@ -592,7 +652,6 @@ private:
 	}
 
 	void processIncomingAudio(bool hostIsPlaying);
-	void clearPendingAudio();
 	void processMidiMessages(juce::MidiBuffer& midiMessages, bool hostIsPlaying, double hostBpm);
 	void playTrack(const juce::MidiMessage& message, double hostBpm);
 	void handlePlayAndStop(bool hostIsPlaying);
@@ -611,8 +670,6 @@ private:
 		const juce::File& outputFile,
 		double sampleRate);
 	void executePendingAction(TrackData* track);
-	void handleGenerate();
-	void notifyGenerationComplete(const juce::String& trackId, const juce::String& message);
 	void generateLoopFromMidi(const juce::String& trackId);
 	void updateMidiIndicatorWithActiveNotes(double hostBpm, const juce::Array<int>& triggeredNotes);
 	void generateLoopAPI(const DjIaClient::LoopRequest& request, const juce::String& trackId);
@@ -631,12 +688,9 @@ private:
 
 	juce::File getTrackAudioFile(const juce::String& trackId);
 
-	juce::File createTempAudioFile(const std::vector<float>& audioData, float duration);
 	void updateTrackPathsAfterMigration();
 	void checkBeatRepeatWithSampleCounter();
-	void generateLoopFromGlobalSettings();
 	void handlePageChange(const juce::String& parameterID);
-	void reEnableCanvasGenerate();
 	void handleSequenceChange(const juce::String& parameterID);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DjIaVstProcessor);

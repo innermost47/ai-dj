@@ -211,6 +211,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/midi/MidiMappingEditorWindow.cpp
     src/data/Parameters.cpp
     src/core/StateManager.cpp
+    src/core/GenerationManager.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE
