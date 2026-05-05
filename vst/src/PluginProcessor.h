@@ -92,7 +92,6 @@ public:
 	juce::File exportSampleForDragDrop(const juce::File& originalFile);
 
 	void timerCallback() override;
-	void prepareToPlay(double newSampleRate, int samplesPerBlock);
 	void setGenerationListener(GenerationListener* listener) { generationListener = listener; }
 	void initDummySynth();
 	void initTracks();
@@ -308,13 +307,6 @@ public:
 		return 0.0f;
 	}
 
-	float getPairCrossfaderPrevious(int index) const {
-		if (index >= 0 && index < 4) {
-			return pairCrossfaderPrevious[index];
-		}
-		return 0.5f;
-	}
-
 	void setPairCrossfaderPrevious(int index, float value) {
 		if (index >= 0 && index < 4) {
 			pairCrossfaderPrevious[index] = value;
@@ -333,10 +325,6 @@ public:
 			return slotGenerateParams[index]->load();
 		}
 		return 0.0f;
-	}
-
-	float getGlobalCrossfaderPrevious() const {
-		return globalCrossfaderPrevious;
 	}
 
 	void setGlobalCrossfaderPrevious(float value) {
@@ -365,7 +353,6 @@ public:
 	juce::String getProjectId() const { return projectId; }
 	juce::StringArray getFloatParamIds() const { return floatParamIds; }
 	juce::StringArray getBooleanParamIds() const { return booleanParamIds; }
-	std::pair<float, float> getCrossfadeGains() const;
 
 	juce::String getLastPrompt() {
 		return lastPrompt;
@@ -654,6 +641,7 @@ private:
 	void processIncomingAudio(bool hostIsPlaying);
 	void processMidiMessages(juce::MidiBuffer& midiMessages, bool hostIsPlaying, double hostBpm);
 	void playTrack(const juce::MidiMessage& message, double hostBpm);
+	void prepareToPlay(double newSampleRate, int samplesPerBlock);
 	void handlePlayAndStop(bool hostIsPlaying);
 	void updateTimeStretchRatios(double hostBpm);
 	void updateMasterEQ();

@@ -493,19 +493,6 @@ void DjIaVstProcessor::timerCallback()
 	needsUIUpdate = false;
 }
 
-void DjIaVstProcessor::prepareToPlay(double newSampleRate, int samplesPerBlock)
-{
-	hostSampleRate = newSampleRate;
-	currentBlockSize = samplesPerBlock;
-	synth.setCurrentPlaybackSampleRate(newSampleRate);
-	for (auto& buffer : individualOutputBuffers)
-	{
-		buffer.setSize(2, samplesPerBlock);
-		buffer.clear();
-	}
-	masterEQ.prepare(newSampleRate, samplesPerBlock);
-}
-
 void DjIaVstProcessor::releaseResources()
 {
 	for (auto& buffer : individualOutputBuffers)
@@ -3232,12 +3219,6 @@ void DjIaVstProcessor::stopTrackPreview(const juce::String& trackId)
 	}
 }
 
-std::pair<float, float> DjIaVstProcessor::getCrossfadeGains() const
-{
-	float x = globalCrossfaderParam ? globalCrossfaderParam->load() : 0.5f;
-	return { 1.0f - x, x };
-}
-
 void DjIaVstProcessor::sendMidiFeedback(int cc, int value, int channel)
 {
 	juce::ScopedLock lock(feedbackMidiLock);
@@ -3248,4 +3229,17 @@ void DjIaVstProcessor::sendMidiFeedback(int cc, int value, int channel)
 void DjIaVstProcessor::sendMidiFeedback(int cc, int value)
 {
 	sendMidiFeedback(cc, value, MidiMapping::feedbackChannelMixer);
+}
+
+void DjIaVstProcessor::prepareToPlay(double newSampleRate, int samplesPerBlock)
+{
+	hostSampleRate = newSampleRate;
+	currentBlockSize = samplesPerBlock;
+	synth.setCurrentPlaybackSampleRate(newSampleRate);
+	for (auto& buffer : individualOutputBuffers)
+	{
+		buffer.setSize(2, samplesPerBlock);
+		buffer.clear();
+	}
+	masterEQ.prepare(newSampleRate, samplesPerBlock);
 }

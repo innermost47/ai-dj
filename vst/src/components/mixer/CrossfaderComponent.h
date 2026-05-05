@@ -17,13 +17,6 @@ public:
 	void resized() override;
 	void timerCallback() override;
 
-	double getPairValue(int pairIndex) const
-	{
-		if (pairIndex < 0 || pairIndex >= 4) return 0.5;
-		return pairSliders[pairIndex].getValue();
-	}
-	double getGlobalValue() const { return globalSlider.getValue(); }
-
 	void refreshFromProcessor();
 	void updatePairColours();
 	void onModelChanged() { updatePairColours(); }
@@ -66,21 +59,6 @@ private:
 	void updateSliderColour(MidiLearnableSlider& slider, int pairIdx);
 	void selectCurveMode(int mode);
 	void paintOverChildren(juce::Graphics& g) override;
-
-	juce::String getPairMidiId(int pairIndex) const
-	{
-		return "crossfader_pair_" + juce::String(pairIndex);
-	}
-	juce::String getGlobalMidiId() const { return "crossfader_global"; }
-	juce::String getCurveMidiId(int mode) const
-	{
-		return "crossfader_curve_" + juce::String(mode);
-	}
-
-	juce::String getPairDisplayName(int pairIndex) const
-	{
-		return "Crossfader " + juce::String(pairIndex + 1) + "<>" + juce::String(pairIndex + 5);
-	}
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossfaderComponent)
 };

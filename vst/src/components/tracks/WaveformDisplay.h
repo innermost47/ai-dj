@@ -5,7 +5,7 @@ struct TrackData;
 class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
 {
 public:
-	WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData);
+	WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData);
 	~WaveformDisplay();
 	std::function<void(double, double)> onLoopPointsChanged;
 	std::function<void(float)> onAdsrAttackChanged;
@@ -13,14 +13,14 @@ public:
 	std::function<void(float)> onAdsrSustainChanged;
 	std::function<void(float)> onAdsrReleaseChanged;
 
-	void mouseDoubleClick(const juce::MouseEvent &e) override;
+	void mouseDoubleClick(const juce::MouseEvent& e) override;
 	void setOriginalBpm(float bpm);
 	void setSampleBpm(float bpm);
 	void lockLoopPoints(bool locked);
 	void setPlaybackPosition(double timeInSeconds, bool isPlaying);
-	void setAudioData(const juce::AudioBuffer<float> &newAudioBuffer, double newSampleRate);
+	void setAudioData(const juce::AudioBuffer<float>& newAudioBuffer, double newSampleRate);
 	void setLoopPoints(double startTime, double endTime);
-	void setAudioFile(const juce::File &file);
+	void setAudioFile(const juce::File& file);
 	void setAdsrParams(float attack, float decay, float sustain, float release);
 
 private:
@@ -28,8 +28,8 @@ private:
 	juce::File currentAudioFile;
 	juce::Point<int> dragStartPosition;
 	std::unique_ptr<juce::ScrollBar> horizontalScrollBar;
-	DjIaVstProcessor &audioProcessor;
-	TrackData &track;
+	DjIaVstProcessor& audioProcessor;
+	TrackData& track;
 	std::vector<float> thumbnailLeft;
 	std::vector<float> thumbnailRight;
 	double loopStart = 0.0;
@@ -87,40 +87,39 @@ private:
 	AdsrHandle hitTestAdsr(juce::Point<float> p) const;
 	void updateAdsrFromMouse(juce::Point<float> p);
 
-	void drawAdsrOverlay(juce::Graphics &g, float startX, float endX);
+	void drawAdsrOverlay(juce::Graphics& g, float startX, float endX);
 	void invalidateAllCaches();
-	void invalidateWaveformCache();
 	void invalidateGridCache();
 	void rebuildWaveformCache();
 	void rebuildGridCache();
 	void repaintPlaybackHeadRegion(float oldX, float newX);
-	void renderWaveformInto(juce::Graphics &g);
-	void renderGridInto(juce::Graphics &g);
+	void renderWaveformInto(juce::Graphics& g);
+	void renderGridInto(juce::Graphics& g);
 	float getHostBpm() const;
 	float timeToX(double time);
 	void generateThumbnail();
-	void feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int &retFlag);
-	void drawWaveform(juce::Graphics &g);
-	void setColorDependingTimeStretchRatio(juce::Colour &waveformColor) const;
-	void drawLoopMarkers(juce::Graphics &g);
-	void drawLoopTimeLabels(juce::Graphics &g, float startX, float endX);
-	void drawLoopBarLabels(juce::Graphics &g, float startX, float endX) const;
-	void drawPlaybackHead(juce::Graphics &g);
-	void drawBeatMarkers(juce::Graphics &g);
+	void feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int& retFlag);
+	void drawWaveform(juce::Graphics& g);
+	void setColorDependingTimeStretchRatio(juce::Colour& waveformColor) const;
+	void drawLoopMarkers(juce::Graphics& g);
+	void drawLoopTimeLabels(juce::Graphics& g, float startX, float endX);
+	void drawLoopBarLabels(juce::Graphics& g, float startX, float endX) const;
+	void drawPlaybackHead(juce::Graphics& g);
+	void drawBeatMarkers(juce::Graphics& g);
 	void calculateStretchRatio() const;
 	void updateScrollBarVisibility();
 	void updateScrollBar();
 	void setViewStartTime(double newViewStartTime);
-	void drawMeasureLine(double time, juce::Graphics &g, float barDuration, double viewDuration);
-	void drawBeatLine(double time, juce::Graphics &g, double viewDuration);
-	void drawSubdivisionLine(double time, juce::Graphics &g, double viewDuration);
-	void paint(juce::Graphics &g) override;
+	void drawMeasureLine(double time, juce::Graphics& g, float barDuration, double viewDuration);
+	void drawBeatLine(double time, juce::Graphics& g, double viewDuration);
+	void drawSubdivisionLine(double time, juce::Graphics& g, double viewDuration);
+	void paint(juce::Graphics& g) override;
 	void resized() override;
-	void mouseDown(const juce::MouseEvent &e) override;
-	void mouseDrag(const juce::MouseEvent &e) override;
-	void mouseUp(const juce::MouseEvent &e) override;
-	void mouseWheelMove(const juce::MouseEvent &e, const juce::MouseWheelDetails &wheel) override;
-	void scrollBarMoved(juce::ScrollBar *scrollBarThatHasMoved, double newRangeStart) override;
+	void mouseDown(const juce::MouseEvent& e) override;
+	void mouseDrag(const juce::MouseEvent& e) override;
+	void mouseUp(const juce::MouseEvent& e) override;
+	void mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override;
+	void scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override;
 	juce::Colour getModelAccentColour() const;
 	double xToTime(float x);
 	double getTotalDuration() const;

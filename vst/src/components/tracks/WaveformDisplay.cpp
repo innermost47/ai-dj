@@ -5,7 +5,7 @@
 #include "style/ColourPalette.h"
 #include "config/AiModelDefinitions.h"
 
-WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData) : audioProcessor(processor), track(trackData)
+WaveformDisplay::WaveformDisplay(DjIaVstProcessor& processor, TrackData& trackData) : audioProcessor(processor), track(trackData)
 {
 	setSize(400, 80);
 	setAccessible(false);
@@ -28,11 +28,6 @@ void WaveformDisplay::invalidateAllCaches()
 {
 	waveformCacheDirty = true;
 	gridCacheDirty = true;
-}
-
-void WaveformDisplay::invalidateWaveformCache()
-{
-	waveformCacheDirty = true;
 }
 
 void WaveformDisplay::invalidateGridCache()
@@ -82,7 +77,7 @@ void WaveformDisplay::setOriginalBpm(float bpm)
 	}
 }
 
-void WaveformDisplay::setAudioData(const juce::AudioBuffer<float> &newAudioBuffer, double newSampleRate)
+void WaveformDisplay::setAudioData(const juce::AudioBuffer<float>& newAudioBuffer, double newSampleRate)
 {
 	jassert(juce::MessageManager::getInstance()->isThisTheMessageThread());
 
@@ -114,7 +109,7 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float> &newAudioBuffe
 		invalidateAllCaches();
 		repaint();
 	}
-	catch (const std::exception &)
+	catch (const std::exception&)
 	{
 		audioBuffer.setSize(0, 0);
 		sampleRate = newSampleRate;
@@ -146,7 +141,7 @@ void WaveformDisplay::setLoopPoints(double startTime, double endTime)
 	else
 	{
 		juce::MessageManager::callAsync([this]()
-										{
+			{
 				if (isShowing())
 					repaint(); });
 	}
@@ -158,18 +153,18 @@ void WaveformDisplay::lockLoopPoints(bool locked)
 		return;
 	loopPointsLocked = locked;
 	juce::MessageManager::callAsync([this]()
-									{ repaint(); });
+		{ repaint(); });
 }
 
 void WaveformDisplay::calculateStretchRatio() const
 {
 	if (originalBpm > 0.0f && sampleBpm > 0.0f)
 	{
-		const_cast<WaveformDisplay *>(this)->stretchRatio = sampleBpm / originalBpm;
+		const_cast<WaveformDisplay*>(this)->stretchRatio = sampleBpm / originalBpm;
 	}
 	else
 	{
-		const_cast<WaveformDisplay *>(this)->stretchRatio = 1.0f;
+		const_cast<WaveformDisplay*>(this)->stretchRatio = 1.0f;
 	}
 }
 
@@ -212,7 +207,7 @@ void WaveformDisplay::setPlaybackPosition(double timeInSeconds, bool isPlaying)
 	float newX = (isPlaying && playbackPosition >= 0.0) ? timeToX(playbackPosition) : -1.0f;
 
 	juce::MessageManager::callAsync([safe = juce::Component::SafePointer<WaveformDisplay>(this), oldX, newX, wasPlaying, isPlaying]()
-									{
+		{
 			if (safe == nullptr) return;
 
 			if (wasPlaying != isPlaying)
@@ -250,7 +245,7 @@ void WaveformDisplay::rebuildGridCache()
 	gridCacheDirty = false;
 }
 
-void WaveformDisplay::renderWaveformInto(juce::Graphics &g)
+void WaveformDisplay::renderWaveformInto(juce::Graphics& g)
 {
 	g.setColour(ColourPalette::backgroundMid);
 	g.fillRect(getLocalBounds());
@@ -261,14 +256,14 @@ void WaveformDisplay::renderWaveformInto(juce::Graphics &g)
 	drawWaveform(g);
 }
 
-void WaveformDisplay::renderGridInto(juce::Graphics &g)
+void WaveformDisplay::renderGridInto(juce::Graphics& g)
 {
 	if (thumbnailLeft.empty() && thumbnailRight.empty())
 		return;
 	drawBeatMarkers(g);
 }
 
-void WaveformDisplay::paint(juce::Graphics &g)
+void WaveformDisplay::paint(juce::Graphics& g)
 {
 	auto bounds = getLocalBounds();
 
@@ -283,7 +278,7 @@ void WaveformDisplay::paint(juce::Graphics &g)
 		g.setColour(ColourPalette::textSecondary);
 		g.setFont(10.0f);
 		g.drawText("Ctrl+Wheel: Zoom | Wheel: Scroll | Right-click: Lock/Unlock | Ctrl+Click: Drag and Drop in DAW",
-				   bounds.reduced(5).removeFromBottom(15), juce::Justification::centred);
+			bounds.reduced(5).removeFromBottom(15), juce::Justification::centred);
 		return;
 	}
 
@@ -324,7 +319,7 @@ void WaveformDisplay::paint(juce::Graphics &g)
 	}
 }
 
-void WaveformDisplay::mouseDown(const juce::MouseEvent &e)
+void WaveformDisplay::mouseDown(const juce::MouseEvent& e)
 {
 	if (!e.mods.isRightButtonDown() && !loopPointsLocked)
 	{
@@ -363,7 +358,7 @@ void WaveformDisplay::mouseDown(const juce::MouseEvent &e)
 	}
 }
 
-void WaveformDisplay::mouseDrag(const juce::MouseEvent &e)
+void WaveformDisplay::mouseDrag(const juce::MouseEvent& e)
 {
 	if (activeHandle != AdsrHandle::None)
 	{
@@ -433,12 +428,12 @@ void WaveformDisplay::mouseDrag(const juce::MouseEvent &e)
 	}
 }
 
-void WaveformDisplay::setAudioFile(const juce::File &file)
+void WaveformDisplay::setAudioFile(const juce::File& file)
 {
 	currentAudioFile = file;
 }
 
-void WaveformDisplay::mouseUp(const juce::MouseEvent &)
+void WaveformDisplay::mouseUp(const juce::MouseEvent&)
 {
 	activeHandle = AdsrHandle::None;
 	draggingStart = false;
@@ -446,7 +441,7 @@ void WaveformDisplay::mouseUp(const juce::MouseEvent &)
 	isDraggingAudio = false;
 }
 
-void WaveformDisplay::mouseWheelMove(const juce::MouseEvent &e, const juce::MouseWheelDetails &wheel)
+void WaveformDisplay::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel)
 {
 	if (e.mods.isCtrlDown())
 	{
@@ -507,16 +502,16 @@ WaveformDisplay::AdsrHandle WaveformDisplay::hitTestAdsr(juce::Point<float> p) c
 	const float radius = 8.0f;
 	const float r2 = radius * radius;
 	auto dist2 = [](juce::Point<float> a, juce::Point<float> b)
-	{
-		float dx = a.x - b.x, dy = a.y - b.y;
-		return dx * dx + dy * dy;
-	};
+		{
+			float dx = a.x - b.x, dy = a.y - b.y;
+			return dx * dx + dy * dy;
+		};
 
-	if (dist2(p, {adsrLayout.x1, adsrLayout.yPeak}) <= r2)
+	if (dist2(p, { adsrLayout.x1, adsrLayout.yPeak }) <= r2)
 		return AdsrHandle::AttackPeak;
-	if (dist2(p, {adsrLayout.x2, adsrLayout.ySustain}) <= r2)
+	if (dist2(p, { adsrLayout.x2, adsrLayout.ySustain }) <= r2)
 		return AdsrHandle::DecaySustain;
-	if (dist2(p, {adsrLayout.x3, adsrLayout.ySustain}) <= r2)
+	if (dist2(p, { adsrLayout.x3, adsrLayout.ySustain }) <= r2)
 		return AdsrHandle::ReleaseStart;
 	return AdsrHandle::None;
 }
@@ -537,10 +532,10 @@ void WaveformDisplay::updateAdsrFromMouse(juce::Point<float> p)
 	const float h = (float)getHeight();
 	const float margin = h * 0.08f;
 	auto yToAmp = [&](float y) -> float
-	{
-		float amp = (h - margin - y) / (h - margin * 2.0f);
-		return juce::jlimit(0.0f, 1.0f, amp);
-	};
+		{
+			float amp = (h - margin - y) / (h - margin * 2.0f);
+			return juce::jlimit(0.0f, 1.0f, amp);
+		};
 
 	const float invScale = 1.0f / adsrLayout.scale;
 
@@ -589,7 +584,7 @@ void WaveformDisplay::updateAdsrFromMouse(juce::Point<float> p)
 	repaint();
 }
 
-void WaveformDisplay::mouseDoubleClick(const juce::MouseEvent &e)
+void WaveformDisplay::mouseDoubleClick(const juce::MouseEvent& e)
 {
 	auto handle = hitTestAdsr(e.position);
 	if (handle != AdsrHandle::None)
@@ -660,10 +655,10 @@ void WaveformDisplay::updateScrollBarVisibility()
 	const int barY = getHeight() - barHeight;
 
 	auto applyScrollBarStyle = [this]()
-	{
-		juce::Colour modelColour = getModelAccentColour();
-		horizontalScrollBar->setColour(juce::ScrollBar::thumbColourId, modelColour.withAlpha(0.85f));
-	};
+		{
+			juce::Colour modelColour = getModelAccentColour();
+			horizontalScrollBar->setColour(juce::ScrollBar::thumbColourId, modelColour.withAlpha(0.85f));
+		};
 
 	if (shouldShow && !scrollBarVisible)
 	{
@@ -705,7 +700,7 @@ void WaveformDisplay::updateScrollBar()
 	horizontalScrollBar->setCurrentRange(currentRangeStart, viewProportionOfTotal);
 }
 
-void WaveformDisplay::scrollBarMoved(juce::ScrollBar *scrollBarThatHasMoved, double newRangeStart)
+void WaveformDisplay::scrollBarMoved(juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart)
 {
 	if (scrollBarThatHasMoved == horizontalScrollBar.get())
 	{
@@ -785,7 +780,7 @@ void WaveformDisplay::generateThumbnail()
 	}
 }
 
-void WaveformDisplay::feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int &retFlag)
+void WaveformDisplay::feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int& retFlag)
 {
 	retFlag = 1;
 	int sampleStart = startSample + (point * samplesPerPoint);
@@ -832,7 +827,7 @@ void WaveformDisplay::feedThumbnailStereo(int startSample, int point, int sample
 	thumbnailRight.push_back(finalRight);
 }
 
-void WaveformDisplay::drawWaveform(juce::Graphics &g)
+void WaveformDisplay::drawWaveform(juce::Graphics& g)
 {
 	if (thumbnailLeft.empty() || thumbnailRight.empty())
 		return;
@@ -966,7 +961,7 @@ void WaveformDisplay::drawWaveform(juce::Graphics &g)
 	g.drawText("R", 5, static_cast<int>(centerY) + 5, 15, 15, juce::Justification::centred);
 }
 
-void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour &waveformColor) const
+void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour& waveformColor) const
 {
 	juce::Colour baseColour = getModelAccentColour();
 
@@ -1002,7 +997,7 @@ void WaveformDisplay::setColorDependingTimeStretchRatio(juce::Colour &waveformCo
 	}
 }
 
-void WaveformDisplay::drawLoopMarkers(juce::Graphics &g)
+void WaveformDisplay::drawLoopMarkers(juce::Graphics& g)
 {
 	float startX = timeToX(loopStart);
 	float endX = timeToX(loopEnd);
@@ -1076,7 +1071,7 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics &g)
 	}
 }
 
-void WaveformDisplay::drawAdsrOverlay(juce::Graphics &g, float startX, float endX)
+void WaveformDisplay::drawAdsrOverlay(juce::Graphics& g, float startX, float endX)
 {
 	float zoneWidth = endX - startX;
 	if (zoneWidth <= 0.0f)
@@ -1107,9 +1102,9 @@ void WaveformDisplay::drawAdsrOverlay(juce::Graphics &g, float startX, float end
 
 	float margin = h * 0.08f;
 	auto ampToY = [&](float amp) -> float
-	{
-		return h - margin - amp * (h - margin * 2.0f);
-	};
+		{
+			return h - margin - amp * (h - margin * 2.0f);
+		};
 
 	float x0 = startX;
 	float x1 = x0 + attackPx;
@@ -1169,19 +1164,19 @@ void WaveformDisplay::drawAdsrOverlay(juce::Graphics &g, float startX, float end
 	adsrLayout.valid = true;
 }
 
-void WaveformDisplay::drawLoopTimeLabels(juce::Graphics &g, float startX, float endX)
+void WaveformDisplay::drawLoopTimeLabels(juce::Graphics& g, float startX, float endX)
 {
 	g.setColour(ColourPalette::textPrimary);
 	g.setFont(10.0f);
 	int startTextX = static_cast<int>(startX + 2);
 	int endTextX = static_cast<int>(endX - 50);
 	g.drawText(juce::String(loopStart, 2) + "s", startTextX, 2, 50, 15,
-			   juce::Justification::left);
+		juce::Justification::left);
 	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, 2, 48, 15,
-			   juce::Justification::right);
+		juce::Justification::right);
 }
 
-void WaveformDisplay::drawLoopBarLabels(juce::Graphics &g, float startX, float endX) const
+void WaveformDisplay::drawLoopBarLabels(juce::Graphics& g, float startX, float endX) const
 {
 	g.setColour(ColourPalette::textPrimary);
 	g.setFont(10.0f);
@@ -1189,12 +1184,12 @@ void WaveformDisplay::drawLoopBarLabels(juce::Graphics &g, float startX, float e
 	int endTextX = static_cast<int>(endX - 55);
 	int textY = getHeight() - 30;
 	g.drawText(juce::String(loopStart, 2) + "s", startTextX, textY, 50, 15,
-			   juce::Justification::left);
+		juce::Justification::left);
 	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, textY, 48, 15,
-			   juce::Justification::right);
+		juce::Justification::right);
 }
 
-void WaveformDisplay::drawPlaybackHead(juce::Graphics &g)
+void WaveformDisplay::drawPlaybackHead(juce::Graphics& g)
 {
 	if (isCurrentlyPlaying && playbackPosition >= 0.0)
 	{
@@ -1220,10 +1215,10 @@ void WaveformDisplay::drawPlaybackHead(juce::Graphics &g)
 
 			g.setFont(14.0f);
 			g.drawText(juce::String(playbackPosition, 2) + "s",
-					   static_cast<int>(headX - 40),
-					   getHeight() / 2 - 10,
-					   80, 20,
-					   juce::Justification::centred);
+				static_cast<int>(headX - 40),
+				getHeight() / 2 - 10,
+				80, 20,
+				juce::Justification::centred);
 		}
 	}
 }
@@ -1238,7 +1233,7 @@ float WaveformDisplay::timeToX(double time)
 	return static_cast<float>(juce::jmap(relativeTime, 0.0, viewDuration, 0.0, static_cast<double>(getWidth())));
 }
 
-void WaveformDisplay::drawBeatMarkers(juce::Graphics &g)
+void WaveformDisplay::drawBeatMarkers(juce::Graphics& g)
 {
 	if (thumbnailLeft.empty() || thumbnailRight.empty())
 		return;
@@ -1321,7 +1316,7 @@ void WaveformDisplay::drawBeatMarkers(juce::Graphics &g)
 	}
 }
 
-void WaveformDisplay::drawMeasureLine(double time, juce::Graphics &g, float barDuration, double viewDuration)
+void WaveformDisplay::drawMeasureLine(double time, juce::Graphics& g, float barDuration, double viewDuration)
 {
 	if (time >= viewStartTime && time <= (viewStartTime + viewDuration))
 	{
@@ -1339,7 +1334,7 @@ void WaveformDisplay::drawMeasureLine(double time, juce::Graphics &g, float barD
 	}
 }
 
-void WaveformDisplay::drawBeatLine(double time, juce::Graphics &g, double viewDuration)
+void WaveformDisplay::drawBeatLine(double time, juce::Graphics& g, double viewDuration)
 {
 	if (time >= viewStartTime && time <= (viewStartTime + viewDuration))
 	{
@@ -1352,7 +1347,7 @@ void WaveformDisplay::drawBeatLine(double time, juce::Graphics &g, double viewDu
 	}
 }
 
-void WaveformDisplay::drawSubdivisionLine(double time, juce::Graphics &g, double viewDuration)
+void WaveformDisplay::drawSubdivisionLine(double time, juce::Graphics& g, double viewDuration)
 {
 	if (time >= viewStartTime && time <= (viewStartTime + viewDuration))
 	{
@@ -1401,7 +1396,7 @@ double WaveformDisplay::getViewStartTime() const
 double WaveformDisplay::getViewEndTime() const
 {
 	return juce::jlimit(viewStartTime, getTotalDuration(),
-						viewStartTime + (getTotalDuration() / zoomFactor));
+		viewStartTime + (getTotalDuration() / zoomFactor));
 }
 
 void WaveformDisplay::setAdsrParams(float attack, float decay, float sustain, float release)
@@ -1424,7 +1419,7 @@ juce::Colour WaveformDisplay::getModelAccentColour() const
 
 	if (modelName.isEmpty())
 		return ColourPalette::buttonPrimary;
-	auto &models = AiModelDefinitions::getAvailableModels();
+	auto& models = AiModelDefinitions::getAvailableModels();
 	int modelIndex = models.indexOf(modelName);
 
 	if (modelIndex < 0)

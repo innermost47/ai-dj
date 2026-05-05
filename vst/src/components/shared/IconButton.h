@@ -22,7 +22,6 @@ struct IconButtonBase
 	void setShowBackground(bool show) { showBackground = show; }
 	void setIconSize(float size) { customIconSize = size; }
 	void setShowBorder(bool show) { showBorder = show; }
-	void setBorderColour(juce::Colour c) { borderColour = c; }
 
 protected:
 	std::unique_ptr<juce::Drawable> iconDrawable;

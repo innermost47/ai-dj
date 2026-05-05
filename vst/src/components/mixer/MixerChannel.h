@@ -29,8 +29,6 @@ public:
 	void addEventListeners();
 	void startGeneratingAnimation();
 	void stopGeneratingAnimation();
-	float getCurrentAudioLevelLeft() const { return vuMeter.getLevelLeft(); }
-	float getCurrentAudioLevelRight() const { return vuMeter.getLevelRight(); }
 	void setSamplePending(bool pending)
 	{
 		hasSamplePending = pending;

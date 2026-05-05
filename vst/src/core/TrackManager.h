@@ -287,22 +287,6 @@ public:
 		}
 	}
 
-	std::vector<std::string> getTrackOrder() const
-	{
-		const juce::ScopedLock sl(tracksLock);
-		return trackOrder;
-	}
-
-	void performOnTrack(const std::string& trackId, std::function<void(TrackData*)> action)
-	{
-		const juce::ScopedLock sl(tracksLock);
-		auto it = tracks.find(trackId);
-		if (it != tracks.end())
-		{
-			action(it->second.get());
-		}
-	}
-
 	size_t getNumTracks() const
 	{
 		const juce::ScopedLock sl(tracksLock);
@@ -347,12 +331,6 @@ public:
 				callback(it->second.get());
 			}
 		}
-	}
-
-	void performThreadSafeAction(std::function<void(std::map<std::string, std::unique_ptr<TrackData>>&, std::vector<std::string>&)> action)
-	{
-		const juce::ScopedLock sl(tracksLock);
-		action(tracks, trackOrder);
 	}
 
 	bool isSlotUsed(int index) const
