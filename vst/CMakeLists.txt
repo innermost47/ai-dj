@@ -210,6 +210,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/bank/SampleBankPanel.cpp
     src/midi/MidiMappingEditorWindow.cpp
     src/data/Parameters.cpp
+    src/core/StateManager.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE

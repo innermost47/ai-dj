@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "JuceHeader.h"
 #include "core/TrackManager.h"
+#include "core/StateManager.h"
 #include "engines/DjIaClient.h"
 #include "midi/MidiLearnManager.h"
 #include "engines/ObsidianEngine.h"
@@ -13,6 +14,7 @@
 
 class DjIaVstEditor;
 class TrackComponent;
+class StateManager;
 
 class DjIaVstProcessor : public juce::AudioProcessor,
 	public juce::AudioProcessorValueTreeState::Listener,
@@ -38,6 +40,7 @@ public:
 	juce::AudioFormatManager sharedFormatManager;
 
 	TrackManager trackManager;
+	StateManager stateManager;
 
 	MidiLearnManager& getMidiLearnManager() { return midiLearnManager; }
 
@@ -190,10 +193,9 @@ public:
 	bool isSamplePreviewing() const { return isPreviewPlaying.load(); }
 	bool previewSampleFromBank(const juce::String& sampleId);
 	bool isStateReady() const { return stateLoaded; }
+	void setStateReady(bool ready) { stateLoaded = ready; }
 	bool getAutoLoadEnabled() const { return autoLoadEnabled.load(); }
 	bool getBypassLLM() const { return bypassLLM.load(); }
-
-	std::atomic<bool> isLoadingState{ false };
 
 	bool canGenerateStandard = true;
 
@@ -233,6 +235,9 @@ public:
 	int getSavedWindowHeight() const { return savedWindowHeight; }
 	bool getSavedBankVisible() const { return savedBankVisible; }
 
+	void sendMidiFeedback(int cc, int value);
+	void sendMidiFeedback(int cc, int value, int channel);
+
 	void setPairCrossfaderValue(int pairIndex, float value);
 	float getPairCrossfaderValue(int pairIndex) const;
 	void setGlobalCrossfaderValue(float value);
@@ -240,11 +245,134 @@ public:
 	void setCrossfaderCurveMode(int mode);
 	int getCrossfaderCurveMode() const;
 
+	bool getIsLoadingState() const {
+		return isLoadingState.load();
+	}
+
+	void setIsLoadingState(bool isLoading) {
+		isLoadingState.store(isLoading);
+	}
+
 	float getPeakLevelLeft() const { return peakLevelLeft.load(); }
 	float getPeakLevelRight() const { return peakLevelRight.load(); }
 	void setPeakLevels(float left, float right) { peakLevelLeft.store(left); peakLevelRight.store(right); }
 
+	float getAttackParam(int index) const {
+		if (index >= 0 && index < 8 && slotAdsrAttackParams[index] != nullptr) {
+			return slotAdsrAttackParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getDecayParam(int index) const {
+		if (index >= 0 && index < 8 && slotAdsrDecayParams[index] != nullptr) {
+			return slotAdsrDecayParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getSustainParam(int index) const {
+		if (index >= 0 && index < 8 && slotAdsrSustainParams[index] != nullptr) {
+			return slotAdsrSustainParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getReleaseParam(int index) const {
+		if (index >= 0 && index < 8 && slotAdsrReleaseParams[index] != nullptr) {
+			return slotAdsrReleaseParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getPitchParam(int index) const {
+		if (index >= 0 && index < 8 && slotPitchParams[index] != nullptr) {
+			return slotPitchParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getFineParam(int index) const {
+		if (index >= 0 && index < 8 && slotFineParams[index] != nullptr) {
+			return slotFineParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getVolumeParam(int index) const {
+		if (index >= 0 && index < 8 && slotVolumeParams[index] != nullptr) {
+			return slotVolumeParams[index]->load();
+		}
+		return 0.0f;
+	}
+
+	float getPairCrossfaderPrevious(int index) const {
+		if (index >= 0 && index < 4) {
+			return pairCrossfaderPrevious[index];
+		}
+		return 0.5f;
+	}
+
+	void setPairCrossfaderPrevious(int index, float value) {
+		if (index >= 0 && index < 4) {
+			pairCrossfaderPrevious[index] = value;
+		}
+	}
+
+	float getPairCrossfaderParam(int index) const {
+		if (index >= 0 && index < 4) {
+			return pairCrossfaderParams[index]->load();
+		}
+		return 0.5f;
+	}
+
+	float getGlobalCrossfaderPrevious() const {
+		return globalCrossfaderPrevious;
+	}
+
+	void setGlobalCrossfaderPrevious(float value) {
+		globalCrossfaderPrevious = value;
+	}
+
+	float getGlobalCrossfaderParam() const {
+		if (globalCrossfaderParam != nullptr) {
+			return globalCrossfaderParam->load();
+		}
+		return 0.5f;
+	}
+
+	void setSelectedTrackId(juce::String value) {
+		selectedTrackId = value;
+	}
+
+	void setGlobalBpm(float bpm) {
+		globalBpm = bpm;
+	}
+
+	void setMigrationCompleted(bool completed) { migrationCompleted = completed; }
+
+	void setProjectId(const juce::String& id) { projectId = id; }
+
+	juce::String getProjectId() const { return projectId; }
+	juce::StringArray getFloatParamIds() const { return floatParamIds; }
+	juce::StringArray getBooleanParamIds() const { return booleanParamIds; }
 	std::pair<float, float> getCrossfadeGains() const;
+
+	juce::String getLastPrompt() {
+		return lastPrompt;
+	}
+
+	void setLastKey(const juce::String& key) { lastKey = key; }
+	void setLastBpm(double bpm) { lastBpm = bpm; }
+	void setHostBpmEnabled(bool enabled) { hostBpmEnabled = enabled; }
+
+	juce::String getLastKey() const { return lastKey; }
+	double getLastBpm() const { return lastBpm; }
+	bool isHostBpmEnabled() const { return hostBpmEnabled; }
+	double getLastDuration() const { return lastDuration; }
+	int getLastKeyIndex() const { return lastKeyIndex; }
+
+	void performMigrationIfNeeded();
 
 private:
 	DjIaVstEditor* currentEditor = nullptr;
@@ -268,6 +396,8 @@ private:
 	juce::StringArray customKeywords;
 	juce::MidiBuffer feedbackMidiBuffer;
 	juce::CriticalSection feedbackMidiLock;
+
+	std::atomic<bool> isLoadingState{ false };
 
 	std::atomic<float>* nextTrackParam = nullptr;
 	std::atomic<float>* prevTrackParam = nullptr;
@@ -356,7 +486,7 @@ private:
 	juce::String serverUrl = "";
 	juce::String apiKey;
 	juce::String lastPrompt = "";
-	juce::String lastKey = "C Aeolian";
+	juce::String lastKey = "C Minor";
 	juce::String trackIdWaitingForLoad;
 	juce::String pendingTrackId;
 	juce::String lastGeneratedTrackId;
@@ -494,8 +624,6 @@ private:
 	void loadAudioFileForSwitch(const juce::String& trackId, const juce::File& audioFile);
 	void loadSampleToBankPage(const juce::String& trackId, int pageIndex, const juce::File& sampleFile, const juce::String& sampleId);
 	void loadAudioFileForPageSwitch(const juce::String& trackId, int pageIndex, const juce::File& audioFile);
-	void sendMidiFeedback(int cc, int value);
-	void sendMidiFeedback(int cc, int value, int channel);
 	void notifyPageChangedFeedback(int slotNumber, int pageIndex);
 	void sendFullStateFeedback();
 
@@ -504,7 +632,6 @@ private:
 	juce::File getTrackAudioFile(const juce::String& trackId);
 
 	juce::File createTempAudioFile(const std::vector<float>& audioData, float duration);
-	void performMigrationIfNeeded();
 	void updateTrackPathsAfterMigration();
 	void checkBeatRepeatWithSampleCounter();
 	void generateLoopFromGlobalSettings();

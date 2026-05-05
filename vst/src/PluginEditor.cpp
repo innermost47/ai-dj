@@ -100,7 +100,7 @@ DjIaVstEditor::~DjIaVstEditor()
 void DjIaVstEditor::finalizeInit()
 {
 	if (isBeingDestroyed.load()) return;
-	if (audioProcessor.isLoadingState.load())
+	if (audioProcessor.getIsLoadingState())
 	{
 		juce::Timer::callAfterDelay(100, [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 			{

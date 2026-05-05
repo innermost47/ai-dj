@@ -1,6 +1,8 @@
 #pragma once
 #include <JuceHeader.h>
+
 class DjIaVstProcessor;
+
 struct MidiMapping
 {
 	int midiType;
