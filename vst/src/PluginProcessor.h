@@ -72,16 +72,16 @@ public:
 	std::atomic<bool> needsUIUpdate{ false };
 	bool updateCheckDone = false;
 
-	juce::String getGlobalKey() const { return globalKey; }
-	juce::String getGlobalPrompt() const { return globalPrompt; }
-	juce::String getSelectedTrackId() const { return selectedTrackId; }
-	juce::String getGeneratingTrackId() const { return generatingTrackId; }
-	juce::String getServerUrl() const { return serverUrl; }
-	juce::String getApiKey() const { return apiKey; }
+	const juce::String& getGlobalKey() const { return globalKey; }
+	const juce::String& getGlobalPrompt() const { return globalPrompt; }
+	const juce::String& getSelectedTrackId() const { return selectedTrackId; }
+	const juce::String& getGeneratingTrackId() const { return generatingTrackId; }
+	const juce::String& getServerUrl() const { return serverUrl; }
+	const juce::String& getApiKey() const { return apiKey; }
 
-	juce::StringArray getBuiltInPrompts() const;
-	juce::StringArray getCustomKeywords() const { return customKeywords; }
-	juce::StringArray getCustomPrompts() const;
+	const juce::StringArray& getBuiltInPrompts() const;
+	const juce::StringArray& getCustomKeywords() const { return customKeywords; }
+	const juce::StringArray& getCustomPrompts() const;
 
 	const juce::String getName() const override { return "OBSIDIAN-Neural"; }
 	const juce::String getProgramName(int) override { return {}; }
@@ -338,7 +338,7 @@ public:
 		return 0.5f;
 	}
 
-	void setSelectedTrackId(juce::String value) {
+	void setSelectedTrackId(const juce::String& value) {
 		selectedTrackId = value;
 	}
 
@@ -350,11 +350,11 @@ public:
 
 	void setProjectId(const juce::String& id) { projectId = id; }
 
-	juce::String getProjectId() const { return projectId; }
-	juce::StringArray getFloatParamIds() const { return floatParamIds; }
-	juce::StringArray getBooleanParamIds() const { return booleanParamIds; }
-
-	juce::String getLastPrompt() {
+	const juce::String& getProjectId() const { return projectId; }
+	const juce::StringArray& getFloatParamIds() const { return floatParamIds; }
+	const juce::StringArray& getBooleanParamIds() const { return booleanParamIds; }
+	const juce::String& getLastKey() const { return lastKey; }
+	const juce::String& getLastPrompt() const {
 		return lastPrompt;
 	}
 
@@ -362,7 +362,6 @@ public:
 	void setLastBpm(double bpm) { lastBpm = bpm; }
 	void setHostBpmEnabled(bool enabled) { hostBpmEnabled = enabled; }
 
-	juce::String getLastKey() const { return lastKey; }
 	double getLastBpm() const { return lastBpm; }
 	bool isHostBpmEnabled() const { return hostBpmEnabled; }
 	double getLastDuration() const { return lastDuration; }
@@ -370,7 +369,7 @@ public:
 
 	void performMigrationIfNeeded();
 
-	void setPendingTrackId(juce::String trackId) {
+	void setPendingTrackId(const juce::String& trackId) {
 		pendingTrackId = trackId;
 	}
 
@@ -386,7 +385,7 @@ public:
 		waitingForMidiToLoad.store(value);
 	}
 
-	void setTrackIdWaitingForLoad(juce::String trackId) {
+	void setTrackIdWaitingForLoad(const juce::String& trackId) {
 		trackIdWaitingForLoad = trackId;
 	}
 
@@ -410,11 +409,11 @@ public:
 		pendingDetectedBpm.store(value);
 	}
 
-	void setLastGeneratedTrackId(juce::String trackId) {
+	void setLastGeneratedTrackId(const juce::String& trackId) {
 		lastGeneratedTrackId = trackId;
 	}
 
-	void setPendingMessage(juce::String message) {
+	void setPendingMessage(const juce::String& message) {
 		pendingMessage = message;
 	}
 

@@ -3,7 +3,7 @@
 #include "PluginProcessor.h"
 #include "midi/MidiLearnableComponents.h"
 #include "components/shared/IconButton.h"
-#include "components/mixer/VUMeter.h"
+#include "components/mixer/VuMeter.h"
 
 struct StereoLevel
 {

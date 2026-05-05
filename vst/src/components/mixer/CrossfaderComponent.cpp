@@ -1,4 +1,5 @@
-﻿#include "CrossfaderComponent.h"
+﻿#pragma once
+#include "CrossfaderComponent.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "BinaryData.h"

@@ -1,4 +1,4 @@
-﻿#include "JuceHeader.h"
+﻿#pragma once
 #include "MixerChannel.h"
 #include <string>
 #include "PluginEditor.h"

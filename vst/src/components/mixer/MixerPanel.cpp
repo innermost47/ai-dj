@@ -1,4 +1,5 @@
-﻿#include "MixerPanel.h"
+﻿#pragma once
+#include "MixerPanel.h"
 #include "style/ColourPalette.h"
 #include "MixerChannel.h"
 #include "MasterChannel.h"

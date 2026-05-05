@@ -470,15 +470,16 @@ struct TrackData
 	{
 		bool wasPlaying = isPlaying.load();
 		isPlaying = playing;
-		if (wasPlaying != playing && onPlayStateChanged && getCurrentAudioBuffer().getNumChannels() > 0 && isPlaying.load())
+		if (wasPlaying != playing && onPlayStateChanged
+			&& getCurrentAudioBuffer().getNumChannels() > 0
+			&& isPlaying.load())
 		{
-			auto* safeCallback = &onPlayStateChanged;
-
-			juce::MessageManager::callAsync([safeCallback, playing]()
+			juce::WeakReference<TrackData> weakThis(this);
+			juce::MessageManager::callAsync([weakThis, playing]()
 				{
-					if (safeCallback != nullptr && *safeCallback) {
-						(*safeCallback)(playing);
-					}
+					if (auto* self = weakThis.get())
+						if (self->onPlayStateChanged)
+							self->onPlayStateChanged(playing);
 				});
 		}
 	}
@@ -487,15 +488,16 @@ struct TrackData
 	{
 		bool wasArmed = isArmed.load();
 		isArmed = armed;
-		if (wasArmed != armed && onArmedStateChanged && getCurrentAudioBuffer().getNumChannels() > 0 && isPlaying.load())
+		if (wasArmed != armed && onArmedStateChanged
+			&& getCurrentAudioBuffer().getNumChannels() > 0
+			&& isPlaying.load())
 		{
-			auto* safeCallback = &onArmedStateChanged;
-
-			juce::MessageManager::callAsync([safeCallback, armed]()
+			juce::WeakReference<TrackData> weakThis(this);
+			juce::MessageManager::callAsync([weakThis, armed]()
 				{
-					if (safeCallback != nullptr && *safeCallback) {
-						(*safeCallback)(armed);
-					}
+					if (auto* self = weakThis.get())
+						if (self->onArmedStateChanged)
+							self->onArmedStateChanged(armed);
 				});
 		}
 	}
@@ -503,28 +505,28 @@ struct TrackData
 	void setArmedToStop(bool armedToStop)
 	{
 		isArmedToStop = armedToStop;
-		if (onArmedToStopStateChanged && getCurrentAudioBuffer().getNumChannels() > 0 && isCurrentlyPlaying.load())
+		if (onArmedToStopStateChanged
+			&& getCurrentAudioBuffer().getNumChannels() > 0
+			&& isCurrentlyPlaying.load())
 		{
-			auto* safeCallback = &onArmedToStopStateChanged;
-
-			juce::MessageManager::callAsync([safeCallback, armedToStop]()
+			juce::WeakReference<TrackData> weakThis(this);
+			juce::MessageManager::callAsync([weakThis, armedToStop]()
 				{
-					if (safeCallback != nullptr && *safeCallback) {
-						(*safeCallback)(armedToStop);
-					}
+					if (auto* self = weakThis.get())
+						if (self->onArmedToStopStateChanged)
+							self->onArmedToStopStateChanged(armedToStop);
 				});
 		}
 	}
 
 	void setStop()
 	{
-		auto* safeCallback = &onPlayStateChanged;
-
-		juce::MessageManager::callAsync([safeCallback]()
+		juce::WeakReference<TrackData> weakThis(this);
+		juce::MessageManager::callAsync([weakThis]()
 			{
-				if (safeCallback != nullptr && *safeCallback) {
-					(*safeCallback)(false);
-				}
+				if (auto* self = weakThis.get())
+					if (self->onPlayStateChanged)
+						self->onPlayStateChanged(false);
 			});
 	}
 
@@ -533,4 +535,5 @@ private:
 	{
 		return usePages.load() ? pages[currentPageIndex].audioBuffer : audioBuffer;
 	}
+	JUCE_DECLARE_WEAK_REFERENCEABLE(TrackData)
 };

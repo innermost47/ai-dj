@@ -1553,7 +1553,7 @@ void DjIaVstProcessor::generateLoopLocal(const DjIaClient::LoopRequest& request,
 	generationManager.generateLoopLocal(request, trackId);
 }
 
-juce::StringArray DjIaVstProcessor::getBuiltInPrompts() const
+const juce::StringArray& DjIaVstProcessor::getBuiltInPrompts() const
 {
 	return promptPresets;
 }
@@ -2403,7 +2403,7 @@ void DjIaVstProcessor::addCustomPrompt(const juce::String& prompt)
 	}
 }
 
-juce::StringArray DjIaVstProcessor::getCustomPrompts() const
+const juce::StringArray& DjIaVstProcessor::getCustomPrompts() const
 {
 	return customPrompts;
 }
