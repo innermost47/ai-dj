@@ -11,7 +11,7 @@ public:
 		juce::String prompt;
 		float generationDuration = 10.0f;
 		float bpm = 120.0f;
-		juce::String key = "C Aeolian";
+		juce::String key = "C Minor";
 		std::vector<juce::String> preferredStems;
 	};
 
@@ -34,7 +34,7 @@ public:
 	bool initialize()
 	{
 		appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-						 .getChildFile("OBSIDIAN-Neural");
+			.getChildFile("OBSIDIAN-Neural");
 		auto stableAudioDir = appDataDir.getChildFile("stable-audio");
 
 		stableAudioEngine = std::make_unique<StableAudioEngine>();
