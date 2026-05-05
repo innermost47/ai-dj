@@ -315,6 +315,7 @@ private:
 	void setupAdsrKnobs();
 	void updateAdsrKnobsFromPage();
 	void syncAdsrToWaveform();
+	void syncParamsToCurrentPage();
 
 	float calculateEffectiveBpm();
 

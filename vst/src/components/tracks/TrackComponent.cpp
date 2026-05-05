@@ -905,6 +905,8 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	track->setCurrentPage(pageIndex);
 
+	syncParamsToCurrentPage();
+
 	track->isPlaying = wasPlaying;
 	track->isArmed = wasArmed;
 	track->isArmedToStop = wasArmedToStop;
@@ -969,6 +971,10 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	char pageName = 'A' + static_cast<char>(pageIndex);
 	statusCallback("Switched to page " + juce::String(pageName));
+}
+
+void TrackComponent::syncParamsToCurrentPage()
+{
 }
 
 void TrackComponent::updatePagesDisplay()
