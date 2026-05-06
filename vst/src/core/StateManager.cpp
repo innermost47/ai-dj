@@ -1,12 +1,10 @@
-#pragma once
+#include "StateManager.h"
 #include "JuceHeader.h"
-#include "data/TrackData.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
-#include "StateManager.h"
+#include "TrackData.h"
 
-StateManager::StateManager(DjIaVstProcessor& processor)
-	: audioProcessor(processor)
+StateManager::StateManager(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
 }
 
@@ -14,115 +12,116 @@ juce::ValueTree StateManager::saveState() const
 {
 	juce::ValueTree state("TrackManager");
 
-	audioProcessor.trackManager.forEachTrack([&](const TrackData* track)
-		{
-			juce::ValueTree trackState("Track");
+	audioProcessor.getTrackManager().forEachTrack(
+	    [&](const TrackData *track)
+	    {
+		    juce::ValueTree trackState("Track");
 
-			trackState.setProperty("id", track->trackId, nullptr);
-			trackState.setProperty("name", track->trackName, nullptr);
+		    trackState.setProperty("id", track->trackId, nullptr);
+		    trackState.setProperty("name", track->trackName, nullptr);
 
-			trackState.setProperty("slotIndex", track->slotIndex, nullptr);
-			trackState.setProperty("style", track->style, nullptr);
-			trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
-			trackState.setProperty("midiNote", track->midiNote, nullptr);
-			trackState.setProperty("volume", track->volume.load(), nullptr);
-			trackState.setProperty("pan", track->pan.load(), nullptr);
-			trackState.setProperty("muted", track->isMuted.load(), nullptr);
-			trackState.setProperty("solo", track->isSolo.load(), nullptr);
-			trackState.setProperty("enabled", track->isEnabled.load(), nullptr);
-			trackState.setProperty("timeStretchRatio", track->timeStretchRatio, nullptr);
-			trackState.setProperty("showWaveform", track->showWaveform.load(), nullptr);
-			trackState.setProperty("showSequencer", track->showSequencer.load(), nullptr);
-			trackState.setProperty("isPlaying", track->isPlaying.load(), nullptr);
-			trackState.setProperty("isArmed", track->isArmed.load(), nullptr);
-			trackState.setProperty("isArmedToStop", track->isArmedToStop.load(), nullptr);
-			trackState.setProperty("isCurrentlyPlaying", track->isCurrentlyPlaying.load(), nullptr);
-			trackState.setProperty("nextHasOriginalVersion", track->nextHasOriginalVersion.load(), nullptr);
-			trackState.setProperty("randomRetriggerEnabled", track->randomRetriggerEnabled.load(), nullptr);
-			trackState.setProperty("randomRetriggerInterval", track->randomRetriggerInterval.load(), nullptr);
-			trackState.setProperty("beatRepeatPending", track->beatRepeatPending.load(), nullptr);
-			trackState.setProperty("beatRepeatStopPending", track->beatRepeatStopPending.load(), nullptr);
-			trackState.setProperty("originalReadPosition", track->originalReadPosition.load(), nullptr);
-			trackState.setProperty("beatRepeatStartPosition", track->beatRepeatStartPosition.load(), nullptr);
-			trackState.setProperty("beatRepeatEndPosition", track->beatRepeatEndPosition.load(), nullptr);
-			trackState.setProperty("beatRepeatActive", track->beatRepeatActive.load(), nullptr);
-			trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(), nullptr);
-			trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
+		    trackState.setProperty("slotIndex", track->slotIndex, nullptr);
+		    trackState.setProperty("style", track->style, nullptr);
+		    trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
+		    trackState.setProperty("midiNote", track->midiNote, nullptr);
+		    trackState.setProperty("volume", track->volume.load(), nullptr);
+		    trackState.setProperty("pan", track->pan.load(), nullptr);
+		    trackState.setProperty("muted", track->isMuted.load(), nullptr);
+		    trackState.setProperty("solo", track->isSolo.load(), nullptr);
+		    trackState.setProperty("enabled", track->isEnabled.load(), nullptr);
+		    trackState.setProperty("timeStretchRatio", track->timeStretchRatio, nullptr);
+		    trackState.setProperty("showWaveform", track->showWaveform.load(), nullptr);
+		    trackState.setProperty("showSequencer", track->showSequencer.load(), nullptr);
+		    trackState.setProperty("isPlaying", track->isPlaying.load(), nullptr);
+		    trackState.setProperty("isArmed", track->isArmed.load(), nullptr);
+		    trackState.setProperty("isArmedToStop", track->isArmedToStop.load(), nullptr);
+		    trackState.setProperty("isCurrentlyPlaying", track->isCurrentlyPlaying.load(), nullptr);
+		    trackState.setProperty("nextHasOriginalVersion", track->nextHasOriginalVersion.load(), nullptr);
+		    trackState.setProperty("randomRetriggerEnabled", track->randomRetriggerEnabled.load(), nullptr);
+		    trackState.setProperty("randomRetriggerInterval", track->randomRetriggerInterval.load(), nullptr);
+		    trackState.setProperty("beatRepeatPending", track->beatRepeatPending.load(), nullptr);
+		    trackState.setProperty("beatRepeatStopPending", track->beatRepeatStopPending.load(), nullptr);
+		    trackState.setProperty("originalReadPosition", track->originalReadPosition.load(), nullptr);
+		    trackState.setProperty("beatRepeatStartPosition", track->beatRepeatStartPosition.load(), nullptr);
+		    trackState.setProperty("beatRepeatEndPosition", track->beatRepeatEndPosition.load(), nullptr);
+		    trackState.setProperty("beatRepeatActive", track->beatRepeatActive.load(), nullptr);
+		    trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(),
+		                           nullptr);
+		    trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
 
-			for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
-			{
-				auto pageState = juce::ValueTree("Page");
-				const auto& page = track->pages[pageIndex];
+		    for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
+		    {
+			    auto pageState = juce::ValueTree("Page");
+			    const auto &page = track->pages[pageIndex];
 
-				pageState.setProperty("index", pageIndex, nullptr);
-				pageState.setProperty("audioFilePath", page.audioFilePath, nullptr);
-				pageState.setProperty("numSamples", page.numSamples, nullptr);
-				pageState.setProperty("sampleRate", page.sampleRate, nullptr);
-				pageState.setProperty("originalBpm", page.originalBpm, nullptr);
-				pageState.setProperty("prompt", page.prompt, nullptr);
-				pageState.setProperty("selectedPrompt", page.selectedPrompt, nullptr);
-				pageState.setProperty("selectedModel", page.selectedModel, nullptr);
-				pageState.setProperty("generationPrompt", page.generationPrompt, nullptr);
-				pageState.setProperty("generationBpm", page.generationBpm, nullptr);
-				pageState.setProperty("generationKey", page.generationKey, nullptr);
-				pageState.setProperty("generationDuration", page.generationDuration, nullptr);
-				pageState.setProperty("loopStart", page.loopStart, nullptr);
-				pageState.setProperty("loopEnd", page.loopEnd, nullptr);
-				pageState.setProperty("useOriginalFile", page.useOriginalFile.load(), nullptr);
-				pageState.setProperty("hasOriginalVersion", page.hasOriginalVersion.load(), nullptr);
-				pageState.setProperty("isLoaded", page.isLoaded.load(), nullptr);
-				pageState.setProperty("canvasData", page.canvasData, nullptr);
-				pageState.setProperty("canvasState", page.canvasState, nullptr);
-				pageState.setProperty("selectedKeywords", page.selectedKeywords.joinIntoString("|"), nullptr);
-				pageState.setProperty("currentSequenceIndex", page.currentSequenceIndex, nullptr);
-				pageState.setProperty("adsrAttack", page.adsrAttack.load(), nullptr);
-				pageState.setProperty("adsrDecay", page.adsrDecay.load(), nullptr);
-				pageState.setProperty("adsrSustain", page.adsrSustain.load(), nullptr);
-				pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
-				pageState.setProperty("bpmOffset", page.bpmOffset.load(), nullptr);
-				pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
+			    pageState.setProperty("index", pageIndex, nullptr);
+			    pageState.setProperty("audioFilePath", page.audioFilePath, nullptr);
+			    pageState.setProperty("numSamples", page.numSamples, nullptr);
+			    pageState.setProperty("sampleRate", page.sampleRate, nullptr);
+			    pageState.setProperty("originalBpm", page.originalBpm, nullptr);
+			    pageState.setProperty("prompt", page.prompt, nullptr);
+			    pageState.setProperty("selectedPrompt", page.selectedPrompt, nullptr);
+			    pageState.setProperty("selectedModel", page.selectedModel, nullptr);
+			    pageState.setProperty("generationPrompt", page.generationPrompt, nullptr);
+			    pageState.setProperty("generationBpm", page.generationBpm, nullptr);
+			    pageState.setProperty("generationKey", page.generationKey, nullptr);
+			    pageState.setProperty("generationDuration", page.generationDuration, nullptr);
+			    pageState.setProperty("loopStart", page.loopStart, nullptr);
+			    pageState.setProperty("loopEnd", page.loopEnd, nullptr);
+			    pageState.setProperty("useOriginalFile", page.useOriginalFile.load(), nullptr);
+			    pageState.setProperty("hasOriginalVersion", page.hasOriginalVersion.load(), nullptr);
+			    pageState.setProperty("isLoaded", page.isLoaded.load(), nullptr);
+			    pageState.setProperty("canvasData", page.canvasData, nullptr);
+			    pageState.setProperty("canvasState", page.canvasState, nullptr);
+			    pageState.setProperty("selectedKeywords", page.selectedKeywords.joinIntoString("|"), nullptr);
+			    pageState.setProperty("currentSequenceIndex", page.currentSequenceIndex, nullptr);
+			    pageState.setProperty("adsrAttack", page.adsrAttack.load(), nullptr);
+			    pageState.setProperty("adsrDecay", page.adsrDecay.load(), nullptr);
+			    pageState.setProperty("adsrSustain", page.adsrSustain.load(), nullptr);
+			    pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
+			    pageState.setProperty("bpmOffset", page.bpmOffset.load(), nullptr);
+			    pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
 
-				for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
-				{
-					juce::ValueTree sequencerState("Sequence");
-					const auto& seq = page.sequences[seqIdx];
+			    for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
+			    {
+				    juce::ValueTree sequencerState("Sequence");
+				    const auto &seq = page.sequences[seqIdx];
 
-					sequencerState.setProperty("index", seqIdx, nullptr);
-					sequencerState.setProperty("isPlaying", seq.isPlaying, nullptr);
-					sequencerState.setProperty("currentStep", seq.currentStep, nullptr);
-					sequencerState.setProperty("currentMeasure", seq.currentMeasure, nullptr);
-					sequencerState.setProperty("numMeasures", seq.numMeasures, nullptr);
-					sequencerState.setProperty("beatsPerMeasure", seq.beatsPerMeasure, nullptr);
+				    sequencerState.setProperty("index", seqIdx, nullptr);
+				    sequencerState.setProperty("isPlaying", seq.isPlaying, nullptr);
+				    sequencerState.setProperty("currentStep", seq.currentStep, nullptr);
+				    sequencerState.setProperty("currentMeasure", seq.currentMeasure, nullptr);
+				    sequencerState.setProperty("numMeasures", seq.numMeasures, nullptr);
+				    sequencerState.setProperty("beatsPerMeasure", seq.beatsPerMeasure, nullptr);
 
-					for (int m = 0; m < 4; ++m)
-					{
-						for (int s = 0; s < 16; ++s)
-						{
-							juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
-							sequencerState.setProperty(stepKey, seq.steps[m][s], nullptr);
+				    for (int m = 0; m < 4; ++m)
+				    {
+					    for (int s = 0; s < 16; ++s)
+					    {
+						    juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
+						    sequencerState.setProperty(stepKey, seq.steps[m][s], nullptr);
 
-							juce::String velocityKey = "velocity_" + juce::String(m) + "_" + juce::String(s);
-							sequencerState.setProperty(velocityKey, seq.velocities[m][s], nullptr);
-						}
-					}
+						    juce::String velocityKey = "velocity_" + juce::String(m) + "_" + juce::String(s);
+						    sequencerState.setProperty(velocityKey, seq.velocities[m][s], nullptr);
+					    }
+				    }
 
-					pageState.appendChild(sequencerState, nullptr);
-				}
+				    pageState.appendChild(sequencerState, nullptr);
+			    }
 
-				trackState.appendChild(pageState, nullptr);
-			}
+			    trackState.appendChild(pageState, nullptr);
+		    }
 
-			state.appendChild(trackState, nullptr);
-		}
-	);
+		    state.appendChild(trackState, nullptr);
+	    });
 
 	return state;
 }
 
-void StateManager::loadState(const juce::ValueTree& state)
+void StateManager::loadState(const juce::ValueTree &state)
 {
-	audioProcessor.trackManager.clearAllTracks();
-	audioProcessor.trackManager.resetAllSlots();
+	audioProcessor.getTrackManager().clearAllTracks();
+	audioProcessor.getTrackManager().resetAllSlots();
 
 	for (auto trackState : state)
 	{
@@ -182,7 +181,7 @@ void StateManager::loadState(const juce::ValueTree& state)
 
 			if (pageState.isValid())
 			{
-				auto& page = track->pages[pageIndex];
+				auto &page = track->pages[pageIndex];
 				page.audioFilePath = pageState.getProperty("audioFilePath", "").toString();
 				page.numSamples = pageState.getProperty("numSamples", 0);
 				page.sampleRate = pageState.getProperty("sampleRate", 48000.0);
@@ -238,7 +237,7 @@ void StateManager::loadState(const juce::ValueTree& state)
 
 					if (sequencerState.isValid())
 					{
-						auto& seq = page.sequences[seqIdx];
+						auto &seq = page.sequences[seqIdx];
 						seq.isPlaying = sequencerState.getProperty("isPlaying", false);
 						seq.currentStep = 0;
 						seq.currentMeasure = 0;
@@ -259,7 +258,7 @@ void StateManager::loadState(const juce::ValueTree& state)
 					}
 					else
 					{
-						auto& seq = page.sequences[seqIdx];
+						auto &seq = page.sequences[seqIdx];
 						if (seqIdx == 0)
 						{
 							seq.steps[0][0] = true;
@@ -297,8 +296,8 @@ void StateManager::loadState(const juce::ValueTree& state)
 							}
 							if (baseTrackId.isNotEmpty())
 							{
-								juce::File originalFile = audioFile.getParentDirectory()
-									.getChildFile(baseTrackId + "_original" + actualSuffix + ".wav");
+								juce::File originalFile = audioFile.getParentDirectory().getChildFile(
+								    baseTrackId + "_original" + actualSuffix + ".wav");
 
 								if (originalFile.existsAsFile())
 								{
@@ -306,41 +305,42 @@ void StateManager::loadState(const juce::ValueTree& state)
 								}
 							}
 						}
-						audioProcessor.trackManager.loadAudioFileForPage(track.get(), pageIndex, fileToLoad);
+						audioProcessor.getTrackManager().loadAudioFileForPage(track.get(), pageIndex, fileToLoad);
 					}
 				}
 			}
 		}
 
-		if (track->slotIndex < 0 || track->slotIndex >= 8 || audioProcessor.trackManager.isSlotUsed(track->slotIndex))
+		if (track->slotIndex < 0 || track->slotIndex >= 8 ||
+		    audioProcessor.getTrackManager().isSlotUsed(track->slotIndex))
 		{
-			track->slotIndex = audioProcessor.trackManager.findFreeSlot();
+			track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
 		}
 		if (track->slotIndex >= 0 && track->slotIndex < 8)
 		{
-			audioProcessor.trackManager.setSlotUsed(track->slotIndex, true);
+			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 		}
 
 		std::string stdId = track->trackId.toStdString();
-		audioProcessor.trackManager.addTrack(stdId, std::move(track));
+		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
-	int trackCount = static_cast<int>(audioProcessor.trackManager.getNumTracks());
+	int trackCount = static_cast<int>(audioProcessor.getTrackManager().getNumTracks());
 	for (int i = trackCount; i < 8; ++i)
 	{
 		auto track = std::make_unique<TrackData>();
 		track->trackName = "Track " + juce::String(i + 1);
 		track->midiNote = 60 + i;
-		track->slotIndex = audioProcessor.trackManager.findFreeSlot();
+		track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
 		for (int p = 0; p < 4; ++p)
 			track->pages[p].selectedModel = "stable-audio-open-1.0";
 		if (track->slotIndex >= 0 && track->slotIndex < 8)
-			audioProcessor.trackManager.setSlotUsed(track->slotIndex, true);
+			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 		std::string stdId = track->trackId.toStdString();
-		audioProcessor.trackManager.addTrack(stdId, std::move(track));
+		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
 }
 
-void StateManager::getStateInformation(juce::MemoryBlock& destData)
+void StateManager::getStateInformation(juce::MemoryBlock &destData)
 {
 	juce::ValueTree state("DjIaVstState");
 
@@ -368,7 +368,7 @@ void StateManager::getStateInformation(juce::MemoryBlock& destData)
 	auto mappings = audioProcessor.getMidiLearnManager().getAllMappings();
 	for (int i = 0; i < mappings.size(); ++i)
 	{
-		const auto& mapping = mappings[i];
+		const auto &mapping = mappings[i];
 		juce::ValueTree mappingState("Mapping");
 		mappingState.setProperty("midiType", mapping.midiType, nullptr);
 		mappingState.setProperty("midiNumber", mapping.midiNumber, nullptr);
@@ -384,18 +384,18 @@ void StateManager::getStateInformation(juce::MemoryBlock& destData)
 
 	juce::ValueTree parametersState("Parameters");
 
-	auto& params = audioProcessor.getParameterTreeState();
-	for (const auto& paramId : audioProcessor.getBooleanParamIds())
+	auto &params = audioProcessor.getParameterTreeState();
+	for (const auto &paramId : audioProcessor.getBooleanParamIds())
 	{
-		auto* param = params.getParameter(paramId);
+		auto *param = params.getParameter(paramId);
 		if (param)
 		{
 			parametersState.setProperty(paramId, param->getValue(), nullptr);
 		}
 	}
-	for (const auto& paramId : audioProcessor.getFloatParamIds())
+	for (const auto &paramId : audioProcessor.getFloatParamIds())
 	{
-		auto* param = params.getParameter(paramId);
+		auto *param = params.getParameter(paramId);
 		if (param)
 		{
 			parametersState.setProperty(paramId, param->getValue(), nullptr);
@@ -415,7 +415,7 @@ void StateManager::getStateInformation(juce::MemoryBlock& destData)
 	audioProcessor.copyXmlToBinary(*xml, destData);
 }
 
-void StateManager::setStateInformation(const void* data, int sizeInBytes)
+void StateManager::setStateInformation(const void *data, int sizeInBytes)
 {
 	audioProcessor.setIsLoadingState(true);
 	std::unique_ptr<juce::XmlElement> xml(audioProcessor.getXmlFromBinary(data, sizeInBytes));
@@ -460,7 +460,7 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 		}
 		else
 		{
-			audioProcessor.setSelectedTrackId(audioProcessor.trackManager.createTrack("Main"));
+			audioProcessor.setSelectedTrackId(audioProcessor.getTrackManager().createTrack("Main"));
 		}
 	}
 	audioProcessor.setCrossfaderValue((float)state.getProperty("crossfaderValue", juce::var(0.5f)));
@@ -473,7 +473,7 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 	{
 		if (state.hasProperty("globalCrossfader"))
 		{
-			if (auto* p = audioProcessor.getParameters().getParameter("globalCrossfader"))
+			if (auto *p = audioProcessor.getParameters().getParameter("globalCrossfader"))
 				p->setValueNotifyingHost((float)state.getProperty("globalCrossfader", 0.5f));
 		}
 		for (int i = 0; i < 4; ++i)
@@ -482,23 +482,23 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 			juce::String newId = "pairCrossfader" + juce::String(i + 1);
 			if (state.hasProperty(oldKey))
 			{
-				if (auto* p = audioProcessor.getParameters().getParameter(newId))
+				if (auto *p = audioProcessor.getParameters().getParameter(newId))
 					p->setValueNotifyingHost((float)state.getProperty(oldKey, 0.5f));
 			}
 		}
 		if (state.hasProperty("crossfaderCurveMode"))
 		{
 			int mode = juce::jlimit(0, 2, (int)state.getProperty("crossfaderCurveMode", 1));
-			if (auto* p = audioProcessor.getParameters().getParameter("crossfaderCurveMode"))
+			if (auto *p = audioProcessor.getParameters().getParameter("crossfaderCurveMode"))
 				p->setValueNotifyingHost(mode / 2.0f);
 		}
 	}
 
 	for (int i = 0; i < 4; ++i)
 	{
-		audioProcessor.setPairCrossfaderPrevious(i, audioProcessor.getPairCrossfaderParam(i));
+		audioProcessor.setPairCrossfaderPrevious(i, audioProcessor.getParameterManager().getPairCrossfader(i));
 	}
-	audioProcessor.setGlobalCrossfaderPrevious(audioProcessor.getGlobalCrossfaderParam());
+	audioProcessor.setGlobalCrossfaderPrevious(audioProcessor.getParameterManager().getGlobalCrossfader());
 
 	juce::ValueTree midiMappingsState = state.getChildWithName("MidiMappings");
 	if (midiMappingsState.isValid())
@@ -529,27 +529,27 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 	auto parametersState = state.getChildWithName("Parameters");
 	if (parametersState.isValid())
 	{
-		auto& params = audioProcessor.getParameterTreeState();
+		auto &params = audioProcessor.getParameterTreeState();
 		for (int slot = 1; slot <= 8; ++slot)
 		{
-			for (const char* page : { "PageA", "PageB", "PageC", "PageD" })
+			for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			{
 				juce::String paramId = "slot" + juce::String(slot) + page;
-				if (auto* param = params.getParameter(paramId))
+				if (auto *param = params.getParameter(paramId))
 					param->setValueNotifyingHost(0.0f);
 			}
 			for (int seq = 1; seq <= 8; ++seq)
 			{
 				juce::String paramId = "slot" + juce::String(slot) + "Seq" + juce::String(seq);
-				if (auto* param = params.getParameter(paramId))
+				if (auto *param = params.getParameter(paramId))
 					param->setValueNotifyingHost(0.0f);
 			}
 		}
-		for (const auto& paramId : audioProcessor.getBooleanParamIds())
+		for (const auto &paramId : audioProcessor.getBooleanParamIds())
 		{
 			if (parametersState.hasProperty(paramId))
 			{
-				auto* param = params.getParameter(paramId);
+				auto *param = params.getParameter(paramId);
 				if (param)
 				{
 					float value = parametersState.getProperty(paramId, 0.0f);
@@ -557,11 +557,11 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 				}
 			}
 		}
-		for (const auto& paramId : audioProcessor.getFloatParamIds())
+		for (const auto &paramId : audioProcessor.getFloatParamIds())
 		{
 			if (parametersState.hasProperty(paramId))
 			{
-				auto* param = params.getParameter(paramId);
+				auto *param = params.getParameter(paramId);
 				if (param)
 				{
 					param->setValueNotifyingHost(parametersState.getProperty(paramId, 0.0f));
@@ -571,81 +571,111 @@ void StateManager::setStateInformation(const void* data, int sizeInBytes)
 	}
 	audioProcessor.setProjectId(state.getProperty("projectId", "legacy").toString());
 
-	if (audioProcessor.getProjectId() == "legacy" || audioProcessor.getProjectId().isEmpty())
-	{
-		audioProcessor.setMigrationCompleted(false);
-		juce::Timer::callAfterDelay(500, [this]()
-			{ audioProcessor.performMigrationIfNeeded(); });
-	}
-	else
-	{
-		audioProcessor.setMigrationCompleted(true);
-	}
+	juce::Timer::callAfterDelay(
+	    2000,
+	    [this]()
+	    {
+		    auto trackIds = audioProcessor.getAllTrackIds();
+		    for (const auto &trackId : trackIds)
+		    {
+			    TrackData *track = audioProcessor.getTrack(trackId);
+			    if (!track)
+				    continue;
 
-	juce::Timer::callAfterDelay(2000, [this]()
-		{
-			auto trackIds = audioProcessor.getAllTrackIds();
-			for (const auto& trackId : trackIds)
-			{
-				TrackData* track = audioProcessor.getTrack(trackId);
-				if (!track) continue;
+			    auto &currentPage = track->getCurrentPage();
 
-				auto& currentPage = track->getCurrentPage();
+			    int slotNumber = track->slotIndex + 1;
+			    int slotIdx = track->slotIndex;
 
-				int slotNumber = track->slotIndex + 1;
+			    if (track->isCurrentlyPlaying.load())
+				    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber),
+				                                                     MidiMapping::feedbackActive);
+			    else if (track->isArmed.load())
+				    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber),
+				                                                     MidiMapping::feedbackPending);
+			    else
+				    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber),
+				                                                     MidiMapping::feedbackIdle);
 
-				if (track->isCurrentlyPlaying.load())
-					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackActive);
-				else if (track->isArmed.load())
-					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackPending);
-				else
-					audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber), MidiMapping::feedbackIdle);
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber),
+			                                                     track->currentPageIndex.load());
 
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), track->currentPageIndex.load());
+			    float vol = audioProcessor.getParameterManager().getVolume(slotIdx);
+			    if (vol == 0.0f)
+				    vol = track->volume.load();
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber),
+			                                                     MidiMapping::volumeToMidi(vol));
 
-				float vol = audioProcessor.getVolumeParam(track->slotIndex) ? audioProcessor.getVolumeParam(track->slotIndex) : track->volume.load();
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber), MidiMapping::volumeToMidi(vol));
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber),
+			                                                     MidiMapping::panToMidi(track->pan.load()));
 
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber), MidiMapping::panToMidi(track->pan.load()));
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
+			                                                     track->isMuted.load() ? MidiMapping::feedbackActive
+			                                                                           : MidiMapping::feedbackIdle);
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
+			                                                     track->isSolo.load() ? MidiMapping::feedbackActive
+			                                                                          : MidiMapping::feedbackIdle);
+			    audioProcessor.getMidiManager().sendMidiFeedback(
+			        MidiMapping::ccFeedbackBeatRepeat(slotNumber),
+			        track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
-					track->isMuted.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
-					track->isSolo.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
-					track->randomRetriggerEnabled.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
+			    float pitch = audioProcessor.getParameterManager().getPitch(slotIdx);
+			    float rawPitch = (pitch != 0.0f) ? pitch * 8.0f : (float)currentPage.bpmOffset.load();
 
-				float rawPitch = audioProcessor.getPitchParam(track->slotIndex) ? audioProcessor.getPitchParam(track->slotIndex) * 8.0f : (float)currentPage.bpmOffset.load();
-				float rawFine = audioProcessor.getFineParam(track->slotIndex) ? audioProcessor.getFineParam(track->slotIndex) * 2.0f : currentPage.fineOffset.load();
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber), MidiMapping::pitchToMidi(rawPitch));
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(rawFine));
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
-					track->getCurrentPage().currentSequenceIndex);
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getAttackParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getDecayParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getSustainParam(track->slotIndex), 0.0f, 1.0f), MidiMapping::feedbackChannelShaping);
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slotNumber), MidiMapping::adsrToMidi(audioProcessor.getReleaseParam(track->slotIndex), 0.001f, 4.0f), MidiMapping::feedbackChannelShaping);
-			}
+			    float fine = audioProcessor.getParameterManager().getFine(slotIdx);
+			    float rawFine = (fine != 0.0f) ? fine * 2.0f : currentPage.fineOffset.load();
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber),
+			                                                     MidiMapping::pitchToMidi(rawPitch));
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber),
+			                                                     MidiMapping::fineToMidi(rawFine));
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber),
+			                                                     track->getCurrentPage().currentSequenceIndex);
 
-			for (int p = 0; p < 4; ++p)
-			{
-				audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(p),
-					MidiMapping::volumeToMidi(audioProcessor.getPairCrossfaderValue(p)),
-					MidiMapping::feedbackChannelShaping);
-			}
+			    audioProcessor.getMidiManager().sendMidiFeedback(
+			        MidiMapping::ccFeedbackAdsrAttack(slotNumber),
+			        MidiMapping::adsrToMidi(audioProcessor.getParameterManager().getAttack(slotIdx), 0.001f, 4.0f),
+			        MidiMapping::feedbackChannelShaping);
+			    audioProcessor.getMidiManager().sendMidiFeedback(
+			        MidiMapping::ccFeedbackAdsrDecay(slotNumber),
+			        MidiMapping::adsrToMidi(audioProcessor.getParameterManager().getDecay(slotIdx), 0.001f, 4.0f),
+			        MidiMapping::feedbackChannelShaping);
+			    audioProcessor.getMidiManager().sendMidiFeedback(
+			        MidiMapping::ccFeedbackAdsrSustain(slotNumber),
+			        MidiMapping::adsrToMidi(audioProcessor.getParameterManager().getSustain(slotIdx), 0.0f, 1.0f),
+			        MidiMapping::feedbackChannelShaping);
+			    audioProcessor.getMidiManager().sendMidiFeedback(
+			        MidiMapping::ccFeedbackAdsrRelease(slotNumber),
+			        MidiMapping::adsrToMidi(audioProcessor.getParameterManager().getRelease(slotIdx), 0.001f, 4.0f),
+			        MidiMapping::feedbackChannelShaping);
+		    }
 
-			audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackGlobalCrossfader, MidiMapping::volumeToMidi(audioProcessor.getGlobalCrossfaderValue()), MidiMapping::feedbackChannelShaping);
-			audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve, audioProcessor.getCrossfaderCurveMode() * 63, MidiMapping::feedbackChannelShaping);
-		});
+		    for (int p = 0; p < 4; ++p)
+		    {
+			    audioProcessor.getMidiManager().sendMidiFeedback(
+			        MidiMapping::ccFeedbackPairCrossfader(p),
+			        MidiMapping::volumeToMidi(audioProcessor.getPairCrossfaderValue(p)),
+			        MidiMapping::feedbackChannelShaping);
+		    }
+
+		    audioProcessor.getMidiManager().sendMidiFeedback(
+		        MidiMapping::ccFeedbackGlobalCrossfader,
+		        MidiMapping::volumeToMidi(audioProcessor.getGlobalCrossfaderValue()),
+		        MidiMapping::feedbackChannelShaping);
+		    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve,
+		                                                     audioProcessor.getCrossfaderCurveMode() * 63,
+		                                                     MidiMapping::feedbackChannelShaping);
+	    });
 
 	audioProcessor.getMidiLearnManager().restoreUICallbacks();
 	audioProcessor.setStateReady(true);
 	audioProcessor.setIsLoadingState(false);
-	juce::MessageManager::callAsync([this]()
-		{
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor())) {
-				editor->refreshTrackComponents();
-				editor->updateUIFromProcessor();
-			}
-		});
+	juce::MessageManager::callAsync(
+	    [this]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    editor->refreshTrackComponents();
+			    editor->updateUIFromProcessor();
+		    }
+	    });
 }

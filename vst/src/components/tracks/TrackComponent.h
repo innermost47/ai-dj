@@ -1,10 +1,11 @@
 #pragma once
-#include "components/ObsidianBase.h"
-#include "core/TrackManager.h"
-#include "midi/MidiLearnableComponents.h"
-#include "style/ColourPalette.h"
-#include "components/tracks/DrawingCanvas.h"
-#include "components/shared/IconButton.h"
+#include "ColourPalette.h"
+#include "DrawingCanvas.h"
+#include "IconButton.h"
+#include "MidiLearnableComponents.h"
+#include "ObsidianBase.h"
+#include "TrackManager.h"
+#include <JuceHeader.h>
 
 class WaveformDisplay;
 class SequencerComponent;
@@ -12,8 +13,8 @@ class DjIaVstProcessor;
 
 class CustomInfoLabelLookAndFeel : public juce::LookAndFeel_V4
 {
-public:
-	void drawLabel(juce::Graphics& g, juce::Label& label) override
+  public:
+	void drawLabel(juce::Graphics &g, juce::Label &label) override
 	{
 		auto bounds = label.getLocalBounds().toFloat();
 		g.setColour(ColourPalette::backgroundDeep);
@@ -22,36 +23,38 @@ public:
 		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
 		g.setColour(ColourPalette::textAccent);
 		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 10.0f, juce::Font::plain));
-		g.drawText(label.getText(), bounds.reduced(8, 2),
-			juce::Justification::centredLeft, false);
+		g.drawText(label.getText(), bounds.reduced(8, 2), juce::Justification::centredLeft, false);
 	}
 };
 
-class TrackComponent : public ObsidianComponent, public juce::Timer, public juce::AudioProcessorParameter::Listener, public juce::DragAndDropTarget
+class TrackComponent : public ObsidianComponent,
+                       public juce::Timer,
+                       public juce::AudioProcessorParameter::Listener,
+                       public juce::DragAndDropTarget
 {
-public:
-	TrackComponent(const juce::String& trackId, DjIaVstProcessor& processor);
+  public:
+	TrackComponent(const juce::String &trackId, DjIaVstProcessor &processor);
 	~TrackComponent();
-	const juce::String& getTrackId() const
+	const juce::String &getTrackId() const
 	{
 		return trackId;
 	}
 
-	std::function<void(const juce::String&)> onDeleteTrack;
-	std::function<void(const juce::String&)> onSelectTrack;
-	std::function<void(const juce::String&)> onGenerateForTrack;
-	std::function<void(const juce::String&, const juce::String&)> onTrackRenamed;
-	std::function<void(const juce::String&, const juce::String&)> onTrackPromptChanged;
-	std::function<void(const juce::String&)> onStatusMessage;
-	std::function<void(const juce::String&, const juce::String&, const juce::StringArray&)> onGenerateWithImage;
-	std::function<void(const juce::String&)> onStopPreview;
-	std::function<void(const juce::String& trackId)> onModelChanged;
+	std::function<void(const juce::String &)> onDeleteTrack;
+	std::function<void(const juce::String &)> onSelectTrack;
+	std::function<void(const juce::String &)> onGenerateForTrack;
+	std::function<void(const juce::String &, const juce::String &)> onTrackRenamed;
+	std::function<void(const juce::String &, const juce::String &)> onTrackPromptChanged;
+	std::function<void(const juce::String &)> onStatusMessage;
+	std::function<void(const juce::String &, const juce::String &, const juce::StringArray &)> onGenerateWithImage;
+	std::function<void(const juce::String &)> onStopPreview;
+	std::function<void(const juce::String &trackId)> onModelChanged;
 
-	bool isInterestedInDragSource(const SourceDetails& dragSourceDetails) override;
-	void itemDragEnter(const SourceDetails& dragSourceDetails) override;
-	void itemDragMove(const SourceDetails& dragSourceDetails) override;
-	void itemDragExit(const SourceDetails& dragSourceDetails) override;
-	void itemDropped(const SourceDetails& dragSourceDetails) override;
+	bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
+	void itemDragEnter(const SourceDetails &dragSourceDetails) override;
+	void itemDragMove(const SourceDetails &dragSourceDetails) override;
+	void itemDragExit(const SourceDetails &dragSourceDetails) override;
+	void itemDropped(const SourceDetails &dragSourceDetails) override;
 
 	static const int BASE_HEIGHT = 80;
 	static const int WAVEFORM_HEIGHT = 40;
@@ -62,13 +65,16 @@ public:
 	static const int CLUSTER_GAP = 14;
 	static const int INTRA_CLUSTER_GAP = 2;
 
-	TrackData* getTrack() const { return track; }
+	TrackData *getTrack() const
+	{
+		return track;
+	}
 
-	std::function<void(const juce::String&, const juce::String&)> onReorderTrack;
-	std::function<void(const juce::String&)> onPreviewTrack;
+	std::function<void(const juce::String &, const juce::String &)> onReorderTrack;
+	std::function<void(const juce::String &)> onPreviewTrack;
 
 	void setSelected(bool selected);
-	void setTrackData(TrackData* trackData);
+	void setTrackData(TrackData *trackData);
 	void refreshWaveformDisplay();
 	bool isWaveformVisible() const;
 	void startGeneratingAnimation();
@@ -78,15 +84,15 @@ public:
 	void updateWaveformWithTimeStretch();
 	void updatePlaybackPosition(double timeInSeconds);
 	void refreshWaveformIfNeeded();
-	void updatePromptPresets(const juce::StringArray& presets);
+	void updatePromptPresets(const juce::StringArray &presets);
 	void setupMidiLearn();
-	void updatePromptSelection(const juce::String& promptText);
+	void updatePromptSelection(const juce::String &promptText);
 	void onPageSelected(int pageIndex);
 	void performPageChange(int pageIndex);
 	void updatePagesDisplay();
 	void setSamplePending(bool pending);
 	void setPreviewPlaying(bool playing);
-	void syncTrackName(const juce::String& name);
+	void syncTrackName(const juce::String &name);
 	void loadPromptPresets();
 
 	bool isEditingLabel = false;
@@ -98,7 +104,10 @@ public:
 
 	juce::String trackId;
 
-	SequencerComponent* getSequencer() const { return sequencer.get(); }
+	SequencerComponent *getSequencer() const
+	{
+		return sequencer.get();
+	}
 
 	void setCanvasGenerating(bool generating)
 	{
@@ -109,25 +118,21 @@ public:
 		}
 	}
 
-private:
+  private:
 	class BorderOverlay : public juce::Component
 	{
-	public:
+	  public:
 		BorderOverlay()
 		{
 			setInterceptsMouseClicks(false, false);
 			setOpaque(false);
 		}
 
-		void setVisualState(bool generating, bool samplePending, bool selected,
-			bool dragOver, bool blink, juce::Colour modelColour)
+		void setVisualState(bool generating, bool samplePending, bool selected, bool dragOver, bool blink,
+		                    juce::Colour modelColour)
 		{
-			if (generating == isGenerating
-				&& samplePending == hasSamplePending
-				&& selected == isSelected
-				&& dragOver == isDragOver
-				&& blink == blinkState
-				&& modelColour == accentColour)
+			if (generating == isGenerating && samplePending == hasSamplePending && selected == isSelected &&
+			    dragOver == isDragOver && blink == blinkState && modelColour == accentColour)
 				return;
 
 			isGenerating = generating;
@@ -139,7 +144,7 @@ private:
 			repaint();
 		}
 
-		void paint(juce::Graphics& g) override
+		void paint(juce::Graphics &g) override
 		{
 			auto bounds = getLocalBounds().toFloat();
 
@@ -187,13 +192,13 @@ private:
 			g.drawRoundedRectangle(bounds.reduced(1.0f), 6.0f, borderWidth);
 		}
 
-	private:
+	  private:
 		bool isGenerating = false;
 		bool hasSamplePending = false;
 		bool isSelected = false;
 		bool isDragOver = false;
 		bool blinkState = false;
-		juce::Colour accentColour{ ColourPalette::buttonPrimary };
+		juce::Colour accentColour{ColourPalette::buttonPrimary};
 	};
 
 	struct PageButtonState
@@ -202,22 +207,22 @@ private:
 		bool isPending = false;
 		bool hasAudio = false;
 		bool blinkState = false;
-		juce::Colour modelColour{ ColourPalette::buttonPrimary };
+		juce::Colour modelColour{ColourPalette::buttonPrimary};
 
-		bool operator==(const PageButtonState& other) const
+		bool operator==(const PageButtonState &other) const
 		{
-			return isActive == other.isActive
-				&& isPending == other.isPending
-				&& hasAudio == other.hasAudio
-				&& blinkState == other.blinkState
-				&& modelColour == other.modelColour;
+			return isActive == other.isActive && isPending == other.isPending && hasAudio == other.hasAudio &&
+			       blinkState == other.blinkState && modelColour == other.modelColour;
 		}
-		bool operator!=(const PageButtonState& other) const { return !(*this == other); }
+		bool operator!=(const PageButtonState &other) const
+		{
+			return !(*this == other);
+		}
 	};
 
 	std::array<PageButtonState, 4> lastPageStates;
 	int lastWaveformNumSamples = 0;
-	juce::Colour cachedModelColour{ ColourPalette::buttonPrimary };
+	juce::Colour cachedModelColour{ColourPalette::buttonPrimary};
 
 	BorderOverlay borderOverlay;
 
@@ -225,26 +230,26 @@ private:
 
 	juce::StringArray promptPresets;
 
-	TrackData* track;
+	TrackData *track;
 
 	std::unique_ptr<WaveformDisplay> waveformDisplay;
 	std::unique_ptr<SequencerComponent> sequencer;
 	std::unique_ptr<DrawingCanvas> drawingCanvas;
 
-	DjIaVstProcessor& audioProcessor;
+	DjIaVstProcessor &audioProcessor;
 
 	CustomInfoLabelLookAndFeel customLookAndFeel;
 
 	MidiLearnableButton pageButtons[4];
 
-	IconButton drawButton{ "DrawBtn", "DRAW" };
-	IconButton generateButton{ "GenerateBtn", "GEN" };
+	IconButton drawButton{"DrawBtn", "DRAW"};
+	IconButton generateButton{"GenerateBtn", "GEN"};
 
-	IconButton originalSyncButton{ "OriginalSyncBtn", "ORIG" };
-	IconButton previewButton{ "PreviewBtn", "PREVIEW" };
+	IconButton originalSyncButton{"OriginalSyncBtn", "ORIG"};
+	IconButton previewButton{"PreviewBtn", "PREVIEW"};
 
-	IconButton randomRetriggerButton{ "RandomRetriggerBtn", "REPEAT" };
-	IconButton randomDurationToggle{ "RandomDurationBtn", "RND" };
+	IconButton randomRetriggerButton{"RandomRetriggerBtn", "REPEAT"};
+	IconButton randomDurationToggle{"RandomDurationBtn", "RND"};
 
 	MidiLearnableSlider intervalKnob;
 	MidiLearnableSlider adsrAttackKnob;
@@ -260,7 +265,7 @@ private:
 
 	juce::Label infoLabel;
 
-	std::atomic<bool> isDestroyed{ false };
+	std::atomic<bool> isDestroyed{false};
 
 	bool isGenerating = false;
 	bool blinkState = false;
@@ -275,12 +280,11 @@ private:
 	juce::TextButton togglePagesButton;
 
 	void setupPagesUI();
-	void onTogglePagesMode();
 	void loadPageIfNeeded(int pageIndex);
-	void loadPageAudioFile(int pageIndex, const juce::File& audioFile);
+	void loadPageAudioFile(int pageIndex, const juce::File &audioFile);
 	void layoutPagesButtons(juce::Rectangle<int> area);
 	void calculateHostBasedDisplay();
-	void paint(juce::Graphics& g);
+	void paint(juce::Graphics &g);
 	void resized();
 	void timerCallback() override;
 	void parameterValueChanged(int parameterIndex, float newValue) override;
@@ -289,20 +293,18 @@ private:
 	void setupIconButtons();
 	void updateButtonsEnabledState();
 	void updateTrackInfo();
-	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
-	void removeMidiMapping(const juce::String& param);
+	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
+	void removeMidiMapping(const juce::String &param);
 	void addListener(juce::String name);
 	void removeListener(juce::String name);
 	void setButtonParameter(juce::String name);
-	void updateUIFromParameter(const juce::String& paramName,
-		const juce::String& slotPrefix,
-		float newValue);
+	void updateUIFromParameter(const juce::String &paramName, const juce::String &slotPrefix, float newValue);
 	void onTrackPresetSelected();
 	void toggleOriginalSync();
-	void statusCallback(const juce::String& message);
+	void statusCallback(const juce::String &message);
 	void onRandomRetriggerToggled();
 	void onIntervalChanged();
-	void setSliderParameter(juce::String name, juce::Slider& slider);
+	void setSliderParameter(juce::String name, juce::Slider &slider);
 	void addEventListeners();
 	void updateRandomRetriggerButtonColor();
 	void updateRandomDurationButtonColor();
@@ -311,7 +313,7 @@ private:
 	void updateModelUI();
 	void syncBorderOverlay();
 	juce::Colour getCurrentModelColour() const;
-	void mouseDown(const juce::MouseEvent& event) override;
+	void mouseDown(const juce::MouseEvent &event) override;
 	void setupAdsrKnobs();
 	void updateAdsrKnobsFromPage();
 	void syncAdsrToWaveform();

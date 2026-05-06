@@ -1,10 +1,8 @@
-#pragma once
-#include <cmath>
-#include <algorithm>
 #include "VuMeter.h"
+#include <algorithm>
+#include <cmath>
 
-
-void VuMeter::updateMeter(const juce::AudioBuffer<float>* buffer, double readPos, float volume, bool isPlaying)
+void VuMeter::updateMeter(const juce::AudioBuffer<float> *buffer, double readPos, float volume, bool isPlaying)
 {
 	hasSource = (buffer != nullptr);
 
@@ -60,15 +58,14 @@ void VuMeter::updateMeter(const juce::AudioBuffer<float>* buffer, double readPos
 		peakLeft *= volume;
 		peakRight *= volume;
 
-		auto linearToDb = [](float linear) -> float {
+		auto linearToDb = [](float linear) -> float
+		{
 			if (linear <= 0.00001f)
 				return -100.0f;
 			return 20.0f * std::log10(linear);
-			};
+		};
 
-		auto dbToNormalized = [](float db) -> float {
-			return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f);
-			};
+		auto dbToNormalized = [](float db) -> float { return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f); };
 
 		instantNormLeft = dbToNormalized(linearToDb(peakLeft));
 		instantNormRight = dbToNormalized(linearToDb(peakRight));
@@ -99,7 +96,7 @@ void VuMeter::updateMeter(const juce::AudioBuffer<float>* buffer, double readPos
 	repaint();
 }
 
-void VuMeter::paint(juce::Graphics& g)
+void VuMeter::paint(juce::Graphics &g)
 {
 	float meterWidth = 5.0f;
 	float meterSpacing = 2.0f;
@@ -150,7 +147,7 @@ void VuMeter::paint(juce::Graphics& g)
 	drawClipRect(vuAreaRight, g, currentAudioLevelRight);
 }
 
-void VuMeter::drawClipRect(juce::Rectangle<float>& vuArea, juce::Graphics& g, float currentAudioLevel)
+void VuMeter::drawClipRect(juce::Rectangle<float> &vuArea, juce::Graphics &g, float currentAudioLevel)
 {
 	auto clipRect = juce::Rectangle<float>(vuArea.getX() + 1, vuArea.getY() + 2, vuArea.getWidth() - 2, 4);
 
@@ -162,7 +159,8 @@ void VuMeter::drawClipRect(juce::Rectangle<float>& vuArea, juce::Graphics& g, fl
 	g.fillRoundedRectangle(clipRect, 1.0f);
 }
 
-void VuMeter::drawPeakSegments(int numSegments, juce::Rectangle<float>& vuArea, float segmentHeight, juce::Graphics& g, float peakValue)
+void VuMeter::drawPeakSegments(int numSegments, juce::Rectangle<float> &vuArea, float segmentHeight, juce::Graphics &g,
+                               float peakValue)
 {
 	int peakSegment = (int)(peakValue * numSegments);
 	if (peakSegment < numSegments)
@@ -202,23 +200,23 @@ void VuMeter::updateFromRawLevels(float rawLeft, float rawRight)
 
 	juce::Component::SafePointer<VuMeter> safeThis(this);
 
-	juce::MessageManager::callAsync([safeThis]() {
-		if (safeThis != nullptr)
-		{
-			safeThis->repaint();
-		}
-		});
+	juce::MessageManager::callAsync(
+	    [safeThis]()
+	    {
+		    if (safeThis != nullptr)
+		    {
+			    safeThis->repaint();
+		    }
+	    });
 }
 
-void VuMeter::fillMeterSegment(juce::Graphics& g, juce::Rectangle<float>& vuArea,
-	int i, float segmentHeight, int numSegments,
-	float currentLevel)
+void VuMeter::fillMeterSegment(juce::Graphics &g, juce::Rectangle<float> &vuArea, int i, float segmentHeight,
+                               int numSegments, float currentLevel)
 {
 	float segmentY = vuArea.getBottom() - 2 - (i + 1) * segmentHeight;
 	float segmentLevel = (float)i / numSegments;
 
-	juce::Rectangle<float> segmentRect(
-		vuArea.getX() + 1, segmentY, vuArea.getWidth() - 2, segmentHeight - 1);
+	juce::Rectangle<float> segmentRect(vuArea.getX() + 1, segmentY, vuArea.getWidth() - 2, segmentHeight - 1);
 
 	juce::Colour segmentColour;
 	if (segmentLevel < 0.67f)

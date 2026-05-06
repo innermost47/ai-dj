@@ -207,13 +207,17 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/shared/IconButton.cpp
     src/components/shared/ObsidianAlertManager.cpp
     src/components/shared/ObsidianModal.cpp
+    src/components/tracks/DrawingCanvas.cpp
     src/components/tracks/SequencerComponent.cpp
     src/components/tracks/TrackComponent.cpp
     src/components/tracks/WaveformDisplay.cpp
+    src/core/AudioManager.cpp
     src/core/GenerationManager.cpp
+    src/core/MidiManager.cpp
+    src/core/ParameterManager.cpp
+    src/core/SequencerManager.cpp
     src/core/StateManager.cpp
     src/core/TrackManager.cpp
-    src/data/Parameters.cpp
     src/dsp/AudioAnalyzer.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
@@ -231,7 +235,19 @@ target_sources(ObsidianNeuralVST PRIVATE
 target_include_directories(ObsidianNeuralVST PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     src
-    ${soundtouch_SOURCE_DIR}/include 
+    src/components
+    src/components/bank
+    src/components/mixer
+    src/components/shared
+    src/components/tracks
+    src/config
+    src/core
+    src/data
+    src/dsp
+    src/engines
+    src/midi
+    src/style
+    ${soundtouch_SOURCE_DIR}/include
 )
 
 target_compile_definitions(ObsidianNeuralVST 

@@ -1,37 +1,40 @@
 ﻿#pragma once
+#include "AiModelDefinitions.h"
+#include "ColourPalette.h"
+#include "IconButton.h"
+#include "MidiLearnableComponents.h"
 #include <JuceHeader.h>
-#include "midi/MidiLearnableComponents.h"
-#include "components/shared/IconButton.h"
-#include "style/ColourPalette.h"
-#include "config/AiModelDefinitions.h"
 
 class DjIaVstProcessor;
 
 class CrossfaderComponent : public juce::Component, public juce::Timer
 {
-public:
-	CrossfaderComponent(DjIaVstProcessor& processor);
+  public:
+	CrossfaderComponent(DjIaVstProcessor &processor);
 	~CrossfaderComponent() override;
 
-	void paint(juce::Graphics& g) override;
+	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void timerCallback() override;
 
 	void refreshFromProcessor();
 	void updatePairColours();
-	void onModelChanged() { updatePairColours(); }
+	void onModelChanged()
+	{
+		updatePairColours();
+	}
 
 	void refreshCurveButtons();
 
-private:
-	DjIaVstProcessor& audioProcessor;
+  private:
+	DjIaVstProcessor &audioProcessor;
 
 	MidiLearnableSlider pairSliders[4];
 	MidiLearnableSlider globalSlider;
 
-	IconButton curveLinearButton{ "CurveLinear", "LIN" };
-	IconButton curveEqualPowerButton{ "CurveEqualPower", "EQ" };
-	IconButton curveDjButton{ "CurveDJ", "DJ" };
+	IconButton curveLinearButton{"CurveLinear", "LIN"};
+	IconButton curveEqualPowerButton{"CurveEqualPower", "EQ"};
+	IconButton curveDjButton{"CurveDJ", "DJ"};
 
 	juce::Rectangle<int> pairRowBounds[4];
 	juce::Rectangle<int> globalRowBounds;
@@ -47,18 +50,15 @@ private:
 
 	void setupUI();
 	void setupCurveButtons();
-	void setupSlider(MidiLearnableSlider& slider, const juce::String& tooltip);
+	void setupSlider(MidiLearnableSlider &slider, const juce::String &tooltip);
 	void setupMidiLearn();
 	void setupCurveButtonsMidiLearn();
-	void drawHardwareLED(juce::Graphics& g,
-		juce::Rectangle<float> bounds,
-		juce::Colour colour,
-		float intensity,
-		bool playing) const;
-	void drawSegmentedCurveBackground(juce::Graphics& g) const;
-	void updateSliderColour(MidiLearnableSlider& slider, int pairIdx);
+	void drawHardwareLED(juce::Graphics &g, juce::Rectangle<float> bounds, juce::Colour colour, float intensity,
+	                     bool playing) const;
+	void drawSegmentedCurveBackground(juce::Graphics &g) const;
+	void updateSliderColour(MidiLearnableSlider &slider, int pairIdx);
 	void selectCurveMode(int mode);
-	void paintOverChildren(juce::Graphics& g) override;
+	void paintOverChildren(juce::Graphics &g) override;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossfaderComponent)
 };

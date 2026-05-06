@@ -1,9 +1,10 @@
 #pragma once
-#include "components/ObsidianBase.h"
+#include "IconButton.h"
+#include "MidiLearnableComponents.h"
+#include "ObsidianBase.h"
 #include "PluginProcessor.h"
-#include "midi/MidiLearnableComponents.h"
-#include "components/shared/IconButton.h"
-#include "components/mixer/VuMeter.h"
+#include "VuMeter.h"
+#include <JuceHeader.h>
 
 struct StereoLevel
 {
@@ -13,17 +14,20 @@ struct StereoLevel
 
 class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::AudioProcessorParameter::Listener
 {
-public:
-	MixerChannel(const juce::String& trackId, DjIaVstProcessor& processor, TrackData* trackData);
+  public:
+	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData);
 	~MixerChannel() override;
-	juce::String getTrackId() const { return trackId; }
+	juce::String getTrackId() const
+	{
+		return trackId;
+	}
 	juce::Label trackNameLabel;
-	TrackData* track;
+	TrackData *track;
 	void setSelected(bool selected);
 	void updateFromTrackData();
 	void updateModelUI();
 	void updateVUMeters();
-	void setTrackData(TrackData* trackData);
+	void setTrackData(TrackData *trackData);
 	void updateButtonColors();
 	void cleanup();
 	void addEventListeners();
@@ -34,13 +38,13 @@ public:
 		hasSamplePending = pending;
 		repaint();
 	}
-	void setTrackName(const juce::String& name);
-	std::function<void(const juce::String&)> onTrackRenamed;
+	void setTrackName(const juce::String &name);
+	std::function<void(const juce::String &)> onTrackRenamed;
 
-private:
-	DjIaVstProcessor& audioProcessor;
+  private:
+	DjIaVstProcessor &audioProcessor;
 	VuMeter vuMeter;
-	std::atomic<bool> isDestroyed{ false };
+	std::atomic<bool> isDestroyed{false};
 	juce::String trackId;
 
 	bool isGenerating = false;
@@ -49,7 +53,7 @@ private:
 
 	bool isSelected = false;
 	int bypassMidiFrames = 0;
-	std::atomic<bool> isUpdatingButtons{ false };
+	std::atomic<bool> isUpdatingButtons{false};
 
 	float currentAudioLevel = 0.0f;
 	float peakHold = 0.0f;
@@ -61,10 +65,10 @@ private:
 
 	juce::Rectangle<int> sliderBounds;
 
-	IconButton playButton{ "Play", "PLAY" };
-	IconButtonSimple stopButton{ "Stop", "STOP" };
-	IconButton muteButton{ "Mute", "MUTE" };
-	IconButton soloButton{ "Solo", "SOLO" };
+	IconButton playButton{"Play", "PLAY"};
+	IconButtonSimple stopButton{"Stop", "STOP"};
+	IconButton muteButton{"Mute", "MUTE"};
+	IconButton soloButton{"Solo", "SOLO"};
 
 	MidiLearnableSlider volumeSlider;
 
@@ -86,7 +90,7 @@ private:
 	std::vector<float> levelHistoryLeft;
 	std::vector<float> levelHistoryRight;
 
-	void paint(juce::Graphics& g) override;
+	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void updateVUMeter();
 	StereoLevel calculateInstantLevel();
@@ -95,15 +99,13 @@ private:
 	void setupUI();
 	void parameterValueChanged(int parameterIndex, float newValue) override;
 	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
-	void learn(juce::String param, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
+	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
 	void removeListener(juce::String name);
 	void addListener(juce::String name);
-	void setSliderParameter(juce::String name, juce::Slider& slider);
-	void setButtonParameter(juce::String name, juce::Button& button);
-	void updateUIFromParameter(const juce::String& paramName,
-		const juce::String& slotPrefix,
-		float newValue);
-	void removeMidiMapping(const juce::String& param);
+	void setSliderParameter(juce::String name, juce::Slider &slider);
+	void setButtonParameter(juce::String name, juce::Button &button);
+	void updateUIFromParameter(const juce::String &paramName, const juce::String &slotPrefix, float newValue);
+	void removeMidiMapping(const juce::String &param);
 	void stopTrackImmediatly();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerChannel);

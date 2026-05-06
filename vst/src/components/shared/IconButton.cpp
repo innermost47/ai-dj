@@ -1,7 +1,6 @@
-#pragma once
 #include "IconButton.h"
 
-std::unique_ptr<juce::Drawable> IconButtonBase::loadSVG(const char* data, size_t size)
+std::unique_ptr<juce::Drawable> IconButtonBase::loadSVG(const char *data, size_t size)
 {
 	auto svgString = juce::String::fromUTF8(data, (int)size);
 	svgString = svgString.replace("currentColor", "#000000");
@@ -11,10 +10,7 @@ std::unique_ptr<juce::Drawable> IconButtonBase::loadSVG(const char* data, size_t
 	return nullptr;
 }
 
-void IconButtonBase::paintIconButton(juce::Graphics& g,
-	juce::Button& btn,
-	bool isMouseOver,
-	bool isButtonDown)
+void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool isMouseOver, bool isButtonDown)
 {
 	auto fullBounds = btn.getLocalBounds().toFloat();
 	const float cornerSize = 4.0f;
@@ -33,10 +29,9 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 				g.fillRoundedRectangle(bounds.translated(0, 1.0f), cornerSize);
 			}
 
-			juce::ColourGradient bgGradient(
-				ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
-				ColourPalette::backgroundMid.darker(0.08f), bounds.getX(), bounds.getBottom(),
-				false);
+			juce::ColourGradient bgGradient(ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
+			                                ColourPalette::backgroundMid.darker(0.08f), bounds.getX(),
+			                                bounds.getBottom(), false);
 			g.setGradientFill(bgGradient);
 			g.fillRoundedRectangle(bounds, cornerSize);
 
@@ -46,16 +41,13 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 				g.fillRoundedRectangle(bounds.withHeight(bounds.getHeight() * 0.45f), cornerSize);
 			}
 
-			g.setColour(isMouseOver
-				? borderColour.withAlpha(0.6f)
-				: borderColour);
+			g.setColour(isMouseOver ? borderColour.withAlpha(0.6f) : borderColour);
 			g.drawRoundedRectangle(bounds, cornerSize, 0.8f);
 		}
 		else
 		{
-			juce::Colour bgColour = toggled
-				? btn.findColour(juce::TextButton::buttonOnColourId)
-				: btn.findColour(juce::TextButton::buttonColourId);
+			juce::Colour bgColour = toggled ? btn.findColour(juce::TextButton::buttonOnColourId)
+			                                : btn.findColour(juce::TextButton::buttonColourId);
 			if (!enabled)
 				bgColour = bgColour.withMultipliedAlpha(0.4f);
 			else if (isButtonDown)
@@ -64,15 +56,13 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 				bgColour = bgColour.darker(0.03f);
 			g.setColour(bgColour);
 			g.fillRoundedRectangle(fullBounds.reduced(1.0f), cornerSize);
-			g.setColour(ColourPalette::backgroundLight.darker(0.15f)
-				.withAlpha(enabled ? 0.8f : 0.3f));
+			g.setColour(ColourPalette::backgroundLight.darker(0.15f).withAlpha(enabled ? 0.8f : 0.3f));
 			g.drawRoundedRectangle(fullBounds.reduced(1.0f), cornerSize, 1.0f);
 		}
 	}
 
-	auto* drawable = (toggled && hasToggledIcon && iconDrawableToggled)
-		? iconDrawableToggled.get()
-		: iconDrawable.get();
+	auto *drawable =
+	    (toggled && hasToggledIcon && iconDrawableToggled) ? iconDrawableToggled.get() : iconDrawable.get();
 	const bool hasIcon = (drawable != nullptr);
 
 	const float topPadding = 3.0f;
@@ -80,10 +70,8 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 	const float accentBarSlot = hasAccentBar ? 3.0f : 0.0f;
 	const float accentGap = hasAccentBar ? 2.0f : 0.0f;
 	const bool drawAccentBar = hasAccentBar && toggled && enabled;
-	const float labelHeight = labelText.isNotEmpty()
-		? (hasIcon ? (isCompact ? 8.0f : 10.0f)
-			: (isCompact ? 10.0f : 12.0f))
-		: 0.0f;
+	const float labelHeight =
+	    labelText.isNotEmpty() ? (hasIcon ? (isCompact ? 8.0f : 10.0f) : (isCompact ? 10.0f : 12.0f)) : 0.0f;
 	const float labelGap = (labelHeight > 0.0f && hasIcon) ? 2.0f : 0.0f;
 
 	auto contentArea = fullBounds.reduced(2.0f, 0.0f);
@@ -97,10 +85,9 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 		{
 			const float barInset = 4.0f;
 			g.setColour(btn.findColour(juce::TextButton::textColourOnId));
-			g.fillRoundedRectangle({ barArea.getX() + barInset, barArea.getY(),
-									barArea.getWidth() - 2.0f * barInset,
-									accentBarSlot },
-				accentBarSlot * 0.5f);
+			g.fillRoundedRectangle(
+			    {barArea.getX() + barInset, barArea.getY(), barArea.getWidth() - 2.0f * barInset, accentBarSlot},
+			    accentBarSlot * 0.5f);
 		}
 		contentArea.removeFromBottom(accentGap);
 	}
@@ -123,8 +110,7 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 	{
 		const float marginH = isCompact ? 0.10f : 0.18f;
 		const float marginV = isCompact ? 0.05f : 0.10f;
-		auto iconBounds = contentArea.reduced(contentArea.getWidth() * marginH,
-			contentArea.getHeight() * marginV);
+		auto iconBounds = contentArea.reduced(contentArea.getWidth() * marginH, contentArea.getHeight() * marginV);
 		float side = std::min(iconBounds.getWidth(), iconBounds.getHeight());
 
 		if (customIconSize > 0.0f)
@@ -132,13 +118,11 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 		else if (isCompact)
 			side = std::min(side, 9.0f);
 
-		juce::Rectangle<float> square(iconBounds.getCentreX() - side * 0.5f,
-			iconBounds.getCentreY() - side * 0.5f,
-			side, side);
+		juce::Rectangle<float> square(iconBounds.getCentreX() - side * 0.5f, iconBounds.getCentreY() - side * 0.5f,
+		                              side, side);
 
-		juce::Colour iconColour = toggled
-			? btn.findColour(juce::TextButton::textColourOnId)
-			: btn.findColour(juce::TextButton::textColourOffId);
+		juce::Colour iconColour = toggled ? btn.findColour(juce::TextButton::textColourOnId)
+		                                  : btn.findColour(juce::TextButton::textColourOffId);
 
 		if (!enabled)
 			iconColour = iconColour.withMultipliedAlpha(0.3f);
@@ -150,10 +134,10 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 		copy->replaceColour(juce::Colour(0xff000000), iconColour);
 		copy->replaceColour(juce::Colour(0xffffffff), iconColour);
 
-		if (auto* dc = dynamic_cast<juce::DrawableComposite*>(copy.get()))
+		if (auto *dc = dynamic_cast<juce::DrawableComposite *>(copy.get()))
 		{
 			for (int i = 0; i < dc->getNumChildComponents(); ++i)
-				if (auto* child = dynamic_cast<juce::DrawablePath*>(dc->getChildComponent(i)))
+				if (auto *child = dynamic_cast<juce::DrawablePath *>(dc->getChildComponent(i)))
 				{
 					if (child->getFill().isInvisible() || child->getFill().colour.isTransparent())
 						child->setFill(juce::FillType(juce::Colours::transparentBlack));
@@ -162,7 +146,7 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 					child->setStrokeFill(iconColour);
 				}
 		}
-		if (auto* dp = dynamic_cast<juce::DrawablePath*>(copy.get()))
+		if (auto *dp = dynamic_cast<juce::DrawablePath *>(copy.get()))
 		{
 			if (dp->getFill().isInvisible() || dp->getFill().colour.isTransparent())
 				dp->setFill(juce::FillType(juce::Colours::transparentBlack));
@@ -176,22 +160,18 @@ void IconButtonBase::paintIconButton(juce::Graphics& g,
 
 	if (labelText.isNotEmpty())
 	{
-		juce::Colour labelCol = toggled
-			? btn.findColour(juce::TextButton::textColourOnId)
-			: btn.findColour(juce::TextButton::textColourOffId);
+		juce::Colour labelCol = toggled ? btn.findColour(juce::TextButton::textColourOnId)
+		                                : btn.findColour(juce::TextButton::textColourOffId);
 		g.setColour(enabled ? labelCol : labelCol.withAlpha(0.3f));
 
-		const float fontSize = hasIcon
-			? (isCompact ? 6.5f : 8.5f)
-			: (isCompact ? 9.0f : 11.0f);
+		const float fontSize = hasIcon ? (isCompact ? 6.5f : 8.5f) : (isCompact ? 9.0f : 11.0f);
 
 		g.setFont(juce::FontOptions(fontSize, juce::Font::bold));
-		g.drawText(labelText, labelArea.toNearestInt(),
-			juce::Justification::centred, false);
+		g.drawText(labelText, labelArea.toNearestInt(), juce::Justification::centred, false);
 	}
 }
 
-IconButton::IconButton(const juce::String& name, const juce::String& label)
+IconButton::IconButton(const juce::String &name, const juce::String &label)
 {
 	setName(name);
 	setButtonText({});
@@ -199,19 +179,19 @@ IconButton::IconButton(const juce::String& name, const juce::String& label)
 	setAccessible(false);
 }
 
-void IconButton::paintButton(juce::Graphics& g, bool isMouseOver, bool isButtonDown)
+void IconButton::paintButton(juce::Graphics &g, bool isMouseOver, bool isButtonDown)
 {
 	paintIconButton(g, *this, isMouseOver, isButtonDown);
 }
 
-IconButtonSimple::IconButtonSimple(const juce::String& name, const juce::String& label)
+IconButtonSimple::IconButtonSimple(const juce::String &name, const juce::String &label)
 {
 	setName(name);
 	setButtonText({});
 	labelText = label;
 }
 
-void IconButtonSimple::paintButton(juce::Graphics& g, bool isMouseOver, bool isButtonDown)
+void IconButtonSimple::paintButton(juce::Graphics &g, bool isMouseOver, bool isButtonDown)
 {
 	paintIconButton(g, *this, isMouseOver, isButtonDown);
 }

@@ -1,4 +1,3 @@
-#pragma once
 #include "MasterWaveformDisplay.h"
 
 MasterWaveformDisplay::MasterWaveformDisplay()
@@ -8,9 +7,12 @@ MasterWaveformDisplay::MasterWaveformDisplay()
 	startTimerHz(30);
 }
 
-MasterWaveformDisplay::~MasterWaveformDisplay() { stopTimer(); }
+MasterWaveformDisplay::~MasterWaveformDisplay()
+{
+	stopTimer();
+}
 
-void MasterWaveformDisplay::pushSamples(const float* left, const float* right, int numSamples)
+void MasterWaveformDisplay::pushSamples(const float *left, const float *right, int numSamples)
 {
 	for (int i = 0; i < numSamples; ++i)
 	{
@@ -51,7 +53,7 @@ void MasterWaveformDisplay::timerCallback()
 	repaint();
 }
 
-void MasterWaveformDisplay::paint(juce::Graphics& g)
+void MasterWaveformDisplay::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
 
@@ -154,7 +156,8 @@ void MasterWaveformDisplay::paint(juce::Graphics& g)
 	}
 
 	float phNorm = (float)(std::fmod(pos, 4.0) / 4.0);
-	if (phNorm < 0.0f) phNorm += 1.0f;
+	if (phNorm < 0.0f)
+		phNorm += 1.0f;
 	float phX = inner.getX() + inner.getWidth() * phNorm;
 
 	g.setColour(ColourPalette::playArmed.withAlpha(0.12f));

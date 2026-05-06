@@ -1,19 +1,19 @@
 #pragma once
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 
 class SimpleEQ
 {
-public:
+  public:
 	SimpleEQ() = default;
 
 	void prepare(double newSampleRate, int /*samplesPerBlock*/);
-	void processBlock(juce::AudioBuffer<float>& buffer);
+	void processBlock(juce::AudioBuffer<float> &buffer);
 	void setHighGain(float gainDb);
 	void setMidGain(float gainDb);
 	void setLowGain(float gainDb);
 	void reset();
 
-private:
+  private:
 	double sampleRate = 48000.0;
 
 	float highGain = 0.0f;

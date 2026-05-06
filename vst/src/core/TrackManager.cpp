@@ -1,15 +1,13 @@
-#pragma once
-#include "JuceHeader.h"
 #include "TrackManager.h"
 
-juce::String TrackManager::createTrack(const juce::String& name)
+juce::String TrackManager::createTrack(const juce::String &name)
 {
 	juce::ScopedLock lock(tracksLock);
 	for (int i = 0; i < 8; ++i)
 	{
 		usedSlots[i] = false;
 	}
-	for (const auto& pair : tracks)
+	for (const auto &pair : tracks)
 	{
 		if (pair.second->slotIndex >= 0 && pair.second->slotIndex < 8)
 		{
@@ -33,7 +31,7 @@ juce::String TrackManager::createTrack(const juce::String& name)
 	return trackId;
 }
 
-void TrackManager::reorderTracks(const juce::String& fromTrackId, const juce::String& toTrackId)
+void TrackManager::reorderTracks(const juce::String &fromTrackId, const juce::String &toTrackId)
 {
 	juce::ScopedLock lock(tracksLock);
 
@@ -53,19 +51,18 @@ void TrackManager::reorderTracks(const juce::String& fromTrackId, const juce::St
 	trackOrder.insert(toIt, movedId);
 }
 
-TrackData* TrackManager::getTrack(const juce::String& trackId)
+TrackData *TrackManager::getTrack(const juce::String &trackId)
 {
 	juce::ScopedLock lock(tracksLock);
 	auto it = tracks.find(trackId.toStdString());
 	return (it != tracks.end()) ? it->second.get() : nullptr;
 }
 
-
 std::vector<juce::String> TrackManager::getAllTrackIds() const
 {
 	juce::ScopedLock lock(tracksLock);
 	std::vector<juce::String> ids;
-	for (const auto& stdId : trackOrder)
+	for (const auto &stdId : trackOrder)
 	{
 		if (tracks.count(stdId))
 		{
@@ -75,21 +72,16 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 	return ids;
 }
 
-void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
-	std::vector<juce::AudioBuffer<float>>& individualOutputs,
-	juce::AudioBuffer<float>& previewOutput,
-	double hostBpm,
-	const float pairPrev[4],
-	const float pairCurrent[4],
-	float globalPrev,
-	float globalCurrent,
-	int curveMode)
+void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
+                                   std::vector<juce::AudioBuffer<float>> &individualOutputs,
+                                   juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
+                                   const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode)
 {
 	const int numSamples = outputBuffer.getNumSamples();
 	bool anyTrackSolo = false;
 	{
 		juce::ScopedLock lock(tracksLock);
-		for (const auto& pair : tracks)
+		for (const auto &pair : tracks)
 		{
 			if (pair.second->isSolo.load())
 			{
@@ -99,25 +91,25 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 		}
 	}
 	outputBuffer.clear();
-	for (auto& buffer : individualOutputs)
+	for (auto &buffer : individualOutputs)
 	{
 		buffer.clear();
 	}
 
-	for (const auto& pair : tracks)
+	for (const auto &pair : tracks)
 	{
-		auto* track = pair.second.get();
-		auto& currentPage = track->getCurrentPage();
-		if (track->isEnabled.load() && currentPage.numSamples > 0 &&
-			track->slotIndex >= 0 && track->slotIndex < individualOutputs.size())
+		auto *track = pair.second.get();
+		auto &currentPage = track->getCurrentPage();
+		if (track->isEnabled.load() && currentPage.numSamples > 0 && track->slotIndex >= 0 &&
+		    track->slotIndex < individualOutputs.size())
 		{
 			int bufferIndex = track->slotIndex;
 			juce::AudioBuffer<float> tempMixBuffer(outputBuffer.getNumChannels(), numSamples);
 			juce::AudioBuffer<float> tempIndividualBuffer(2, numSamples);
 			tempMixBuffer.clear();
 			tempIndividualBuffer.clear();
-			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer,
-				previewOutput, numSamples, bufferIndex, hostBpm);
+			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, previewOutput, numSamples, bufferIndex,
+			                  hostBpm);
 
 			float deckGainStart = 1.0f;
 			float deckGainEnd = 1.0f;
@@ -139,8 +131,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 				deckGainEnd = pairGainEnd * globalGainEnd;
 			}
 
-			bool shouldHearTrack = !track->isMuted.load() &&
-				(!anyTrackSolo || track->isSolo.load());
+			bool shouldHearTrack = !track->isMuted.load() && (!anyTrackSolo || track->isSolo.load());
 
 			if (track->isPreviewMode.load())
 			{
@@ -161,10 +152,8 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 				{
 					for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
 					{
-						outputBuffer.addFromWithRamp(ch, 0,
-							tempMixBuffer.getReadPointer(ch),
-							numSamples,
-							deckGainStart, deckGainEnd);
+						outputBuffer.addFromWithRamp(ch, 0, tempMixBuffer.getReadPointer(ch), numSamples, deckGainStart,
+						                             deckGainEnd);
 					}
 				}
 				for (int ch = 0; ch < std::min(2, individualOutputs[bufferIndex].getNumChannels()); ++ch)
@@ -177,8 +166,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 					else
 					{
 						individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
-						individualOutputs[bufferIndex].applyGainRamp(ch, 0, numSamples,
-							deckGainStart, deckGainEnd);
+						individualOutputs[bufferIndex].applyGainRamp(ch, 0, numSamples, deckGainStart, deckGainEnd);
 					}
 				}
 			}
@@ -186,14 +174,14 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float>& outputBuffer,
 	}
 }
 
-void TrackManager::loadAudioFileForPage(TrackData* track, int pageIndex, const juce::File& audioFile)
+void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile)
 {
 	if (!track || pageIndex < 0 || pageIndex >= 4)
 	{
 		return;
 	}
 
-	auto& page = track->pages[pageIndex];
+	auto &page = track->pages[pageIndex];
 
 	juce::AudioFormatManager formatManager;
 	formatManager.registerBasicFormats();
@@ -242,7 +230,7 @@ void TrackManager::loadAudioFileForPage(TrackData* track, int pageIndex, const j
 	float maxSample = 0.0f;
 	for (int ch = 0; ch < page.audioBuffer.getNumChannels(); ++ch)
 	{
-		auto* channelData = page.audioBuffer.getReadPointer(ch);
+		auto *channelData = page.audioBuffer.getReadPointer(ch);
 		for (int i = 0; i < page.audioBuffer.getNumSamples(); ++i)
 		{
 			maxSample = std::max(maxSample, std::abs(channelData[i]));
@@ -256,7 +244,7 @@ size_t TrackManager::getNumTracks() const
 	return tracks.size();
 }
 
-void TrackManager::addTrack(const std::string& trackId, std::unique_ptr<TrackData> track)
+void TrackManager::addTrack(const std::string &trackId, std::unique_ptr<TrackData> track)
 {
 	const juce::ScopedLock sl(tracksLock);
 	tracks[trackId] = std::move(track);
@@ -270,10 +258,10 @@ void TrackManager::clearAllTracks()
 	trackOrder.clear();
 }
 
-void TrackManager::forEachTrack(std::function<void(const std::string&, const TrackData*)> callback) const
+void TrackManager::forEachTrack(std::function<void(const std::string &, const TrackData *)> callback) const
 {
 	const juce::ScopedLock sl(tracksLock);
-	for (const auto& id : trackOrder)
+	for (const auto &id : trackOrder)
 	{
 		auto it = tracks.find(id);
 		if (it != tracks.end())
@@ -283,10 +271,10 @@ void TrackManager::forEachTrack(std::function<void(const std::string&, const Tra
 	}
 }
 
-void TrackManager::forEachTrack(std::function<void(const TrackData*)> callback) const
+void TrackManager::forEachTrack(std::function<void(const TrackData *)> callback) const
 {
 	const juce::ScopedLock sl(tracksLock);
-	for (const auto& id : trackOrder)
+	for (const auto &id : trackOrder)
 	{
 		auto it = tracks.find(id);
 		if (it != tracks.end())
@@ -320,9 +308,9 @@ void TrackManager::resetAllSlots()
 int TrackManager::findFreeSlot()
 {
 	std::vector<bool> actualUsage(8, false);
-	for (const auto& pair : tracks)
+	for (const auto &pair : tracks)
 	{
-		const auto& track = pair.second;
+		const auto &track = pair.second;
 		if (track->slotIndex >= 0 && track->slotIndex < 8)
 		{
 			actualUsage[track->slotIndex] = true;
@@ -340,13 +328,12 @@ int TrackManager::findFreeSlot()
 	return -1;
 }
 
-void TrackManager::renderSingleTrack(TrackData& track,
-	juce::AudioBuffer<float>& mixOutput,
-	juce::AudioBuffer<float>& individualOutput,
-	juce::AudioBuffer<float>& /* previewOutput */,
-	int numSamples, int /* trackIndex */, double hostBpm) const
+void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
+                                     juce::AudioBuffer<float> &individualOutput,
+                                     juce::AudioBuffer<float> & /* previewOutput */, int numSamples,
+                                     int /* trackIndex */, double hostBpm) const
 {
-	auto* safeCallback = parameterUpdateCallback.load();
+	auto *safeCallback = parameterUpdateCallback.load();
 	if (safeCallback != nullptr && *safeCallback)
 	{
 		int slot = track.slotIndex;
@@ -357,15 +344,15 @@ void TrackManager::renderSingleTrack(TrackData& track,
 	}
 
 	auto handleEndOfPreview = [this, &track]()
+	{
+		if (track.isPreviewMode.load() && !track.previewEndPending.exchange(true))
 		{
-			if (track.isPreviewMode.load() && !track.previewEndPending.exchange(true))
-			{
-				if (onPreviewEnded)
-					onPreviewEnded(track.trackId);
-			}
-		};
+			if (onPreviewEnded)
+				onPreviewEnded(track.trackId);
+		}
+	};
 
-	const juce::AudioSampleBuffer* bufferToUse = nullptr;
+	const juce::AudioSampleBuffer *bufferToUse = nullptr;
 	int numSamplesToUse = 0;
 	double sampleRateToUse = 0;
 	double loopStartToUse = 0;
@@ -376,7 +363,7 @@ void TrackManager::renderSingleTrack(TrackData& track,
 	float adsrSustain = 1.0f;
 	float adsrRelease = 0.0f;
 
-	const auto& currentPage = track.getCurrentPage();
+	const auto &currentPage = track.getCurrentPage();
 	bufferToUse = &currentPage.audioBuffer;
 	numSamplesToUse = currentPage.numSamples;
 	sampleRateToUse = currentPage.sampleRate;
@@ -454,10 +441,8 @@ void TrackManager::renderSingleTrack(TrackData& track,
 		sectionLength = numSamplesToUse;
 	}
 
-	const float* leftChannel = bufferToUse->getReadPointer(0);
-	const float* rightChannel = bufferToUse->getNumChannels() > 1
-		? bufferToUse->getReadPointer(1)
-		: leftChannel;
+	const float *leftChannel = bufferToUse->getReadPointer(0);
+	const float *rightChannel = bufferToUse->getNumChannels() > 1 ? bufferToUse->getReadPointer(1) : leftChannel;
 
 	const int bufferSize = bufferToUse->getNumSamples();
 
@@ -575,7 +560,7 @@ void TrackManager::renderSingleTrack(TrackData& track,
 	track.readPosition = currentPosition;
 }
 
-float TrackManager::interpolateLinear(const float* buffer, double position, int bufferSize) const
+float TrackManager::interpolateLinear(const float *buffer, double position, int bufferSize) const
 {
 	int index = static_cast<int>(position);
 	if (index >= bufferSize - 1)
@@ -607,4 +592,3 @@ float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int cur
 		return x;
 	}
 }
-

@@ -1,8 +1,6 @@
-#pragma once
 #include "AudioAnalyzer.h"
 
-
-float AudioAnalyzer::detectBPM(const juce::AudioBuffer<float>& buffer, double sampleRate)
+float AudioAnalyzer::detectBPM(const juce::AudioBuffer<float> &buffer, double sampleRate)
 {
 	if (buffer.getNumSamples() == 0)
 		return 0.0f;
@@ -32,13 +30,13 @@ float AudioAnalyzer::detectBPM(const juce::AudioBuffer<float>& buffer, double sa
 		}
 		return 0.0f;
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception & /*e*/)
 	{
 		return 0.0f;
 	}
 }
 
-void AudioAnalyzer::chunkAnalysis(std::vector<float>& monoData, soundtouch::BPMDetect& bpmDetect)
+void AudioAnalyzer::chunkAnalysis(std::vector<float> &monoData, soundtouch::BPMDetect &bpmDetect)
 {
 	const int chunkSize = 4096;
 
@@ -49,15 +47,12 @@ void AudioAnalyzer::chunkAnalysis(std::vector<float>& monoData, soundtouch::BPMD
 	}
 }
 
-float AudioAnalyzer::normalizeAudio(const juce::AudioSampleBuffer& buffer,
-	std::vector<float>& monoData,
-	bool& retFlag,
-	int maxSamples)
+float AudioAnalyzer::normalizeAudio(const juce::AudioSampleBuffer &buffer, std::vector<float> &monoData, bool &retFlag,
+                                    int maxSamples)
 {
 	retFlag = true;
 
-	int samplesToProcess = (maxSamples > 0) ? std::min(maxSamples, buffer.getNumSamples())
-		: buffer.getNumSamples();
+	int samplesToProcess = (maxSamples > 0) ? std::min(maxSamples, buffer.getNumSamples()) : buffer.getNumSamples();
 
 	float maxLevel = 0.0f;
 	for (int i = 0; i < samplesToProcess; ++i)
@@ -78,7 +73,7 @@ float AudioAnalyzer::normalizeAudio(const juce::AudioSampleBuffer& buffer,
 	}
 
 	float normalizeGain = 0.5f / maxLevel;
-	for (auto& sample : monoData)
+	for (auto &sample : monoData)
 	{
 		sample *= normalizeGain;
 	}
@@ -87,17 +82,13 @@ float AudioAnalyzer::normalizeAudio(const juce::AudioSampleBuffer& buffer,
 	return 0.0f;
 }
 
-void AudioAnalyzer::timeStretchBufferHQ(juce::AudioBuffer<float>& buffer,
-	double ratio,
-	double sampleRate)
+void AudioAnalyzer::timeStretchBufferHQ(juce::AudioBuffer<float> &buffer, double ratio, double sampleRate)
 {
 	timeStretchBuffer(buffer, ratio, sampleRate, true);
 }
 
-void AudioAnalyzer::timeStretchBuffer(juce::AudioBuffer<float>& buffer,
-	double ratio,
-	double sampleRate,
-	bool highQuality)
+void AudioAnalyzer::timeStretchBuffer(juce::AudioBuffer<float> &buffer, double ratio, double sampleRate,
+                                      bool highQuality)
 {
 	if (std::abs(ratio - 1.0) < 0.001 || buffer.getNumSamples() == 0)
 		return;
@@ -172,7 +163,7 @@ void AudioAnalyzer::timeStretchBuffer(juce::AudioBuffer<float>& buffer,
 			}
 		}
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception & /*e*/)
 	{
 	}
 }

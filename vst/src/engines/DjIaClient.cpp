@@ -1,13 +1,11 @@
-#pragma once
 #include "DjIaClient.h"
 
-
-DjIaClient::DjIaClient(const juce::String& apiKey, const juce::String& baseUrl)
-	: apiKey(apiKey), baseUrl(baseUrl + "/api/v1")
+DjIaClient::DjIaClient(const juce::String &apiKey, const juce::String &baseUrl)
+    : apiKey(apiKey), baseUrl(baseUrl + "/api/v1")
 {
 }
 
-void DjIaClient::setApiKey(const juce::String& newApiKey)
+void DjIaClient::setApiKey(const juce::String &newApiKey)
 {
 	std::lock_guard<std::mutex> lock(mutex);
 	apiKey = newApiKey;
@@ -19,7 +17,7 @@ juce::String DjIaClient::getApiKey() const
 	return apiKey;
 }
 
-void DjIaClient::setBaseUrl(const juce::String& newBaseUrl)
+void DjIaClient::setBaseUrl(const juce::String &newBaseUrl)
 {
 	std::lock_guard<std::mutex> lock(mutex);
 	if (newBaseUrl.endsWith("/"))
@@ -63,10 +61,10 @@ DjIaClient::CreditsInfo DjIaClient::checkCredits(int timeoutMS)
 
 		auto url = juce::URL(currentBaseUrl + "/auth/credits/check/vst");
 		auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-			.withStatusCode(&statusCode)
-			.withResponseHeaders(&responseHeaders)
-			.withExtraHeaders(headerString)
-			.withConnectionTimeoutMs(timeoutMS);
+		                   .withStatusCode(&statusCode)
+		                   .withResponseHeaders(&responseHeaders)
+		                   .withExtraHeaders(headerString)
+		                   .withConnectionTimeoutMs(timeoutMS);
 
 		auto response = url.createInputStream(options);
 
@@ -99,7 +97,7 @@ DjIaClient::CreditsInfo DjIaClient::checkCredits(int timeoutMS)
 			throw std::runtime_error("Invalid JSON response");
 		}
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		result.success = false;
 		result.errorMessage = e.what();
@@ -108,7 +106,8 @@ DjIaClient::CreditsInfo DjIaClient::checkCredits(int timeoutMS)
 	return result;
 }
 
-DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest& request, double sampleRate, int requestTimeoutMS, bool bypassLLM)
+DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS,
+                                                  bool bypassLLM)
 {
 	try
 	{
@@ -134,7 +133,7 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest& request, do
 		if (request.keywords.size() > 0)
 		{
 			juce::Array<juce::var> keywordsArray;
-			for (const auto& keyword : request.keywords)
+			for (const auto &keyword : request.keywords)
 			{
 				keywordsArray.add(juce::var(keyword));
 			}
@@ -170,25 +169,25 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest& request, do
 
 		int statusCode = 0;
 		juce::StringPairArray responseHeaders;
-		auto url = juce::URL(currentBaseUrl + "/generate")
-			.withPOSTData(jsonString);
+		auto url = juce::URL(currentBaseUrl + "/generate").withPOSTData(jsonString);
 		auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inPostData)
-			.withStatusCode(&statusCode)
-			.withResponseHeaders(&responseHeaders)
-			.withExtraHeaders(headerString)
-			.withConnectionTimeoutMs(requestTimeoutMS);
+		                   .withStatusCode(&statusCode)
+		                   .withResponseHeaders(&responseHeaders)
+		                   .withExtraHeaders(headerString)
+		                   .withConnectionTimeoutMs(requestTimeoutMS);
 
 		auto response = url.createInputStream(options);
 		if (!response)
 		{
 			throw std::runtime_error(("Cannot connect to server at " + currentBaseUrl +
-				". Please check: Server is running, URL is correct, Network connection")
-				.toStdString());
+			                          ". Please check: Server is running, URL is correct, Network connection")
+			                             .toStdString());
 		}
 
 		if (statusCode == 403)
 		{
-			throw std::runtime_error("Authentication failed: Invalid or expired API key. Please check your credentials.");
+			throw std::runtime_error(
+			    "Authentication failed: Invalid or expired API key. Please check your credentials.");
 		}
 		else if (statusCode == 401)
 		{
@@ -197,15 +196,18 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest& request, do
 		else if (statusCode == 422)
 		{
 
-			throw std::runtime_error("Invalid request: The server could not process your request. Please check your prompt and parameters.");
+			throw std::runtime_error(
+			    "Invalid request: The server could not process your request. Please check your prompt and parameters.");
 		}
 		else if (statusCode == 500)
 		{
-			throw std::runtime_error("Server error: The audio generation service is temporarily unavailable. Please try again later.");
+			throw std::runtime_error(
+			    "Server error: The audio generation service is temporarily unavailable. Please try again later.");
 		}
 		else if (statusCode == 503)
 		{
-			throw std::runtime_error("Service unavailable: All GPU providers are currently busy. Please try again in a few moments.");
+			throw std::runtime_error(
+			    "Service unavailable: All GPU providers are currently busy. Please try again in a few moments.");
 		}
 		else if (statusCode != 200)
 		{
@@ -255,11 +257,10 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest& request, do
 
 		return result;
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		LoopResponse emptyResponse;
 		emptyResponse.errorMessage = e.what();
 		return emptyResponse;
 	}
 }
-

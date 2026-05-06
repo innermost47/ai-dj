@@ -1,11 +1,11 @@
 ﻿#pragma once
-#include <JuceHeader.h>
 #include "StableAudioEngine.h"
+#include <JuceHeader.h>
 #include <nlohmann/json.hpp>
 
 class ObsidianEngine
 {
-public:
+  public:
 	struct LoopRequest
 	{
 		juce::String prompt;
@@ -33,7 +33,7 @@ public:
 
 	bool initialize();
 
-private:
+  private:
 	std::unique_ptr<StableAudioEngine> stableAudioEngine;
 	juce::File appDataDir;
 	juce::String currentUserId = "default_user";

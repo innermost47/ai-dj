@@ -1,20 +1,17 @@
-#pragma once
-#include "JuceHeader.h"
-#include "data/TrackData.h"
+#include "GenerationManager.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
-#include "GenerationManager.h"
+#include "TrackData.h"
 
-GenerationManager::GenerationManager(DjIaVstProcessor& processor)
-	: audioProcessor(processor)
+GenerationManager::GenerationManager(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
 }
 
-void GenerationManager::generateLoop(const DjIaClient::LoopRequest& request, const juce::String& targetTrackId)
+void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, const juce::String &targetTrackId)
 {
 	juce::String trackId = targetTrackId.isEmpty() ? audioProcessor.getSelectedTrackId() : targetTrackId;
 
-	if (TrackData* track = audioProcessor.getTrack(trackId))
+	if (TrackData *track = audioProcessor.getTrack(trackId))
 	{
 		track->stagingTargetPageIndex.store(track->currentPageIndex.load());
 	}
@@ -31,7 +28,7 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest& request, con
 			generateLoopAPI(apiRequest, trackId);
 		}
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		audioProcessor.setHasPendingAudioData(false);
 		audioProcessor.setWaitingForMidiToLoad(false);
@@ -39,7 +36,7 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest& request, con
 		audioProcessor.setCorrectMidiNoteReceived(false);
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
-		if (TrackData* track = audioProcessor.getTrack(trackId))
+		if (TrackData *track = audioProcessor.getTrack(trackId))
 		{
 			track->stagingTargetPageIndex.store(-1);
 		}
@@ -48,9 +45,10 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest& request, con
 	}
 }
 
-void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest& request, const juce::String& trackId)
+void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, const juce::String &trackId)
 {
-	auto response = audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(), audioProcessor.getRequestTimeout(), audioProcessor.getBypassLLM());
+	auto response = audioProcessor.getApiClient().generateLoop(
+	    request, audioProcessor.getHostSampleRate(), audioProcessor.getRequestTimeout(), audioProcessor.getBypassLLM());
 
 	try
 	{
@@ -63,9 +61,8 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest& request, 
 			return;
 		}
 
-		if (response.audioData.getFullPathName().isEmpty() ||
-			!response.audioData.exists() ||
-			response.audioData.getSize() == 0)
+		if (response.audioData.getFullPathName().isEmpty() || !response.audioData.exists() ||
+		    response.audioData.getSize() == 0)
 		{
 			audioProcessor.setIsGenerating(false);
 			audioProcessor.setGeneratingTrackId("");
@@ -74,7 +71,7 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest& request, 
 			return;
 		}
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception & /*e*/)
 	{
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
@@ -94,9 +91,9 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest& request, 
 		audioProcessor.setCorrectMidiNoteReceived(false);
 	}
 
-	if (TrackData* track = audioProcessor.getTrack(trackId))
+	if (TrackData *track = audioProcessor.getTrack(trackId))
 	{
-		auto& currentPage = track->getCurrentPage();
+		auto &currentPage = track->getCurrentPage();
 		currentPage.prompt = request.prompt;
 		currentPage.bpm = request.bpm;
 	}
@@ -118,10 +115,10 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest& request, 
 	notifyGenerationComplete(trackId, successMessage);
 }
 
-void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest& request, const juce::String& trackId)
+void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request, const juce::String &trackId)
 {
-	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		.getChildFile("OBSIDIAN-Neural");
+	auto appDataDir =
+	    juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory).getChildFile("OBSIDIAN-Neural");
 	auto stableAudioDir = appDataDir.getChildFile("stable-audio");
 
 	StableAudioEngine localEngine;
@@ -169,9 +166,9 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest& request
 		audioProcessor.setCorrectMidiNoteReceived(false);
 	}
 
-	if (TrackData* track = audioProcessor.getTrack(trackId))
+	if (TrackData *track = audioProcessor.getTrack(trackId))
 	{
-		auto& currentPage = track->getCurrentPage();
+		auto &currentPage = track->getCurrentPage();
 		currentPage.prompt = request.prompt;
 		currentPage.bpm = request.bpm;
 	}
@@ -180,30 +177,31 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest& request
 	audioProcessor.setGeneratingTrackId("");
 	reEnableCanvasGenerate();
 
-	juce::String successMessage = juce::String::formatted(
-		"Loop generated locally! (%.1fs) Press Play to listen.",
-		result.actualDuration);
+	juce::String successMessage =
+	    juce::String::formatted("Loop generated locally! (%.1fs) Press Play to listen.", result.actualDuration);
 
 	notifyGenerationComplete(trackId, successMessage);
 }
 
-void GenerationManager::notifyGenerationComplete(const juce::String& trackId, const juce::String& message)
+void GenerationManager::notifyGenerationComplete(const juce::String &trackId, const juce::String &message)
 {
 
 	audioProcessor.setLastGeneratedTrackId(trackId);
 	audioProcessor.setPendingMessage(message);
 	audioProcessor.setHasPendingNotification(true);
 	audioProcessor.triggerAsyncUpdate();
-	if (TrackData* t = audioProcessor.getTrack(trackId))
-		audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1), MidiMapping::feedbackIdle);
+	if (TrackData *t = audioProcessor.getTrack(trackId))
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
+		                                                 MidiMapping::feedbackIdle);
 }
 
-void GenerationManager::generateSampleWithImage(const juce::String& trackId, const juce::String& base64Image, const juce::StringArray& keywords)
+void GenerationManager::generateSampleWithImage(const juce::String &trackId, const juce::String &base64Image,
+                                                const juce::StringArray &keywords)
 {
 	if (audioProcessor.getIsGenerating())
 		return;
 
-	TrackData* track = audioProcessor.getTrack(trackId);
+	TrackData *track = audioProcessor.getTrack(trackId);
 	if (!track)
 		return;
 
@@ -212,72 +210,85 @@ void GenerationManager::generateSampleWithImage(const juce::String& trackId, con
 	audioProcessor.setIsGenerating(true);
 	audioProcessor.setGeneratingTrackId(trackId);
 
-	juce::MessageManager::callAsync([this, trackId]()
-		{
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-			{
-				editor->startGenerationUI(trackId);
-				editor->statusLabel.setText("Analyzing image and generating audio...", juce::dontSendNotification);
-				editor->updateLCD();
-			} });
+	juce::MessageManager::callAsync(
+	    [this, trackId]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    editor->startGenerationUI(trackId);
+			    editor->statusLabel.setText("Analyzing image and generating audio...", juce::dontSendNotification);
+			    editor->updateLCD();
+		    }
+	    });
 
-			juce::Thread::launch([this, trackId, base64Image, keywords]()
-				{
-					try
-					{
-						TrackData* track = audioProcessor.getTrack(trackId);
-						if (!track)
-							throw std::runtime_error("Track not found");
+	juce::Thread::launch(
+	    [this, trackId, base64Image, keywords]()
+	    {
+		    try
+		    {
+			    TrackData *track = audioProcessor.getTrack(trackId);
+			    if (!track)
+				    throw std::runtime_error("Track not found");
 
-						DjIaClient::LoopRequest request;
-						float hostBpm = static_cast<float>(audioProcessor.getHostBpm());
-						float fallbackBpm = hostBpm > 0 ? hostBpm : 127.0f;
+			    DjIaClient::LoopRequest request;
+			    float hostBpm = static_cast<float>(audioProcessor.getHostBpm());
+			    float fallbackBpm = hostBpm > 0 ? hostBpm : 127.0f;
 
-						auto& currentPage = track->getCurrentPage();
-						request.model = currentPage.selectedModel;
-						request.bpm = fallbackBpm;
-						request.key = !currentPage.generationKey.isEmpty() ? currentPage.generationKey : audioProcessor.getGlobalKey();
-						request.generationDuration = currentPage.generationDuration > 0 ? (float)currentPage.generationDuration : static_cast<float>(audioProcessor.getGlobalDuration());
+			    auto &currentPage = track->getCurrentPage();
+			    request.model = currentPage.selectedModel;
+			    request.bpm = fallbackBpm;
+			    request.key =
+			        !currentPage.generationKey.isEmpty() ? currentPage.generationKey : audioProcessor.getGlobalKey();
+			    request.generationDuration = currentPage.generationDuration > 0
+			                                     ? (float)currentPage.generationDuration
+			                                     : static_cast<float>(audioProcessor.getGlobalDuration());
 
-						if (request.model.isEmpty())
-							request.model = "stable-audio-open-1.0";
+			    if (request.model.isEmpty())
+				    request.model = "stable-audio-open-1.0";
 
-						if (request.bpm <= 0) request.bpm = 127.0f;
-						if (request.key.isEmpty()) request.key = "C Minor";
-						if (request.generationDuration <= 0) request.generationDuration = 6.0f;
+			    if (request.bpm <= 0)
+				    request.bpm = 127.0f;
+			    if (request.key.isEmpty())
+				    request.key = "C Minor";
+			    if (request.generationDuration <= 0)
+				    request.generationDuration = 6.0f;
 
-						request.prompt = "";
-						request.useImage = true;
-						request.imageBase64 = base64Image;
-						request.keywords = keywords;
+			    request.prompt = "";
+			    request.useImage = true;
+			    request.imageBase64 = base64Image;
+			    request.keywords = keywords;
 
-						generateLoopWithImage(request, trackId, 300000);
-					}
-					catch (const std::exception& e)
-					{
-						audioProcessor.setIsGenerating(false);
-						audioProcessor.setGeneratingTrackId("");
+			    generateLoopWithImage(request, trackId, 300000);
+		    }
+		    catch (const std::exception &e)
+		    {
+			    audioProcessor.setIsGenerating(false);
+			    audioProcessor.setGeneratingTrackId("");
 
-						if (TrackData* track = audioProcessor.getTrack(trackId))
-						{
-							track->stagingTargetPageIndex.store(-1);
-						}
+			    if (TrackData *track = audioProcessor.getTrack(trackId))
+			    {
+				    track->stagingTargetPageIndex.store(-1);
+			    }
 
-						juce::String errorMessage = juce::String(e.what());
+			    juce::String errorMessage = juce::String(e.what());
 
-						juce::MessageManager::callAsync([this, trackId, errorMessage]()
-							{
-								if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-								{
-									editor->stopGenerationUI(trackId, false, errorMessage);
-								}
-							});
-					} });
+			    juce::MessageManager::callAsync(
+			        [this, trackId, errorMessage]()
+			        {
+				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+				        {
+					        editor->stopGenerationUI(trackId, false, errorMessage);
+				        }
+			        });
+		    }
+	    });
 }
 
-void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest& request, const juce::String& trackId, int timeoutMS)
+void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId,
+                                              int timeoutMS)
 {
-	auto response = audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(), timeoutMS, false);
+	auto response =
+	    audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(), timeoutMS, false);
 
 	try
 	{
@@ -290,9 +301,8 @@ void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest& req
 			return;
 		}
 
-		if (response.audioData.getFullPathName().isEmpty() ||
-			!response.audioData.exists() ||
-			response.audioData.getSize() == 0)
+		if (response.audioData.getFullPathName().isEmpty() || !response.audioData.exists() ||
+		    response.audioData.getSize() == 0)
 		{
 			audioProcessor.setIsGenerating(false);
 			audioProcessor.setGeneratingTrackId("");
@@ -301,7 +311,7 @@ void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest& req
 			return;
 		}
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception & /*e*/)
 	{
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
@@ -320,11 +330,11 @@ void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest& req
 		audioProcessor.setCorrectMidiNoteReceived(false);
 	}
 
-	if (TrackData* track = audioProcessor.getTrack(trackId))
+	if (TrackData *track = audioProcessor.getTrack(trackId))
 	{
 		juce::String generatedPrompt = "Generated from image";
 
-		auto& currentPage = track->getCurrentPage();
+		auto &currentPage = track->getCurrentPage();
 		currentPage.prompt = generatedPrompt;
 		currentPage.generationPrompt = generatedPrompt;
 		currentPage.generationKey = response.key;
@@ -350,20 +360,22 @@ void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest& req
 
 void GenerationManager::reEnableCanvasGenerate()
 {
-	juce::MessageManager::callAsync([this]()
-		{
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-			{
-				editor->reEnableCanvasForTrack();
-			} });
+	juce::MessageManager::callAsync(
+	    [this]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    editor->reEnableCanvasForTrack();
+		    }
+	    });
 }
 
-void GenerationManager::generateLoopFromMidi(const juce::String& trackId)
+void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 {
 	if (audioProcessor.getIsGenerating())
 		return;
 
-	TrackData* track = audioProcessor.getTrack(trackId);
+	TrackData *track = audioProcessor.getTrack(trackId);
 	if (!track)
 		return;
 
@@ -371,70 +383,88 @@ void GenerationManager::generateLoopFromMidi(const juce::String& trackId)
 
 	audioProcessor.setIsGenerating(true);
 	audioProcessor.setGeneratingTrackId(trackId);
-	audioProcessor.sendMidiFeedback(MidiMapping::ccFeedbackGenerate(track->slotIndex + 1), MidiMapping::feedbackPending);
-	juce::MessageManager::callAsync([this, trackId]()
-		{
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor())) {
-				editor->startGenerationUI(trackId);
-			} });
+	audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(track->slotIndex + 1),
+	                                                 MidiMapping::feedbackPending);
+	juce::MessageManager::callAsync(
+	    [this, trackId]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    editor->startGenerationUI(trackId);
+		    }
+	    });
 
-			juce::Thread::launch([this, trackId]()
-				{
-					try {
-						TrackData* track = audioProcessor.getTrack(trackId);
-						if (!track) {
-							throw std::runtime_error("Track not found");
-						}
+	juce::Thread::launch(
+	    [this, trackId]()
+	    {
+		    try
+		    {
+			    TrackData *track = audioProcessor.getTrack(trackId);
+			    if (!track)
+			    {
+				    throw std::runtime_error("Track not found");
+			    }
 
-						DjIaClient::LoopRequest request;
-						request.generationDuration = static_cast<float>(audioProcessor.getGlobalDuration());
-						float currentHostBpm = static_cast<float>(audioProcessor.getHostBpm());
+			    DjIaClient::LoopRequest request;
+			    request.generationDuration = static_cast<float>(audioProcessor.getGlobalDuration());
+			    float currentHostBpm = static_cast<float>(audioProcessor.getHostBpm());
 
-						auto& currentPage = track->getCurrentPage();
-						request.model = currentPage.selectedModel;
-						if (!currentPage.selectedPrompt.isEmpty()) {
-							request.prompt = currentPage.selectedPrompt;
-							request.bpm = currentHostBpm;
-							request.key = !currentPage.generationKey.isEmpty() ? currentPage.generationKey : audioProcessor.getGlobalKey();
-						}
-						else {
-							request = audioProcessor.createGlobalLoopRequest();
-							if (currentPage.selectedModel.isNotEmpty())
-								request.model = currentPage.selectedModel;
-							currentPage.selectedPrompt = request.prompt;
-							currentPage.generationBpm = currentHostBpm;
-							currentPage.generationKey = request.key;
-						}
+			    auto &currentPage = track->getCurrentPage();
+			    request.model = currentPage.selectedModel;
+			    if (!currentPage.selectedPrompt.isEmpty())
+			    {
+				    request.prompt = currentPage.selectedPrompt;
+				    request.bpm = currentHostBpm;
+				    request.key = !currentPage.generationKey.isEmpty() ? currentPage.generationKey
+				                                                       : audioProcessor.getGlobalKey();
+			    }
+			    else
+			    {
+				    request = audioProcessor.createGlobalLoopRequest();
+				    if (currentPage.selectedModel.isNotEmpty())
+					    request.model = currentPage.selectedModel;
+				    currentPage.selectedPrompt = request.prompt;
+				    currentPage.generationBpm = currentHostBpm;
+				    currentPage.generationKey = request.key;
+			    }
 
-						if (request.model.isEmpty())
-							request.model = "stable-audio-open-1.0";
+			    if (request.model.isEmpty())
+				    request.model = "stable-audio-open-1.0";
 
-						juce::String promptSource = !request.prompt.isEmpty() ?
-							"track prompt: " + request.prompt.substring(0, 20) + "..." :
-							"global prompt";
-						juce::MessageManager::callAsync([this, promptSource]() {
-							if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor())) {
-								editor->statusLabel.setText("Generating with " + promptSource, juce::dontSendNotification);
-								editor->updateLCD();
-							}
-							});
-						generateLoop(request, trackId);
-					}
-					catch (const std::exception& e) {
-						audioProcessor.setIsGenerating(false);
-						audioProcessor.setGeneratingTrackId("");
+			    juce::String promptSource = !request.prompt.isEmpty()
+			                                    ? "track prompt: " + request.prompt.substring(0, 20) + "..."
+			                                    : "global prompt";
+			    juce::MessageManager::callAsync(
+			        [this, promptSource]()
+			        {
+				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+				        {
+					        editor->statusLabel.setText("Generating with " + promptSource, juce::dontSendNotification);
+					        editor->updateLCD();
+				        }
+			        });
+			    generateLoop(request, trackId);
+		    }
+		    catch (const std::exception &e)
+		    {
+			    audioProcessor.setIsGenerating(false);
+			    audioProcessor.setGeneratingTrackId("");
 
-						if (TrackData* track = audioProcessor.getTrack(trackId))
-						{
-							track->stagingTargetPageIndex.store(-1);
-						}
+			    if (TrackData *track = audioProcessor.getTrack(trackId))
+			    {
+				    track->stagingTargetPageIndex.store(-1);
+			    }
 
-						juce::MessageManager::callAsync([this, trackId, error = juce::String(e.what())]() {
-							if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor())) {
-								editor->stopGenerationUI(trackId, false, error);
-							}
-							});
-					} });
+			    juce::MessageManager::callAsync(
+			        [this, trackId, error = juce::String(e.what())]()
+			        {
+				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+				        {
+					        editor->stopGenerationUI(trackId, false, error);
+				        }
+			        });
+		    }
+	    });
 }
 
 void GenerationManager::handleGenerate()
@@ -445,12 +475,12 @@ void GenerationManager::handleGenerate()
 	if (changedSlot >= 0)
 	{
 		auto trackIds = audioProcessor.getAllTrackIds();
-		for (const auto& trackId : trackIds)
+		for (const auto &trackId : trackIds)
 		{
-			TrackData* track = audioProcessor.getTrack(trackId);
+			TrackData *track = audioProcessor.getTrack(trackId);
 			if (track->slotIndex == changedSlot)
 			{
-				bool paramGenerate = audioProcessor.getSlotGenerateParam(track->slotIndex) > 0.5f;
+				bool paramGenerate = audioProcessor.getParameterManager().getGenerate(track->slotIndex) > 0.5f;
 				if (paramGenerate)
 				{
 					generateLoopFromMidi(trackId);
@@ -467,61 +497,70 @@ void GenerationManager::triggerGlobalGeneration()
 {
 	if (audioProcessor.getIsGenerating())
 	{
-		juce::MessageManager::callAsync([this]()
-			{
-				if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-				{
-					editor->setStatusWithTimeout("Generation already in progress, please wait", 3000);
-				} });
-				return;
+		juce::MessageManager::callAsync(
+		    [this]()
+		    {
+			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+			    {
+				    editor->setStatusWithTimeout("Generation already in progress, please wait", 3000);
+			    }
+		    });
+		return;
 	}
 
 	if (audioProcessor.getSelectedTrackId().isEmpty())
 	{
-		juce::MessageManager::callAsync([this]()
-			{
-				if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-				{
-					editor->setStatusWithTimeout("No track selected for generation", 3000);
-				} });
-				return;
+		juce::MessageManager::callAsync(
+		    [this]()
+		    {
+			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+			    {
+				    editor->setStatusWithTimeout("No track selected for generation", 3000);
+			    }
+		    });
+		return;
 	}
 
 	syncSelectedTrackWithGlobalPrompt();
 
-	juce::MessageManager::callAsync([this]()
-		{
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-			{
-				editor->onGenerateButtonClicked();
-			}
-			else
-			{
-				generateLoopFromGlobalSettings();
-			} });
+	juce::MessageManager::callAsync(
+	    [this]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    editor->onGenerateButtonClicked();
+		    }
+		    else
+		    {
+			    generateLoopFromGlobalSettings();
+		    }
+	    });
 }
 
 void GenerationManager::syncSelectedTrackWithGlobalPrompt()
 {
-	TrackData* track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
+	TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
 	if (!track)
 		return;
 	juce::String currentGlobalPrompt = audioProcessor.getGlobalPrompt();
 	track->getCurrentPage().selectedPrompt = currentGlobalPrompt;
-	juce::MessageManager::callAsync([this, currentGlobalPrompt]()
-		{
-			if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-			{
-				for (auto& trackComp : editor->getTrackComponents())
-				{
-					if (trackComp->getTrackId() == audioProcessor.getSelectedTrackId())
-					{
-						trackComp->updatePromptSelection(currentGlobalPrompt);
-						break;
-					}
-				}
-				editor->setStatusWithTimeout("Track prompt synced: " + currentGlobalPrompt.substring(0, 30) + "...", 2000);
-			} });
+	juce::MessageManager::callAsync(
+	    [this, currentGlobalPrompt]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    for (auto &trackComp : editor->getTrackComponents())
+			    {
+				    if (trackComp->getTrackId() == audioProcessor.getSelectedTrackId())
+				    {
+					    trackComp->updatePromptSelection(currentGlobalPrompt);
+					    break;
+				    }
+			    }
+			    editor->setStatusWithTimeout("Track prompt synced: " + currentGlobalPrompt.substring(0, 30) + "...",
+			                                 2000);
+		    }
+	    });
 }
 
 void GenerationManager::generateLoopFromGlobalSettings()
@@ -529,7 +568,7 @@ void GenerationManager::generateLoopFromGlobalSettings()
 	if (audioProcessor.getIsGenerating())
 		return;
 
-	TrackData* track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
+	TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
 	if (!track)
 		return;
 
@@ -539,28 +578,31 @@ void GenerationManager::generateLoopFromGlobalSettings()
 	audioProcessor.setIsGenerating(true);
 	audioProcessor.setGeneratingTrackId(audioProcessor.getSelectedTrackId());
 
-	juce::Thread::launch([this]()
-		{
-			try
-			{
-				TrackData* track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
-				if (!track) return;
+	juce::Thread::launch(
+	    [this]()
+	    {
+		    try
+		    {
+			    TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
+			    if (!track)
+				    return;
 
-				auto& currentPage = track->getCurrentPage();
+			    auto &currentPage = track->getCurrentPage();
 
-				currentPage.selectedPrompt = audioProcessor.getGlobalPrompt();
-				currentPage.generationBpm = audioProcessor.getGlobalBpm();
-				currentPage.generationKey = audioProcessor.getGlobalKey();
-				currentPage.generationDuration = audioProcessor.getGlobalDuration();
+			    currentPage.selectedPrompt = audioProcessor.getGlobalPrompt();
+			    currentPage.generationBpm = audioProcessor.getGlobalBpm();
+			    currentPage.generationKey = audioProcessor.getGlobalKey();
+			    currentPage.generationDuration = audioProcessor.getGlobalDuration();
 
-				auto request = audioProcessor.createGlobalLoopRequest();
-				generateLoop(request, audioProcessor.getSelectedTrackId());
-			}
-			catch (const std::exception& /*e*/)
-			{
-				audioProcessor.setIsGenerating(false);
-				audioProcessor.setGeneratingTrackId("");
-			} });
+			    auto request = audioProcessor.createGlobalLoopRequest();
+			    generateLoop(request, audioProcessor.getSelectedTrackId());
+		    }
+		    catch (const std::exception & /*e*/)
+		    {
+			    audioProcessor.setIsGenerating(false);
+			    audioProcessor.setGeneratingTrackId("");
+		    }
+	    });
 }
 
 void GenerationManager::clearPendingAudio()
@@ -571,7 +613,7 @@ void GenerationManager::clearPendingAudio()
 	audioProcessor.setHasPendingAudioData(false);
 }
 
-juce::File GenerationManager::createTempAudioFile(const std::vector<float>& audioData, float /*duration*/)
+juce::File GenerationManager::createTempAudioFile(const std::vector<float> &audioData, float /*duration*/)
 {
 	try
 	{
@@ -583,7 +625,7 @@ juce::File GenerationManager::createTempAudioFile(const std::vector<float>& audi
 			buffer.copyFrom(0, 0, audioData.data(), numSamples);
 		}
 		juce::WavAudioFormat wavFormat;
-		juce::FileOutputStream* outputStream = new juce::FileOutputStream(tempFile);
+		juce::FileOutputStream *outputStream = new juce::FileOutputStream(tempFile);
 		if (!outputStream->openedOk())
 		{
 			delete outputStream;
@@ -591,13 +633,7 @@ juce::File GenerationManager::createTempAudioFile(const std::vector<float>& audi
 		}
 
 		std::unique_ptr<juce::AudioFormatWriter> writer(
-			wavFormat.createWriterFor(
-				outputStream,
-				audioProcessor.getHostSampleRate(),
-				1,
-				16,
-				{},
-				0));
+		    wavFormat.createWriterFor(outputStream, audioProcessor.getHostSampleRate(), 1, 16, {}, 0));
 
 		if (!writer)
 		{
@@ -613,7 +649,7 @@ juce::File GenerationManager::createTempAudioFile(const std::vector<float>& audi
 
 		return tempFile;
 	}
-	catch (const std::exception& /*e*/)
+	catch (const std::exception & /*e*/)
 	{
 		return juce::File{};
 	}

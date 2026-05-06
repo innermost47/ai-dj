@@ -1,4 +1,3 @@
-#pragma once
 #include "LCDScreen.h"
 
 LCDScreen::LCDScreen()
@@ -6,7 +5,7 @@ LCDScreen::LCDScreen()
 	setInterceptsMouseClicks(false, false);
 }
 
-void LCDScreen::setLines(const juce::String& line1, const juce::String& line2, const juce::String& line3)
+void LCDScreen::setLines(const juce::String &line1, const juce::String &line2, const juce::String &line3)
 {
 	lineTop = line1;
 	lineMid = line2;
@@ -14,7 +13,7 @@ void LCDScreen::setLines(const juce::String& line1, const juce::String& line2, c
 	repaint();
 }
 
-void LCDScreen::paint(juce::Graphics& g)
+void LCDScreen::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
 
@@ -33,17 +32,13 @@ void LCDScreen::paint(juce::Graphics& g)
 
 	g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
 	g.setColour(ColourPalette::textSecondary);
-	g.drawText(lineTop, textArea.removeFromTop(lineH),
-		juce::Justification::centredLeft, true);
+	g.drawText(lineTop, textArea.removeFromTop(lineH), juce::Justification::centredLeft, true);
 
 	g.setFont(juce::FontOptions("Courier New", 12.0f, juce::Font::bold));
 	g.setColour(ColourPalette::textPrimary);
-	g.drawText(lineMid, textArea.removeFromTop(lineH),
-		juce::Justification::centredLeft, true);
+	g.drawText(lineMid, textArea.removeFromTop(lineH), juce::Justification::centredLeft, true);
 
 	g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
 	g.setColour(ColourPalette::textAccent);
-	g.drawText(lineBot, textArea,
-		juce::Justification::centredLeft, true);
+	g.drawText(lineBot, textArea, juce::Justification::centredLeft, true);
 }
-
