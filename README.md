@@ -107,14 +107,11 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 
 ### 🟣 Cloud API (Recommended)
 
+> ☁️ **No GPU required** — Generation runs on our servers. Any laptop can run the plugin.
+
 1. Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
 2. Get your API key from [obsidian-neural.com](https://obsidian-neural.com)
 3. Load the VST in your DAW → Settings → Enter Server URL + API key
-
-📘 [Getting Started](https://obsidian-neural.com/documentation.html?page=getting-started)  
-🎚️ [First Step](https://obsidian-neural.com/documentation.html?page=first-step)  
-🎨 [Draw-to-Audio](https://obsidian-neural.com/documentation.html?page=draw-to-audio)  
-🎛️ [Bank Management](https://obsidian-neural.com/documentation.html?page=bank-management)
 
 **Pricing:**
 
