@@ -945,16 +945,10 @@ void MixerChannel::setupMidiLearn()
 	fineKnob.onMidiLearn = [this]() { learn("Fine", &fineKnob); };
 	panKnob.onMidiLearn = [this]() { learn("Pan", &panKnob); };
 	playButton.onMidiRemove = [this]() { removeMidiMapping("Play"); };
-
 	muteButton.onMidiRemove = [this]() { removeMidiMapping("Mute"); };
-
 	soloButton.onMidiRemove = [this]() { removeMidiMapping("Solo"); };
-
 	volumeSlider.onMidiRemove = [this]() { removeMidiMapping("Volume"); };
-
 	pitchKnob.onMidiRemove = [this]() { removeMidiMapping("Pitch"); };
-
 	fineKnob.onMidiRemove = [this]() { removeMidiMapping("Fine"); };
-
 	panKnob.onMidiRemove = [this]() { removeMidiMapping("Pan"); };
 }

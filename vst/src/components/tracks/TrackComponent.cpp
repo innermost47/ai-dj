@@ -958,6 +958,29 @@ void TrackComponent::performPageChange(int pageIndex)
 
 void TrackComponent::syncParamsToCurrentPage()
 {
+	if (!track || track->slotIndex < 0 || track->slotIndex >= audioProcessor.getAudioManager().MAX_SLOTS)
+		return;
+
+	const auto &page = track->getCurrentPage();
+	juce::String s = "slot" + juce::String(track->slotIndex + 1);
+
+	auto &apvts = audioProcessor.getParameterManager().getAPVTS();
+
+	auto setParam = [&](const juce::String &id, float value)
+	{
+		if (auto *p = apvts.getParameter(id))
+		{
+			auto range = apvts.getParameterRange(id);
+			float clamped = juce::jlimit(range.start, range.end, value);
+			p->setValueNotifyingHost(range.convertTo0to1(clamped));
+		}
+	};
+
+	float fineValue = page.fineOffset.load() * 10.0f;
+	float pitchValue = (static_cast<float>(page.bpmOffset.load()) - page.fineOffset.load()) / 8.0f;
+
+	setParam(s + "Pitch", pitchValue);
+	setParam(s + "Fine", fineValue);
 }
 
 void TrackComponent::updatePagesDisplay()
