@@ -3,14 +3,16 @@
 
 class ColourPicker : public juce::Component
 {
-public:
+  public:
 	std::function<void(juce::Colour)> onColourChanged;
 
 	ColourPicker();
-	void setPalette(const juce::Array<juce::Colour>& colours);
-	void setRows(int newRowCount);
+	void setPalette(const juce::Array<juce::Colour> &colours);
 	void setSelectedColour(juce::Colour c);
-	juce::Colour getSelectedColour() const noexcept { return selectedColour; }
+	juce::Colour getSelectedColour() const noexcept
+	{
+		return selectedColour;
+	}
 
 	int getPreferredHeight() const noexcept
 	{
@@ -20,7 +22,7 @@ public:
 	void resized() override;
 	static juce::Array<juce::Colour> getDefaultPalette();
 
-private:
+  private:
 	struct Swatch : public juce::Component
 	{
 		juce::Colour colour;
@@ -32,7 +34,7 @@ private:
 			setMouseCursor(juce::MouseCursor::PointingHandCursor);
 		}
 
-		void paint(juce::Graphics& g) override
+		void paint(juce::Graphics &g) override
 		{
 			auto bounds = getLocalBounds().toFloat().reduced(2.0f);
 			g.setColour(colour);
@@ -45,16 +47,17 @@ private:
 			}
 		}
 
-		void mouseDown(const juce::MouseEvent&) override
+		void mouseDown(const juce::MouseEvent &) override
 		{
-			if (onPicked) onPicked(colour);
+			if (onPicked)
+				onPicked(colour);
 		}
 	};
 
 	void updateSelectionMarks();
 
 	juce::OwnedArray<Swatch> swatches;
-	juce::Colour selectedColour{ 0xff6c63ff };
+	juce::Colour selectedColour{0xff6c63ff};
 	int rows = 2;
 
 	static constexpr int minSwatchSize = 32;

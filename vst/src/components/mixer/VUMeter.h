@@ -8,15 +8,6 @@ class VuMeter : public juce::Component
 	VuMeter() = default;
 	~VuMeter() override = default;
 
-	float getLevelLeft() const
-	{
-		return currentAudioLevelLeft;
-	}
-	float getLevelRight() const
-	{
-		return currentAudioLevelRight;
-	}
-
 	void updateMeter(const juce::AudioBuffer<float> *buffer, double readPos, float volume, bool isPlaying);
 	void paint(juce::Graphics &g) override;
 	void drawClipRect(juce::Rectangle<float> &vuArea, juce::Graphics &g, float currentAudioLevel);

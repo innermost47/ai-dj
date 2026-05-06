@@ -36,7 +36,6 @@ class AudioManager
 	void saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float> &originalBuffer,
 	                                     const juce::AudioBuffer<float> &stretchedBuffer, const juce::String &trackId,
 	                                     double sampleRate);
-	void loadAudioFileForSwitch(const juce::String &trackId, const juce::File &audioFile);
 	void loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile);
 	void loadSampleToBankPage(const juce::String &trackId, int pageIndex, const juce::File &sampleFile,
 	                          const juce::String &sampleId);
@@ -49,10 +48,6 @@ class AudioManager
 	bool isSamplePreviewing() const
 	{
 		return previewActive.load();
-	}
-	void setIsSamplePreviewing(bool v)
-	{
-		previewActive.store(v);
 	}
 	void stopSamplePreview();
 	bool previewSampleFromBank(const juce::String &sampleId);
@@ -71,41 +66,6 @@ class AudioManager
 		peakLeft.store(l);
 		peakRight.store(r);
 	}
-
-	double getPreviewPosition() const
-	{
-		return previewPosition.load();
-	}
-	void setPreviewPosition(double p)
-	{
-		previewPosition.store(p);
-	}
-
-	double getPreviewSampleRate() const
-	{
-		return previewSampleRate.load();
-	}
-	void setPreviewSampleRate(double rate)
-	{
-		previewSampleRate.store(rate);
-	}
-
-	const juce::AudioBuffer<float> &getPreviewBuffer() const
-	{
-		return previewBuffer;
-	}
-
-	void setPreviewBuffer(const juce::AudioBuffer<float> &buffer)
-	{
-		juce::ScopedLock lock(previewLock);
-		previewBuffer = buffer;
-	}
-
-	void resizePreviewBuffer(int numChannels, int numSamples)
-	{
-		previewBuffer.setSize(numChannels, numSamples);
-	}
-
 	std::vector<juce::AudioBuffer<float>> &getIndividualOutputBuffers()
 	{
 		return individualOutputBuffers;

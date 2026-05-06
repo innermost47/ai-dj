@@ -48,10 +48,6 @@ class ParameterManager
 	{
 		return safeLoad(slotAdsrReleaseParams[slot]);
 	}
-	float getBpmOffset(int slot) const
-	{
-		return safeLoad(slotBpmOffsetParams[slot]);
-	}
 	float getGenerate(int slot) const
 	{
 		return safeLoad(slotGenerateParams[slot]);
@@ -107,25 +103,7 @@ class ParameterManager
 	{
 		return safeLoad(pairCrossfaderParams[pair]);
 	}
-
-	float getNextTrack() const
-	{
-		return safeLoad(nextTrackParam);
-	}
-	float getPrevTrack() const
-	{
-		return safeLoad(prevTrackParam);
-	}
-
 	std::atomic<float> *getRawSlotParam(const juce::String &paramId);
-	std::atomic<float> *getRawGlobalCrossfaderParam()
-	{
-		return globalCrossfaderParam;
-	}
-	std::atomic<float> *getRawPairCrossfaderParam(int pair)
-	{
-		return pairCrossfaderParams[pair];
-	}
 
 	const juce::StringArray &getFloatParamIds() const
 	{

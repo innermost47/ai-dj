@@ -23,12 +23,6 @@ void ColourPicker::setPalette(const juce::Array<juce::Colour> &colours)
 	resized();
 }
 
-void ColourPicker::setRows(int newRowCount)
-{
-	rows = juce::jmax(1, newRowCount);
-	resized();
-}
-
 void ColourPicker::setSelectedColour(juce::Colour c)
 {
 	selectedColour = c;

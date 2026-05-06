@@ -49,15 +49,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		return trackManager;
 	}
 
-	StateManager &getStateManager()
-	{
-		return stateManager;
-	}
-	const StateManager &getStateManager() const
-	{
-		return stateManager;
-	}
-
 	GenerationManager &getGenerationManager()
 	{
 		return generationManager;
@@ -529,32 +520,12 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return lastHostBpmForQuantization.load();
 	}
-	void setLastHostBpmForQuantization(double bpm)
-	{
-		lastHostBpmForQuantization.store(bpm);
-	}
 
-	const std::unordered_map<int, juce::String> &getPlayingTracks() const
-	{
-		return playingTracks;
-	}
 	void addPlayingTrack(int note, const juce::String &trackId)
 	{
 		playingTracks[note] = trackId;
 	}
-	void removePlayingTrack(int note)
-	{
-		playingTracks.erase(note);
-	}
-	bool hasPlayingTrack(int note) const
-	{
-		return playingTracks.count(note) > 0;
-	}
-	juce::String getPlayingTrackId(int note) const
-	{
-		auto it = playingTracks.find(note);
-		return it != playingTracks.end() ? it->second : juce::String();
-	}
+
 	void prepareToPlay(double sampleRate, int samplesPerBlock) override;
 	void releaseResources() override;
 
@@ -638,19 +609,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		if (index >= 0 && index < 4)
 			pairCrossfaderPrevious[index] = value;
 	}
-	float getPairCrossfaderPrevious(int index) const
-	{
-		if (index >= 0 && index < 4)
-			return pairCrossfaderPrevious[index];
-		return 0.5f;
-	}
 	void setGlobalCrossfaderPrevious(float value)
 	{
 		globalCrossfaderPrevious = value;
-	}
-	float getGlobalCrossfaderPrevious() const
-	{
-		return globalCrossfaderPrevious;
 	}
 
 	void setCrossfaderValue(float v)

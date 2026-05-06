@@ -567,44 +567,6 @@ void AudioManager::saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float
 	saveBufferToFile(stretchedBuffer, stretchedFile, sampleRate);
 }
 
-void AudioManager::loadAudioFileForSwitch(const juce::String &trackId, const juce::File &audioFile)
-{
-	TrackData *track = trackManager.getTrack(trackId);
-	if (!track)
-		return;
-
-	auto &currentPage = track->getCurrentPage();
-	double preservedLoopStart = currentPage.loopStart;
-	double preservedLoopEnd = currentPage.loopEnd;
-	bool preservedLocked = currentPage.loopPointsLocked.load();
-
-	try
-	{
-		juce::AudioFormatManager formatManager;
-		formatManager.registerBasicFormats();
-
-		std::unique_ptr<juce::AudioFormatReader> reader(formatManager.createReaderFor(audioFile));
-
-		if (!reader)
-			return;
-		loadAudioToStaging(reader, track);
-		track->isVersionSwitch.store(true);
-		track->preservedLoopStart = preservedLoopStart;
-		track->preservedLoopEnd = preservedLoopEnd;
-		track->preservedLoopLocked.store(preservedLocked);
-		track->hasStagingData = true;
-		track->swapRequested = true;
-
-		juce::MessageManager::callAsync([this, trackId]() { updateWaveformDisplay(trackId); });
-	}
-	catch (const std::exception &)
-	{
-		currentPage.loopStart = preservedLoopStart;
-		currentPage.loopEnd = preservedLoopEnd;
-		currentPage.loopPointsLocked = preservedLocked;
-	}
-}
-
 void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile)
 {
 	TrackData *track = trackManager.getTrack(trackId);
