@@ -1885,7 +1885,6 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 {
 	isDragOver = false;
 	syncBorderOverlay();
-
 	juce::String sampleId = dragSourceDetails.description.toString();
 	if (sampleId.isNotEmpty() && track)
 	{
@@ -1894,18 +1893,52 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		if (auto *sampleBank = audioProcessor.getSampleBank())
 		{
 			auto *sampleEntry = sampleBank->getSample(sampleId);
-			if (sampleEntry && !sampleEntry->originalPrompt.isEmpty())
+			if (sampleEntry)
 			{
-				for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+				if (!sampleEntry->originalPrompt.isEmpty())
 				{
-					if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+					for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 					{
-						promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-						track->getCurrentPage().selectedPrompt = sampleEntry->originalPrompt;
-						break;
+						if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+						{
+							promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+							track->getCurrentPage().selectedPrompt = sampleEntry->originalPrompt;
+							break;
+						}
+					}
+				}
+
+				if (!sampleEntry->modelName.isEmpty())
+				{
+					for (int i = 0; i < modelSelector.getNumItems(); ++i)
+					{
+						if (modelSelector.getItemText(i) == sampleEntry->modelName)
+						{
+							modelSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+							track->getCurrentPage().selectedModel = sampleEntry->modelName;
+							break;
+						}
 					}
 				}
 			}
+		}
+
+		if (track->slotIndex >= 0 && track->slotIndex < audioProcessor.getAudioManager().MAX_SLOTS)
+		{
+			auto &apvts = audioProcessor.getParameterManager().getAPVTS();
+			juce::String s = "slot" + juce::String(track->slotIndex + 1);
+
+			auto resetParam = [&](const juce::String &id, float defaultValue)
+			{
+				if (auto *p = apvts.getParameter(id))
+				{
+					auto range = apvts.getParameterRange(id);
+					p->setValueNotifyingHost(range.convertTo0to1(defaultValue));
+				}
+			};
+
+			resetParam(s + "Pitch", 0.0f);
+			resetParam(s + "Fine", 0.0f);
 		}
 
 		if (onStatusMessage)
