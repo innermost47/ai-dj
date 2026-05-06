@@ -537,13 +537,12 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void previewTrack(const juce::String &trackId);
 	void loadPendingSample();
 	void reloadTrackWithVersion(const juce::String &trackId, bool useOriginal);
-	void triggerGlobalGeneration();
-	void syncSelectedTrackWithGlobalPrompt();
 	void addCustomPrompt(const juce::String &prompt);
 	void removeCustomPrompt(const juce::String &prompt);
 	void editCustomPrompt(const juce::String &oldPrompt, const juce::String &newPrompt);
 	void loadGlobalConfig();
 	void saveGlobalConfig();
+	void attachPageChangeCallback(TrackData *track);
 	double getHostSampleRate()
 	{
 		return hostSampleRate;

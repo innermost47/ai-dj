@@ -1,4 +1,4 @@
-#include "ParameterManager.h"
+﻿#include "ParameterManager.h"
 
 ParameterManager::ParameterManager(juce::AudioProcessor &processor)
     : apvts(processor, nullptr, "Parameters", createParameterLayout())
@@ -40,6 +40,8 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotAdsrReleaseParams[i] = apvts.getRawParameterValue(s + "AdsrRelease");
 
 		apvts.addParameterListener(s + "Generate", listener);
+		apvts.addParameterListener(s + "Pitch", listener);
+		apvts.addParameterListener(s + "Fine", listener);
 		apvts.addParameterListener(s + "AdsrAttack", listener);
 		apvts.addParameterListener(s + "AdsrDecay", listener);
 		apvts.addParameterListener(s + "AdsrSustain", listener);
@@ -86,6 +88,8 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 			apvts.removeParameterListener(s + page, listener);
 
 		apvts.removeParameterListener(s + "Generate", listener);
+		apvts.removeParameterListener(s + "Pitch", listener);
+		apvts.removeParameterListener(s + "Fine", listener);
 		apvts.removeParameterListener(s + "AdsrAttack", listener);
 		apvts.removeParameterListener(s + "AdsrDecay", listener);
 		apvts.removeParameterListener(s + "AdsrSustain", listener);

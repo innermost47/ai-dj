@@ -242,6 +242,7 @@ struct TrackData
 	std::function<void(bool)> onPlayStateChanged;
 	std::function<void(bool)> onArmedStateChanged;
 	std::function<void(bool)> onArmedToStopStateChanged;
+	std::function<void()> onPageChanged;
 
 	enum class PendingAction
 	{
@@ -273,6 +274,7 @@ struct TrackData
 		onPlayStateChanged = nullptr;
 		onArmedStateChanged = nullptr;
 		onArmedToStopStateChanged = nullptr;
+		onPageChanged = nullptr;
 	}
 
 	TrackPage &getCurrentPage()
@@ -294,7 +296,14 @@ struct TrackData
 		if (currentPageIndex.load() == pageIndex)
 			return;
 
+		DBG("[setCurrentPage] slot=" << slotIndex << " from page " << currentPageIndex.load() << " to page "
+		                             << pageIndex << " | new page bpmOffset=" << pages[pageIndex].bpmOffset.load()
+		                             << " fineOffset=" << pages[pageIndex].fineOffset.load());
+
 		currentPageIndex.store(pageIndex);
+
+		if (onPageChanged)
+			onPageChanged();
 	}
 
 	DjIaClient::LoopRequest createLoopRequest() const

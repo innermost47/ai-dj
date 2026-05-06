@@ -129,6 +129,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 			continue;
 
 		auto track = std::make_unique<TrackData>();
+		audioProcessor.attachPageChangeCallback(track.get());
 
 		track->trackId = trackState.getProperty("id", juce::Uuid().toString());
 		track->trackName = trackState.getProperty("name", "Track");
@@ -328,6 +329,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 	for (int i = trackCount; i < 8; ++i)
 	{
 		auto track = std::make_unique<TrackData>();
+		audioProcessor.attachPageChangeCallback(track.get());
+
 		track->trackName = "Track " + juce::String(i + 1);
 		track->midiNote = 60 + i;
 		track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();

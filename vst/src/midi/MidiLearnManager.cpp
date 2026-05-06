@@ -509,7 +509,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 					}
 					else
 					{
-						mapping.processor->triggerGlobalGeneration();
+						mapping.processor->getGenerationManager().triggerGlobalGeneration();
 						statusMessage += " (Generation triggered)";
 					}
 

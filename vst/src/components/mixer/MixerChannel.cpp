@@ -205,7 +205,6 @@ void MixerChannel::parameterValueChanged(int parameterIndex, float newValue)
 	{
 		auto *param = allParams[parameterIndex];
 		juce::String paramName = param->getName(256);
-
 		if (juce::MessageManager::getInstance()->isThisTheMessageThread())
 		{
 			juce::Timer::callAfterDelay(50, [this, paramName, slotPrefix, newValue]()

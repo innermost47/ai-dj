@@ -60,10 +60,9 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 				    weakThis->updateUIComponents();
 		    });
 	};
-
-	audioProcessor.getSequencerManager().onSequencerUpdateNeeded = [this](const juce::String &trackId)
+	juce::Component::SafePointer<DjIaVstEditor> safeEditor(this);
+	audioProcessor.getSequencerManager().onSequencerUpdateNeeded = [safeEditor](const juce::String &trackId)
 	{
-		juce::Component::SafePointer<DjIaVstEditor> safeEditor(this);
 		juce::MessageManager::callAsync(
 		    [safeEditor, trackId]()
 		    {
@@ -1640,7 +1639,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
 		return;
 	}
-	audioProcessor.syncSelectedTrackWithGlobalPrompt();
+	audioProcessor.getGenerationManager().syncSelectedTrackWithGlobalPrompt();
 	audioProcessor.setIsGenerating(true);
 	generatingTrackId = audioProcessor.getSelectedTrackId();
 	audioProcessor.setGeneratingTrackId(generatingTrackId);

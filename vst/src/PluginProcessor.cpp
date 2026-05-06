@@ -54,6 +54,13 @@ DjIaVstProcessor::~DjIaVstProcessor()
 	}
 }
 
+juce::AudioProcessorEditor *DjIaVstProcessor::createEditor()
+{
+	currentEditor = new DjIaVstEditor(*this);
+	midiLearnManager.setEditor(currentEditor);
+	return currentEditor;
+}
+
 void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
 	audioManager.prepareToPlay(sampleRate, samplesPerBlock);
@@ -219,6 +226,9 @@ void DjIaVstProcessor::initTracks()
 		if (auto *track = trackManager.getTrack(newTrackId))
 		{
 			track->slotIndex = i;
+
+			attachPageChangeCallback(track);
+
 			juce::String modelName = models[i % models.size()];
 
 			for (int p = 0; p < 4; ++p)
@@ -237,6 +247,36 @@ void DjIaVstProcessor::initTracks()
 		}
 	}
 	trackManager.isInitializing.store(false);
+}
+
+void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
+{
+	if (!track)
+		return;
+	juce::WeakReference<TrackData> weakTrack(track);
+	track->onPageChanged = [this, weakTrack]()
+	{
+		juce::MessageManager::callAsync(
+		    [this, weakTrack]()
+		    {
+			    auto *t = weakTrack.get();
+			    if (!t || t->slotIndex < 0 || t->slotIndex >= 8)
+				    return;
+			    const auto &page = t->getCurrentPage();
+			    juce::String s = "slot" + juce::String(t->slotIndex + 1);
+			    auto &apvts = parameterManager.getAPVTS();
+
+			    float pitchValue =
+			        juce::jlimit(-12.0f, 12.0f, (float(page.bpmOffset.load()) - page.fineOffset.load()) / 8.0f);
+			    float fineValue = juce::jlimit(-50.0f, 50.0f, page.fineOffset.load() * 10.0f);
+
+			    if (auto *p = apvts.getParameter(s + "Pitch"))
+				    p->setValueNotifyingHost((pitchValue + 12.0f) / 24.0f);
+
+			    if (auto *p = apvts.getParameter(s + "Fine"))
+				    p->setValueNotifyingHost((fineValue + 50.0f) / 100.0f);
+		    });
+	};
 }
 
 juce::File DjIaVstProcessor::getGlobalConfigFile()
@@ -529,7 +569,6 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 {
 	auto &pm = parameterManager;
 	auto &currentPage = track->getCurrentPage();
-
 	float paramVolume = pm.getVolume(slot);
 	float paramPan = pm.getPan(slot);
 	float paramPitch = pm.getPitch(slot) * 8;
@@ -538,7 +577,6 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 	bool isMuted = pm.getMute(slot);
 	float paramRandomRetrigger = pm.getRandomRetrigger(slot);
 	float paramRetriggerInterval = pm.getRetriggerInterval(slot);
-
 	int slotNumber = slot + 1;
 	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
 	int retriggerInterval = juce::jlimit(1, 10, (int)juce::roundToInt(paramRetriggerInterval));
@@ -564,22 +602,10 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 		track->lastFeedbackPitch = paramPitch;
 		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber), MidiMapping::pitchToMidi(paramPitch));
 	}
-	if (std::abs(currentPage.bpmOffset - paramPitch) > 0.01f)
-	{
-		currentPage.bpmOffset = paramPitch;
-		needsUIUpdate = true;
-	}
-
 	if (std::abs(track->lastFeedbackFine.load() - paramFine) > 0.01f)
 	{
 		track->lastFeedbackFine = paramFine;
 		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(paramFine));
-	}
-	if (std::abs(currentPage.fineOffset - paramFine) > 0.01f)
-	{
-		currentPage.fineOffset = paramFine * 0.05f;
-		currentPage.bpmOffset = paramPitch + currentPage.fineOffset;
-		needsUIUpdate = true;
 	}
 
 	if (track->isSolo.load() != isSolo)
@@ -609,7 +635,6 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 		else
 			track->beatRepeatPending.store(true);
 	}
-
 	if (track->randomRetriggerInterval.load() != retriggerInterval)
 	{
 		track->randomRetriggerInterval = retriggerInterval;
@@ -849,13 +874,6 @@ double DjIaVstProcessor::getHostBpm() const
 	return 110.0;
 }
 
-juce::AudioProcessorEditor *DjIaVstProcessor::createEditor()
-{
-	currentEditor = new DjIaVstEditor(*this);
-	midiLearnManager.setEditor(currentEditor);
-	return currentEditor;
-}
-
 void DjIaVstProcessor::addCustomPrompt(const juce::String &prompt)
 {
 	if (!prompt.isEmpty() && !customPrompts.contains(prompt))
@@ -906,6 +924,55 @@ void DjIaVstProcessor::parameterChanged(const juce::String &parameterID, float n
 			    if (auto *param = parameterManager.getAPVTS().getParameter(parameterID))
 				    param->setValueNotifyingHost(0.0f);
 		    });
+	}
+	else if (parameterID.startsWith("slot") && (parameterID.endsWith("Pitch") || parameterID.endsWith("Fine")))
+	{
+		int slotNum = parameterID.substring(4, 5).getIntValue();
+		if (slotNum < 1 || slotNum > 8)
+			return;
+		auto trackIds = trackManager.getAllTrackIds();
+		for (const auto &tid : trackIds)
+		{
+			TrackData *t = trackManager.getTrack(tid);
+			if (!t || t->slotIndex != slotNum - 1)
+				continue;
+			auto &page = t->getCurrentPage();
+
+			if (parameterID.endsWith("Pitch"))
+			{
+				float paramPitch = newValue * 8.0f;
+				page.bpmOffset.store(paramPitch + page.fineOffset.load());
+			}
+			else
+			{
+				float paramFine = newValue * 2.0f;
+				page.fineOffset.store(paramFine * 0.05f);
+				float currentPitch = parameterManager.getPitch(slotNum - 1) * 8.0f;
+				page.bpmOffset.store(currentPitch + page.fineOffset.load());
+			}
+
+			if (parameterID.endsWith("Pitch"))
+			{
+				float paramPitch = newValue * 8.0f;
+				if (std::abs(t->lastFeedbackPitch.load() - paramPitch) > 0.01f)
+				{
+					t->lastFeedbackPitch.store(paramPitch);
+					midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNum),
+					                             MidiMapping::pitchToMidi(paramPitch));
+				}
+			}
+			else
+			{
+				float paramFine = newValue * 2.0f;
+				if (std::abs(t->lastFeedbackFine.load() - paramFine) > 0.01f)
+				{
+					t->lastFeedbackFine.store(paramFine);
+					midiManager.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNum),
+					                             MidiMapping::fineToMidi(paramFine));
+				}
+			}
+			break;
+		}
 	}
 	else if (parameterID == "globalCrossfader")
 	{
@@ -982,16 +1049,6 @@ void DjIaVstProcessor::parameterChanged(const juce::String &parameterID, float n
 			break;
 		}
 	}
-}
-
-void DjIaVstProcessor::triggerGlobalGeneration()
-{
-	generationManager.triggerGlobalGeneration();
-}
-
-void DjIaVstProcessor::syncSelectedTrackWithGlobalPrompt()
-{
-	generationManager.syncSelectedTrackWithGlobalPrompt();
 }
 
 void DjIaVstProcessor::removeCustomPrompt(const juce::String &prompt)
