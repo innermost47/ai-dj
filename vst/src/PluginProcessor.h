@@ -562,10 +562,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void cleanProcessor();
 	void selectTrack(const juce::String &trackId);
 	void reorderTracks(const juce::String &from, const juce::String &to);
-	void generateLoop(const DjIaClient::LoopRequest &request, const juce::String &targetTrackId = "");
-	void generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId, int timeoutMS);
-	void generateSampleWithImage(const juce::String &trackId, const juce::String &base64Image,
-	                             const juce::StringArray &keywords);
 	void startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double hostBpm = 126.0);
 	void previewTrack(const juce::String &trackId);
 	void loadPendingSample();
@@ -783,9 +779,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void handleAsyncUpdate() override;
 	void checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages);
 	void getDawInformations(juce::AudioPlayHead *playHead, bool &isPlaying, double &bpm, double &ppq);
-	void generateLoopAPI(const DjIaClient::LoopRequest &request, const juce::String &trackId);
-	void generateLoopLocal(const DjIaClient::LoopRequest &request, const juce::String &trackId);
-	void generateLoopFromMidi(const juce::String &trackId);
 	void handleSampleParams(int slot, TrackData *track);
 
 	static juce::File getGlobalConfigFile();

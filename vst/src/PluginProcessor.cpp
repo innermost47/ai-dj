@@ -525,23 +525,6 @@ void DjIaVstProcessor::playTrack(const juce::MidiMessage &message, double hostBp
 	}
 }
 
-void DjIaVstProcessor::generateSampleWithImage(const juce::String &trackId, const juce::String &base64Image,
-                                               const juce::StringArray &keywords)
-{
-	generationManager.generateSampleWithImage(trackId, base64Image, keywords);
-}
-
-void DjIaVstProcessor::generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId,
-                                             int timeoutMS)
-{
-	generationManager.generateLoopWithImage(request, trackId, timeoutMS);
-}
-
-void DjIaVstProcessor::generateLoopFromMidi(const juce::String &trackId)
-{
-	generationManager.generateLoopFromMidi(trackId);
-}
-
 void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 {
 	auto &pm = parameterManager;
@@ -714,21 +697,6 @@ void DjIaVstProcessor::selectTrack(const juce::String &trackId)
 	{
 		selectedTrackId = trackId;
 	}
-}
-
-void DjIaVstProcessor::generateLoop(const DjIaClient::LoopRequest &request, const juce::String &targetTrackId)
-{
-	generationManager.generateLoop(request, targetTrackId);
-}
-
-void DjIaVstProcessor::generateLoopAPI(const DjIaClient::LoopRequest &request, const juce::String &trackId)
-{
-	generationManager.generateLoop(request, trackId);
-}
-
-void DjIaVstProcessor::generateLoopLocal(const DjIaClient::LoopRequest &request, const juce::String &trackId)
-{
-	generationManager.generateLoopLocal(request, trackId);
 }
 
 const juce::StringArray &DjIaVstProcessor::getBuiltInPrompts() const

@@ -213,7 +213,6 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/tracks/WaveformDisplay.cpp
     src/core/AudioManager.cpp
     src/core/GenerationManager.cpp
-    src/core/MidiManager.cpp
     src/core/ParameterManager.cpp
     src/core/SequencerManager.cpp
     src/core/StateManager.cpp
@@ -224,6 +223,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/engines/ObsidianEngine.cpp
     src/engines/StableAudioEngine.cpp
     src/midi/MidiLearnManager.cpp
+    src/midi/MidiManager.cpp
     src/midi/MidiMappingEditorWindow.cpp
     src/PluginEditor.cpp
     src/PluginEntry.cpp

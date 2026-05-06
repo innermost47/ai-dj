@@ -1681,7 +1681,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 			    audioProcessor.setServerUrl(audioProcessor.getServerUrl());
 			    audioProcessor.setApiKey(audioProcessor.getApiKey());
 			    juce::Thread::sleep(100);
-			    audioProcessor.generateLoop(request, generatingTrackId);
+			    audioProcessor.getGenerationManager().generateLoop(request, generatingTrackId);
 		    }
 		    catch (const std::exception &e)
 		    {
@@ -2020,7 +2020,7 @@ void DjIaVstEditor::refreshTrackComponents()
 
 		trackComp->onGenerateWithImage =
 		    [this](const juce::String &trackId, const juce::String &image, const juce::StringArray &keywords)
-		{ audioProcessor.generateSampleWithImage(trackId, image, keywords); };
+		{ audioProcessor.getGenerationManager().generateSampleWithImage(trackId, image, keywords); };
 
 		trackComp->onTrackRenamed = [this](const juce::String &id, const juce::String &newName)
 		{
@@ -2139,7 +2139,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String &trackId)
 		    try
 		    {
 			    auto request = track->createLoopRequest();
-			    audioProcessor.generateLoop(request, currentGeneratingTrackId);
+			    audioProcessor.getGenerationManager().generateLoop(request, currentGeneratingTrackId);
 		    }
 		    catch (const std::exception &e)
 		    {
