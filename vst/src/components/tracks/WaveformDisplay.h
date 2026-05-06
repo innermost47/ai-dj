@@ -1,10 +1,14 @@
 #pragma once
-#include "components/ObsidianBase.h"
+#include "ObsidianBase.h"
+#include <JuceHeader.h>
+
 class DjIaVstProcessor;
+
 struct TrackData;
+
 class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
 {
-public:
+  public:
 	WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData);
 	~WaveformDisplay();
 	std::function<void(double, double)> onLoopPointsChanged;
@@ -23,7 +27,7 @@ public:
 	void setAudioFile(const juce::File &file);
 	void setAdsrParams(float attack, float decay, float sustain, float release);
 
-private:
+  private:
 	juce::AudioBuffer<float> audioBuffer;
 	juce::File currentAudioFile;
 	juce::Point<int> dragStartPosition;
@@ -89,7 +93,6 @@ private:
 
 	void drawAdsrOverlay(juce::Graphics &g, float startX, float endX);
 	void invalidateAllCaches();
-	void invalidateWaveformCache();
 	void invalidateGridCache();
 	void rebuildWaveformCache();
 	void rebuildGridCache();

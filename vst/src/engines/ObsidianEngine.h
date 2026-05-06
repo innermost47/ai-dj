@@ -1,17 +1,17 @@
 ﻿#pragma once
-#include <JuceHeader.h>
 #include "StableAudioEngine.h"
+#include <JuceHeader.h>
 #include <nlohmann/json.hpp>
 
 class ObsidianEngine
 {
-public:
+  public:
 	struct LoopRequest
 	{
 		juce::String prompt;
 		float generationDuration = 10.0f;
 		float bpm = 120.0f;
-		juce::String key = "C Aeolian";
+		juce::String key = "C Minor";
 		std::vector<juce::String> preferredStems;
 	};
 
@@ -31,21 +31,9 @@ public:
 
 	typedef std::function<void(LoopResponse)> GenerationCallback;
 
-	bool initialize()
-	{
-		appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-						 .getChildFile("OBSIDIAN-Neural");
-		auto stableAudioDir = appDataDir.getChildFile("stable-audio");
+	bool initialize();
 
-		stableAudioEngine = std::make_unique<StableAudioEngine>();
-		if (!stableAudioEngine->initialize(stableAudioDir.getFullPathName()))
-		{
-			return false;
-		}
-		return true;
-	}
-
-private:
+  private:
 	std::unique_ptr<StableAudioEngine> stableAudioEngine;
 	juce::File appDataDir;
 	juce::String currentUserId = "default_user";

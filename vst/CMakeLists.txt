@@ -146,76 +146,108 @@ juce_add_plugin(ObsidianNeuralVST
 
 juce_add_binary_data(ObsidianBinaryData
     SOURCES
-        src/assets/logo.png   
-        src/assets/icons/pencil.svg
-        src/assets/icons/zap.svg
-        src/assets/icons/play.svg
-        src/assets/icons/square.svg
-        src/assets/icons/anchor.svg
-        src/assets/icons/repeat.svg
-        src/assets/icons/shuffle.svg
         src/assets/icons/activity.svg
-        src/assets/icons/grid.svg
-        src/assets/icons/save.svg
-        src/assets/icons/left.svg
-        src/assets/icons/right.svg
-        src/assets/icons/volume.svg
-        src/assets/icons/mute.svg
-        src/assets/icons/pause.svg
-        src/assets/icons/headphones.svg
-        src/assets/icons/trash.svg
-        src/assets/icons/plus.svg
-        src/assets/icons/x.svg
-        src/assets/icons/sliders.svg
-        src/assets/icons/folder.svg
-        src/assets/icons/download.svg
+        src/assets/icons/anchor.svg
         src/assets/icons/branch.svg
-        src/assets/icons/gear.svg
-        src/assets/icons/upload.svg
-        src/assets/icons/refresh.svg
-        src/assets/icons/cpu.svg
-        src/assets/icons/cpuregular.svg
-        src/assets/icons/piano.svg
         src/assets/icons/broadcast.svg
-        src/assets/icons/undo.svg
-        src/assets/icons/redo.svg
-        src/assets/icons/eraser.svg
         src/assets/icons/brush.svg
         src/assets/icons/bucket.svg
-        src/assets/icons/wind.svg
-        src/assets/icons/info.svg
-        src/assets/icons/search.svg
+        src/assets/icons/cpu.svg
+        src/assets/icons/cpuregular.svg
         src/assets/icons/dj.svg
+        src/assets/icons/download.svg
         src/assets/icons/eq.svg
+        src/assets/icons/eraser.svg
+        src/assets/icons/folder.svg
+        src/assets/icons/gear.svg
+        src/assets/icons/grid.svg
+        src/assets/icons/headphones.svg
+        src/assets/icons/info.svg
+        src/assets/icons/left.svg
         src/assets/icons/lin.svg
-        src/assets/icons/robotregular.svg
+        src/assets/icons/mute.svg
+        src/assets/icons/pause.svg
+        src/assets/icons/pencil.svg
+        src/assets/icons/piano.svg
+        src/assets/icons/play.svg
+        src/assets/icons/plus.svg
+        src/assets/icons/redo.svg
+        src/assets/icons/refresh.svg
+        src/assets/icons/repeat.svg
+        src/assets/icons/right.svg
         src/assets/icons/robotfill.svg
+        src/assets/icons/robotregular.svg
+        src/assets/icons/save.svg
+        src/assets/icons/search.svg
+        src/assets/icons/shuffle.svg
+        src/assets/icons/sliders.svg
+        src/assets/icons/square.svg
+        src/assets/icons/trash.svg
+        src/assets/icons/undo.svg
+        src/assets/icons/upload.svg
+        src/assets/icons/volume.svg
+        src/assets/icons/wind.svg
+        src/assets/icons/x.svg
+        src/assets/icons/zap.svg
+        src/assets/logo.png   
 )
 
 target_sources(ObsidianNeuralVST PRIVATE
-    src/PluginProcessor.cpp
-    src/PluginEditor.cpp
-    src/PluginEntry.cpp
-    src/midi/MidiLearnManager.cpp
-    src/components/mixer/MixerChannel.cpp
-    src/components/tracks/TrackComponent.cpp
-    src/components/mixer/MasterChannel.cpp
-    src/components/tracks/WaveformDisplay.cpp
-    src/components/tracks/SequencerComponent.cpp
-    src/components/mixer/CrossfaderComponent.cpp
-    src/style/ColourPalette.cpp
-    src/components/mixer/MixerPanel.cpp
-    src/engines/StableAudioEngine.cpp
+    src/components/bank/CategoryPanel.cpp
     src/components/bank/SampleBank.cpp
     src/components/bank/SampleBankPanel.cpp
+    src/components/mixer/CrossfaderComponent.cpp
+    src/components/mixer/LCDScreen.cpp
+    src/components/mixer/MasterChannel.cpp
+    src/components/mixer/MasterWaveformDisplay.cpp
+    src/components/mixer/MixerChannel.cpp
+    src/components/mixer/MixerPanel.cpp
+    src/components/mixer/VuMeter.cpp
+    src/components/shared/ColourPicker.cpp
+    src/components/shared/IconButton.cpp
+    src/components/shared/ObsidianAlertManager.cpp
+    src/components/shared/ObsidianModal.cpp
+    src/components/tracks/DrawingCanvas.cpp
+    src/components/tracks/SequencerComponent.cpp
+    src/components/tracks/TrackComponent.cpp
+    src/components/tracks/WaveformDisplay.cpp
+    src/core/AudioManager.cpp
+    src/core/GenerationManager.cpp
+    src/core/ParameterManager.cpp
+    src/core/SequencerManager.cpp
+    src/core/StateManager.cpp
+    src/core/TrackManager.cpp
+    src/dsp/AudioAnalyzer.cpp
+    src/dsp/SimpleEQ.cpp
+    src/engines/DjIaClient.cpp
+    src/engines/ObsidianEngine.cpp
+    src/engines/StableAudioEngine.cpp
+    src/midi/MidiLearnManager.cpp
+    src/midi/MidiManager.cpp
     src/midi/MidiMappingEditorWindow.cpp
-    src/data/Parameters.cpp
+    src/PluginEditor.cpp
+    src/PluginEntry.cpp
+    src/PluginProcessor.cpp
+    src/style/ColourPalette.cpp
+    src/style/CustomLookAndFeel.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     src
-    ${soundtouch_SOURCE_DIR}/include 
+    src/components
+    src/components/bank
+    src/components/mixer
+    src/components/shared
+    src/components/tracks
+    src/config
+    src/core
+    src/data
+    src/dsp
+    src/engines
+    src/midi
+    src/style
+    ${soundtouch_SOURCE_DIR}/include
 )
 
 target_compile_definitions(ObsidianNeuralVST 

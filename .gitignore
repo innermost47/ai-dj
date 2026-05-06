@@ -26,3 +26,4 @@ testfiles/*
 launch.bat
 vst/deps
 vst/CPTCMakeBuild/
+vst/unused_functions.txt

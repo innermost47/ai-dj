@@ -3,7 +3,7 @@
 
 class ColourPalette
 {
-public:
+  public:
 	static const juce::Colour track1;
 	static const juce::Colour track2;
 	static const juce::Colour track3;
@@ -87,6 +87,6 @@ public:
 	static const juce::Colour loopLocked;
 
 	static juce::Colour getTrackColour(int trackIndex);
-	static juce::Colour withAlpha(const juce::Colour& colour, float alpha);
+	static juce::Colour withAlpha(const juce::Colour &colour, float alpha);
 	static juce::Colour getModelColourByIndex(int index);
 };

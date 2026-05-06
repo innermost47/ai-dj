@@ -1,4 +1,4 @@
-#include "style/ColourPalette.h"
+#include "ColourPalette.h"
 
 constexpr auto OBSIDIAN = 0xff1A1A1C;
 constexpr auto CHARCOAL_DARK = 0xff222225;
@@ -117,12 +117,12 @@ const juce::Colour ColourPalette::modelGluten(ROSE);
 
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {
-	static const std::vector<juce::Colour> trackColours = {
-		track1, track2, track3, track4, track5, track6, track7, track8 };
+	static const std::vector<juce::Colour> trackColours = {track1, track2, track3, track4,
+	                                                       track5, track6, track7, track8};
 	return trackColours[trackIndex % trackColours.size()];
 }
 
-juce::Colour ColourPalette::withAlpha(const juce::Colour& colour, float alpha)
+juce::Colour ColourPalette::withAlpha(const juce::Colour &colour, float alpha)
 {
 	return colour.withAlpha(alpha);
 }

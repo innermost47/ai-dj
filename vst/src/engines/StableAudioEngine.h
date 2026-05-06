@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <JuceHeader.h>
-#include <vector>
 #include <memory>
+#include <vector>
 
 class StableAudioEngine
 {
-public:
+  public:
 	struct GenerationParams
 	{
 		juce::String prompt;
@@ -15,8 +15,7 @@ public:
 		int sampleRate = 44100;
 
 		GenerationParams() = default;
-		GenerationParams(const juce::String &p, float dur = 10.0f)
-			: prompt(p), duration(dur)
+		GenerationParams(const juce::String &p, float dur = 10.0f) : prompt(p), duration(dur)
 		{
 		}
 	};
@@ -36,13 +35,15 @@ public:
 			return success && !audioData.empty() && actualDuration > 0.0f;
 		}
 	};
-	StableAudioEngine() {}
+	StableAudioEngine()
+	{
+	}
 
 	bool initialize(const juce::String &modelsDir);
 
 	GenerationResult generateSample(const GenerationParams &params);
 
-private:
+  private:
 	bool isInitialized = false;
 	juce::String modelsDirectory;
 	juce::File audiogenExecutable;
@@ -50,9 +51,8 @@ private:
 
 	bool checkRequiredFiles();
 	std::vector<float> loadAndResampleWavFile(const juce::File &wavFile, double targetSampleRate);
-	juce::AudioBuffer<float> resampleBuffer(const juce::AudioBuffer<float> &inputBuffer,
-											double inputSampleRate,
-											double outputSampleRate);
+	juce::AudioBuffer<float> resampleBuffer(const juce::AudioBuffer<float> &inputBuffer, double inputSampleRate,
+	                                        double outputSampleRate);
 	void cleanupTempFiles();
 	juce::String sanitizePrompt(const juce::String &prompt);
 	int generateRandomSeed();

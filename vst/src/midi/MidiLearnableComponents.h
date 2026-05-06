@@ -1,10 +1,10 @@
 #pragma once
+#include "ColourPalette.h"
 #include <JuceHeader.h>
-#include "style/ColourPalette.h"
 
 class MidiLearnableBase
 {
-public:
+  public:
 	virtual ~MidiLearnableBase() = default;
 	virtual void setLearningMode(bool isLearning) = 0;
 	virtual bool isLearning() const = 0;
@@ -13,7 +13,7 @@ public:
 template <typename ComponentType>
 class MidiLearnable : public ComponentType, public MidiLearnableBase, private juce::Timer
 {
-public:
+  public:
 	MidiLearnable()
 	{
 		learningMode = false;
@@ -55,32 +55,36 @@ public:
 			}
 			else
 			{
-				juce::MessageManager::callAsync([this]()
-					{ this->repaint(); });
+				juce::MessageManager::callAsync([this]() { this->repaint(); });
 			}
 		}
 	}
 
-	bool isLearning() const override { return learningMode; }
+	bool isLearning() const override
+	{
+		return learningMode;
+	}
 
-	void mouseDown(const juce::MouseEvent& e) override
+	void mouseDown(const juce::MouseEvent &e) override
 	{
 		if (e.mods.isRightButtonDown() && !e.mods.isCtrlDown())
 		{
 			juce::PopupMenu menu;
 			menu.addItem(1, "MIDI Learn");
 			menu.addItem(2, "Remove MIDI", onMidiRemove != nullptr);
-			menu.showMenuAsync(juce::PopupMenu::Options(), [this](int result)
-				{
-					if (result == 1 && onMidiLearn)
-					{
-						setLearningMode(true);
-						onMidiLearn();
-					}
-					else if (result == 2 && onMidiRemove)
-					{
-						onMidiRemove();
-					} });
+			menu.showMenuAsync(juce::PopupMenu::Options(),
+			                   [this](int result)
+			                   {
+				                   if (result == 1 && onMidiLearn)
+				                   {
+					                   setLearningMode(true);
+					                   onMidiLearn();
+				                   }
+				                   else if (result == 2 && onMidiRemove)
+				                   {
+					                   onMidiRemove();
+				                   }
+			                   });
 		}
 		else
 		{
@@ -88,7 +92,7 @@ public:
 		}
 	}
 
-	void paint(juce::Graphics& g) override
+	void paint(juce::Graphics &g) override
 	{
 		ComponentType::paint(g);
 
@@ -103,7 +107,7 @@ public:
 		}
 	}
 
-private:
+  private:
 	void timerCallback() override
 	{
 		blinkState = !blinkState;

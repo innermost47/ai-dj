@@ -1,18 +1,20 @@
-﻿#include "JuceHeader.h"
-#include "WaveformDisplay.h"
+﻿#include "WaveformDisplay.h"
+#include "AiModelDefinitions.h"
+#include "ColourPalette.h"
+#include "JuceHeader.h"
 #include "PluginProcessor.h"
-#include "data/TrackData.h"
-#include "style/ColourPalette.h"
-#include "config/AiModelDefinitions.h"
+#include "TrackData.h"
 
-WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData) : audioProcessor(processor), track(trackData)
+WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData)
+    : audioProcessor(processor), track(trackData)
 {
 	setSize(400, 80);
 	setAccessible(false);
 	zoomFactor = 1.0;
 	viewStartTime = 0.0;
 	sampleRate = 48000.0;
-	loopPointsLocked = track.loopPointsLocked.load();
+	auto &currentPage = track.getCurrentPage();
+	loopPointsLocked = currentPage.loopPointsLocked.load();
 	horizontalScrollBar = std::make_unique<juce::ScrollBar>(false);
 	horizontalScrollBar->setRangeLimits(0.0, 1.0);
 	horizontalScrollBar->addListener(this);
@@ -28,11 +30,6 @@ void WaveformDisplay::invalidateAllCaches()
 {
 	waveformCacheDirty = true;
 	gridCacheDirty = true;
-}
-
-void WaveformDisplay::invalidateWaveformCache()
-{
-	waveformCacheDirty = true;
 }
 
 void WaveformDisplay::invalidateGridCache()
@@ -62,11 +59,11 @@ void WaveformDisplay::setSampleBpm(float bpm)
 	}
 
 	juce::MessageManager::callAsync(
-		[safeThis = juce::Component::SafePointer<WaveformDisplay>(this)]()
-		{
-			if (safeThis != nullptr)
-				safeThis->repaint();
-		});
+	    [safeThis = juce::Component::SafePointer<WaveformDisplay>(this)]()
+	    {
+		    if (safeThis != nullptr)
+			    safeThis->repaint();
+	    });
 }
 
 void WaveformDisplay::setOriginalBpm(float bpm)
@@ -145,10 +142,12 @@ void WaveformDisplay::setLoopPoints(double startTime, double endTime)
 	}
 	else
 	{
-		juce::MessageManager::callAsync([this]()
-										{
-				if (isShowing())
-					repaint(); });
+		juce::MessageManager::callAsync(
+		    [this]()
+		    {
+			    if (isShowing())
+				    repaint();
+		    });
 	}
 }
 
@@ -157,8 +156,7 @@ void WaveformDisplay::lockLoopPoints(bool locked)
 	if (loopPointsLocked == locked)
 		return;
 	loopPointsLocked = locked;
-	juce::MessageManager::callAsync([this]()
-									{ repaint(); });
+	juce::MessageManager::callAsync([this]() { repaint(); });
 }
 
 void WaveformDisplay::calculateStretchRatio() const
@@ -180,17 +178,13 @@ void WaveformDisplay::repaintPlaybackHeadRegion(float oldX, float newX)
 
 	if (oldX >= 0)
 	{
-		auto oldRect = juce::Rectangle<int>(
-			static_cast<int>(oldX) - margin, 0,
-			margin * 2, h);
+		auto oldRect = juce::Rectangle<int>(static_cast<int>(oldX) - margin, 0, margin * 2, h);
 		repaint(oldRect);
 	}
 
 	if (newX >= 0)
 	{
-		auto newRect = juce::Rectangle<int>(
-			static_cast<int>(newX) - margin, 0,
-			margin * 2, h);
+		auto newRect = juce::Rectangle<int>(static_cast<int>(newX) - margin, 0, margin * 2, h);
 		repaint(newRect);
 	}
 }
@@ -211,19 +205,22 @@ void WaveformDisplay::setPlaybackPosition(double timeInSeconds, bool isPlaying)
 
 	float newX = (isPlaying && playbackPosition >= 0.0) ? timeToX(playbackPosition) : -1.0f;
 
-	juce::MessageManager::callAsync([safe = juce::Component::SafePointer<WaveformDisplay>(this), oldX, newX, wasPlaying, isPlaying]()
-									{
-			if (safe == nullptr) return;
+	juce::MessageManager::callAsync(
+	    [safe = juce::Component::SafePointer<WaveformDisplay>(this), oldX, newX, wasPlaying, isPlaying]()
+	    {
+		    if (safe == nullptr)
+			    return;
 
-			if (wasPlaying != isPlaying)
-			{
-				safe->repaint();
-				safe->lastPlaybackHeadX = newX;
-				return;
-			}
+		    if (wasPlaying != isPlaying)
+		    {
+			    safe->repaint();
+			    safe->lastPlaybackHeadX = newX;
+			    return;
+		    }
 
-			safe->repaintPlaybackHeadRegion(oldX, newX);
-			safe->lastPlaybackHeadX = newX; });
+		    safe->repaintPlaybackHeadRegion(oldX, newX);
+		    safe->lastPlaybackHeadX = newX;
+	    });
 }
 
 void WaveformDisplay::rebuildWaveformCache()
@@ -283,7 +280,7 @@ void WaveformDisplay::paint(juce::Graphics &g)
 		g.setColour(ColourPalette::textSecondary);
 		g.setFont(10.0f);
 		g.drawText("Ctrl+Wheel: Zoom | Wheel: Scroll | Right-click: Lock/Unlock | Ctrl+Click: Drag and Drop in DAW",
-				   bounds.reduced(5).removeFromBottom(15), juce::Justification::centred);
+		           bounds.reduced(5).removeFromBottom(15), juce::Justification::centred);
 		return;
 	}
 
@@ -313,7 +310,8 @@ void WaveformDisplay::paint(juce::Graphics &g)
 	{
 		g.setColour(ColourPalette::textPrimary);
 		g.setFont(10.0f);
-		g.drawText("Zoom: " + juce::String(zoomFactor, 1) + "x", 5, getHeight() - 20, 60, 15, juce::Justification::left);
+		g.drawText("Zoom: " + juce::String(zoomFactor, 1) + "x", 5, getHeight() - 20, 60, 15,
+		           juce::Justification::left);
 	}
 
 	if (loopPointsLocked)
@@ -326,6 +324,7 @@ void WaveformDisplay::paint(juce::Graphics &g)
 
 void WaveformDisplay::mouseDown(const juce::MouseEvent &e)
 {
+	auto &currentPage = track.getCurrentPage();
 	if (!e.mods.isRightButtonDown() && !loopPointsLocked)
 	{
 		auto handle = hitTestAdsr(e.position);
@@ -338,8 +337,8 @@ void WaveformDisplay::mouseDown(const juce::MouseEvent &e)
 	}
 	if (e.mods.isRightButtonDown())
 	{
-		loopPointsLocked = !track.loopPointsLocked.load();
-		track.loopPointsLocked.store(loopPointsLocked);
+		loopPointsLocked = !currentPage.loopPointsLocked.load();
+		currentPage.loopPointsLocked.store(loopPointsLocked);
 		lockLoopPoints(loopPointsLocked);
 		return;
 	}
@@ -377,7 +376,7 @@ void WaveformDisplay::mouseDrag(const juce::MouseEvent &e)
 		{
 			isDraggingAudio = true;
 
-			juce::File exportedFile = audioProcessor.exportSampleForDragDrop(currentAudioFile);
+			juce::File exportedFile = audioProcessor.getAudioManager().exportSampleForDragDrop(currentAudioFile);
 
 			if (exportedFile.existsAsFile())
 			{
@@ -1045,10 +1044,7 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics &g)
 	const float markerTop = markerBottom - markerSize;
 
 	juce::Path startTriangle;
-	startTriangle.addTriangle(
-		startX, markerTop,
-		startX, markerBottom,
-		startX + markerSize, markerBottom);
+	startTriangle.addTriangle(startX, markerTop, startX, markerBottom, startX + markerSize, markerBottom);
 
 	g.setColour(loopColour);
 	g.fillPath(startTriangle);
@@ -1056,10 +1052,7 @@ void WaveformDisplay::drawLoopMarkers(juce::Graphics &g)
 	g.strokePath(startTriangle, juce::PathStrokeType(1.5f));
 
 	juce::Path endTriangle;
-	endTriangle.addTriangle(
-		endX, markerTop,
-		endX, markerBottom,
-		endX - markerSize, markerBottom);
+	endTriangle.addTriangle(endX, markerTop, endX, markerBottom, endX - markerSize, markerBottom);
 
 	g.setColour(loopColour);
 	g.fillPath(endTriangle);
@@ -1106,10 +1099,7 @@ void WaveformDisplay::drawAdsrOverlay(juce::Graphics &g, float startX, float end
 		sustainPx = 0.0f;
 
 	float margin = h * 0.08f;
-	auto ampToY = [&](float amp) -> float
-	{
-		return h - margin - amp * (h - margin * 2.0f);
-	};
+	auto ampToY = [&](float amp) -> float { return h - margin - amp * (h - margin * 2.0f); };
 
 	float x0 = startX;
 	float x1 = x0 + attackPx;
@@ -1175,10 +1165,8 @@ void WaveformDisplay::drawLoopTimeLabels(juce::Graphics &g, float startX, float 
 	g.setFont(10.0f);
 	int startTextX = static_cast<int>(startX + 2);
 	int endTextX = static_cast<int>(endX - 50);
-	g.drawText(juce::String(loopStart, 2) + "s", startTextX, 2, 50, 15,
-			   juce::Justification::left);
-	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, 2, 48, 15,
-			   juce::Justification::right);
+	g.drawText(juce::String(loopStart, 2) + "s", startTextX, 2, 50, 15, juce::Justification::left);
+	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, 2, 48, 15, juce::Justification::right);
 }
 
 void WaveformDisplay::drawLoopBarLabels(juce::Graphics &g, float startX, float endX) const
@@ -1188,10 +1176,8 @@ void WaveformDisplay::drawLoopBarLabels(juce::Graphics &g, float startX, float e
 	int startTextX = static_cast<int>(startX + 5);
 	int endTextX = static_cast<int>(endX - 55);
 	int textY = getHeight() - 30;
-	g.drawText(juce::String(loopStart, 2) + "s", startTextX, textY, 50, 15,
-			   juce::Justification::left);
-	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, textY, 48, 15,
-			   juce::Justification::right);
+	g.drawText(juce::String(loopStart, 2) + "s", startTextX, textY, 50, 15, juce::Justification::left);
+	g.drawText(juce::String(loopEnd, 2) + "s", endTextX, textY, 48, 15, juce::Justification::right);
 }
 
 void WaveformDisplay::drawPlaybackHead(juce::Graphics &g)
@@ -1219,11 +1205,8 @@ void WaveformDisplay::drawPlaybackHead(juce::Graphics &g)
 			g.fillPath(triangle);
 
 			g.setFont(14.0f);
-			g.drawText(juce::String(playbackPosition, 2) + "s",
-					   static_cast<int>(headX - 40),
-					   getHeight() / 2 - 10,
-					   80, 20,
-					   juce::Justification::centred);
+			g.drawText(juce::String(playbackPosition, 2) + "s", static_cast<int>(headX - 40), getHeight() / 2 - 10, 80,
+			           20, juce::Justification::centred);
 		}
 	}
 }
@@ -1400,8 +1383,7 @@ double WaveformDisplay::getViewStartTime() const
 
 double WaveformDisplay::getViewEndTime() const
 {
-	return juce::jlimit(viewStartTime, getTotalDuration(),
-						viewStartTime + (getTotalDuration() / zoomFactor));
+	return juce::jlimit(viewStartTime, getTotalDuration(), viewStartTime + (getTotalDuration() / zoomFactor));
 }
 
 void WaveformDisplay::setAdsrParams(float attack, float decay, float sustain, float release)
@@ -1417,10 +1399,7 @@ juce::Colour WaveformDisplay::getModelAccentColour() const
 {
 	juce::String modelName;
 
-	if (track.usePages.load())
-		modelName = track.getCurrentPage().selectedModel;
-	else
-		modelName = track.selectedModel;
+	modelName = track.getCurrentPage().selectedModel;
 
 	if (modelName.isEmpty())
 		return ColourPalette::buttonPrimary;

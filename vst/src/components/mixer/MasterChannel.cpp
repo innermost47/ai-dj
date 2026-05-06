@@ -1,9 +1,8 @@
-﻿#pragma once
-#include "MasterChannel.h"
+﻿#include "MasterChannel.h"
+#include "ColourPalette.h"
 #include "PluginEditor.h"
-#include "style/ColourPalette.h"
 
-MasterChannel::MasterChannel(DjIaVstProcessor& processor) : audioProcessor(processor)
+MasterChannel::MasterChannel(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
 	setupUI();
 	setupMidiLearn();
@@ -38,29 +37,31 @@ void MasterChannel::parameterGestureChanged(int /*parameterIndex*/, bool /*gestu
 
 void MasterChannel::parameterValueChanged(int parameterIndex, float newValue)
 {
-	auto& allParams = audioProcessor.AudioProcessor::getParameters();
+	auto &allParams = audioProcessor.AudioProcessor::getParameters();
 
 	if (parameterIndex >= 0 && parameterIndex < allParams.size())
 	{
-		auto* param = allParams[parameterIndex];
+		auto *param = allParams[parameterIndex];
 		juce::String paramName = param->getName(256);
 
 		if (juce::MessageManager::getInstance()->isThisTheMessageThread())
 		{
-			juce::Timer::callAfterDelay(50, [this, paramName, newValue]()
-				{ updateUIFromParameter(paramName, newValue); });
+			juce::Timer::callAfterDelay(50,
+			                            [this, paramName, newValue]() { updateUIFromParameter(paramName, newValue); });
 		}
 		else
 		{
-			juce::MessageManager::callAsync([this, paramName, newValue]()
-				{ juce::Timer::callAfterDelay(50, [this, paramName, newValue]()
-					{ updateUIFromParameter(paramName, newValue); }); });
+			juce::MessageManager::callAsync(
+			    [this, paramName, newValue]()
+			    {
+				    juce::Timer::callAfterDelay(50, [this, paramName, newValue]()
+				                                { updateUIFromParameter(paramName, newValue); });
+			    });
 		}
 	}
 }
 
-void MasterChannel::updateUIFromParameter(const juce::String& paramName,
-	float newValue)
+void MasterChannel::updateUIFromParameter(const juce::String &paramName, float newValue)
 {
 	if (isDestroyed.load())
 		return;
@@ -105,7 +106,7 @@ void MasterChannel::updateUIFromParameter(const juce::String& paramName,
 
 void MasterChannel::removeListener(juce::String name)
 {
-	auto* param = audioProcessor.getParameterTreeState().getParameter(name);
+	auto *param = audioProcessor.getParameterTreeState().getParameter(name);
 	if (param)
 	{
 		param->removeListener(this);
@@ -114,20 +115,20 @@ void MasterChannel::removeListener(juce::String name)
 
 void MasterChannel::addListener(juce::String name)
 {
-	auto* param = audioProcessor.getParameterTreeState().getParameter(name);
+	auto *param = audioProcessor.getParameterTreeState().getParameter(name);
 	if (param)
 	{
 		param->addListener(this);
 	}
 }
 
-void MasterChannel::setSliderParameter(juce::String name, juce::Slider& slider)
+void MasterChannel::setSliderParameter(juce::String name, juce::Slider &slider)
 {
 	if (this == nullptr)
 		return;
 
-	auto& parameterTreeState = audioProcessor.getParameterTreeState();
-	auto* param = parameterTreeState.getParameter(name);
+	auto &parameterTreeState = audioProcessor.getParameterTreeState();
+	auto *param = parameterTreeState.getParameter(name);
 
 	if (param != nullptr)
 	{
@@ -149,26 +150,11 @@ void MasterChannel::setSliderParameter(juce::String name, juce::Slider& slider)
 
 void MasterChannel::addEventListeners()
 {
-	masterVolumeSlider.onValueChange = [this]()
-		{
-			setSliderParameter("masterVolume", masterVolumeSlider);
-		};
-	masterPanKnob.onValueChange = [this]()
-		{
-			setSliderParameter("masterPan", masterPanKnob);
-		};
-	highKnob.onValueChange = [this]()
-		{
-			setSliderParameter("masterHigh", highKnob);
-		};
-	midKnob.onValueChange = [this]()
-		{
-			setSliderParameter("masterMid", midKnob);
-		};
-	lowKnob.onValueChange = [this]()
-		{
-			setSliderParameter("masterLow", lowKnob);
-		};
+	masterVolumeSlider.onValueChange = [this]() { setSliderParameter("masterVolume", masterVolumeSlider); };
+	masterPanKnob.onValueChange = [this]() { setSliderParameter("masterPan", masterPanKnob); };
+	highKnob.onValueChange = [this]() { setSliderParameter("masterHigh", highKnob); };
+	midKnob.onValueChange = [this]() { setSliderParameter("masterMid", midKnob); };
+	lowKnob.onValueChange = [this]() { setSliderParameter("masterLow", lowKnob); };
 
 	masterVolumeSlider.setDoubleClickReturnValue(true, 0.8);
 	masterPanKnob.setDoubleClickReturnValue(true, 0.0);
@@ -193,10 +179,8 @@ void MasterChannel::setupUI()
 	masterVolumeSlider.setColour(juce::Slider::thumbColourId, ColourPalette::playArmed);
 	masterVolumeSlider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
 	masterVolumeSlider.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
-	masterVolumeSlider.getProperties().set(
-		CustomLookAndFeel::getDrawTicksPropertyId(), 9);
-	masterVolumeSlider.getProperties().set(
-		CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
+	masterVolumeSlider.getProperties().set(CustomLookAndFeel::getDrawTicksPropertyId(), 9);
+	masterVolumeSlider.getProperties().set(CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
 
 	addAndMakeVisible(masterPanKnob);
 	masterPanKnob.setRange(-1.0, 1.0, 0.01);
@@ -269,7 +253,7 @@ void MasterChannel::setupUI()
 	lowKnob.setTooltip("Low frequency EQ (-12dB to +12dB)");
 }
 
-void MasterChannel::paint(juce::Graphics& g)
+void MasterChannel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds();
 	g.setColour(ColourPalette::backgroundDark);
@@ -296,16 +280,15 @@ void MasterChannel::resized()
 	const int knobSize = 32;
 	const int knobSectionH = 50;
 
-	auto placeEqKnob = [&](juce::Rectangle<int> sec, juce::Label& label, juce::Slider& knob)
-		{
-			const int labelH = 13;
-			const int kSize = juce::jmin(knobSize, sec.getHeight() - labelH - 4);
-			int totalH = labelH + 3 + kSize;
-			int startY = sec.getY() + (sec.getHeight() - totalH) / 2;
-			label.setBounds(sec.getX(), startY, sec.getWidth(), labelH);
-			knob.setBounds(sec.withSizeKeepingCentre(kSize, kSize)
-				.withY(startY + labelH + 3));
-		};
+	auto placeEqKnob = [&](juce::Rectangle<int> sec, juce::Label &label, juce::Slider &knob)
+	{
+		const int labelH = 13;
+		const int kSize = juce::jmin(knobSize, sec.getHeight() - labelH - 4);
+		int totalH = labelH + 3 + kSize;
+		int startY = sec.getY() + (sec.getHeight() - totalH) / 2;
+		label.setBounds(sec.getX(), startY, sec.getWidth(), labelH);
+		knob.setBounds(sec.withSizeKeepingCentre(kSize, kSize).withY(startY + labelH + 3));
+	};
 	leftCol.removeFromTop(8);
 	placeEqKnob(leftCol.removeFromTop(knobSectionH), highLabel, highKnob);
 	placeEqKnob(leftCol.removeFromTop(knobSectionH), midLabel, midKnob);
@@ -313,8 +296,7 @@ void MasterChannel::resized()
 
 	int faderWidth = juce::jmax(38, centerCol.getWidth() * 3 / 4);
 	int centerX = centerCol.getX() + (centerCol.getWidth() - faderWidth) / 2;
-	masterVolumeSlider.setBounds(centerX, centerCol.getY() + 8,
-		faderWidth, centerCol.getHeight() - 8);
+	masterVolumeSlider.setBounds(centerX, centerCol.getY() + 8, faderWidth, centerCol.getHeight() - 8);
 
 	const int panAreaH = 55;
 	auto panArea = rightCol.removeFromBottom(panAreaH);
@@ -339,23 +321,25 @@ void MasterChannel::updateMasterLevels()
 	vuMeter.updateFromRawLevels(realAudioLevelLeft, realAudioLevelRight);
 }
 
-void MasterChannel::learn(juce::String param, juce::String description, MidiLearnableBase* component, std::function<void(float)> uiCallback)
+void MasterChannel::learn(juce::String param, juce::String description, MidiLearnableBase *component,
+                          std::function<void(float)> uiCallback)
 {
 	if (audioProcessor.getActiveEditor())
 	{
-		juce::MessageManager::callAsync([this, description]()
-			{
-				if (auto* editor = dynamic_cast<DjIaVstEditor*>(audioProcessor.getActiveEditor()))
-				{
-					editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
-					editor->updateLCD();
-				} });
-				audioProcessor.getMidiLearnManager()
-					.startLearning(param, &audioProcessor, uiCallback, description, component);
+		juce::MessageManager::callAsync(
+		    [this, description]()
+		    {
+			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+			    {
+				    editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
+				    editor->updateLCD();
+			    }
+		    });
+		audioProcessor.getMidiLearnManager().startLearning(param, &audioProcessor, uiCallback, description, component);
 	}
 }
 
-void MasterChannel::removeMidiMapping(const juce::String& param)
+void MasterChannel::removeMidiMapping(const juce::String &param)
 {
 
 	audioProcessor.getMidiLearnManager().removeMappingForParameter(param);
@@ -370,49 +354,19 @@ void MasterChannel::setRealAudioLevelStereo(float levelLeft, float levelRight)
 
 void MasterChannel::setupMidiLearn()
 {
-	masterVolumeSlider.onMidiLearn = [this]()
-		{
-			learn("masterVolume", "Master Volume", &masterVolumeSlider);
-		};
-	masterPanKnob.onMidiLearn = [this]()
-		{
-			learn("masterPan", "Master Pan", &masterPanKnob);
-		};
-	highKnob.onMidiLearn = [this]()
-		{
-			learn("masterHigh", "Master High EQ", &highKnob);
-		};
-	midKnob.onMidiLearn = [this]()
-		{
-			learn("masterMid", "Master Mid EQ", &midKnob);
-		};
-	lowKnob.onMidiLearn = [this]()
-		{
-			learn("masterLow", "Master Low EQ", &lowKnob);
-		};
+	masterVolumeSlider.onMidiLearn = [this]() { learn("masterVolume", "Master Volume", &masterVolumeSlider); };
+	masterPanKnob.onMidiLearn = [this]() { learn("masterPan", "Master Pan", &masterPanKnob); };
+	highKnob.onMidiLearn = [this]() { learn("masterHigh", "Master High EQ", &highKnob); };
+	midKnob.onMidiLearn = [this]() { learn("masterMid", "Master Mid EQ", &midKnob); };
+	lowKnob.onMidiLearn = [this]() { learn("masterLow", "Master Low EQ", &lowKnob); };
 
-	masterVolumeSlider.onMidiRemove = [this]()
-		{
-			removeMidiMapping("masterVolume");
-		};
+	masterVolumeSlider.onMidiRemove = [this]() { removeMidiMapping("masterVolume"); };
 
-	masterPanKnob.onMidiRemove = [this]()
-		{
-			removeMidiMapping("masterPan");
-		};
+	masterPanKnob.onMidiRemove = [this]() { removeMidiMapping("masterPan"); };
 
-	highKnob.onMidiRemove = [this]()
-		{
-			removeMidiMapping("masterHigh");
-		};
+	highKnob.onMidiRemove = [this]() { removeMidiMapping("masterHigh"); };
 
-	midKnob.onMidiRemove = [this]()
-		{
-			removeMidiMapping("masterMid");
-		};
+	midKnob.onMidiRemove = [this]() { removeMidiMapping("masterMid"); };
 
-	lowKnob.onMidiRemove = [this]()
-		{
-			removeMidiMapping("masterLow");
-		};
+	lowKnob.onMidiRemove = [this]() { removeMidiMapping("masterLow"); };
 }

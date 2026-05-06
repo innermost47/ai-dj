@@ -1,13 +1,14 @@
 #pragma once
-#include "components/ObsidianBase.h"
+#include "MidiLearnableComponents.h"
+#include "ObsidianBase.h"
 #include "PluginProcessor.h"
-#include "midi/MidiLearnableComponents.h"
-#include "components/mixer/VUMeter.h"
+#include "VuMeter.h"
+#include <JuceHeader.h>
 
 class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParameter::Listener
 {
-public:
-	MasterChannel(DjIaVstProcessor& processor);
+  public:
+	MasterChannel(DjIaVstProcessor &processor);
 	~MasterChannel();
 	void setRealAudioLevelStereo(float levelLeft, float levelRight);
 	void updateMasterLevels();
@@ -16,8 +17,8 @@ public:
 	std::function<void(float)> onMasterPanChanged;
 	std::function<void(float, float, float)> onMasterEQChanged;
 
-private:
-	DjIaVstProcessor& audioProcessor;
+  private:
+	DjIaVstProcessor &audioProcessor;
 	VuMeter vuMeter;
 	MidiLearnableSlider masterVolumeSlider;
 	MidiLearnableSlider masterPanKnob;
@@ -25,7 +26,7 @@ private:
 
 	juce::Rectangle<int> masterVUBounds;
 
-	std::atomic<bool> isDestroyed{ false };
+	std::atomic<bool> isDestroyed{false};
 
 	bool hasRealAudio = false;
 
@@ -47,18 +48,19 @@ private:
 	int masterPeakHoldTimer = 0;
 
 	void setupUI();
-	void paint(juce::Graphics& g) override;
+	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void parameterValueChanged(int parameterIndex, float newValue) override;
 	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
 	void setupMidiLearn();
-	void removeMidiMapping(const juce::String& param);
-	void learn(juce::String param, juce::String description, MidiLearnableBase* component, std::function<void(float)> uiCallback = nullptr);
+	void removeMidiMapping(const juce::String &param);
+	void learn(juce::String param, juce::String description, MidiLearnableBase *component,
+	           std::function<void(float)> uiCallback = nullptr);
 	void removeListener(juce::String name);
 	void addListener(juce::String name);
 	void addEventListeners();
-	void setSliderParameter(juce::String name, juce::Slider& slider);
-	void updateUIFromParameter(const juce::String& paramName, float newValue);
+	void setSliderParameter(juce::String name, juce::Slider &slider);
+	void updateUIFromParameter(const juce::String &paramName, float newValue);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterChannel)
 };
