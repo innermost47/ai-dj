@@ -51,8 +51,28 @@ void SampleBankItem::paint(juce::Graphics &g)
 		juce::AttributedString attr;
 		attr.setJustification(juce::Justification::centredLeft);
 
-		attr.append(sampleEntry->originalPrompt, juce::FontOptions(13.0f, juce::Font::bold),
-		            ColourPalette::textPrimary);
+		juce::String prompt = sampleEntry->originalPrompt;
+		juce::Font font(juce::FontOptions(13.0f, juce::Font::bold));
+		float maxWidth = (float)nameArea.getWidth();
+
+		juce::GlyphArrangement ga;
+		ga.addLineOfText(font, prompt, 0.0f, 0.0f);
+		float textWidth = ga.getBoundingBox(0, -1, true).getWidth();
+
+		if (textWidth > maxWidth)
+		{
+			while (prompt.isNotEmpty())
+			{
+				ga.clear();
+				ga.addLineOfText(font, prompt + "...", 0.0f, 0.0f);
+				if (ga.getBoundingBox(0, -1, true).getWidth() <= maxWidth)
+					break;
+				prompt = prompt.dropLastCharacters(1);
+			}
+			prompt += "...";
+		}
+
+		attr.append(prompt, juce::FontOptions(13.0f, juce::Font::bold), ColourPalette::textPrimary);
 
 		attr.draw(g, nameArea.toFloat());
 	}

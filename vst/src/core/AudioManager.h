@@ -134,7 +134,6 @@ class AudioManager
 	juce::AudioBuffer<float> previewBuffer;
 	std::atomic<double> previewPosition{0.0};
 	std::atomic<double> previewSampleRate{44100.0};
-	std::atomic<bool> isPreviewPlaying{false};
 	juce::CriticalSection previewLock;
 	juce::String currentPreviewTrackId;
 
@@ -142,7 +141,6 @@ class AudioManager
 	std::atomic<float> peakRight{0.0f};
 
 	std::vector<juce::AudioBuffer<float>> individualOutputBuffers;
-	juce::AudioFormatManager sharedFormatManager;
 
 	float smoothedMasterVol = 1.0f;
 	float smoothedMasterPan = 0.0f;

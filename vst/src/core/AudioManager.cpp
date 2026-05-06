@@ -829,7 +829,7 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 
 	try
 	{
-		std::unique_ptr<juce::AudioFormatReader> reader(sharedFormatManager.createReaderFor(audioFile));
+		std::unique_ptr<juce::AudioFormatReader> reader(audioProcessor.sharedFormatManager.createReaderFor(audioFile));
 		if (!reader)
 		{
 			return;
@@ -969,7 +969,7 @@ bool AudioManager::previewSampleFromBank(const juce::String &sampleId)
 		    if (!reader)
 		    {
 			    juce::ScopedLock lock(previewLock);
-			    isPreviewPlaying.store(false);
+			    previewActive.store(false);
 			    return;
 		    }
 
@@ -983,7 +983,7 @@ bool AudioManager::previewSampleFromBank(const juce::String &sampleId)
 			    }
 			    previewSampleRate = reader->sampleRate;
 			    previewPosition.store(0.0);
-			    isPreviewPlaying.store(true);
+			    previewActive.store(true);
 		    }
 	    });
 
@@ -1061,7 +1061,7 @@ void AudioManager::computeAndSetPeakLevels(const juce::AudioBuffer<float> &buffe
 
 void AudioManager::stopSamplePreview()
 {
-	isPreviewPlaying = false;
+	previewActive.store(false);
 	previewPosition = 0.0;
 	if (!currentPreviewTrackId.isEmpty())
 	{
