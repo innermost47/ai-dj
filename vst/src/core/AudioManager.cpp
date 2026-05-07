@@ -80,7 +80,7 @@ void AudioManager::processIncomingAudio(bool hostIsPlaying)
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
 			    editor->statusLabel.setText("Loading sample...", juce::dontSendNotification);
-			    editor->updateLCD();
+			    editor->uiStatusManager->updateLCD();
 		    }
 	    });
 
@@ -707,8 +707,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		    {
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			    {
-				    editor->setStatusWithTimeout("Sample loaded to page " + juce::String((char)('A' + pageIndex)) +
-				                                 "!");
+				    editor->uiStatusManager->setStatusWithTimeout("Sample loaded to page " +
+				                                                  juce::String((char)('A' + pageIndex)) + "!");
 				    TrackData *track = trackManager.getTrack(trackId);
 				    if (track && pageIndex == track->currentPageIndex.load())
 				    {
@@ -834,7 +834,7 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 					        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 					        {
 						        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-						        editor->updateLCD();
+						        editor->uiStatusManager->updateLCD();
 					        }
 				        });
 			    }

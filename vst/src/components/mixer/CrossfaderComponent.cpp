@@ -172,7 +172,7 @@ void CrossfaderComponent::setupMidiLearn()
 			if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			{
 				editor->statusLabel.setText("Learning MIDI for " + displayName + "...", juce::dontSendNotification);
-				editor->updateLCD();
+				editor->uiStatusManager->updateLCD();
 			}
 			audioProcessor.getMidiLearnManager().startLearning(
 			    paramId, &audioProcessor,
@@ -194,7 +194,7 @@ void CrossfaderComponent::setupMidiLearn()
 		if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		{
 			editor->statusLabel.setText("Learning MIDI for Global Crossfader...", juce::dontSendNotification);
-			editor->updateLCD();
+			editor->uiStatusManager->updateLCD();
 		}
 		audioProcessor.getMidiLearnManager().startLearning(
 		    globalParamId, &audioProcessor,
@@ -221,7 +221,7 @@ void CrossfaderComponent::setupCurveButtonsMidiLearn()
 			if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			{
 				editor->statusLabel.setText("Learning MIDI for " + displayName + "...", juce::dontSendNotification);
-				editor->updateLCD();
+				editor->uiStatusManager->updateLCD();
 			}
 			audioProcessor.getMidiLearnManager().startLearning(
 			    paramId, &audioProcessor,

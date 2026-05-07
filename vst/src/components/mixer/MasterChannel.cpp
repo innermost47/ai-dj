@@ -332,7 +332,7 @@ void MasterChannel::learn(juce::String param, juce::String description, MidiLear
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			    {
 				    editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
-				    editor->updateLCD();
+				    editor->uiStatusManager->updateLCD();
 			    }
 		    });
 		audioProcessor.getMidiLearnManager().startLearning(param, &audioProcessor, uiCallback, description, component);

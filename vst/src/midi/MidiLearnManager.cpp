@@ -87,7 +87,7 @@ void MidiLearnManager::timerCallback()
 				    {
 					    editor->statusLabel.setText("MIDI Learn timeout - no controller received",
 					                                juce::dontSendNotification);
-					    editor->updateLCD();
+					    editor->uiStatusManager->updateLCD();
 					    juce::Timer::callAfterDelay(2000,
 					                                [editor]()
 					                                {
@@ -95,7 +95,7 @@ void MidiLearnManager::timerCallback()
 						                                {
 							                                editor->statusLabel.setText("Ready",
 							                                                            juce::dontSendNotification);
-							                                editor->updateLCD();
+							                                editor->uiStatusManager->updateLCD();
 						                                }
 					                                });
 				    }
@@ -180,7 +180,7 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 		    {
 			    editor->statusLabel.setText(fullMessage, juce::dontSendNotification);
-			    editor->updateLCD();
+			    editor->uiStatusManager->updateLCD();
 			    juce::Timer::callAfterDelay(
 			        2000,
 			        [mapping]()
@@ -188,7 +188,7 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 				        {
 					        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-					        editor->updateLCD();
+					        editor->uiStatusManager->updateLCD();
 				        }
 			        });
 		    }
@@ -323,7 +323,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 							    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 							    {
 								    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-								    editor->updateLCD();
+								    editor->uiStatusManager->updateLCD();
 								    juce::Timer::callAfterDelay(
 								        2000,
 								        [mapping]()
@@ -334,7 +334,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 										                mapping.processor->getActiveEditor()))
 										        {
 											        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-											        editor->updateLCD();
+											        editor->uiStatusManager->updateLCD();
 										        }
 									        }
 								        });
@@ -358,7 +358,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 							    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 							    {
 								    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-								    editor->updateLCD();
+								    editor->uiStatusManager->updateLCD();
 								    juce::Timer::callAfterDelay(
 								        2000,
 								        [mapping]()
@@ -369,7 +369,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 										                mapping.processor->getActiveEditor()))
 										        {
 											        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-											        editor->updateLCD();
+											        editor->uiStatusManager->updateLCD();
 										        }
 									        }
 								        });
@@ -389,7 +389,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 						    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 						    {
 							    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-							    editor->updateLCD();
+							    editor->uiStatusManager->updateLCD();
 							    juce::Timer::callAfterDelay(
 							        2000,
 							        [mapping]()
@@ -398,7 +398,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 								                dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 								        {
 									        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-									        editor->updateLCD();
+									        editor->uiStatusManager->updateLCD();
 								        }
 							        });
 						    }
@@ -440,7 +440,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 								            dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 								    {
 									    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-									    editor->updateLCD();
+									    editor->uiStatusManager->updateLCD();
 									    juce::Timer::callAfterDelay(
 									        2000,
 									        [mapping]()
@@ -449,7 +449,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 										                mapping.processor->getActiveEditor()))
 										        {
 											        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-											        editor->updateLCD();
+											        editor->uiStatusManager->updateLCD();
 										        }
 									        });
 								    }
@@ -480,7 +480,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 							    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 							    {
 								    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-								    editor->updateLCD();
+								    editor->uiStatusManager->updateLCD();
 								    juce::Timer::callAfterDelay(
 								        2000,
 								        [mapping]()
@@ -489,7 +489,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 									                dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 									        {
 										        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-										        editor->updateLCD();
+										        editor->uiStatusManager->updateLCD();
 									        }
 								        });
 							    }
@@ -519,7 +519,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 						    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 						    {
 							    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-							    editor->updateLCD();
+							    editor->uiStatusManager->updateLCD();
 							    if (isWarning)
 							    {
 								    editor->statusLabel.setColour(juce::Label::textColourId,
@@ -535,7 +535,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 									        editor->statusLabel.setText("Ready", juce::dontSendNotification);
 									        editor->statusLabel.setColour(juce::Label::textColourId,
 									                                      ColourPalette::violet);
-									        editor->updateLCD();
+									        editor->uiStatusManager->updateLCD();
 								        }
 							        });
 						    }
@@ -570,7 +570,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 					    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 					    {
 						    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-						    editor->updateLCD();
+						    editor->uiStatusManager->updateLCD();
 						    if (isWarning)
 						    {
 							    editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
@@ -584,7 +584,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 							        {
 								        editor->statusLabel.setText("Ready", juce::dontSendNotification);
 								        editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-								        editor->updateLCD();
+								        editor->uiStatusManager->updateLCD();
 							        }
 						        });
 					    }
@@ -650,7 +650,7 @@ void MidiLearnManager::showStatus(const MidiMapping &mapping, const juce::String
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
 		    {
 			    editor->statusLabel.setText(text, juce::dontSendNotification);
-			    editor->updateLCD();
+			    editor->uiStatusManager->updateLCD();
 			    if (isWarning)
 				    editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
 
@@ -662,7 +662,7 @@ void MidiLearnManager::showStatus(const MidiMapping &mapping, const juce::String
 				        {
 					        ed->statusLabel.setText("Ready", juce::dontSendNotification);
 					        ed->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-					        ed->updateLCD();
+					        ed->uiStatusManager->updateLCD();
 				        }
 			        });
 		    }
@@ -740,7 +740,7 @@ bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterNa
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(processor->getActiveEditor()))
 		    {
 			    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-			    editor->updateLCD();
+			    editor->uiStatusManager->updateLCD();
 			    juce::Timer::callAfterDelay(2000,
 			                                [processor]()
 			                                {
@@ -748,7 +748,7 @@ bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterNa
 				                                        dynamic_cast<DjIaVstEditor *>(processor->getActiveEditor()))
 				                                {
 					                                editor->statusLabel.setText("Ready", juce::dontSendNotification);
-					                                editor->updateLCD();
+					                                editor->uiStatusManager->updateLCD();
 				                                }
 			                                });
 		    }

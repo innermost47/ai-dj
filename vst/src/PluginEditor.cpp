@@ -26,6 +26,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	logoImage = juce::ImageCache::getFromMemory(BinaryData::logo_png, BinaryData::logo_pngSize);
 	audioProcessor.setGenerationListener(this);
 	uiLayoutManager = std::make_unique<UILayoutManager>(*this);
+	uiStatusManager = std::make_unique<UIStatusManager>(*this);
 	if (audioProcessor.isStateReady())
 	{
 		initUI();
@@ -135,14 +136,14 @@ void DjIaVstEditor::finalizeInit()
 
 	loadPromptPresets();
 	refreshTracks();
-	refreshCreditsAsync();
+	uiStatusManager->refreshCreditsAsync();
 
 	if (audioProcessor.getIsGenerating())
 	{
 		generateButton.setEnabled(false);
 		setAllGenerateButtonsEnabled(false);
 		statusLabel.setText("Generation in progress...", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		juce::String generatingId = audioProcessor.getGeneratingTrackId();
 		for (auto &trackComp : trackComponents)
 		{
@@ -177,14 +178,14 @@ void DjIaVstEditor::updateMidiIndicator(const juce::String &noteInfo)
 		    if (!safeThis)
 			    return;
 		    safeThis->midiIndicator.setText(noteInfo, juce::dontSendNotification);
-		    safeThis->updateLCD();
+		    safeThis->uiStatusManager->updateLCD();
 		    juce::Timer::callAfterDelay(800,
 		                                [safeThis]()
 		                                {
 			                                if (!safeThis)
 				                                return;
 			                                safeThis->midiIndicator.setText("", juce::dontSendNotification);
-			                                safeThis->updateLCD();
+			                                safeThis->uiStatusManager->updateLCD();
 		                                });
 	    });
 }
@@ -221,7 +222,7 @@ void DjIaVstEditor::updateUIComponents()
 		{
 			midiIndicator.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDeep);
 			lastMidiNote.clear();
-			updateLCD();
+			uiStatusManager->updateLCD();
 			midiBlinkCounter = 0;
 		}
 	}
@@ -264,7 +265,7 @@ void DjIaVstEditor::onGenerationComplete(const juce::String &trackId, const juce
 	if (isShowing())
 	{
 		statusLabel.setText(message, juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 
 		if (isError)
 		{
@@ -275,7 +276,7 @@ void DjIaVstEditor::onGenerationComplete(const juce::String &trackId, const juce
 				                            if (isShowing())
 				                            {
 					                            statusLabel.setText("Ready", juce::dontSendNotification);
-					                            updateLCD();
+					                            uiStatusManager->updateLCD();
 					                            statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 				                            }
 			                            });
@@ -289,13 +290,13 @@ void DjIaVstEditor::onGenerationComplete(const juce::String &trackId, const juce
 				                            if (isShowing())
 				                            {
 					                            statusLabel.setText("Ready", juce::dontSendNotification);
-					                            updateLCD();
+					                            uiStatusManager->updateLCD();
 					                            statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 				                            }
 			                            });
 		}
 	}
-	refreshCredits();
+	uiStatusManager->refreshCredits();
 }
 
 void DjIaVstEditor::refreshTracks()
@@ -524,7 +525,7 @@ void DjIaVstEditor::showOnboardingStep(int step)
 			        juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
 			        juce::dontSendNotification);
 			    statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-			    updateLCD();
+			    uiStatusManager->updateLCD();
 		    }
 	    });
 }
@@ -580,7 +581,8 @@ void DjIaVstEditor::showConfigDialog()
 
 		    if (modeChanged)
 			    refreshUIForMode();
-		    setStatusWithTimeout(modeChanged ? "Mode changed! Configuration updated." : "Configuration updated.", 3000);
+		    uiStatusManager->setStatusWithTimeout(
+		        modeChanged ? "Mode changed! Configuration updated." : "Configuration updated.", 3000);
 	    });
 }
 
@@ -596,7 +598,7 @@ void DjIaVstEditor::checkLocalModelsAndNotify()
 	if (modelsPresent)
 	{
 		statusLabel.setText("Local models found! Configuration saved.", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 	}
 	else
@@ -612,7 +614,7 @@ void DjIaVstEditor::checkLocalModelsAndNotify()
 		    });
 
 		statusLabel.setText("Local mode selected - Models setup required", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
 	}
 }
@@ -1033,7 +1035,7 @@ void DjIaVstEditor::addEventListeners()
 	promptPresetSelector.onMidiLearn = [this]()
 	{
 		statusLabel.setText("Learning MIDI for prompt selector...", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		audioProcessor.getMidiLearnManager().startLearning(
 		    "promptPresetSelector", &audioProcessor,
 		    [this](float value)
@@ -1090,7 +1092,7 @@ void DjIaVstEditor::addEventListeners()
 			}
 
 			statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
-			updateLCD();
+			uiStatusManager->updateLCD();
 		}
 		grabKeyboardFocus();
 	};
@@ -1105,14 +1107,14 @@ void DjIaVstEditor::addEventListeners()
 			bypassSequencerButton.setButtonText("Composition Mode");
 			bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
 			statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
-			updateLCD();
+			uiStatusManager->updateLCD();
 		}
 		else
 		{
 			bypassSequencerButton.setButtonText("Sequencer Mode");
 			bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
 			statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
-			updateLCD();
+			uiStatusManager->updateLCD();
 		}
 	};
 
@@ -1126,21 +1128,21 @@ void DjIaVstEditor::addEventListeners()
 			bypassLLMButton.setButtonText("Direct Mode");
 			bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
 			statusLabel.setText("Direct Mode: Raw input, direct generation", juce::dontSendNotification);
-			updateLCD();
+			uiStatusManager->updateLCD();
 		}
 		else
 		{
 			bypassLLMButton.setButtonText("Enhanced Mode");
 			bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
 			statusLabel.setText("Enhanced Mode: AI-optimized prompt routing", juce::dontSendNotification);
-			updateLCD();
+			uiStatusManager->updateLCD();
 		}
 	};
 
 	generateButton.onMidiLearn = [this]()
 	{
 		statusLabel.setText("Learning MIDI for generate button...", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		audioProcessor.getMidiLearnManager().startLearning("generate", &audioProcessor, nullptr, "Generate Loop",
 		                                                   &generateButton);
 	};
@@ -1153,7 +1155,7 @@ void DjIaVstEditor::addEventListeners()
 	sampleBankPanel->onSampleDroppedToTrack = [this](const juce::String &sampleId, const juce::String &trackId)
 	{
 		audioProcessor.getAudioManager().loadSampleFromBank(sampleId, trackId);
-		setStatusWithTimeout("Sample loaded from bank: " + sampleId.substring(0, 8) + "...", 3000);
+		uiStatusManager->setStatusWithTimeout("Sample loaded from bank: " + sampleId.substring(0, 8) + "...", 3000);
 	};
 
 	openMidiEditorButton.onClick = [this] { openMidiMappingEditor(); };
@@ -1318,11 +1320,6 @@ void DjIaVstEditor::paint(juce::Graphics &g)
 	g.fillAll(ColourPalette::backgroundDeep);
 }
 
-void DjIaVstEditor::updateLCD()
-{
-	lcdScreen.setLines(creditsLabel.getText(), statusLabel.getText(), midiIndicator.getText());
-}
-
 void DjIaVstEditor::openMidiMappingEditor()
 {
 	ObsidianAlertManager::showMidiMappingEditor(this, &audioProcessor.getMidiLearnManager());
@@ -1342,7 +1339,7 @@ void DjIaVstEditor::startGenerationUI(const juce::String &trackId)
 	generateButton.setEnabled(false);
 	setAllGenerateButtonsEnabled(false);
 	statusLabel.setText("Connecting to server...", juce::dontSendNotification);
-	updateLCD();
+	uiStatusManager->updateLCD();
 
 	for (auto &trackComp : trackComponents)
 	{
@@ -1364,7 +1361,7 @@ void DjIaVstEditor::startGenerationUI(const juce::String &trackId)
 		    if (audioProcessor.getIsGenerating() && audioProcessor.getGeneratingTrackId() == trackId)
 		    {
 			    statusLabel.setText("Generating loop (this may take a few minutes)...", juce::dontSendNotification);
-			    updateLCD();
+			    uiStatusManager->updateLCD();
 		    }
 	    });
 }
@@ -1387,12 +1384,12 @@ void DjIaVstEditor::stopGenerationUI(const juce::String &trackId, bool success, 
 				if (audioProcessor.getAutoLoadEnabled())
 				{
 					statusLabel.setText("Sample ready - Loading automatically...", juce::dontSendNotification);
-					updateLCD();
+					uiStatusManager->updateLCD();
 				}
 				else
 				{
 					statusLabel.setText("Sample ready - Click 'Load Sample' to use it", juce::dontSendNotification);
-					updateLCD();
+					uiStatusManager->updateLCD();
 				}
 			}
 
@@ -1414,7 +1411,7 @@ void DjIaVstEditor::stopGenerationUI(const juce::String &trackId, bool success, 
 	if (!success && !errorMessage.isEmpty())
 	{
 		statusLabel.setText("Error: " + errorMessage, juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 	}
 }
 
@@ -1441,21 +1438,21 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	if (serverUrl.isEmpty())
 	{
 		statusLabel.setText("Error: Server URL is required", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		return;
 	}
 	bool isLocalServer = serverUrl.contains("localhost") || serverUrl.contains("127.0.0.1");
 	if (apiKey.isEmpty() && !isLocalServer)
 	{
 		statusLabel.setText("Error: API Key is required", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		return;
 	}
 	juce::String currentPrompt = promptInput.getText().trim();
 	if (currentPrompt.isEmpty())
 	{
 		statusLabel.setText("Error: Prompt cannot be empty", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
 		return;
 	}
@@ -1468,7 +1465,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 	if (!track)
 	{
 		statusLabel.setText("Error: No track selected", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		return;
 	}
 
@@ -1494,7 +1491,7 @@ void DjIaVstEditor::onGenerateButtonClicked()
 			        {
 				        statusLabel.setText("Generating loop (this may take a few minutes)...",
 				                            juce::dontSendNotification);
-				        updateLCD();
+				        uiStatusManager->updateLCD();
 			        });
 
 			    audioProcessor.setServerUrl(audioProcessor.getServerUrl());
@@ -1642,7 +1639,7 @@ bool DjIaVstEditor::keyPressed(const juce::KeyPress &key)
 							if (audioProcessor.getIsGenerating() &&
 							    audioProcessor.getGeneratingTrackId() == track->trackId)
 							{
-								setStatusWithTimeout("Cannot switch pages during generation...");
+								uiStatusManager->setStatusWithTimeout("Cannot switch pages during generation...");
 								return false;
 							}
 							else
@@ -1669,13 +1666,13 @@ void DjIaVstEditor::onPresetSelected()
 	{
 		promptInput.setText(selectedPrompt);
 		statusLabel.setText("Preset loaded: " + selectedPrompt, juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 	}
 	else
 	{
 		promptInput.clear();
 		statusLabel.setText("Custom prompt mode", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 	}
 }
 
@@ -1698,12 +1695,12 @@ void DjIaVstEditor::onSavePreset()
 		}
 
 		statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 	}
 	else
 	{
 		statusLabel.setText("Enter a prompt first!", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 	}
 }
 
@@ -1716,7 +1713,7 @@ void DjIaVstEditor::onAutoLoadToggled()
 	{
 		autoLoadButton.setButtonText("Auto-Load Mode");
 		statusLabel.setText("Auto-load enabled - samples load automatically", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		loadSampleButton.setButtonText("Load\nSample");
 		loadSampleButton.setEnabled(false);
 	}
@@ -1724,7 +1721,7 @@ void DjIaVstEditor::onAutoLoadToggled()
 	{
 		autoLoadButton.setButtonText("Manual\nMode");
 		statusLabel.setText("Manual mode - click Load Sample when ready", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		loadSampleButton.setEnabled(true);
 		updateLoadButtonState();
 	}
@@ -1738,7 +1735,7 @@ void DjIaVstEditor::onLoadSampleClicked()
 
 		audioProcessor.loadPendingSample();
 		statusLabel.setText("Sample loaded manually!", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 
 		onSampleLoaded(trackId);
 		updateLoadButtonState();
@@ -1746,7 +1743,7 @@ void DjIaVstEditor::onLoadSampleClicked()
 	else
 	{
 		statusLabel.setText("Generate a loop first", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 	}
 }
 
@@ -1872,9 +1869,10 @@ void DjIaVstEditor::refreshTrackComponents()
 		trackComp->onPreviewTrack = [this](const juce::String &trackId) { audioProcessor.previewTrack(trackId); };
 
 		trackComp->onTrackPromptChanged = [this](const juce::String /*&trackId*/, const juce::String &prompt)
-		{ setStatusWithTimeout("Track prompt updated: " + prompt.substring(0, 20) + "...", 3000); };
+		{ uiStatusManager->setStatusWithTimeout("Track prompt updated: " + prompt.substring(0, 20) + "...", 3000); };
 
-		trackComp->onStatusMessage = [this](const juce::String &message) { setStatusWithTimeout(message, 3000); };
+		trackComp->onStatusMessage = [this](const juce::String &message)
+		{ uiStatusManager->setStatusWithTimeout(message, 3000); };
 
 		trackComp->onStopPreview = [this](const juce::String &trackId)
 		{ audioProcessor.getAudioManager().stopTrackPreview(trackId); };
@@ -1930,7 +1928,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String &trackId)
 	if (!track)
 	{
 		statusLabel.setText("Error: Track not found", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		audioProcessor.setIsGenerating(false);
 		return;
 	}
@@ -1938,7 +1936,7 @@ void DjIaVstEditor::generateFromTrackComponent(const juce::String &trackId)
 	if (track->getCurrentPage().selectedPrompt.isEmpty())
 	{
 		statusLabel.setText("Error: No prompt selected for this track", juce::dontSendNotification);
-		updateLCD();
+		uiStatusManager->updateLCD();
 		audioProcessor.setIsGenerating(false);
 		return;
 	}
@@ -2006,21 +2004,6 @@ void DjIaVstEditor::restoreUICallbacks()
 	}
 }
 
-void DjIaVstEditor::setStatusWithTimeout(const juce::String &message, int timeoutMs)
-{
-	statusLabel.setText(message, juce::dontSendNotification);
-	updateLCD();
-	juce::Timer::callAfterDelay(timeoutMs,
-	                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-	                            {
-		                            if (auto *editor = safeThis.getComponent())
-		                            {
-			                            editor->statusLabel.setText("Ready", juce::dontSendNotification);
-			                            editor->updateLCD();
-		                            }
-	                            });
-}
-
 void DjIaVstEditor::updateSelectedTrack()
 {
 	for (auto &trackComp : trackComponents)
@@ -2069,71 +2052,6 @@ void DjIaVstEditor::refreshMixerChannels()
 	{
 		mixerPanel->refreshAllChannels();
 	}
-}
-
-void DjIaVstEditor::refreshCredits()
-{
-	refreshCreditsAsync();
-}
-
-void DjIaVstEditor::refreshCreditsAsync()
-{
-	juce::String currentApiKey = audioProcessor.getApiKey();
-	juce::String currentServerUrl = audioProcessor.getServerUrl();
-	int timeout = audioProcessor.getRequestTimeout();
-
-	if (currentApiKey.isEmpty())
-	{
-		creditsLabel.setText("Credits: No API Key", juce::dontSendNotification);
-		return;
-	}
-
-	if (currentServerUrl.isEmpty())
-	{
-		creditsLabel.setText("Credits: No Server", juce::dontSendNotification);
-		return;
-	}
-
-	creditsLabel.setText("Credits: Loading...", juce::dontSendNotification);
-
-	audioProcessor.getApiClient().setApiKey(currentApiKey);
-	audioProcessor.getApiClient().setBaseUrl(currentServerUrl);
-
-	juce::Thread::launch(
-	    [this, timeout, safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-	    {
-		    if (audioProcessor.isShuttingDown.load())
-			    return;
-		    auto creditsInfo = audioProcessor.getApiClient().checkCredits(timeout);
-		    juce::MessageManager::callAsync(
-		        [safeThis, creditsInfo]()
-		        {
-			        if (auto *editor = safeThis.getComponent())
-			        {
-				        if (creditsInfo.success)
-				        {
-					        juce::String creditsText;
-					        if (creditsInfo.creditsRemaining == -1 || creditsInfo.creditsTotal == -1)
-					        {
-						        creditsText = "Credits: Unlimited";
-					        }
-					        else
-					        {
-						        creditsText = "Credits: " + juce::String(creditsInfo.creditsRemaining) + " / " +
-						                      juce::String(creditsInfo.creditsTotal);
-					        }
-
-					        editor->creditsLabel.setText(creditsText, juce::dontSendNotification);
-					        editor->audioProcessor.setCreditsRemaining(creditsInfo.creditsRemaining);
-					        editor->audioProcessor.canGenerateStandard = creditsInfo.canGenerateStandard;
-				        }
-				        else
-				        {
-					        editor->creditsLabel.setText("Credits: Error", juce::dontSendNotification);
-				        }
-			        }
-		        });
-	    });
 }
 
 void DjIaVstEditor::checkForUpdates()

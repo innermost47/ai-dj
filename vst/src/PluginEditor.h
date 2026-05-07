@@ -10,6 +10,7 @@
 #include "SampleBankPanel.h"
 #include "TrackComponent.h"
 #include "UILayoutManager.h"
+#include "UIStatusManager.h"
 #include <JuceHeader.h>
 
 class SequencerComponent;
@@ -42,6 +43,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::Viewport tracksViewport;
 	juce::Component tracksContainer;
 	std::unique_ptr<UILayoutManager> uiLayoutManager;
+	std::unique_ptr<UIStatusManager> uiStatusManager;
 
 	juce::Label statusLabel;
 
@@ -60,7 +62,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void onGenerationComplete(const juce::String &trackId, const juce::String &message) override;
 	void refreshMixerChannels();
 	void initUI();
-	void setStatusWithTimeout(const juce::String &message, int timeoutMs = 2000);
 	void *getSequencerForTrack(const juce::String &trackId);
 	void stopGenerationUI(const juce::String &trackId, bool success = true, const juce::String &errorMessage = "");
 	void startGenerationUI(const juce::String &trackId);
@@ -69,7 +70,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void onGenerateButtonClicked();
 	void onSampleLoaded(const juce::String &trackId);
 	void reEnableCanvasForTrack();
-	void updateLCD();
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
 	void removeModal(ObsidianModalOverlay *overlay) override;
 	bool keyStateChanged(bool isKeyDown) override;
@@ -124,8 +124,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void checkLocalModelsAndNotify();
 	void notifyTracksPromptUpdate();
 	void generateFromTrackComponent(const juce::String &trackId);
-	void refreshCredits();
-	void refreshCreditsAsync();
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
 	void checkForUpdates();

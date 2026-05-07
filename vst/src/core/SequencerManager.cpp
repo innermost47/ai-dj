@@ -112,9 +112,10 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 								    if (!trackComp->isTimerRunning())
 									    trackComp->startTimer(200);
 								    trackComp->updatePagesDisplay();
-								    safeEditor->setStatusWithTimeout("Page " + juce::String((char)('A' + pageIndex)) +
-								                                         " will switch at next measure",
-								                                     3000);
+								    safeEditor->uiStatusManager->setStatusWithTimeout(
+								        "Page " + juce::String((char)('A' + pageIndex)) +
+								            " will switch at next measure",
+								        3000);
 								    break;
 							    }
 						    }

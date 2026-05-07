@@ -1521,7 +1521,7 @@ void TrackComponent::statusCallback(const juce::String &message)
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 	{
 		editor->statusLabel.setText(message, juce::dontSendNotification);
-		editor->updateLCD();
+		editor->uiStatusManager->updateLCD();
 	}
 }
 
@@ -1752,7 +1752,7 @@ void TrackComponent::learn(juce::String param, MidiLearnableBase *component, std
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			    {
 				    editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
-				    editor->updateLCD();
+				    editor->uiStatusManager->updateLCD();
 			    }
 		    });
 		audioProcessor.getMidiLearnManager().startLearning(parameterName, &audioProcessor, uiCallback, description,

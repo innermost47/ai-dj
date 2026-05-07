@@ -217,7 +217,7 @@ void GenerationManager::generateSampleWithImage(const juce::String &trackId, con
 		    {
 			    editor->startGenerationUI(trackId);
 			    editor->statusLabel.setText("Analyzing image and generating audio...", juce::dontSendNotification);
-			    editor->updateLCD();
+			    editor->uiStatusManager->updateLCD();
 		    }
 	    });
 
@@ -440,7 +440,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 				        {
 					        editor->statusLabel.setText("Generating with " + promptSource, juce::dontSendNotification);
-					        editor->updateLCD();
+					        editor->uiStatusManager->updateLCD();
 				        }
 			        });
 			    generateLoop(request, trackId);
@@ -502,7 +502,7 @@ void GenerationManager::triggerGlobalGeneration()
 		    {
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			    {
-				    editor->setStatusWithTimeout("Generation already in progress, please wait", 3000);
+				    editor->uiStatusManager->setStatusWithTimeout("Generation already in progress, please wait", 3000);
 			    }
 		    });
 		return;
@@ -515,7 +515,7 @@ void GenerationManager::triggerGlobalGeneration()
 		    {
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 			    {
-				    editor->setStatusWithTimeout("No track selected for generation", 3000);
+				    editor->uiStatusManager->setStatusWithTimeout("No track selected for generation", 3000);
 			    }
 		    });
 		return;
@@ -557,8 +557,8 @@ void GenerationManager::syncSelectedTrackWithGlobalPrompt()
 					    break;
 				    }
 			    }
-			    editor->setStatusWithTimeout("Track prompt synced: " + currentGlobalPrompt.substring(0, 30) + "...",
-			                                 2000);
+			    editor->uiStatusManager->setStatusWithTimeout(
+			        "Track prompt synced: " + currentGlobalPrompt.substring(0, 30) + "...", 2000);
 		    }
 	    });
 }

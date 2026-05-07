@@ -777,7 +777,7 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
 			    {
 				    editor->statusLabel.setText("Original file loaded...", juce::dontSendNotification);
-				    editor->updateLCD();
+				    editor->uiStatusManager->updateLCD();
 			    }
 		    });
 	}
@@ -790,7 +790,7 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
 			    {
 				    editor->statusLabel.setText("Stretched file loaded...", juce::dontSendNotification);
-				    editor->updateLCD();
+				    editor->uiStatusManager->updateLCD();
 			    }
 		    });
 	}
