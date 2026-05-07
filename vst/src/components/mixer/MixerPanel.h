@@ -32,6 +32,7 @@ class MixerPanel : public ObsidianComponent
 	void setMasterWaveform(MasterWaveformDisplay *wf);
 	void setLCDScreen(LCDScreen *lcd);
 	void setStandaloneTransport(StandaloneTransport *transport);
+	void detachAllTracks();
 
 #if JucePlugin_Build_Standalone
 	StandaloneTransportComponent *getStandaloneTransportComponent()

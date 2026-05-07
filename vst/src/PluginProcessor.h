@@ -56,6 +56,15 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		return trackManager;
 	}
 
+	StateManager &getStateManager()
+	{
+		return stateManager;
+	}
+	const StateManager &getStateManager() const
+	{
+		return stateManager;
+	}
+
 	GenerationManager &getGenerationManager()
 	{
 		return generationManager;

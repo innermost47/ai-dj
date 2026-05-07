@@ -1,4 +1,4 @@
-#include "TrackManager.h"
+﻿#include "TrackManager.h"
 
 juce::String TrackManager::createTrack(const juce::String &name)
 {

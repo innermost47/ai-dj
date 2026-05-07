@@ -8,7 +8,6 @@
 #include "ObsidianModal.h"
 #include "PluginProcessor.h"
 #include "SampleBankPanel.h"
-#include "StandaloneMenuBar.h"
 #include "TrackComponent.h"
 #include "UIGenerationManager.h"
 #include "UILayoutManager.h"
@@ -103,11 +102,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void parentHierarchyChanged() override;
 #endif
 
-#if JucePlugin_Build_Standalone
-	std::unique_ptr<StandaloneMenuBar> standaloneMenuBar;
-	static constexpr int MENU_BAR_HEIGHT = 24;
-#endif
-
 	bool mixerVisible = false;
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
@@ -141,22 +135,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::Label tracksLabel;
-
 	juce::Label creditsLabel;
-
-	enum MenuIDs
-	{
-		newSession = 1,
-		saveSession,
-		saveSessionAs,
-		loadSessionMenu,
-		exportSession,
-		aboutDjIa = 100,
-		showHelp,
-		addTrack = 200,
-		deleteAllTracks,
-		resetTracks
-	};
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(DjIaVstEditor)
 };

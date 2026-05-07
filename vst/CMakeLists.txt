@@ -229,7 +229,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginEntry.cpp
     src/PluginProcessor.cpp
     src/standalone/core/StandaloneTransport.cpp
-    src/standalone/transport/ui/StandaloneMenuBar.cpp
+    src/standalone/ObsidianStandaloneApp.cpp
     src/standalone/transport/ui/StandaloneTransportComponent.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
@@ -269,6 +269,7 @@ target_compile_definitions(ObsidianNeuralVST
         JUCE_DIRECTWRITE=1             
         JUCE_SUPPORT_RETINA=1           
         JUCE_USE_DIRECTWRITE=1
+        JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
         
     PUBLIC
         JUCE_WEB_BROWSER=0

@@ -95,6 +95,8 @@ class TrackComponent : public ObsidianComponent,
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String &name);
 	void loadPromptPresets();
+	void removeListener(juce::String name);
+	void detachWaveformTrack();
 
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
@@ -296,7 +298,6 @@ class TrackComponent : public ObsidianComponent,
 	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
 	void removeMidiMapping(const juce::String &param);
 	void addListener(juce::String name);
-	void removeListener(juce::String name);
 	void setButtonParameter(juce::String name);
 	void updateUIFromParameter(const juce::String &paramName, const juce::String &slotPrefix, float newValue);
 	void onTrackPresetSelected();

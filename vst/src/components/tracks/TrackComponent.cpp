@@ -99,7 +99,8 @@ void TrackComponent::updateUIFromParameter(const juce::String &paramName, const 
 {
 	if (isDestroyed.load())
 		return;
-
+	if (!track)
+		return;
 	if (paramName == slotPrefix + " Generate")
 	{
 		if (newValue > 0.5 && audioProcessor.getIsGenerating())
@@ -581,7 +582,7 @@ void TrackComponent::resized()
 	{
 		if (track != nullptr)
 		{
-			waveformDisplay = std::make_unique<WaveformDisplay>(audioProcessor, *track);
+			waveformDisplay = std::make_unique<WaveformDisplay>(audioProcessor, track);
 			waveformDisplay->onLoopPointsChanged = [this](double start, double end)
 			{
 				if (track)
@@ -1983,4 +1984,10 @@ void TrackComponent::updateModelUI()
 		sequencer->setAccentColour(modelColour);
 
 	syncBorderOverlay();
+}
+
+void TrackComponent::detachWaveformTrack()
+{
+	if (waveformDisplay)
+		waveformDisplay->setTrack(nullptr);
 }

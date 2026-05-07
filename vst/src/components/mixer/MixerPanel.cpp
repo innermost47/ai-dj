@@ -336,3 +336,10 @@ void MixerPanel::stopGeneratingAnimationForTrack(const juce::String &trackId)
 		}
 	}
 }
+
+void MixerPanel::detachAllTracks()
+{
+	for (auto &channel : mixerChannels)
+		if (channel)
+			channel->track = nullptr;
+}

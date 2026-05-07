@@ -36,6 +36,8 @@ inline juce::StringArray getModelsForMode(bool isLocalMode)
 
 inline juce::Colour getColourForModel(const juce::String &modelName)
 {
+	if (modelName.isEmpty())
+		return ColourPalette::modelStableAudio;
 	auto &models = getAvailableModels();
 	if (modelName == models[0])
 		return ColourPalette::modelStableAudio;

@@ -13,6 +13,9 @@ class StateManager
 	void loadState(const juce::ValueTree &state);
 	void getStateInformation(juce::MemoryBlock &destData);
 	void setStateInformation(const void *data, int sizeInBytes);
+	bool saveToFile(const juce::File &file);
+	bool loadFromFile(const juce::File &file);
+	static juce::File getDefaultSessionsFolder();
 
   private:
 	DjIaVstProcessor &audioProcessor;

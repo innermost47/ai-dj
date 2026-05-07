@@ -101,3 +101,23 @@ class IconButtonSimple : public juce::TextButton, public IconButtonBase
 
 	void paintButton(juce::Graphics &g, bool isMouseOver, bool isButtonDown) override;
 };
+
+class IconButtonRepeat : public juce::TextButton, public IconButtonBase, private juce::Timer
+{
+  public:
+	IconButtonRepeat(const juce::String &name, const juce::String &label = {});
+
+	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+	{
+		return createIgnoredAccessibilityHandler(*this);
+	}
+
+	void paintButton(juce::Graphics &g, bool isMouseOver, bool isButtonDown) override;
+
+  private:
+	void mouseDown(const juce::MouseEvent &e) override;
+	void mouseUp(const juce::MouseEvent &e) override;
+	void timerCallback() override;
+
+	int repeatCount = 0;
+};

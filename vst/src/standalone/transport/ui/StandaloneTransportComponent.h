@@ -69,8 +69,8 @@ class StandaloneTransportComponent : public juce::Component, private juce::Timer
 	IconButton playButton{"play"};
 	IconButton stopButton{"stop"};
 	IconButton tapButton{"tap", "TAP"};
-	IconButton bpmDownButton{"bpmDown", "-"};
-	IconButton bpmUpButton{"bpmUp", "+"};
+	IconButtonRepeat bpmDownButton{"bpmDown", "-"};
+	IconButtonRepeat bpmUpButton{"bpmUp", "+"};
 
 	BeatLcd lcd;
 	BpmField bpmField;

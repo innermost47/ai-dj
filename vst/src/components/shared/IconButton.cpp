@@ -203,3 +203,48 @@ void IconButtonSimple::paintButton(juce::Graphics &g, bool isMouseOver, bool isB
 {
 	paintIconButton(g, *this, isMouseOver, isButtonDown);
 }
+
+IconButtonRepeat::IconButtonRepeat(const juce::String &name, const juce::String &label)
+{
+	setName(name);
+	setButtonText({});
+	labelText = label;
+	setAccessible(false);
+}
+
+void IconButtonRepeat::paintButton(juce::Graphics &g, bool isMouseOver, bool isButtonDown)
+{
+	paintIconButton(g, *this, isMouseOver, isButtonDown);
+}
+
+void IconButtonRepeat::mouseDown(const juce::MouseEvent &e)
+{
+	juce::TextButton::mouseDown(e);
+	if (isEnabled())
+	{
+		repeatCount = 0;
+		startTimer(400);
+	}
+}
+
+void IconButtonRepeat::mouseUp(const juce::MouseEvent &e)
+{
+	stopTimer();
+	juce::TextButton::mouseUp(e);
+}
+
+void IconButtonRepeat::timerCallback()
+{
+	++repeatCount;
+	if (onClick)
+		onClick();
+
+	if (repeatCount == 1)
+		startTimer(120);
+	else if (repeatCount == 10)
+		startTimer(60);
+	else if (repeatCount == 25)
+		startTimer(30);
+	else if (repeatCount == 50)
+		startTimer(15);
+}

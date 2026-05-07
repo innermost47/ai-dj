@@ -8,14 +8,11 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 	g.setColour(juce::Colours::black.withAlpha(0.4f));
 	g.fillRoundedRectangle(bounds.translated(0, 1.5f), corner);
 
-	juce::ColourGradient lcdGradient(ColourPalette::backgroundDeep.darker(0.4f), bounds.getX(), bounds.getY(),
-	                                 ColourPalette::backgroundDeep.brighter(0.04f), bounds.getX(), bounds.getBottom(),
+	juce::ColourGradient lcdGradient(ColourPalette::backgroundDark.darker(0.2f), bounds.getX(), bounds.getY(),
+	                                 ColourPalette::backgroundDark.darker(0.25f), bounds.getX(), bounds.getBottom(),
 	                                 false);
 	g.setGradientFill(lcdGradient);
 	g.fillRoundedRectangle(bounds, corner);
-
-	g.setColour(juce::Colours::white.withAlpha(0.04f));
-	g.fillRoundedRectangle(bounds.withHeight(bounds.getHeight() * 0.4f), corner);
 
 	auto borderColour = ColourPalette::trackSelected.withAlpha(0.6f);
 	g.setColour(borderColour);
@@ -61,9 +58,12 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 	inner.removeFromTop(2.0f);
 
 	const float h = inner.getHeight();
-	const float colWidth = inner.getWidth() / 3.0f;
-	auto barCol = inner.removeFromLeft(colWidth);
-	auto beatCol = inner.removeFromLeft(colWidth);
+	const float totalW = inner.getWidth();
+	const float barColW = totalW * 0.45f;
+	const float beatColW = totalW * 0.30f;
+
+	auto barCol = inner.removeFromLeft(barColW);
+	auto beatCol = inner.removeFromLeft(beatColW);
 	auto subCol = inner;
 
 	auto drawLabelValue = [&](juce::Rectangle<float> col, const juce::String &lbl, const juce::String &val, bool isHero)
@@ -89,6 +89,7 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 	drawLabelValue(beatCol, "BEAT", juce::String(beat), true);
 	drawLabelValue(subCol, "SUB", juce::String(sub), false);
 }
+
 void StandaloneTransportComponent::BeatLcd::setBarBeatSub(int b, int beatV, int subV)
 {
 	bar = b;

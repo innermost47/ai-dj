@@ -93,7 +93,6 @@ class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void updateVUMeter();
-	StereoLevel calculateInstantLevel();
 	void timerCallback() override;
 	void setupMidiLearn();
 	void setupUI();

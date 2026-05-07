@@ -592,14 +592,6 @@ void DjIaVstEditor::setupUI()
 
 	uiTrackManager->refreshTrackComponents();
 
-#if JucePlugin_Build_Standalone
-	standaloneMenuBar = std::make_unique<StandaloneMenuBar>(*audioProcessor.getStandaloneTransport());
-	addAndMakeVisible(*standaloneMenuBar);
-
-	standaloneMenuBar->onSaveSession = [this]() { /* ... */ };
-	standaloneMenuBar->onLoadSession = [this]() { /* ... */ };
-#endif
-
 	addEventListeners();
 }
 

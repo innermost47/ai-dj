@@ -3,6 +3,7 @@
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "TrackData.h"
+#include "config/version.h"
 
 StateManager::StateManager(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
@@ -337,8 +338,9 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->trackName = "Track " + juce::String(i + 1);
 		track->midiNote = 60 + i;
 		track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
+		auto serverModels = AiModelDefinitions::getModelsForMode(false);
 		for (int p = 0; p < 4; ++p)
-			track->pages[p].selectedModel = "stable-audio-open-1.0";
+			track->pages[p].selectedModel = serverModels[i % serverModels.size()];
 		if (track->slotIndex >= 0 && track->slotIndex < 8)
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 		std::string stdId = track->trackId.toStdString();
@@ -349,6 +351,9 @@ void StateManager::loadState(const juce::ValueTree &state)
 void StateManager::getStateInformation(juce::MemoryBlock &destData)
 {
 	juce::ValueTree state("DjIaVstState");
+
+	state.setProperty("formatVersion", 1, nullptr);
+	state.setProperty("appVersion", juce::String(Version::FULL), nullptr);
 
 	state.setProperty("projectId", audioProcessor.getProjectId(), nullptr);
 	state.setProperty("lastPrompt", audioProcessor.getLastPrompt(), nullptr);
@@ -684,4 +689,72 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 			    editor->updateUIFromProcessor();
 		    }
 	    });
+}
+
+juce::File StateManager::getDefaultSessionsFolder()
+{
+	auto folder = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+	                  .getChildFile("OBSIDIAN-Neural")
+	                  .getChildFile("Sessions");
+	if (!folder.exists())
+		folder.createDirectory();
+	return folder;
+}
+
+bool StateManager::saveToFile(const juce::File &file)
+{
+	juce::ValueTree state("DjIaVstState");
+
+	juce::MemoryBlock data;
+	getStateInformation(data);
+
+	std::unique_ptr<juce::XmlElement> xml(audioProcessor.getXmlFromBinary(data.getData(), (int)data.getSize()));
+
+	if (!xml)
+		return false;
+
+	auto xmlString = xml->toString();
+
+	juce::MemoryOutputStream stream;
+	stream.write("OBSIDIAN", 8);
+	stream.writeInt(1);
+	stream.writeInt((int)xmlString.getNumBytesAsUTF8());
+	stream.write(xmlString.toRawUTF8(), xmlString.getNumBytesAsUTF8());
+
+	return file.withFileExtension(".obsidian").replaceWithData(stream.getData(), stream.getDataSize());
+}
+
+bool StateManager::loadFromFile(const juce::File &file)
+{
+	if (!file.existsAsFile())
+		return false;
+
+	juce::MemoryBlock raw;
+	if (!file.loadFileAsData(raw))
+		return false;
+
+	juce::MemoryInputStream stream(raw, false);
+
+	char magic[9] = {};
+	stream.read(magic, 8);
+	if (juce::String(magic) != "OBSIDIAN")
+		return false;
+
+	[[maybe_unused]] int version = stream.readInt();
+	int dataSize = stream.readInt();
+
+	juce::MemoryBlock xmlData;
+	xmlData.setSize(dataSize);
+	stream.read(xmlData.getData(), dataSize);
+
+	juce::String xmlString = juce::String::fromUTF8(static_cast<const char *>(xmlData.getData()), dataSize);
+
+	auto xml = juce::parseXML(xmlString);
+	if (!xml)
+		return false;
+
+	juce::MemoryBlock stateData;
+	audioProcessor.copyXmlToBinary(*xml, stateData);
+	setStateInformation(stateData.getData(), (int)stateData.getSize());
+	return true;
 }

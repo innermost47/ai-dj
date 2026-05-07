@@ -5,7 +5,7 @@
 #include "PluginProcessor.h"
 #include "TrackData.h"
 
-WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData)
+WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData *trackData)
     : audioProcessor(processor), track(trackData)
 {
 	setSize(400, 80);
@@ -13,7 +13,7 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackDa
 	zoomFactor = 1.0;
 	viewStartTime = 0.0;
 	sampleRate = 48000.0;
-	auto &currentPage = track.getCurrentPage();
+	auto &currentPage = track->getCurrentPage();
 	loopPointsLocked = currentPage.loopPointsLocked.load();
 	horizontalScrollBar = std::make_unique<juce::ScrollBar>(false);
 	horizontalScrollBar->setRangeLimits(0.0, 1.0);
@@ -324,7 +324,7 @@ void WaveformDisplay::paint(juce::Graphics &g)
 
 void WaveformDisplay::mouseDown(const juce::MouseEvent &e)
 {
-	auto &currentPage = track.getCurrentPage();
+	auto &currentPage = track->getCurrentPage();
 	if (!e.mods.isRightButtonDown() && !loopPointsLocked)
 	{
 		auto handle = hitTestAdsr(e.position);
@@ -1397,9 +1397,11 @@ void WaveformDisplay::setAdsrParams(float attack, float decay, float sustain, fl
 
 juce::Colour WaveformDisplay::getModelAccentColour() const
 {
+	if (!track)
+		ColourPalette::getModelColourByIndex(0);
 	juce::String modelName;
 
-	modelName = track.getCurrentPage().selectedModel;
+	modelName = track->getCurrentPage().selectedModel;
 
 	if (modelName.isEmpty())
 		return ColourPalette::buttonPrimary;

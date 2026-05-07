@@ -9,7 +9,7 @@ struct TrackData;
 class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
 {
   public:
-	WaveformDisplay(DjIaVstProcessor &processor, TrackData &trackData);
+	WaveformDisplay(DjIaVstProcessor &processor, TrackData *trackData);
 	~WaveformDisplay();
 	std::function<void(double, double)> onLoopPointsChanged;
 	std::function<void(float)> onAdsrAttackChanged;
@@ -26,6 +26,10 @@ class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listen
 	void setLoopPoints(double startTime, double endTime);
 	void setAudioFile(const juce::File &file);
 	void setAdsrParams(float attack, float decay, float sustain, float release);
+	void setTrack(TrackData *trackData)
+	{
+		track = trackData;
+	}
 
   private:
 	juce::AudioBuffer<float> audioBuffer;
@@ -33,7 +37,7 @@ class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listen
 	juce::Point<int> dragStartPosition;
 	std::unique_ptr<juce::ScrollBar> horizontalScrollBar;
 	DjIaVstProcessor &audioProcessor;
-	TrackData &track;
+	TrackData *track;
 	std::vector<float> thumbnailLeft;
 	std::vector<float> thumbnailRight;
 	double loopStart = 0.0;

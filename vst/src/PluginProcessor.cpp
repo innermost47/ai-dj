@@ -206,7 +206,6 @@ void DjIaVstProcessor::initTracks()
 {
 
 	trackManager.isInitializing.store(true);
-	auto &models = AiModelDefinitions::getAvailableModels();
 
 	juce::StringArray allAvailablePrompts = promptPresets;
 
@@ -238,7 +237,8 @@ void DjIaVstProcessor::initTracks()
 
 			attachPageChangeCallback(track);
 
-			juce::String modelName = models[i % models.size()];
+			auto serverModels = AiModelDefinitions::getModelsForMode(false);
+			juce::String modelName = serverModels[i % serverModels.size()];
 
 			for (int p = 0; p < 4; ++p)
 			{
