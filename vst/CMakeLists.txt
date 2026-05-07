@@ -230,6 +230,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
+    src/ui/UILayoutManager.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE
@@ -247,6 +248,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/engines
     src/midi
     src/style
+    src/ui
     ${soundtouch_SOURCE_DIR}/include
 )
 

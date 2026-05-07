@@ -9,6 +9,7 @@
 #include "PluginProcessor.h"
 #include "SampleBankPanel.h"
 #include "TrackComponent.h"
+#include "UILayoutManager.h"
 #include <JuceHeader.h>
 
 class SequencerComponent;
@@ -40,6 +41,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::Viewport mixerViewport;
 	juce::Viewport tracksViewport;
 	juce::Component tracksContainer;
+	std::unique_ptr<UILayoutManager> uiLayoutManager;
 
 	juce::Label statusLabel;
 
@@ -50,7 +52,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	LCDScreen lcdScreen;
 
 	void paint(juce::Graphics &) override;
-	void layoutPromptSection(juce::Rectangle<int> area, int spacing, int controlsZoneW);
 	void resized() override;
 	void timerCallback() override;
 	void refreshTrackComponents();
@@ -78,7 +79,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 		return mixerPanel.get();
 	}
 
-  private:
 	DjIaVstProcessor &audioProcessor;
 	CustomLookAndFeel customLookAndFeel;
 	MasterWaveformDisplay masterWaveformDisplay;
@@ -129,7 +129,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
 	void checkForUpdates();
-	void layoutTracksGrid();
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
 	bool keyPressed(const juce::KeyPress &key) override;
 
