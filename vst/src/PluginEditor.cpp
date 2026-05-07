@@ -4,10 +4,6 @@
 #include "ObsidianAlertManager.h"
 #include "PluginProcessor.h"
 #include "SequencerComponent.h"
-#if JUCE_WINDOWS
-#include <windows.h>
-#include <winuser.h>
-#endif
 
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
@@ -28,6 +24,8 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	uiModalManager = std::make_unique<UIModalManager>(*this);
 	uiGenerationManager = std::make_unique<UIGenerationManager>(*this);
 	uiTrackManager = std::make_unique<UITrackManager>(*this);
+	uiPresetManager = std::make_unique<UIPresetManager>(*this);
+	uiMidiManager = std::make_unique<UIMidiManager>(*this);
 	audioProcessor.setGenerationListener(uiGenerationManager.get());
 	if (audioProcessor.isStateReady())
 	{
@@ -51,7 +49,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	    [weakThis](const juce::String &noteInfo)
 	    {
 		    if (weakThis != nullptr)
-			    weakThis->updateMidiIndicator(noteInfo);
+			    weakThis->uiMidiManager->updateMidiIndicator(noteInfo);
 	    });
 
 	audioProcessor.onUIUpdateNeeded = [weakThis]()
@@ -106,6 +104,8 @@ DjIaVstEditor::~DjIaVstEditor()
 	uiStatusManager = nullptr;
 	uiLayoutManager = nullptr;
 	uiGenerationManager = nullptr;
+	uiPresetManager = nullptr;
+	uiMidiManager = nullptr;
 
 	if (mixerPanel)
 	{
@@ -116,6 +116,16 @@ DjIaVstEditor::~DjIaVstEditor()
 
 	setLookAndFeel(nullptr);
 	ObsidianAlertManager::shutdown();
+}
+
+bool DjIaVstEditor::keyPressed(const juce::KeyPress &key)
+{
+	return uiMidiManager->keyPressed(key);
+}
+
+bool DjIaVstEditor::keyStateChanged(bool isKeyDown)
+{
+	return uiMidiManager->keyStateChanged(isKeyDown);
 }
 
 void DjIaVstEditor::finalizeInit()
@@ -134,7 +144,7 @@ void DjIaVstEditor::finalizeInit()
 		return;
 	}
 
-	loadPromptPresets();
+	uiPresetManager->loadPromptPresets();
 	uiTrackManager->refreshTracks();
 	uiStatusManager->refreshCreditsAsync();
 
@@ -154,40 +164,6 @@ void DjIaVstEditor::finalizeInit()
 			}
 		}
 	}
-}
-
-bool DjIaVstEditor::keyStateChanged(bool isKeyDown)
-{
-	if (isKeyDown && !hasKeyboardFocus(true))
-	{
-		if (!promptInput.hasKeyboardFocus(true))
-		{
-			grabKeyboardFocus();
-		}
-	}
-	return false;
-}
-
-void DjIaVstEditor::updateMidiIndicator(const juce::String &noteInfo)
-{
-	lastMidiNote = noteInfo;
-	juce::Component::SafePointer<DjIaVstEditor> safeThis(this);
-	juce::MessageManager::callAsync(
-	    [safeThis, noteInfo]()
-	    {
-		    if (!safeThis)
-			    return;
-		    safeThis->midiIndicator.setText(noteInfo, juce::dontSendNotification);
-		    safeThis->uiStatusManager->updateLCD();
-		    juce::Timer::callAfterDelay(800,
-		                                [safeThis]()
-		                                {
-			                                if (!safeThis)
-				                                return;
-			                                safeThis->midiIndicator.setText("", juce::dontSendNotification);
-			                                safeThis->uiStatusManager->updateLCD();
-		                                });
-	    });
 }
 
 void DjIaVstEditor::initUI()
@@ -210,7 +186,7 @@ void DjIaVstEditor::initUI()
 	    [weakThis](const juce::String &noteInfo)
 	    {
 		    if (weakThis != nullptr)
-			    weakThis->updateMidiIndicator(noteInfo);
+			    weakThis->uiMidiManager->updateMidiIndicator(noteInfo);
 	    });
 
 	audioProcessor.onUIUpdateNeeded = [weakThis]()
@@ -604,8 +580,8 @@ void DjIaVstEditor::addEventListeners()
 {
 	autoLoadButton.onClick = [this] { onAutoLoadToggled(); };
 	loadSampleButton.onClick = [this] { onLoadSampleClicked(); };
-	savePresetButton.onClick = [this] { onSavePreset(); };
-	promptPresetSelector.onChange = [this] { onPresetSelected(); };
+	savePresetButton.onClick = [this] { uiPresetManager->onSavePreset(); };
+	promptPresetSelector.onChange = [this] { uiPresetManager->onPresetSelected(); };
 	promptPresetSelector.addMouseListener(this, false);
 
 	promptInput.onTextChange = [this]()
@@ -632,7 +608,7 @@ void DjIaVstEditor::addEventListeners()
 
 	promptPresetSelector.onChange = [this]()
 	{
-		onPresetSelected();
+		uiPresetManager->onPresetSelected();
 		audioProcessor.setLastPresetIndex(promptPresetSelector.getSelectedId() - 1);
 	};
 
@@ -683,8 +659,8 @@ void DjIaVstEditor::addEventListeners()
 		if (currentPrompt.isNotEmpty())
 		{
 			audioProcessor.addCustomPrompt(currentPrompt);
-			loadPromptPresets();
-			notifyTracksPromptUpdate();
+			uiPresetManager->loadPromptPresets();
+			uiPresetManager->notifyTracksPromptUpdate();
 			int totalItems = promptPresetSelector.getNumItems();
 			for (int i = 0; i < totalItems; ++i)
 			{
@@ -776,25 +752,6 @@ void DjIaVstEditor::addEventListeners()
 	};
 }
 
-void DjIaVstEditor::notifyTracksPromptUpdate()
-{
-	juce::StringArray allPrompts = audioProcessor.promptPresets;
-	auto customPrompts = audioProcessor.getCustomPrompts();
-
-	for (const auto &customPrompt : customPrompts)
-	{
-		if (!allPrompts.contains(customPrompt))
-		{
-			allPrompts.add(customPrompt);
-		}
-	}
-	allPrompts.sort(true);
-	for (auto &trackComp : uiTrackManager->getTrackComponents())
-	{
-		trackComp->updatePromptPresets(allPrompts);
-	}
-}
-
 void DjIaVstEditor::mouseDown(const juce::MouseEvent &event)
 {
 	if (event.eventComponent == &promptPresetSelector && event.mods.isPopupMenu())
@@ -829,8 +786,8 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent &event)
 							                       audioProcessor.promptPresets.removeString(selectedPrompt);
 							                       audioProcessor.setLastPresetIndex(
 							                           audioProcessor.getLastPresetIndex() - 1);
-							                       loadPromptPresets();
-							                       notifyTracksPromptUpdate();
+							                       uiPresetManager->loadPromptPresets();
+							                       uiPresetManager->notifyTracksPromptUpdate();
 						                       }
 					                       });
 				                   }
@@ -911,196 +868,9 @@ void DjIaVstEditor::paint(juce::Graphics &g)
 	g.fillAll(ColourPalette::backgroundDeep);
 }
 
-void DjIaVstEditor::loadPromptPresets()
-{
-	promptPresetSelector.clear();
-	juce::StringArray allPrompts = audioProcessor.promptPresets;
-	auto customPrompts = audioProcessor.getCustomPrompts();
-	for (const auto &customPrompt : customPrompts)
-	{
-		if (!allPrompts.contains(customPrompt))
-		{
-			allPrompts.add(customPrompt);
-		}
-	}
-	allPrompts.sort(true);
-
-	for (int i = 0; i < allPrompts.size(); ++i)
-	{
-		promptPresetSelector.addItem(allPrompts[i], i + 1);
-	}
-	int lastPresetIndex = audioProcessor.getLastPresetIndex();
-	if (lastPresetIndex >= 1 && lastPresetIndex <= allPrompts.size())
-	{
-		promptPresetSelector.setSelectedId(lastPresetIndex + 1, juce::dontSendNotification);
-	}
-	else
-	{
-		promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
-	}
-	juce::String selectedPresetText = promptPresetSelector.getText();
-	promptInput.setText(selectedPresetText, juce::dontSendNotification);
-}
-
-DjIaVstEditor::KeyboardLayout DjIaVstEditor::detectKeyboardLayout()
-{
-#if JUCE_WINDOWS
-	HKL layout = GetKeyboardLayout(0);
-	WORD primaryLang = PRIMARYLANGID(LOWORD(layout));
-
-	if (primaryLang == LANG_FRENCH)
-		return AZERTY;
-	if (primaryLang == LANG_GERMAN)
-		return QWERTZ;
-#endif
-	return QWERTY;
-}
-
 bool DjIaVstEditor::keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected)
 {
-	if (pressed == expected)
-		return true;
-	if (pressed.getKeyCode() == expected.getKeyCode())
-		return true;
-	if (expected.getKeyCode() >= '1' && expected.getKeyCode() <= '4')
-	{
-		int expectedNum = expected.getKeyCode() - '0';
-		if (pressed.getKeyCode() >= '1' && pressed.getKeyCode() <= '4')
-		{
-			int pressedNum = pressed.getKeyCode() - '0';
-			return pressedNum == expectedNum;
-		}
-	}
-
-	return false;
-}
-
-void DjIaVstEditor::refreshAllPromptLists()
-{
-	loadPromptPresets();
-	notifyTracksPromptUpdate();
-}
-
-bool DjIaVstEditor::keyPressed(const juce::KeyPress &key)
-{
-	KeyboardLayout layout = detectKeyboardLayout();
-
-	std::vector<std::vector<juce::KeyPress>> layoutKeys(8);
-
-	switch (layout)
-	{
-	case AZERTY:
-		layoutKeys = {{juce::KeyPress('1'), juce::KeyPress('2'), juce::KeyPress('3'), juce::KeyPress('4')},
-		              {juce::KeyPress('a'), juce::KeyPress('z'), juce::KeyPress('e'), juce::KeyPress('r')},
-		              {juce::KeyPress('q'), juce::KeyPress('s'), juce::KeyPress('d'), juce::KeyPress('f')},
-		              {juce::KeyPress('w'), juce::KeyPress('x'), juce::KeyPress('c'), juce::KeyPress('v')},
-		              {juce::KeyPress('8'), juce::KeyPress('9'), juce::KeyPress('0'), juce::KeyPress('-')},
-		              {juce::KeyPress('t'), juce::KeyPress('y'), juce::KeyPress('u'), juce::KeyPress('i')},
-		              {juce::KeyPress('g'), juce::KeyPress('h'), juce::KeyPress('j'), juce::KeyPress('k')},
-		              {juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress(','), juce::KeyPress(';')}};
-		break;
-
-	case QWERTY:
-		layoutKeys = {{juce::KeyPress('1'), juce::KeyPress('2'), juce::KeyPress('3'), juce::KeyPress('4')},
-		              {juce::KeyPress('a'), juce::KeyPress('s'), juce::KeyPress('d'), juce::KeyPress('f')},
-		              {juce::KeyPress('q'), juce::KeyPress('w'), juce::KeyPress('e'), juce::KeyPress('r')},
-		              {juce::KeyPress('z'), juce::KeyPress('x'), juce::KeyPress('c'), juce::KeyPress('v')},
-		              {juce::KeyPress('8'), juce::KeyPress('9'), juce::KeyPress('0'), juce::KeyPress('-')},
-		              {juce::KeyPress('t'), juce::KeyPress('y'), juce::KeyPress('u'), juce::KeyPress('i')},
-		              {juce::KeyPress('g'), juce::KeyPress('h'), juce::KeyPress('j'), juce::KeyPress('k')},
-		              {juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress('m'), juce::KeyPress(',')}};
-		break;
-
-	case QWERTZ:
-		layoutKeys = {{juce::KeyPress('1'), juce::KeyPress('2'), juce::KeyPress('3'), juce::KeyPress('4')},
-		              {juce::KeyPress('a'), juce::KeyPress('s'), juce::KeyPress('d'), juce::KeyPress('f')},
-		              {juce::KeyPress('q'), juce::KeyPress('w'), juce::KeyPress('e'), juce::KeyPress('r')},
-		              {juce::KeyPress('y'), juce::KeyPress('x'), juce::KeyPress('c'), juce::KeyPress('v')},
-		              {juce::KeyPress('8'), juce::KeyPress('9'), juce::KeyPress('0'), juce::KeyPress('-')},
-		              {juce::KeyPress('t'), juce::KeyPress('z'), juce::KeyPress('u'), juce::KeyPress('i')},
-		              {juce::KeyPress('g'), juce::KeyPress('h'), juce::KeyPress('j'), juce::KeyPress('k')},
-		              {juce::KeyPress('b'), juce::KeyPress('n'), juce::KeyPress('m'), juce::KeyPress(',')}};
-		break;
-	}
-
-	for (int slotIndex = 0; slotIndex < 8; ++slotIndex)
-	{
-		for (int page = 0; page < 4; ++page)
-		{
-			if (keyMatches(key, layoutKeys[slotIndex][page]))
-			{
-				for (auto &trackComp : uiTrackManager->getTrackComponents())
-				{
-					if (auto *track = trackComp->getTrack())
-					{
-						if (track->slotIndex == slotIndex)
-						{
-							if (audioProcessor.getIsGenerating() &&
-							    audioProcessor.getGeneratingTrackId() == track->trackId)
-							{
-								uiStatusManager->setStatusWithTimeout("Cannot switch pages during generation...");
-								return false;
-							}
-							else
-							{
-								trackComp->onPageSelected(page);
-								return true;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return Component::keyPressed(key);
-}
-
-void DjIaVstEditor::onPresetSelected()
-{
-	int selectedId = promptPresetSelector.getSelectedId();
-	audioProcessor.setLastPresetIndex(selectedId);
-	juce::String selectedPrompt = promptPresetSelector.getText();
-	if (!selectedPrompt.isEmpty())
-	{
-		promptInput.setText(selectedPrompt);
-		statusLabel.setText("Preset loaded: " + selectedPrompt, juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-	}
-	else
-	{
-		promptInput.clear();
-		statusLabel.setText("Custom prompt mode", juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-	}
-}
-
-void DjIaVstEditor::onSavePreset()
-{
-	juce::String currentPrompt = promptInput.getText().trim();
-	if (currentPrompt.isNotEmpty())
-	{
-		audioProcessor.addCustomPrompt(currentPrompt);
-		loadPromptPresets();
-		notifyTracksPromptUpdate();
-		int totalItems = promptPresetSelector.getNumItems();
-		for (int i = 0; i < totalItems; ++i)
-		{
-			if (promptPresetSelector.getItemText(i) == currentPrompt)
-			{
-				promptPresetSelector.setSelectedId(i + 1, juce::dontSendNotification);
-				break;
-			}
-		}
-
-		statusLabel.setText("Preset saved: " + currentPrompt, juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-	}
-	else
-	{
-		statusLabel.setText("Enter a prompt first!", juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-	}
+	return uiMidiManager->keyMatches(pressed, expected);
 }
 
 void DjIaVstEditor::onAutoLoadToggled()
@@ -1178,22 +948,6 @@ void DjIaVstEditor::resized()
 {
 	if (uiLayoutManager)
 		uiLayoutManager->resized();
-}
-
-juce::StringArray DjIaVstEditor::getAllPrompts() const
-{
-	juce::StringArray allPrompts = audioProcessor.promptPresets;
-	auto customPrompts = audioProcessor.getCustomPrompts();
-
-	for (const auto &customPrompt : customPrompts)
-	{
-		if (!allPrompts.contains(customPrompt))
-		{
-			allPrompts.add(customPrompt);
-		}
-	}
-
-	return allPrompts;
 }
 
 void DjIaVstEditor::restoreUICallbacks()

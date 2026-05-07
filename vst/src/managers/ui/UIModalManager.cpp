@@ -88,7 +88,7 @@ void UIModalManager::editCustomPromptDialog(const juce::String &selectedPrompt)
 		                                     int index = editor.audioProcessor.promptPresets.indexOf(selectedPrompt);
 		                                     if (index >= 0)
 			                                     editor.audioProcessor.promptPresets.set(index, newPrompt);
-		                                     editor.loadPromptPresets();
+		                                     editor.uiPresetManager->loadPromptPresets();
 	                                     });
 }
 

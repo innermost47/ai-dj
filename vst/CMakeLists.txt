@@ -224,7 +224,9 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/managers/core/TrackManager.cpp
     src/managers/ui/UIGenerationManager.cpp
     src/managers/ui/UILayoutManager.cpp
+    src/managers/ui/UIMidiManager.cpp
     src/managers/ui/UIModalManager.cpp
+    src/managers/ui/UIPresetManager.cpp
     src/managers/ui/UIStatusManager.cpp
     src/managers/ui/UITrackManager.cpp
     src/midi/MidiLearnManager.cpp

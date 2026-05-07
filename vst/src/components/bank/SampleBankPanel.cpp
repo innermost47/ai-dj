@@ -1431,7 +1431,7 @@ void SampleBankPanel::showEditPromptDialog(SampleBankEntry *entry)
 
 		                                     if (auto *editor =
 		                                             dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			                                     editor->refreshAllPromptLists();
+			                                     editor->uiPresetManager->refreshAllPromptLists();
 
 		                                     refreshSampleListSilent();
 

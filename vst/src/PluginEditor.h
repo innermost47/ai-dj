@@ -11,7 +11,9 @@
 #include "TrackComponent.h"
 #include "UIGenerationManager.h"
 #include "UILayoutManager.h"
+#include "UIMidiManager.h"
 #include "UIModalManager.h"
+#include "UIPresetManager.h"
 #include "UIStatusManager.h"
 #include "UITrackManager.h"
 #include <JuceHeader.h>
@@ -44,6 +46,8 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<UIModalManager> uiModalManager;
 	std::unique_ptr<UIGenerationManager> uiGenerationManager;
 	std::unique_ptr<UITrackManager> uiTrackManager;
+	std::unique_ptr<UIPresetManager> uiPresetManager;
+	std::unique_ptr<UIMidiManager> uiMidiManager;
 
 	juce::Label statusLabel;
 
@@ -60,7 +64,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void *getSequencerForTrack(const juce::String &trackId);
 	void restoreUICallbacks();
 	bool keyStateChanged(bool isKeyDown) override;
-	void refreshAllPromptLists();
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
 	void removeModal(ObsidianModalOverlay *overlay) override;
 	MixerPanel *getMixerPanel()
@@ -81,32 +84,19 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	static constexpr int TRACK_ROWS = 4;
 	static constexpr int TRACK_COLS = 2;
 	bool sampleBankVisible = true;
-	enum KeyboardLayout
-	{
-		QWERTY,
-		AZERTY,
-		QWERTZ
-	};
-	KeyboardLayout detectKeyboardLayout();
 
 	void visibilityChanged() override;
 	void openMidiMappingEditor();
 	void setupUI();
 	void addEventListeners();
-	void loadPromptPresets();
-	void onPresetSelected();
-	void onSavePreset();
 	void onAutoLoadToggled();
 	void onLoadSampleClicked();
 	void updateLoadButtonState();
-	void updateMidiIndicator(const juce::String &noteInfo);
 	void finalizeInit();
 	void mouseDown(const juce::MouseEvent &event) override;
-	void notifyTracksPromptUpdate();
+
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
 	bool keyPressed(const juce::KeyPress &key) override;
-
-	juce::StringArray getAllPrompts() const;
 
 	bool mixerVisible = false;
 	std::atomic<bool> isInitialized{false};
