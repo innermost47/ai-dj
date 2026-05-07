@@ -211,17 +211,22 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/tracks/SequencerComponent.cpp
     src/components/tracks/TrackComponent.cpp
     src/components/tracks/WaveformDisplay.cpp
-    src/core/AudioManager.cpp
-    src/core/GenerationManager.cpp
-    src/core/ParameterManager.cpp
-    src/core/SequencerManager.cpp
-    src/core/StateManager.cpp
-    src/core/TrackManager.cpp
     src/dsp/AudioAnalyzer.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
     src/engines/ObsidianEngine.cpp
     src/engines/StableAudioEngine.cpp
+    src/managers/core/AudioManager.cpp
+    src/managers/core/GenerationManager.cpp
+    src/managers/core/ParameterManager.cpp
+    src/managers/core/SequencerManager.cpp
+    src/managers/core/StateManager.cpp
+    src/managers/core/TrackManager.cpp
+    src/managers/ui/UIGenerationManager.cpp
+    src/managers/ui/UILayoutManager.cpp
+    src/managers/ui/UIModalManager.cpp
+    src/managers/ui/UIStatusManager.cpp
+    src/managers/ui/UITrackManager.cpp
     src/midi/MidiLearnManager.cpp
     src/midi/MidiManager.cpp
     src/midi/MidiMappingEditorWindow.cpp
@@ -230,11 +235,6 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
-    src/ui/UIGenerationManager.cpp
-    src/ui/UILayoutManager.cpp
-    src/ui/UIModalManager.cpp
-    src/ui/UIStatusManager.cpp
-    src/ui/UITrackManager.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE
@@ -246,13 +246,13 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/components/shared
     src/components/tracks
     src/config
-    src/core
     src/data
     src/dsp
     src/engines
+    src/managers/core
+    src/managers/ui
     src/midi
     src/style
-    src/ui
     ${soundtouch_SOURCE_DIR}/include
 )
 
