@@ -256,7 +256,7 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	juce::MessageManager::callAsync([this, trackId]() { updateWaveformDisplay(trackId); });
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 	{
-		juce::MessageManager::callAsync([editor, trackId]() { editor->onSampleLoaded(trackId); });
+		juce::MessageManager::callAsync([editor, trackId]() { editor->uiTrackManager->onSampleLoaded(trackId); });
 	}
 }
 
@@ -264,7 +264,7 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 {
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 	{
-		for (auto &trackComp : editor->getTrackComponents())
+		for (auto &trackComp : editor->uiTrackManager->getTrackComponents())
 		{
 			if (trackComp->getTrackId() == trackId)
 			{
@@ -712,7 +712,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 				    TrackData *track = trackManager.getTrack(trackId);
 				    if (track && pageIndex == track->currentPageIndex.load())
 				    {
-					    for (auto &trackComp : editor->getTrackComponents())
+					    for (auto &trackComp : editor->uiTrackManager->getTrackComponents())
 					    {
 						    if (trackComp->getTrackId() == trackId)
 						    {
@@ -965,7 +965,7 @@ void AudioManager::stopTrackPreview(const juce::String &trackId)
 
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 	{
-		auto *trackComp = editor->getTrackComponent(trackId);
+		auto *trackComp = editor->uiTrackManager->getTrackComponent(trackId);
 		if (trackComp)
 			trackComp->setPreviewPlaying(false);
 	}
@@ -1029,7 +1029,7 @@ void AudioManager::stopSamplePreview()
 	{
 		if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		{
-			auto *trackComp = editor->getTrackComponent(currentPreviewTrackId);
+			auto *trackComp = editor->uiTrackManager->getTrackComponent(currentPreviewTrackId);
 			if (trackComp)
 			{
 				trackComp->setPreviewPlaying(false);

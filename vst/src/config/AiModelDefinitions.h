@@ -4,6 +4,9 @@
 
 namespace AiModelDefinitions
 {
+
+static const juce::String LOCAL_MODEL_NAME = "stable-audio-open-small-tflite";
+
 inline const juce::StringArray &getAvailableModels()
 {
 	static const juce::StringArray models = {"stable-audio-open-1.0",
@@ -13,8 +16,22 @@ inline const juce::StringArray &getAvailableModels()
 	                                         "rc-vocal-textures",
 	                                         "sao-instrumental",
 	                                         "stablebeat",
-	                                         "gluten-v1"};
+	                                         "gluten-v1",
+	                                         "stable-audio-open-small-tflite"};
 	return models;
+}
+
+inline juce::StringArray getModelsForMode(bool isLocalMode)
+{
+	auto &all = getAvailableModels();
+	if (isLocalMode)
+		return {LOCAL_MODEL_NAME};
+
+	juce::StringArray filtered;
+	for (auto &m : all)
+		if (m != LOCAL_MODEL_NAME)
+			filtered.add(m);
+	return filtered;
 }
 
 inline juce::Colour getColourForModel(const juce::String &modelName)
@@ -36,6 +53,8 @@ inline juce::Colour getColourForModel(const juce::String &modelName)
 		return ColourPalette::modelBeats;
 	if (modelName == models[7])
 		return ColourPalette::modelGluten;
+	if (modelName == models[8])
+		return ColourPalette::modelStableAudioTflite;
 	return ColourPalette::modelFoundation;
 }
 } // namespace AiModelDefinitions

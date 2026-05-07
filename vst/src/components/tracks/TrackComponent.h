@@ -72,6 +72,8 @@ class TrackComponent : public ObsidianComponent,
 
 	std::function<void(const juce::String &)> onPreviewTrack;
 
+	juce::ComboBox modelSelector;
+
 	void setSelected(bool selected);
 	void setTrackData(TrackData *trackData);
 	void refreshWaveformDisplay();
@@ -257,7 +259,6 @@ class TrackComponent : public ObsidianComponent,
 	MidiLearnableSlider adsrReleaseKnob;
 	juce::Label adsrAttackLabel, adsrDecayLabel, adsrSustainLabel, adsrReleaseLabel;
 
-	juce::ComboBox modelSelector;
 	juce::StringArray aiModels;
 
 	juce::Label intervalLabel;

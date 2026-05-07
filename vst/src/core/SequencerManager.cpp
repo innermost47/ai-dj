@@ -46,7 +46,7 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 					    {
 						    if (safeEditor == nullptr)
 							    return;
-						    for (auto &trackComp : safeEditor->getTrackComponents())
+						    for (auto &trackComp : safeEditor->uiTrackManager->getTrackComponents())
 						    {
 							    if (trackComp->getTrackId() == trackId)
 							    {
@@ -75,7 +75,7 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 					    {
 						    if (safeEditor == nullptr)
 							    return;
-						    for (auto &trackComp : safeEditor->getTrackComponents())
+						    for (auto &trackComp : safeEditor->uiTrackManager->getTrackComponents())
 						    {
 							    if (trackComp->getTrackId() == trackId)
 							    {
@@ -105,7 +105,7 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 					    {
 						    if (safeEditor == nullptr)
 							    return;
-						    for (auto &trackComp : safeEditor->getTrackComponents())
+						    for (auto &trackComp : safeEditor->uiTrackManager->getTrackComponents())
 						    {
 							    if (trackComp->getTrackId() == trackId)
 							    {
@@ -342,7 +342,7 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 			    {
 				    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 				    {
-					    for (auto &trackComp : editor->getTrackComponents())
+					    for (auto &trackComp : editor->uiTrackManager->getTrackComponents())
 					    {
 						    if (editor->isBeingDestroyed.load())
 							    return;

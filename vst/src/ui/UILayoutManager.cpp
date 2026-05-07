@@ -107,7 +107,7 @@ void UILayoutManager::layoutTracksGrid()
 	const int totalHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1) + scrollbarBottomAllowance;
 	editor.tracksContainer.setSize(totalWidth, totalHeight);
 
-	for (auto &comp : editor.trackComponents)
+	for (auto &comp : editor.uiTrackManager->getTrackComponents())
 	{
 		TrackData *trackData = editor.audioProcessor.getTrack(comp->getTrackId());
 		if (trackData == nullptr)

@@ -234,6 +234,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/ui/UILayoutManager.cpp
     src/ui/UIModalManager.cpp
     src/ui/UIStatusManager.cpp
+    src/ui/UITrackManager.cpp
 )
 
 target_include_directories(ObsidianNeuralVST PRIVATE

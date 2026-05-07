@@ -33,6 +33,7 @@ struct TrackPage
 	juce::String canvasData;
 	juce::String canvasState;
 	juce::String selectedModel = "stable-audio-open-1.0";
+	juce::String savedModelBeforeLocal;
 
 	juce::StringArray selectedKeywords;
 
@@ -71,7 +72,8 @@ struct TrackPage
 	      generationKey(other.generationKey), selectedModel(other.selectedModel), numSamples(other.numSamples),
 	      generationDuration(other.generationDuration), sampleRate(other.sampleRate), loopStart(other.loopStart),
 	      loopEnd(other.loopEnd), stagingOriginalBpm(other.stagingOriginalBpm), bpm(other.bpm),
-	      originalBpm(other.originalBpm), generationBpm(other.generationBpm)
+	      originalBpm(other.originalBpm), generationBpm(other.generationBpm),
+	      savedModelBeforeLocal(other.savedModelBeforeLocal)
 	{
 		useOriginalFile = other.useOriginalFile.load();
 		hasOriginalVersion = other.hasOriginalVersion.load();
@@ -111,6 +113,7 @@ struct TrackPage
 		adsrSustain.store(1.0f);
 		adsrRelease.store(0.0f);
 		bpmOffset.store(0.0);
+		savedModelBeforeLocal.clear();
 	}
 
 	SequencerData sequences[8];

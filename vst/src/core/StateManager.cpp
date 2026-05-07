@@ -81,6 +81,7 @@ juce::ValueTree StateManager::saveState() const
 			    pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
 			    pageState.setProperty("bpmOffset", page.bpmOffset.load(), nullptr);
 			    pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
+			    pageState.setProperty("savedModelBeforeLocal", page.savedModelBeforeLocal, nullptr);
 
 			    for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
 			    {
@@ -204,6 +205,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.canvasState = pageState.getProperty("canvasState", "").toString();
 				page.bpmOffset.store(pageState.getProperty("bpmOffset", legacyBpmOffset));
 				page.loopPointsLocked = pageState.getProperty("loopPointsLocked", false);
+				page.savedModelBeforeLocal =
+				    pageState.getProperty("savedModelBeforeLocal", "stable-audio-open-1.0").toString();
 
 				juce::String pageKeywordsStr = pageState.getProperty("selectedKeywords", "");
 				if (pageKeywordsStr.isNotEmpty())
@@ -677,7 +680,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->refreshTrackComponents();
+			    editor->uiTrackManager->refreshTrackComponents();
 			    editor->updateUIFromProcessor();
 		    }
 	    });

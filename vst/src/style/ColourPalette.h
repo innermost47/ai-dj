@@ -77,6 +77,7 @@ class ColourPalette
 	static const juce::Colour modelInstrumental;
 	static const juce::Colour modelBeats;
 	static const juce::Colour modelGluten;
+	static const juce::Colour modelStableAudioTflite;
 
 	static const juce::Colour charcoal;
 

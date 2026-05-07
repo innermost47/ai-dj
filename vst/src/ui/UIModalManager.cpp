@@ -37,7 +37,7 @@ void UIModalManager::showFirstTimeSetup()
 			                                       return;
 		                                       editor.audioProcessor.setUseLocalModel(res.useLocalModel);
 		                                       if (res.useLocalModel)
-			                                       editor.checkLocalModelsAndNotify();
+			                                       editor.uiTrackManager->checkLocalModelsAndNotify();
 		                                       else
 		                                       {
 			                                       editor.audioProcessor.setServerUrl(res.serverUrl);
@@ -45,7 +45,7 @@ void UIModalManager::showFirstTimeSetup()
 		                                       }
 		                                       editor.audioProcessor.setRequestTimeout(res.timeoutMs);
 		                                       editor.audioProcessor.saveGlobalConfig();
-		                                       editor.refreshUIForMode();
+		                                       editor.uiTrackManager->refreshUIForMode();
 		                                       juce::Timer::callAfterDelay(400, [this]() { showOnboardingTour(); });
 	                                       });
 }
@@ -63,7 +63,7 @@ void UIModalManager::showConfigDialog()
 		    bool modeChanged = (res.useLocalModel != editor.audioProcessor.getUseLocalModel());
 		    editor.audioProcessor.setUseLocalModel(res.useLocalModel);
 		    if (res.useLocalModel)
-			    editor.checkLocalModelsAndNotify();
+			    editor.uiTrackManager->checkLocalModelsAndNotify();
 		    else
 		    {
 			    editor.audioProcessor.setServerUrl(res.serverUrl);
@@ -73,7 +73,7 @@ void UIModalManager::showConfigDialog()
 		    editor.audioProcessor.setRequestTimeout(res.timeoutMs);
 		    editor.audioProcessor.saveGlobalConfig();
 		    if (modeChanged)
-			    editor.refreshUIForMode();
+			    editor.uiTrackManager->refreshUIForMode();
 		    editor.uiStatusManager->setStatusWithTimeout(
 		        modeChanged ? "Mode changed! Configuration updated." : "Configuration updated.", 3000);
 	    });

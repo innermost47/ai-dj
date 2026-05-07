@@ -549,7 +549,7 @@ void GenerationManager::syncSelectedTrackWithGlobalPrompt()
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    for (auto &trackComp : editor->getTrackComponents())
+			    for (auto &trackComp : editor->uiTrackManager->getTrackComponents())
 			    {
 				    if (trackComp->getTrackId() == audioProcessor.getSelectedTrackId())
 				    {

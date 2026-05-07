@@ -62,7 +62,7 @@ void UIGenerationManager::startGenerationUI(const juce::String &trackId)
 	editor.statusLabel.setText("Connecting to server...", juce::dontSendNotification);
 	editor.uiStatusManager->updateLCD();
 
-	for (auto &trackComp : editor.trackComponents)
+	for (auto &trackComp : editor.uiTrackManager->getTrackComponents())
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
@@ -96,7 +96,7 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 	editor.generateButton.setEnabled(true);
 	setAllGenerateButtonsEnabled(true);
 
-	for (auto &trackComp : editor.trackComponents)
+	for (auto &trackComp : editor.uiTrackManager->getTrackComponents())
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
@@ -311,7 +311,7 @@ void UIGenerationManager::stopGenerationButtonAnimation()
 
 void UIGenerationManager::setAllGenerateButtonsEnabled(bool enabled)
 {
-	for (auto &trackComp : editor.trackComponents)
+	for (auto &trackComp : editor.uiTrackManager->getTrackComponents())
 	{
 		trackComp->setGenerateButtonEnabled(enabled);
 		trackComp->setCanvasGenerating(!enabled);

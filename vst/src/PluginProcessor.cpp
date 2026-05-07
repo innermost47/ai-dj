@@ -155,7 +155,7 @@ void DjIaVstProcessor::loadGlobalConfig()
 		    [this]()
 		    {
 			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-				    editor->refreshTrackComponents();
+				    editor->uiTrackManager->refreshTrackComponents();
 		    });
 	}
 }
@@ -533,7 +533,7 @@ void DjIaVstProcessor::previewTrack(const juce::String &trackId)
 
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
 	{
-		auto *trackComp = editor->getTrackComponent(trackId);
+		auto *trackComp = editor->uiTrackManager->getTrackComponent(trackId);
 		if (trackComp)
 			trackComp->setPreviewPlaying(true);
 	}

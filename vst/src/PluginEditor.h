@@ -13,6 +13,7 @@
 #include "UILayoutManager.h"
 #include "UIModalManager.h"
 #include "UIStatusManager.h"
+#include "UITrackManager.h"
 #include <JuceHeader.h>
 
 class SequencerComponent;
@@ -32,12 +33,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 
 	~DjIaVstEditor() override;
 
-	std::vector<std::unique_ptr<TrackComponent>> trackComponents;
-	std::vector<std::unique_ptr<TrackComponent>> &getTrackComponents()
-	{
-		return trackComponents;
-	}
-
 	juce::Viewport mixerViewport;
 	juce::Viewport tracksViewport;
 	juce::Component tracksContainer;
@@ -48,27 +43,22 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<UIStatusManager> uiStatusManager;
 	std::unique_ptr<UIModalManager> uiModalManager;
 	std::unique_ptr<UIGenerationManager> uiGenerationManager;
+	std::unique_ptr<UITrackManager> uiTrackManager;
 
 	juce::Label statusLabel;
 
 	std::atomic<bool> isBeingDestroyed{false};
-
-	TrackComponent *getTrackComponent(const juce::String &trackId);
 
 	LCDScreen lcdScreen;
 
 	void paint(juce::Graphics &) override;
 	void resized() override;
 	void timerCallback() override;
-	void refreshTrackComponents();
 	void updateUIFromProcessor();
-	void refreshTracks();
 	void refreshMixerChannels();
 	void initUI();
 	void *getSequencerForTrack(const juce::String &trackId);
 	void restoreUICallbacks();
-	void updateSelectedTrack();
-	void onSampleLoaded(const juce::String &trackId);
 	bool keyStateChanged(bool isKeyDown) override;
 	void refreshAllPromptLists();
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
@@ -111,10 +101,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void updateLoadButtonState();
 	void updateMidiIndicator(const juce::String &noteInfo);
 	void finalizeInit();
-	void updateUIComponents();
 	void mouseDown(const juce::MouseEvent &event) override;
-	void refreshUIForMode();
-	void checkLocalModelsAndNotify();
 	void notifyTracksPromptUpdate();
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
 	bool keyPressed(const juce::KeyPress &key) override;

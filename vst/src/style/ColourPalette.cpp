@@ -114,6 +114,7 @@ const juce::Colour ColourPalette::modelVocals(MAUVE);
 const juce::Colour ColourPalette::modelInstrumental(EMERALD);
 const juce::Colour ColourPalette::modelBeats(INDIGO);
 const juce::Colour ColourPalette::modelGluten(ROSE);
+const juce::Colour ColourPalette::modelStableAudioTflite(CYAN);
 
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {
