@@ -231,6 +231,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
     src/ui/UILayoutManager.cpp
+    src/ui/UIModalManager.cpp
     src/ui/UIStatusManager.cpp
 )
 

@@ -4,7 +4,6 @@
 #include "ObsidianAlertManager.h"
 #include "PluginProcessor.h"
 #include "SequencerComponent.h"
-#include "config/version.h"
 #if JUCE_WINDOWS
 #include <windows.h>
 #include <winuser.h>
@@ -27,6 +26,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	audioProcessor.setGenerationListener(this);
 	uiLayoutManager = std::make_unique<UILayoutManager>(*this);
 	uiStatusManager = std::make_unique<UIStatusManager>(*this);
+	uiModalManager = std::make_unique<UIModalManager>(*this);
 	if (audioProcessor.isStateReady())
 	{
 		initUI();
@@ -84,7 +84,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 		                            if (!safeThis->audioProcessor.updateCheckDone)
 		                            {
 			                            safeThis->audioProcessor.updateCheckDone = true;
-			                            safeThis->checkForUpdates();
+			                            safeThis->uiModalManager->checkForUpdates();
 		                            }
 	                            });
 }
@@ -101,7 +101,7 @@ DjIaVstEditor::~DjIaVstEditor()
 
 	uiLayoutManager = nullptr;
 
-	activeModals.clear();
+	uiModalManager->clearAll();
 	tracksViewport.setViewedComponent(nullptr, false);
 	for (auto &tc : trackComponents)
 		if (tc)
@@ -321,7 +321,7 @@ void DjIaVstEditor::initUI()
 	apiKeyInput.setText(audioProcessor.getApiKey(), juce::dontSendNotification);
 	if (audioProcessor.getServerUrl().isEmpty())
 	{
-		juce::Timer::callAfterDelay(500, [this]() { showFirstTimeSetup(); });
+		juce::Timer::callAfterDelay(500, [this]() { uiModalManager->showFirstTimeSetup(); });
 	}
 	isInitialized.store(true);
 	juce::WeakReference<DjIaVstEditor> weakThis(this);
@@ -344,246 +344,11 @@ void DjIaVstEditor::initUI()
 	};
 }
 
-void DjIaVstEditor::showFirstTimeSetup()
-{
-	ObsidianAlertManager::showConfigDialog(this, "OBSIDIAN-Neural Configuration " + Version::FULL,
-	                                       audioProcessor.getServerUrl(), audioProcessor.getApiKey(),
-	                                       audioProcessor.getUseLocalModel(), audioProcessor.getRequestTimeout(), true,
-	                                       [this](const ObsidianAlertManager::ConfigDialogResult &res)
-	                                       {
-		                                       if (!res.confirmed)
-			                                       return;
-
-		                                       audioProcessor.setUseLocalModel(res.useLocalModel);
-		                                       if (res.useLocalModel)
-			                                       checkLocalModelsAndNotify();
-		                                       else
-		                                       {
-			                                       audioProcessor.setServerUrl(res.serverUrl);
-			                                       audioProcessor.setApiKey(res.apiKey);
-		                                       }
-		                                       audioProcessor.setRequestTimeout(res.timeoutMs);
-		                                       audioProcessor.saveGlobalConfig();
-		                                       refreshUIForMode();
-		                                       juce::Timer::callAfterDelay(400, [this]() { showOnboardingTour(); });
-	                                       });
-}
-
-void DjIaVstEditor::showOnboardingTour()
-{
-	if (audioProcessor.getOnboardingDone())
-		return;
-
-	showOnboardingStep(1);
-}
-
-void DjIaVstEditor::showOnboardingStep(int step)
-{
-	struct StepInfo
-	{
-		juce::String title;
-		juce::String message;
-		juce::String buttonNext;
-		juce::String buttonSkip;
-		juce::String illustrationSvg;
-	};
-
-	juce::String lightningSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>)";
-	juce::String diskSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>)";
-	juce::String playSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>)";
-	juce::String mapSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>)";
-
-	std::vector<StepInfo> steps = {
-	    {"OBSIDIAN Neural  -  1 of 5  -  Welcome",
-	     "Welcome to OBSIDIAN Neural.\n\nThis is an AI sound engine. You describe a sound,\nthe engine generates it as "
-	     "audio you can play, loop\nand sequence in your DAW.\n\nThe power lies in the [ GEN ] buttons.\nPress GEN, "
-	     "get audio.\nEverything else is just sculpting what comes out.",
-	     "Show me how", "Skip tour", lightningSvg},
-
-	    {"OBSIDIAN Neural  -  2 of 5  -  The Global Prompt",
-	     "To create sounds, start at the very top:\n\n1. PROMPT INPUT   Type your idea (e.g. 'Acid Bass')\n2. SAVE "
-	     "(Disk)    Click the disk icon to save it.\n\nOnce saved, your prompt is added to the global list\nand "
-	     "becomes available to every track in the plugin.\n\nOn each track, use the dropdowns to pick your "
-	     "saved\nprompt and the AI Model you want to use.\nEach model has its own color and personality.",
-	     "Got it", "Skip tour", diskSvg},
-
-	    {"OBSIDIAN Neural  -  3 of 5  -  Generate",
-	     "Two ways to trigger a generation:\n\n1. TRACK GEN: Click the [ GEN ] lightning bolt on a\n   specific track "
-	     "to generate audio for that page.\n\n2. GLOBAL GEN: Click a track to select it\n   (grey frame), then use the "
-	     "large lightning bolt\n   at the top of the VST.\n\nThe track pulses while the AI is thinking. "
-	     "When\nfinished, the waveform appears. Don't like it?\nHit GEN again for a fresh roll of the dice.",
-	     "OK", "Skip tour", lightningSvg},
-
-	    {"OBSIDIAN Neural  -  4 of 5  -  Make it play",
-	     "How to play and shape your sounds:\n\n1. PREVIEW: Instant audition of the raw sample.\n\n2. MIXER PLAY "
-	     "(Bottom panel): Arm the track. If\n   your DAW is playing, the sound starts at the next\n   bar and loops "
-	     "perfectly.\n\n3. WAVEFORM: Edit loop points directly on the\n   waveform. You can also DRAG & DROP the "
-	     "waveform\n   directly into your DAW.\n\n4. SEQUENCER: Use the grid to set retrigger points.",
-	     "Almost done", "Skip tour", playSvg},
-
-	    {"OBSIDIAN Neural  -  5 of 5  -  The rest",
-	     "Quick map of the interface:\n\nABCD    4 pages per track. Store variations here.\n\nREPEAT  Beat-repeat "
-	     "effect. Use RND to randomize.\n\nMIXER   Located at the BOTTOM. Controls volume,\n        pitch, pan, and EQ "
-	     "for the Master.\n\nBANK    Left panel. Every generation is saved here\n        automatically. Drag files "
-	     "back to reload.\n\nNow go make noise.",
-	     "Let's go !", "Skip", mapSvg}};
-
-	if (step < 1 || step > (int)steps.size())
-		return;
-
-	const auto &info = steps[step - 1];
-	bool isLastStep = (step == (int)steps.size());
-
-	auto modal = std::make_unique<ObsidianModalWindow>(info.title);
-
-	class OnboardingContent : public juce::Component
-	{
-	  public:
-		juce::Label textLabel;
-		std::unique_ptr<juce::Drawable> svgIllustration;
-
-		OnboardingContent(const juce::String &text, const juce::String &svgData)
-		{
-			textLabel.setText(text, juce::dontSendNotification);
-			textLabel.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
-			textLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-			textLabel.setJustificationType(juce::Justification::topLeft);
-			addAndMakeVisible(textLabel);
-
-			if (svgData.isNotEmpty())
-			{
-				auto xml = juce::XmlDocument::parse(svgData);
-				if (xml)
-					svgIllustration = juce::Drawable::createFromSVG(*xml);
-			}
-		}
-
-		void paint(juce::Graphics &g) override
-		{
-			if (svgIllustration != nullptr)
-			{
-				auto bounds = getLocalBounds().toFloat();
-				auto iconArea = bounds.removeFromRight(120.0f).withSizeKeepingCentre(100.0f, 100.0f);
-				svgIllustration->drawWithin(g, iconArea, juce::RectanglePlacement::centred, 0.35f);
-			}
-		}
-
-		void resized() override
-		{
-			auto bounds = getLocalBounds();
-			if (svgIllustration != nullptr)
-				bounds.removeFromRight(120);
-			textLabel.setBounds(bounds);
-		}
-	};
-
-	modal->setContent(std::make_unique<OnboardingContent>(info.message, info.illustrationSvg));
-
-	auto overlayOwned = std::make_unique<ObsidianModalOverlay>(std::move(modal));
-	auto *overlay = overlayOwned.get();
-	addModal(std::move(overlayOwned));
-
-	juce::String arrowSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>)";
-	juce::String skipSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>)";
-
-	overlay->modalWindow->addButton(info.buttonSkip, skipSvg, ColourPalette::buttonInactive,
-	                                [this, overlay]()
-	                                {
-		                                overlay->close();
-		                                audioProcessor.setOnboardingDone(true);
-		                                audioProcessor.saveGlobalConfig();
-	                                });
-
-	overlay->modalWindow->addButton(
-	    info.buttonNext, arrowSvg, ColourPalette::buttonPrimary,
-	    [this, overlay, step, isLastStep]()
-	    {
-		    overlay->close();
-
-		    if (!isLastStep)
-		    {
-			    juce::Component::SafePointer<DjIaVstEditor> safeThis(this);
-			    juce::MessageManager::callAsync(
-			        [safeThis, step]()
-			        {
-				        if (safeThis != nullptr)
-					        safeThis->showOnboardingStep(step + 1);
-			        });
-		    }
-		    else
-		    {
-			    audioProcessor.setOnboardingDone(true);
-			    audioProcessor.saveGlobalConfig();
-
-			    statusLabel.setText(
-			        juce::String::fromUTF8("Ready - pick a prompt, hit GEN and let's hear what comes out."),
-			        juce::dontSendNotification);
-			    statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-			    uiStatusManager->updateLCD();
-		    }
-	    });
-}
-
-void DjIaVstEditor::addModal(std::unique_ptr<ObsidianModalOverlay> overlay)
-{
-	auto *raw = overlay.get();
-	addAndMakeVisible(raw);
-	raw->setBounds(getLocalBounds());
-	raw->toFront(false);
-	activeModals.push_back(std::move(overlay));
-	raw->startFadeIn();
-}
-
-void DjIaVstEditor::removeModal(ObsidianModalOverlay *overlay)
-{
-	activeModals.erase(std::remove_if(activeModals.begin(), activeModals.end(),
-	                                  [overlay](const std::unique_ptr<ObsidianModalOverlay> &p)
-	                                  { return p.get() == overlay; }),
-	                   activeModals.end());
-}
-
 void DjIaVstEditor::refreshUIForMode()
 {
 	bool isLocalMode = audioProcessor.getUseLocalModel();
 	durationSelector.setEnabled(!isLocalMode);
 	resized();
-}
-
-void DjIaVstEditor::showConfigDialog()
-{
-	ObsidianAlertManager::showConfigDialog(
-	    this, "OBSIDIAN-Neural Configuration " + Version::FULL, audioProcessor.getServerUrl(),
-	    audioProcessor.getApiKey(), audioProcessor.getUseLocalModel(), audioProcessor.getRequestTimeout(), false,
-	    [this](const ObsidianAlertManager::ConfigDialogResult &res)
-	    {
-		    if (!res.confirmed)
-			    return;
-
-		    bool modeChanged = (res.useLocalModel != audioProcessor.getUseLocalModel());
-		    audioProcessor.setUseLocalModel(res.useLocalModel);
-
-		    if (res.useLocalModel)
-			    checkLocalModelsAndNotify();
-		    else
-		    {
-			    audioProcessor.setServerUrl(res.serverUrl);
-			    if (res.apiKey.isNotEmpty())
-				    audioProcessor.setApiKey(res.apiKey);
-		    }
-		    audioProcessor.setRequestTimeout(res.timeoutMs);
-		    audioProcessor.saveGlobalConfig();
-
-		    if (modeChanged)
-			    refreshUIForMode();
-		    uiStatusManager->setStatusWithTimeout(
-		        modeChanged ? "Mode changed! Configuration updated." : "Configuration updated.", 3000);
-	    });
 }
 
 void DjIaVstEditor::checkLocalModelsAndNotify()
@@ -672,6 +437,16 @@ void DjIaVstEditor::timerCallback()
 				trackComp->updateWaveformWithTimeStretch();
 		}
 	}
+}
+
+void DjIaVstEditor::addModal(std::unique_ptr<ObsidianModalOverlay> overlay)
+{
+	uiModalManager->addModal(std::move(overlay));
+}
+
+void DjIaVstEditor::removeModal(ObsidianModalOverlay *overlay)
+{
+	uiModalManager->removeModal(overlay);
 }
 
 void DjIaVstEditor::startGenerationButtonAnimation()
@@ -845,7 +620,7 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(configButton);
 	configButton.loadIcon(BinaryData::gear_svg, BinaryData::gear_svgSize);
 	configButton.setTooltip("Configure settings globally");
-	configButton.onClick = [this]() { showConfigDialog(); };
+	configButton.onClick = [this]() { uiModalManager->showConfigDialog(); };
 
 	addAndMakeVisible(autoLoadButton);
 	autoLoadButton.loadIcon(BinaryData::refresh_svg, BinaryData::refresh_svgSize);
@@ -1158,9 +933,9 @@ void DjIaVstEditor::addEventListeners()
 		uiStatusManager->setStatusWithTimeout("Sample loaded from bank: " + sampleId.substring(0, 8) + "...", 3000);
 	};
 
-	openMidiEditorButton.onClick = [this] { openMidiMappingEditor(); };
+	openMidiEditorButton.onClick = [this] { uiModalManager->openMidiMappingEditor(); };
 
-	helpButton.onClick = [this]() { showOnboardingStep(1); };
+	helpButton.onClick = [this]() { uiModalManager->showOnboardingStep(1); };
 
 	toggleBankButton.onClick = [this]()
 	{
@@ -1209,7 +984,7 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent &event)
 			                   {
 				                   if (result == 1)
 				                   {
-					                   editCustomPromptDialog(selectedPrompt);
+					                   uiModalManager->editCustomPromptDialog(selectedPrompt);
 				                   }
 				                   else if (result == 2)
 				                   {
@@ -1233,19 +1008,6 @@ void DjIaVstEditor::mouseDown(const juce::MouseEvent &event)
 			                   });
 		}
 	}
-}
-
-void DjIaVstEditor::editCustomPromptDialog(const juce::String &selectedPrompt)
-{
-	ObsidianAlertManager::showEditPrompt(this, selectedPrompt,
-	                                     [this, selectedPrompt](const juce::String &newPrompt)
-	                                     {
-		                                     audioProcessor.editCustomPrompt(selectedPrompt, newPrompt);
-		                                     int index = audioProcessor.promptPresets.indexOf(selectedPrompt);
-		                                     if (index >= 0)
-			                                     audioProcessor.promptPresets.set(index, newPrompt);
-		                                     loadPromptPresets();
-	                                     });
 }
 
 void DjIaVstEditor::updateUIFromProcessor()
@@ -1318,11 +1080,6 @@ void DjIaVstEditor::updateUIFromProcessor()
 void DjIaVstEditor::paint(juce::Graphics &g)
 {
 	g.fillAll(ColourPalette::backgroundDeep);
-}
-
-void DjIaVstEditor::openMidiMappingEditor()
-{
-	ObsidianAlertManager::showMidiMappingEditor(this, &audioProcessor.getMidiLearnManager());
 }
 
 void DjIaVstEditor::setAllGenerateButtonsEnabled(bool enabled)
@@ -2052,53 +1809,6 @@ void DjIaVstEditor::refreshMixerChannels()
 	{
 		mixerPanel->refreshAllChannels();
 	}
-}
-
-void DjIaVstEditor::checkForUpdates()
-{
-	juce::Thread::launch(
-	    [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-	    {
-		    juce::URL url("https://api.github.com/repos/innermost47/ai-dj/releases/latest");
-		    auto stream = url.createInputStream(juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-		                                            .withExtraHeaders("User-Agent: OBSIDIAN-Neural-Plugin")
-		                                            .withConnectionTimeoutMs(5000));
-
-		    if (stream == nullptr)
-			    return;
-
-		    auto json = juce::JSON::parse(stream->readEntireStreamAsString());
-		    if (auto *obj = json.getDynamicObject())
-		    {
-			    auto tagName = obj->getProperty("tag_name").toString();
-			    int latestNum = tagName.trimCharactersAtStart("v").getIntValue();
-			    int currentNum = juce::String(BUILD_NUMBER).getIntValue();
-
-			    if (latestNum > currentNum)
-			    {
-				    juce::MessageManager::callAsync(
-				        [safeThis, tagName]()
-				        {
-					        if (auto *editor = safeThis.getComponent())
-					        {
-						        if (editor->isInitialized.load())
-						        {
-							        juce::Timer::callAfterDelay(2000,
-							                                    [safeThis, tagName]()
-							                                    {
-								                                    if (auto *editor = safeThis.getComponent())
-								                                    {
-									                                    ObsidianAlertManager::showUpdateAvailable(
-									                                        safeThis, tagName,
-									                                        juce::String(BUILD_NUMBER));
-								                                    }
-							                                    });
-						        }
-					        }
-				        });
-			    }
-		    }
-	    });
 }
 
 TrackComponent *DjIaVstEditor::getTrackComponent(const juce::String &trackId)
