@@ -142,7 +142,9 @@ void DjIaVstEditor::parentHierarchyChanged()
 		window->setTitleBarButtonsRequired(juce::DocumentWindow::minimiseButton | juce::DocumentWindow::maximiseButton |
 		                                       juce::DocumentWindow::closeButton,
 		                                   false);
+
 		window->setResizable(true, false);
+		window->setFullScreen(true);
 	}
 }
 #endif
@@ -589,6 +591,15 @@ void DjIaVstEditor::setupUI()
 		sampleBankPanel->setVisible(bankVisible);
 
 	uiTrackManager->refreshTrackComponents();
+
+#if JucePlugin_Build_Standalone
+	standaloneMenuBar = std::make_unique<StandaloneMenuBar>(*audioProcessor.getStandaloneTransport());
+	addAndMakeVisible(*standaloneMenuBar);
+
+	standaloneMenuBar->onSaveSession = [this]() { /* ... */ };
+	standaloneMenuBar->onLoadSession = [this]() { /* ... */ };
+#endif
+
 	addEventListeners();
 }
 

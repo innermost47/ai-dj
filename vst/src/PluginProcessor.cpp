@@ -348,12 +348,14 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
 		buffer.clear(i, 0, buffer.getNumSamples());
-	bool hostIsPlaying = false;
 	auto currentPlayHead = getPlayHead();
 	double hostBpm = 126.0;
 	double hostPpqPosition = 0.0;
+	bool hostIsPlaying = false;
 
-	getDawInformations(currentPlayHead, hostIsPlaying, hostBpm, hostPpqPosition);
+	if (currentPlayHead != nullptr)
+		getDawInformations(currentPlayHead, hostIsPlaying, hostBpm, hostPpqPosition);
+
 	lastHostBpmForQuantization.store(hostBpm);
 
 	sequencerManager.handleSequencerPlayState(hostIsPlaying);
@@ -484,6 +486,8 @@ void DjIaVstProcessor::checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages)
 void DjIaVstProcessor::getDawInformations(juce::AudioPlayHead *currentPlayHead, bool &hostIsPlaying, double &hostBpm,
                                           double &hostPpqPosition)
 {
+	if (currentPlayHead == nullptr)
+		return;
 	double localSampleRate = getSampleRate();
 	if (localSampleRate > 0.0)
 	{

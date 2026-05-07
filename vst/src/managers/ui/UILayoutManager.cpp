@@ -136,6 +136,13 @@ void UILayoutManager::resized()
 	const int spacing = 4;
 	const int padding = 6;
 	auto fullBounds = editor.getLocalBounds();
+
+#if JucePlugin_Build_Standalone
+	auto menuArea = fullBounds.removeFromTop(editor.MENU_BAR_HEIGHT);
+	if (editor.standaloneMenuBar)
+		editor.standaloneMenuBar->setBounds(menuArea);
+#endif
+
 	const int bannerHeight = 40;
 
 	const int bankWidth = (editor.sampleBankPanel && editor.sampleBankPanel->isVisible())

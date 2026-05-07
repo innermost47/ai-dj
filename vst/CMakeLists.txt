@@ -229,6 +229,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginEntry.cpp
     src/PluginProcessor.cpp
     src/standalone/core/StandaloneTransport.cpp
+    src/standalone/transport/ui/StandaloneMenuBar.cpp
     src/standalone/transport/ui/StandaloneTransportComponent.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp

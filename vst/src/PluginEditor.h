@@ -8,6 +8,7 @@
 #include "ObsidianModal.h"
 #include "PluginProcessor.h"
 #include "SampleBankPanel.h"
+#include "StandaloneMenuBar.h"
 #include "TrackComponent.h"
 #include "UIGenerationManager.h"
 #include "UILayoutManager.h"
@@ -100,6 +101,11 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 
 #if JucePlugin_Build_Standalone
 	void parentHierarchyChanged() override;
+#endif
+
+#if JucePlugin_Build_Standalone
+	std::unique_ptr<StandaloneMenuBar> standaloneMenuBar;
+	static constexpr int MENU_BAR_HEIGHT = 24;
 #endif
 
 	bool mixerVisible = false;

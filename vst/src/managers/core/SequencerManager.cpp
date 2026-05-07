@@ -289,10 +289,9 @@ void SequencerManager::updateSequencers(bool hostIsPlaying)
 			if (shouldAdvanceStep)
 			{
 				handleAdvanceStep(track, hostIsPlaying);
+				if (onSequencerUpdateNeeded)
+					onSequencerUpdateNeeded(trackId);
 			}
-
-			if (onSequencerUpdateNeeded)
-				onSequencerUpdateNeeded(trackId);
 		}
 	}
 }
