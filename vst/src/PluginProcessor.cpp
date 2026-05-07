@@ -33,6 +33,11 @@ DjIaVstProcessor::DjIaVstProcessor()
 	startTimerHz(30);
 	autoLoadEnabled.store(true);
 
+#if JucePlugin_Build_Standalone
+	standaloneTransport = std::make_unique<StandaloneTransport>();
+	setPlayHead(standaloneTransport.get());
+#endif
+
 	juce::Timer::callAfterDelay(500,
 	                            [this]()
 	                            {
@@ -64,6 +69,10 @@ juce::AudioProcessorEditor *DjIaVstProcessor::createEditor()
 void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
 	audioManager.prepareToPlay(sampleRate, samplesPerBlock);
+#if JucePlugin_Build_Standalone
+	if (standaloneTransport)
+		setPlayHead(standaloneTransport.get());
+#endif
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -331,6 +340,10 @@ bool DjIaVstProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
 
 void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midiMessages)
 {
+#if JucePlugin_Build_Standalone
+	if (standaloneTransport)
+		standaloneTransport->advance(buffer.getNumSamples(), getSampleRate());
+#endif
 	internalSampleCounter += buffer.getNumSamples();
 	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)

@@ -44,6 +44,22 @@ struct IconButtonBase
 		showBorder = show;
 	}
 
+	void setCustomIconColour(juce::Colour colour)
+	{
+		customIconColour = colour;
+		hasCustomIconColour = true;
+	}
+	void setCustomIconColourToggled(juce::Colour colour)
+	{
+		customIconColourToggled = colour;
+		hasCustomIconColourToggled = true;
+	}
+	void clearCustomIconColour()
+	{
+		hasCustomIconColour = false;
+		hasCustomIconColourToggled = false;
+	}
+
   protected:
 	std::unique_ptr<juce::Drawable> iconDrawable;
 	std::unique_ptr<juce::Drawable> iconDrawableToggled;
@@ -54,6 +70,10 @@ struct IconButtonBase
 	bool showBackground = true;
 	float customIconSize = -1.0f;
 	bool showBorder = false;
+	juce::Colour customIconColour;
+	juce::Colour customIconColourToggled;
+	bool hasCustomIconColour = false;
+	bool hasCustomIconColourToggled = false;
 	juce::Colour borderColour = ColourPalette::trackSelected.withAlpha(0.4f);
 
 	static std::unique_ptr<juce::Drawable> loadSVG(const char *data, size_t size);

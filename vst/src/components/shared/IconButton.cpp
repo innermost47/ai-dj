@@ -29,9 +29,11 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 				g.fillRoundedRectangle(bounds.translated(0, 1.0f), cornerSize);
 			}
 
-			juce::ColourGradient bgGradient(ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
-			                                ColourPalette::backgroundMid.darker(0.08f), bounds.getX(),
-			                                bounds.getBottom(), false);
+			juce::Colour baseColour = toggled ? btn.findColour(juce::TextButton::buttonOnColourId)
+			                                  : btn.findColour(juce::TextButton::buttonColourId);
+
+			juce::ColourGradient bgGradient(baseColour.brighter(0.04f), bounds.getX(), bounds.getY(),
+			                                baseColour.darker(0.08f), bounds.getX(), bounds.getBottom(), false);
 			g.setGradientFill(bgGradient);
 			g.fillRoundedRectangle(bounds, cornerSize);
 
@@ -65,8 +67,8 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 	    (toggled && hasToggledIcon && iconDrawableToggled) ? iconDrawableToggled.get() : iconDrawable.get();
 	const bool hasIcon = (drawable != nullptr);
 
-	const float topPadding = 3.0f;
-	const float bottomPadding = (hasAccentBar && showBorder ? 4.0f : 2.0f);
+	const float topPadding = hasAccentBar ? 3.0f : 2.0f;
+	const float bottomPadding = hasAccentBar ? (showBorder ? 4.0f : 2.0f) : 2.0f;
 	const float accentBarSlot = hasAccentBar ? 3.0f : 0.0f;
 	const float accentGap = hasAccentBar ? 2.0f : 0.0f;
 	const bool drawAccentBar = hasAccentBar && toggled && enabled;
@@ -121,8 +123,14 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 		juce::Rectangle<float> square(iconBounds.getCentreX() - side * 0.5f, iconBounds.getCentreY() - side * 0.5f,
 		                              side, side);
 
-		juce::Colour iconColour = toggled ? btn.findColour(juce::TextButton::textColourOnId)
-		                                  : btn.findColour(juce::TextButton::textColourOffId);
+		juce::Colour iconColour;
+		if (toggled && hasCustomIconColourToggled)
+			iconColour = customIconColourToggled;
+		else if (!toggled && hasCustomIconColour)
+			iconColour = customIconColour;
+		else
+			iconColour = toggled ? btn.findColour(juce::TextButton::textColourOnId)
+			                     : btn.findColour(juce::TextButton::textColourOffId);
 
 		if (!enabled)
 			iconColour = iconColour.withMultipliedAlpha(0.3f);

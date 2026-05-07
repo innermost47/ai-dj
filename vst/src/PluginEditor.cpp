@@ -4,6 +4,9 @@
 #include "ObsidianAlertManager.h"
 #include "PluginProcessor.h"
 #include "SequencerComponent.h"
+#if JucePlugin_Build_Standalone
+#include "StandaloneTransport.h"
+#endif
 
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
@@ -26,6 +29,9 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	uiTrackManager = std::make_unique<UITrackManager>(*this);
 	uiPresetManager = std::make_unique<UIPresetManager>(*this);
 	uiMidiManager = std::make_unique<UIMidiManager>(*this);
+#if JucePlugin_Build_Standalone
+	lcdScreen.setTwoLineMode(true);
+#endif
 	audioProcessor.setGenerationListener(uiGenerationManager.get());
 	if (audioProcessor.isStateReady())
 	{
@@ -127,6 +133,19 @@ bool DjIaVstEditor::keyStateChanged(bool isKeyDown)
 {
 	return uiMidiManager->keyStateChanged(isKeyDown);
 }
+
+#if JucePlugin_Build_Standalone
+void DjIaVstEditor::parentHierarchyChanged()
+{
+	if (auto *window = findParentComponentOfClass<juce::DocumentWindow>())
+	{
+		window->setTitleBarButtonsRequired(juce::DocumentWindow::minimiseButton | juce::DocumentWindow::maximiseButton |
+		                                       juce::DocumentWindow::closeButton,
+		                                   false);
+		window->setResizable(true, false);
+	}
+}
+#endif
 
 void DjIaVstEditor::finalizeInit()
 {
@@ -450,6 +469,10 @@ void DjIaVstEditor::setupUI()
 		mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
 		mixerViewport.setViewedComponent(mixerPanel.get(), false);
 		addAndMakeVisible(mixerViewport);
+#if JucePlugin_Build_Standalone
+		if (audioProcessor.getStandaloneTransport())
+			mixerPanel->setStandaloneTransport(audioProcessor.getStandaloneTransport());
+#endif
 		mixerPanel->onTrackRenamedFromMixer = [this](const juce::String &trackId, const juce::String &newName)
 		{
 			for (auto &trackComp : uiTrackManager->getTrackComponents())
@@ -536,34 +559,27 @@ void DjIaVstEditor::setupUI()
 	toggleBankButton.setClickingTogglesState(true);
 	toggleBankButton.setTooltip("Toggle sample bank panel");
 
-	auto setupControlBtn = [](IconButtonSimple &btn)
+	auto setupControlBtn = [](IconButtonSimple &btn, bool hasAccentBar = true)
 	{
 		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
 		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
 		btn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 		btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
-		btn.setHasAccentBar(true);
+		btn.setHasAccentBar(hasAccentBar);
+		btn.setShowBorder(true);
 	};
 
 	setupControlBtn(bypassSequencerButton);
 	setupControlBtn(autoLoadButton);
-	setupControlBtn(loadSampleButton);
-	setupControlBtn(openMidiEditorButton);
-	setupControlBtn(configButton);
-	setupControlBtn(helpButton);
+	setupControlBtn(loadSampleButton, false);
+	setupControlBtn(openMidiEditorButton, false);
+	setupControlBtn(configButton, false);
+	setupControlBtn(helpButton, false);
 	setupControlBtn(toggleBankButton);
 	setupControlBtn(bypassLLMButton);
 
 	savePresetButton.setShowBorder(true);
 	generateButton.setShowBorder(true);
-	bypassSequencerButton.setShowBorder(true);
-	openMidiEditorButton.setShowBorder(true);
-	configButton.setShowBorder(true);
-	helpButton.setShowBorder(true);
-	toggleBankButton.setShowBorder(true);
-	autoLoadButton.setShowBorder(true);
-	loadSampleButton.setShowBorder(true);
-	bypassLLMButton.setShowBorder(true);
 
 	setSize(audioProcessor.getSavedWindowWidth(), audioProcessor.getSavedWindowHeight());
 

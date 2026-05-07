@@ -146,10 +146,13 @@ void MixerPanel::refreshMixerChannels()
 
 void MixerPanel::paint(juce::Graphics &g)
 {
-	if (crossfader && masterChannel && masterWaveform)
+	juce::Component *centerComp = standaloneTransport ? static_cast<juce::Component *>(standaloneTransport.get())
+	                                                  : static_cast<juce::Component *>(masterWaveform);
+
+	if (crossfader && masterChannel && centerComp)
 	{
 		auto unified = crossfader->getBounds()
-		                   .getUnion(masterWaveform->getBounds())
+		                   .getUnion(centerComp->getBounds())
 		                   .getUnion(lcdScreen->getBounds())
 		                   .getUnion(masterChannel->getBounds())
 		                   .expanded(4, 2);
@@ -159,6 +162,18 @@ void MixerPanel::paint(juce::Graphics &g)
 
 		g.setColour(ColourPalette::sliderTrack);
 		g.drawRoundedRectangle(unified.toFloat().reduced(0.5f), 6.0f, 1.0f);
+	}
+}
+
+void MixerPanel::setStandaloneTransport(StandaloneTransport *transport)
+{
+	if (transport)
+	{
+		standaloneTransport = std::make_unique<StandaloneTransportComponent>(*transport);
+		addAndMakeVisible(*standaloneTransport);
+		if (masterWaveform)
+			masterWaveform->setVisible(false);
+		resized();
 	}
 }
 
@@ -213,17 +228,26 @@ void MixerPanel::resized()
 	crossfader->setBounds(cfArea);
 	masterChannel->setBounds(mcArea);
 
-	if (lcdScreen && masterWaveform)
+	if (lcdScreen && (masterWaveform || standaloneTransport))
 	{
 		centerStack.removeFromTop(6);
 		centerStack.removeFromBottom(6);
 
-		const int lcdHeight = juce::jmin(48, centerStack.getHeight() / 3);
+		const int lcdHeight = standaloneTransport ? juce::jmin(36, centerStack.getHeight() / 3)
+		                                          : juce::jmin(48, centerStack.getHeight() / 3);
 		auto lcdArea = centerStack.removeFromBottom(lcdHeight);
 		centerStack.removeFromBottom(6);
 
-		masterWaveform->setBounds(centerStack);
+		if (standaloneTransport)
+			standaloneTransport->setBounds(centerStack);
+		else if (masterWaveform)
+			masterWaveform->setBounds(centerStack);
+
 		lcdScreen->setBounds(lcdArea);
+	}
+	else if (standaloneTransport)
+	{
+		standaloneTransport->setBounds(centerStack);
 	}
 	else if (masterWaveform)
 	{

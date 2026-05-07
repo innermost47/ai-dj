@@ -98,6 +98,10 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
 	bool keyPressed(const juce::KeyPress &key) override;
 
+#if JucePlugin_Build_Standalone
+	void parentHierarchyChanged() override;
+#endif
+
 	bool mixerVisible = false;
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};

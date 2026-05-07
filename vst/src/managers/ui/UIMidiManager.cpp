@@ -38,6 +38,19 @@ bool UIMidiManager::keyPressed(const juce::KeyPress &key)
 
 	std::vector<std::vector<juce::KeyPress>> layoutKeys(8);
 
+#if JucePlugin_Build_Standalone
+	if (key == juce::KeyPress::spaceKey)
+	{
+		if (editor.audioProcessor.getStandaloneTransport())
+		{
+			editor.audioProcessor.getStandaloneTransport()->togglePlayStop();
+			editor.mixerPanel->getStandaloneTransportComponent()->udpatePlayButtonDisplay(
+			    editor.audioProcessor.getStandaloneTransport()->isPlaying());
+		}
+		return true;
+	}
+#endif
+
 	switch (layout)
 	{
 	case AZERTY:

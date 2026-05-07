@@ -3,6 +3,8 @@
 #include "LCDScreen.h"
 #include "MasterWaveformDisplay.h"
 #include "ObsidianBase.h"
+#include "StandaloneTransport.h"
+#include "StandaloneTransportComponent.h"
 #include <JuceHeader.h>
 
 class MixerChannel;
@@ -29,6 +31,15 @@ class MixerPanel : public ObsidianComponent
 	void clearSamplePending(const juce::String &trackId);
 	void setMasterWaveform(MasterWaveformDisplay *wf);
 	void setLCDScreen(LCDScreen *lcd);
+	void setStandaloneTransport(StandaloneTransport *transport);
+
+#if JucePlugin_Build_Standalone
+	StandaloneTransportComponent *getStandaloneTransportComponent()
+	{
+		return standaloneTransport.get();
+	}
+#endif
+
 	std::function<void(const juce::String &trackId, const juce::String &newName)> onTrackRenamedFromMixer;
 	CrossfaderComponent *getCrossfader()
 	{
@@ -39,6 +50,9 @@ class MixerPanel : public ObsidianComponent
 	DjIaVstProcessor &audioProcessor;
 	std::unique_ptr<CrossfaderComponent> crossfader;
 	MasterWaveformDisplay *masterWaveform = nullptr;
+
+	std::unique_ptr<StandaloneTransportComponent> standaloneTransport;
+
 	LCDScreen *lcdScreen = nullptr;
 	std::unique_ptr<MasterChannel> masterChannel;
 	float masterVolume = 0.8f;
@@ -48,5 +62,6 @@ class MixerPanel : public ObsidianComponent
 	juce::Viewport deckBViewport;
 	juce::Component deckBContainer;
 	std::vector<std::unique_ptr<MixerChannel>> mixerChannels;
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerPanel)
 };

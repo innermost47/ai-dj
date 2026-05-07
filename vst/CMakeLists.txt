@@ -122,20 +122,13 @@ configure_file(
     @ONLY
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(PLUGIN_FORMATS VST3 AU)
-else()
-    set(PLUGIN_FORMATS VST3 AU Standalone)
-endif()
-
-
 juce_add_plugin(ObsidianNeuralVST
     VERSION "2.1.1"
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
     COMPANY_NAME "InnerMost47"
     BUNDLE_ID "com.innermost47.obsidian-neural-vst" 
-    FORMATS ${PLUGIN_FORMATS}
+    FORMATS VST3 AU Standalone
     PRODUCT_NAME "OBSIDIAN-Neural"
     IS_SYNTH TRUE
     WANTS_MIDI_INPUT TRUE
@@ -235,6 +228,8 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginEditor.cpp
     src/PluginEntry.cpp
     src/PluginProcessor.cpp
+    src/standalone/core/StandaloneTransport.cpp
+    src/standalone/transport/ui/StandaloneTransportComponent.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
 )
@@ -254,6 +249,8 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/managers/core
     src/managers/ui
     src/midi
+    src/standalone/core
+    src/standalone/transport/ui
     src/style
     ${soundtouch_SOURCE_DIR}/include
 )

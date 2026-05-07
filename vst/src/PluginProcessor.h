@@ -10,6 +10,9 @@
 #include "SequencerManager.h"
 #include "StateManager.h"
 #include "TrackManager.h"
+#if JucePlugin_Build_Standalone
+#include "StandaloneTransport.h"
+#endif
 #include <JuceHeader.h>
 #include <atomic>
 #include <memory>
@@ -17,6 +20,10 @@
 #include <queue>
 
 class DjIaVstEditor;
+
+#if JucePlugin_Build_Standalone
+class StandaloneTransport;
+#endif
 
 class DjIaVstProcessor : public juce::AudioProcessor,
                          public juce::AudioProcessorValueTreeState::Listener,
@@ -116,6 +123,14 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return sampleBank.get();
 	}
+
+#if JucePlugin_Build_Standalone
+	StandaloneTransport *getStandaloneTransport() const
+	{
+		return standaloneTransport.get();
+	}
+#endif
+
 	TrackData *getTrack(const juce::String &trackId)
 	{
 		return trackManager.getTrack(trackId);
@@ -649,6 +664,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	MidiLearnManager midiLearnManager;
 	DjIaClient apiClient;
 	GenerationListener *generationListener = nullptr;
+#if JucePlugin_Build_Standalone
+	std::unique_ptr<StandaloneTransport> standaloneTransport;
+#endif
 	TrackManager trackManager;
 	MidiManager midiManager;
 	StateManager stateManager;

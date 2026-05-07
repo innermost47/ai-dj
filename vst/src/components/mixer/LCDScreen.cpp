@@ -13,6 +13,12 @@ void LCDScreen::setLines(const juce::String &line1, const juce::String &line2, c
 	repaint();
 }
 
+void LCDScreen::setTwoLineMode(bool twoLines)
+{
+	twoLineMode = twoLines;
+	repaint();
+}
+
 void LCDScreen::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
@@ -28,7 +34,7 @@ void LCDScreen::paint(juce::Graphics &g)
 		g.drawHorizontalLine(y, bounds.getX(), bounds.getRight());
 
 	auto textArea = getLocalBounds().reduced(6, 4);
-	const int lineH = textArea.getHeight() / 3;
+	const int lineH = twoLineMode ? textArea.getHeight() / 2 : textArea.getHeight() / 3;
 
 	g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
 	g.setColour(ColourPalette::textSecondary);
@@ -38,7 +44,10 @@ void LCDScreen::paint(juce::Graphics &g)
 	g.setColour(ColourPalette::textPrimary);
 	g.drawText(lineMid, textArea.removeFromTop(lineH), juce::Justification::centredLeft, true);
 
-	g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
-	g.setColour(ColourPalette::textAccent);
-	g.drawText(lineBot, textArea, juce::Justification::centredLeft, true);
+	if (!twoLineMode)
+	{
+		g.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
+		g.setColour(ColourPalette::textAccent);
+		g.drawText(lineBot, textArea, juce::Justification::centredLeft, true);
+	}
 }
