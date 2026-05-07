@@ -70,7 +70,6 @@ class TrackComponent : public ObsidianComponent,
 		return track;
 	}
 
-	std::function<void(const juce::String &, const juce::String &)> onReorderTrack;
 	std::function<void(const juce::String &)> onPreviewTrack;
 
 	void setSelected(bool selected);

@@ -31,26 +31,6 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	return trackId;
 }
 
-void TrackManager::reorderTracks(const juce::String &fromTrackId, const juce::String &toTrackId)
-{
-	juce::ScopedLock lock(tracksLock);
-
-	std::string fromStdId = fromTrackId.toStdString();
-	std::string toStdId = toTrackId.toStdString();
-
-	auto fromIt = std::find(trackOrder.begin(), trackOrder.end(), fromStdId);
-	auto toIt = std::find(trackOrder.begin(), trackOrder.end(), toStdId);
-
-	if (fromIt == trackOrder.end() || toIt == trackOrder.end())
-		return;
-
-	std::string movedId = *fromIt;
-	trackOrder.erase(fromIt);
-
-	toIt = std::find(trackOrder.begin(), trackOrder.end(), toStdId);
-	trackOrder.insert(toIt, movedId);
-}
-
 TrackData *TrackManager::getTrack(const juce::String &trackId)
 {
 	juce::ScopedLock lock(tracksLock);

@@ -230,6 +230,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
+    src/ui/UIGenerationManager.cpp
     src/ui/UILayoutManager.cpp
     src/ui/UIModalManager.cpp
     src/ui/UIStatusManager.cpp

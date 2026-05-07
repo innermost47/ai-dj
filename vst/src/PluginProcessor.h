@@ -532,7 +532,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void initTracks();
 	void cleanProcessor();
 	void selectTrack(const juce::String &trackId);
-	void reorderTracks(const juce::String &from, const juce::String &to);
 	void startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double hostBpm = 126.0);
 	void previewTrack(const juce::String &trackId);
 	void loadPendingSample();

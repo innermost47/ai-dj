@@ -14,8 +14,6 @@ class TrackManager
 
 	juce::String createTrack(const juce::String &name = "Track");
 
-	void reorderTracks(const juce::String &fromTrackId, const juce::String &toTrackId);
-
 	TrackData *getTrack(const juce::String &trackId);
 
 	std::vector<juce::String> getAllTrackIds() const;

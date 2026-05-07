@@ -215,7 +215,7 @@ void GenerationManager::generateSampleWithImage(const juce::String &trackId, con
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->startGenerationUI(trackId);
+			    editor->uiGenerationManager->startGenerationUI(trackId);
 			    editor->statusLabel.setText("Analyzing image and generating audio...", juce::dontSendNotification);
 			    editor->uiStatusManager->updateLCD();
 		    }
@@ -277,7 +277,7 @@ void GenerationManager::generateSampleWithImage(const juce::String &trackId, con
 			        {
 				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 				        {
-					        editor->stopGenerationUI(trackId, false, errorMessage);
+					        editor->uiGenerationManager->stopGenerationUI(trackId, false, errorMessage);
 				        }
 			        });
 		    }
@@ -365,7 +365,7 @@ void GenerationManager::reEnableCanvasGenerate()
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->reEnableCanvasForTrack();
+			    editor->uiGenerationManager->setAllGenerateButtonsEnabled(true);
 		    }
 	    });
 }
@@ -390,7 +390,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->startGenerationUI(trackId);
+			    editor->uiGenerationManager->startGenerationUI(trackId);
 		    }
 	    });
 
@@ -460,7 +460,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 			        {
 				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 				        {
-					        editor->stopGenerationUI(trackId, false, error);
+					        editor->uiGenerationManager->stopGenerationUI(trackId, false, error);
 				        }
 			        });
 		    }
@@ -528,7 +528,7 @@ void GenerationManager::triggerGlobalGeneration()
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->onGenerateButtonClicked();
+			    editor->uiGenerationManager->onGenerateButtonClicked();
 		    }
 		    else
 		    {

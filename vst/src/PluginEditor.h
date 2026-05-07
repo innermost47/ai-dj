@@ -9,6 +9,7 @@
 #include "PluginProcessor.h"
 #include "SampleBankPanel.h"
 #include "TrackComponent.h"
+#include "UIGenerationManager.h"
 #include "UILayoutManager.h"
 #include "UIModalManager.h"
 #include "UIStatusManager.h"
@@ -18,7 +19,6 @@ class SequencerComponent;
 
 class DjIaVstEditor : public juce::AudioProcessorEditor,
                       public juce::Timer,
-                      public DjIaVstProcessor::GenerationListener,
                       public juce::DragAndDropContainer,
                       public ModalHost
 {
@@ -47,6 +47,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<UILayoutManager> uiLayoutManager;
 	std::unique_ptr<UIStatusManager> uiStatusManager;
 	std::unique_ptr<UIModalManager> uiModalManager;
+	std::unique_ptr<UIGenerationManager> uiGenerationManager;
 
 	juce::Label statusLabel;
 
@@ -62,17 +63,12 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void refreshTrackComponents();
 	void updateUIFromProcessor();
 	void refreshTracks();
-	void onGenerationComplete(const juce::String &trackId, const juce::String &message) override;
 	void refreshMixerChannels();
 	void initUI();
 	void *getSequencerForTrack(const juce::String &trackId);
-	void stopGenerationUI(const juce::String &trackId, bool success = true, const juce::String &errorMessage = "");
-	void startGenerationUI(const juce::String &trackId);
 	void restoreUICallbacks();
 	void updateSelectedTrack();
-	void onGenerateButtonClicked();
 	void onSampleLoaded(const juce::String &trackId);
-	void reEnableCanvasForTrack();
 	bool keyStateChanged(bool isKeyDown) override;
 	void refreshAllPromptLists();
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
@@ -116,22 +112,16 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void updateMidiIndicator(const juce::String &noteInfo);
 	void finalizeInit();
 	void updateUIComponents();
-	void setAllGenerateButtonsEnabled(bool enabled);
 	void mouseDown(const juce::MouseEvent &event) override;
-	void startGenerationButtonAnimation();
-	void stopGenerationButtonAnimation();
 	void refreshUIForMode();
 	void checkLocalModelsAndNotify();
 	void notifyTracksPromptUpdate();
-	void generateFromTrackComponent(const juce::String &trackId);
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
 	bool keyPressed(const juce::KeyPress &key) override;
 
 	juce::StringArray getAllPrompts() const;
 
 	bool mixerVisible = false;
-	std::atomic<bool> isGenerating{false};
-	std::atomic<bool> wasGenerating{false};
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
 
@@ -143,9 +133,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	IconButtonSimple helpButton{"Help", ""};
 	IconButtonSimple toggleBankButton{"ToggleBank", ""};
 	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
-
-	juce::String generatingTrackId;
-	juce::String originalButtonText;
 
 	juce::Label pluginNameLabel;
 	juce::Label developerLabel;

@@ -711,11 +711,6 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 	}
 }
 
-void DjIaVstProcessor::reorderTracks(const juce::String &fromTrackId, const juce::String &toTrackId)
-{
-	trackManager.reorderTracks(fromTrackId, toTrackId);
-}
-
 void DjIaVstProcessor::selectTrack(const juce::String &trackId)
 {
 	if (trackManager.getTrack(trackId))
