@@ -35,7 +35,6 @@ TrackComponent::~TrackComponent()
 	randomRetriggerButton.setLookAndFeel(nullptr);
 	randomDurationToggle.setLookAndFeel(nullptr);
 	intervalKnob.setLookAndFeel(nullptr);
-	promptPresetSelector.setLookAndFeel(nullptr);
 
 	adsrAttackKnob.setLookAndFeel(nullptr);
 	adsrDecayKnob.setLookAndFeel(nullptr);
@@ -502,22 +501,6 @@ void TrackComponent::resized()
 	pagesArea.removeFromTop(yOffset);
 	pagesArea.setHeight(pagesGridHeight);
 	layoutPagesButtons(pagesArea);
-
-	{
-		const int selectorsWidth = 160;
-		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
-
-		const int selectorHeight = 18;
-		const int gap = 2;
-		const int totalStackHeight = selectorHeight * 2 + gap;
-		int selectorsYOffset = (selectorsArea.getHeight() - totalStackHeight) / 2;
-
-		promptPresetSelector.setBounds(selectorsArea.getX(), selectorsArea.getY() + selectorsYOffset,
-		                               selectorsArea.getWidth(), selectorHeight);
-
-		modelSelector.setBounds(selectorsArea.getX(), selectorsArea.getY() + selectorsYOffset + selectorHeight + gap,
-		                        selectorsArea.getWidth(), selectorHeight);
-	}
 
 	headerArea.removeFromLeft(INTRA_CLUSTER_GAP);
 
@@ -1226,12 +1209,16 @@ void TrackComponent::setupUI()
 	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	infoLabel.setFont(juce::FontOptions(12.0f));
 
-	addAndMakeVisible(promptPresetSelector);
 	promptPresetSelector.setTooltip("Select prompt for this track");
 	promptPresetSelector.onChange = [this]() { onTrackPresetSelected(); };
 
-	addAndMakeVisible(modelSelector);
 	modelSelector.clear();
+
+	addAndMakeVisible(promptPresetSelector);
+	addAndMakeVisible(modelSelector);
+
+	promptPresetSelector.setVisible(false);
+	modelSelector.setVisible(false);
 
 	auto &models = AiModelDefinitions::getAvailableModels();
 	for (int i = 0; i < models.size(); ++i)
@@ -1572,7 +1559,10 @@ void TrackComponent::loadPromptPresets()
 	    {
 		    if (promptPresetSelector.isVisible() || promptPresetSelector.getParentComponent() != nullptr)
 		    {
-			    promptPresetSelector.clear();
+			    if (promptPresetSelector.getNumItems() > 0)
+			    {
+				    promptPresetSelector.clear();
+			    }
 
 			    juce::String currentModel = track ? track->getCurrentPage().selectedModel : "";
 			    juce::StringArray allPrompts = audioProcessor.getAvailablePromptsForModel(currentModel);

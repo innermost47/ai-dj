@@ -31,7 +31,7 @@ void UILayoutManager::layoutConfigSection(juce::Rectangle<int> area, int spacing
 void UILayoutManager::layoutTracksGrid()
 {
 	const int spacing = 5;
-	const int minCellW = 600;
+	const int minCellW = 420;
 	const int minTotalWidth = TRACK_COLS * minCellW + spacing * (TRACK_COLS - 1);
 
 	auto viewportBounds = editor.tracksViewport.getBounds();
@@ -107,14 +107,26 @@ void UILayoutManager::resized()
 	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight, static_cast<int>(totalHeight * 0.28f));
 	int tracksHeight = totalHeight - mixerHeight - spacing;
 	auto tracksArea = area.removeFromTop(tracksHeight);
-	editor.tracksViewport.setBounds(tracksArea);
+	const int rightPanelWidth = 290;
+
+	if (editor.rightPanelWrapper)
+	{
+		tracksArea.removeFromRight(padding);
+		auto rightCol = tracksArea.removeFromRight(rightPanelWidth);
+		editor.rightPanelWrapper->setBounds(rightCol);
+	}
+	auto tracksColArea = tracksArea;
+
+	tracksColArea.removeFromRight(padding);
+	editor.tracksViewport.setBounds(tracksColArea);
 	editor.tracksViewport.setViewedComponent(&editor.tracksContainer, false);
 	const int totalContentHeight = TRACK_CELL_H * TRACK_ROWS + spacing * (TRACK_ROWS - 1);
-	const int totalContentWidth = TRACK_COLS * 600 + spacing * (TRACK_COLS - 1);
+	const int totalContentWidth = TRACK_COLS * 420 + spacing * (TRACK_COLS - 1);
 	bool needsHorizontal = totalContentWidth > tracksArea.getWidth();
 	bool needsVertical = totalContentHeight + (needsHorizontal ? 12 : 0) > tracksArea.getHeight();
 	editor.tracksViewport.setScrollBarsShown(needsVertical, needsHorizontal);
 	layoutTracksGrid();
+
 	area.removeFromTop(spacing);
 
 	auto bottomRow = area;

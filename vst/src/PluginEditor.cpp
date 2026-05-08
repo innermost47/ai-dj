@@ -33,6 +33,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	lcdScreen = std::make_unique<LCDScreen>();
 	customLookAndFeel = std::make_unique<CustomLookAndFeel>();
 	masterWaveformDisplay = std::make_unique<MasterWaveformDisplay>();
+	rightPanelWrapper = std::make_unique<RightPanelWrapper>(audioProcessor);
 
 #if JucePlugin_Build_Standalone
 	lcdScreen->setTwoLineMode(true);
@@ -126,6 +127,7 @@ DjIaVstEditor::~DjIaVstEditor()
 	lcdScreen = nullptr;
 	masterWaveformDisplay = nullptr;
 	customLookAndFeel = nullptr;
+	rightPanelWrapper = nullptr;
 
 	ObsidianAlertManager::shutdown();
 }
@@ -387,6 +389,8 @@ void DjIaVstEditor::setupUI()
 			masterWaveformDisplay->setPositionInBeats(ppq);
 		}
 	};
+
+	addAndMakeVisible(rightPanelWrapper.get());
 
 	auto setupControlBtn = [](IconButtonSimple &btn, bool hasAccentBar = true)
 	{

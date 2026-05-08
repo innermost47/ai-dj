@@ -8,6 +8,7 @@
 #include "MixerPanel.h"
 #include "ObsidianModal.h"
 #include "PluginProcessor.h"
+#include "RightPanelWrapper.h"
 #include "TrackComponent.h"
 #include "UIGenerationManager.h"
 #include "UILayoutManager.h"
@@ -51,6 +52,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<LCDScreen> lcdScreen;
 	std::unique_ptr<CustomLookAndFeel> customLookAndFeel;
 	std::unique_ptr<MasterWaveformDisplay> masterWaveformDisplay;
+	std::unique_ptr<RightPanelWrapper> rightPanelWrapper;
 
 	juce::Label statusLabel;
 

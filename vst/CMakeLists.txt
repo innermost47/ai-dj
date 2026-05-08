@@ -197,6 +197,10 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/bank/PromptModelDefinitions.cpp
     src/components/bank/SampleBank.cpp
     src/components/bank/SampleBankPanel.cpp
+    src/components/fx/RightPanelWrapper.cpp
+    src/components/fx/SendsPanel.cpp
+    src/components/fx/TrackEffectsPanel.cpp
+    src/components/fx/TrackRecapPanel.cpp
     src/components/mixer/CrossfaderComponent.cpp
     src/components/mixer/LCDScreen.cpp
     src/components/mixer/MasterChannel.cpp
@@ -250,6 +254,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src
     src/components
     src/components/bank
+    src/components/fx
     src/components/mixer
     src/components/shared
     src/components/tracks
