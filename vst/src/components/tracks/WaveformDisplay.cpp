@@ -1191,20 +1191,20 @@ void WaveformDisplay::drawPlaybackHead(juce::Graphics &g)
 
 		if (playbackPosition >= viewStart && playbackPosition <= viewEnd && headX >= 0 && headX <= getWidth())
 		{
-			g.setColour(juce::Colours::white.withAlpha(0.3f));
+			g.setColour(juce::Colours::white.withAlpha(0.6f));
 			float height = static_cast<float>(getHeight());
-			g.drawLine(headX, 0.0f, headX, height, 4.0f);
+			g.drawLine(headX, 0.0f, headX, height, 2.0f);
 
 			g.setColour(juce::Colours::white.withAlpha(0.6f));
 			juce::Path triangle;
-			triangle.addTriangle(headX - 8, 0.0f, headX + 8, 0.0f, headX, 16.0f);
+			triangle.addTriangle(headX - 4, 0.0f, headX + 4, 0.0f, headX, 8.0f);
 			g.fillPath(triangle);
 			triangle.clear();
 
-			triangle.addTriangle(headX - 8, height, headX + 8, height, headX, height - 16.0f);
+			triangle.addTriangle(headX - 4, height, headX + 4, height, headX, height - 8.0f);
 			g.fillPath(triangle);
 
-			g.setFont(14.0f);
+			g.setFont(12.0f);
 			g.drawText(juce::String(playbackPosition, 2) + "s", static_cast<int>(headX - 40), getHeight() / 2 - 10, 80,
 			           20, juce::Justification::centred);
 		}
