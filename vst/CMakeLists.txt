@@ -145,12 +145,14 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/broadcast.svg
         src/assets/icons/brush.svg
         src/assets/icons/bucket.svg
+        src/assets/icons/collapse.svg
         src/assets/icons/cpu.svg
         src/assets/icons/cpuregular.svg
         src/assets/icons/dj.svg
         src/assets/icons/download.svg
         src/assets/icons/eq.svg
         src/assets/icons/eraser.svg
+        src/assets/icons/expand.svg
         src/assets/icons/folder.svg
         src/assets/icons/gear.svg
         src/assets/icons/grid.svg
@@ -187,6 +189,12 @@ juce_add_binary_data(ObsidianBinaryData
 
 target_sources(ObsidianNeuralVST PRIVATE
     src/components/bank/CategoryPanel.cpp
+    src/components/bank/LeftPanelWrapper.cpp
+    src/components/bank/PromptBank.cpp
+    src/components/bank/PromptBankItem.cpp
+    src/components/bank/PromptBankPanel.cpp
+    src/components/bank/PromptCategoryAccordion.cpp
+    src/components/bank/PromptModelDefinitions.cpp
     src/components/bank/SampleBank.cpp
     src/components/bank/SampleBankPanel.cpp
     src/components/mixer/CrossfaderComponent.cpp

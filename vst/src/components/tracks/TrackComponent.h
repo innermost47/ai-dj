@@ -57,7 +57,7 @@ class TrackComponent : public ObsidianComponent,
 	void itemDropped(const SourceDetails &dragSourceDetails) override;
 
 	static const int BASE_HEIGHT = 80;
-	static const int WAVEFORM_HEIGHT = 40;
+	static const int WAVEFORM_HEIGHT = 45;
 	static const int SEQUENCER_HEIGHT = 45;
 	static const int PAGE_BUTTON_SIZE = 18;
 	static const int ICON_BUTTON_WIDTH = 42;
@@ -278,6 +278,7 @@ class TrackComponent : public ObsidianComponent,
 	bool canvasIsGenerating = false;
 	bool isPreviewPlaying = false;
 	bool canvasModalOpen = false;
+	bool isDraggingPrompt = false;
 
 	juce::TextButton togglePagesButton;
 
@@ -319,6 +320,7 @@ class TrackComponent : public ObsidianComponent,
 	void updateAdsrKnobsFromPage();
 	void syncAdsrToWaveform();
 	void syncParamsToCurrentPage();
+	void applyPromptFromBank(const juce::String &promptId);
 
 	float calculateEffectiveBpm();
 

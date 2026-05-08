@@ -57,7 +57,6 @@ void UIGenerationManager::onGenerationComplete(const juce::String &trackId, cons
 
 void UIGenerationManager::startGenerationUI(const juce::String &trackId)
 {
-	editor.generateButton.setEnabled(false);
 	setAllGenerateButtonsEnabled(false);
 	editor.statusLabel.setText("Connecting to server...", juce::dontSendNotification);
 	editor.uiStatusManager->updateLCD();
@@ -93,7 +92,6 @@ void UIGenerationManager::startGenerationUI(const juce::String &trackId)
 
 void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool success, const juce::String &errorMessage)
 {
-	editor.generateButton.setEnabled(true);
 	setAllGenerateButtonsEnabled(true);
 
 	for (auto &trackComp : editor.uiTrackManager->getTrackComponents())
@@ -131,7 +129,7 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 
 	isGenerating_.store(false);
 	wasGenerating_.store(false);
-	stopGenerationButtonAnimation();
+	generatingTrackId.clear();
 	editor.stopTimer();
 
 	if (!success && !errorMessage.isEmpty())
@@ -139,98 +137,6 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 		editor.statusLabel.setText("Error: " + errorMessage, juce::dontSendNotification);
 		editor.uiStatusManager->updateLCD();
 	}
-}
-
-void UIGenerationManager::onGenerateButtonClicked()
-{
-	juce::String serverUrl = editor.audioProcessor.getServerUrl();
-	juce::String apiKey = editor.audioProcessor.getApiKey();
-	if (serverUrl.isEmpty())
-	{
-		editor.statusLabel.setText("Error: Server URL is required", juce::dontSendNotification);
-		editor.uiStatusManager->updateLCD();
-		return;
-	}
-	bool isLocalServer = serverUrl.contains("localhost") || serverUrl.contains("127.0.0.1");
-	if (apiKey.isEmpty() && !isLocalServer)
-	{
-		editor.statusLabel.setText("Error: API Key is required", juce::dontSendNotification);
-		editor.uiStatusManager->updateLCD();
-		return;
-	}
-	juce::String currentPrompt = editor.promptInput.getText().trim();
-	if (currentPrompt.isEmpty())
-	{
-		editor.statusLabel.setText("Error: Prompt cannot be empty", juce::dontSendNotification);
-		editor.uiStatusManager->updateLCD();
-		editor.statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);
-		return;
-	}
-	editor.audioProcessor.getGenerationManager().syncSelectedTrackWithGlobalPrompt();
-	editor.audioProcessor.setIsGenerating(true);
-	generatingTrackId = editor.audioProcessor.getSelectedTrackId();
-	editor.audioProcessor.setGeneratingTrackId(generatingTrackId);
-	TrackData *track = editor.audioProcessor.getTrackManager().getTrack(generatingTrackId);
-
-	if (!track)
-	{
-		editor.statusLabel.setText("Error: No track selected", juce::dontSendNotification);
-		editor.uiStatusManager->updateLCD();
-		return;
-	}
-
-	auto &currentPage = track->getCurrentPage();
-	currentPage.selectedPrompt = editor.promptInput.getText();
-	currentPage.generationPrompt = editor.promptInput.getText();
-	currentPage.generationBpm = (float)editor.audioProcessor.getHostBpm();
-	currentPage.generationKey = editor.keySelector.getText();
-	currentPage.generationDuration = editor.durationSelector.getSelectedId();
-	if (currentPage.selectedModel.isEmpty())
-		currentPage.selectedModel = "stable-audio-open-1.0";
-
-	startGenerationUI(generatingTrackId);
-	juce::String selectedTrackId = generatingTrackId;
-	auto request = track->createLoopRequest();
-	juce::Thread::launch(
-	    [safeEditor = juce::Component::SafePointer<DjIaVstEditor>(&editor), selectedTrackId, request,
-	     generatingTrackId = this->getGeneratingTrackId()]()
-	    {
-		    try
-		    {
-			    juce::MessageManager::callAsync(
-			        [safeEditor]()
-			        {
-				        if (auto *e = safeEditor.getComponent())
-				        {
-					        e->statusLabel.setText("Generating loop (this may take a few minutes)...",
-					                               juce::dontSendNotification);
-					        e->uiStatusManager->updateLCD();
-				        }
-			        });
-
-			    auto *e = safeEditor.getComponent();
-			    if (!e)
-				    return;
-
-			    e->audioProcessor.setServerUrl(e->audioProcessor.getServerUrl());
-			    e->audioProcessor.setApiKey(e->audioProcessor.getApiKey());
-			    juce::Thread::sleep(100);
-			    e->audioProcessor.getGenerationManager().generateLoop(request, generatingTrackId);
-		    }
-		    catch (const std::exception &ex)
-		    {
-			    juce::MessageManager::callAsync(
-			        [safeEditor, selectedTrackId, error = juce::String(ex.what())]()
-			        {
-				        if (auto *e = safeEditor.getComponent())
-				        {
-					        e->uiGenerationManager->stopGenerationUI(selectedTrackId, false, error);
-					        e->audioProcessor.setIsGenerating(false);
-					        e->audioProcessor.setGeneratingTrackId("");
-				        }
-			        });
-		    }
-	    });
 }
 
 void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId)
@@ -296,17 +202,6 @@ void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId
 			        });
 		    }
 	    });
-}
-
-void UIGenerationManager::startGenerationButtonAnimation()
-{
-	editor.generateButton.setEnabled(false);
-}
-
-void UIGenerationManager::stopGenerationButtonAnimation()
-{
-	editor.generateButton.setEnabled(true);
-	generatingTrackId.clear();
 }
 
 void UIGenerationManager::setAllGenerateButtonsEnabled(bool enabled)

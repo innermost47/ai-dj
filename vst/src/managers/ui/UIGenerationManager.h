@@ -13,10 +13,7 @@ class UIGenerationManager : public DjIaVstProcessor::GenerationListener
 	void onGenerationComplete(const juce::String &trackId, const juce::String &message) override;
 	void startGenerationUI(const juce::String &trackId);
 	void stopGenerationUI(const juce::String &trackId, bool success = true, const juce::String &errorMessage = "");
-	void onGenerateButtonClicked();
 	void generateFromTrackComponent(const juce::String &trackId);
-	void startGenerationButtonAnimation();
-	void stopGenerationButtonAnimation();
 	void setAllGenerateButtonsEnabled(bool enabled);
 
 	bool isGenerating() const

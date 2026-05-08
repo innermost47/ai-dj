@@ -15,6 +15,16 @@ DjIaVstProcessor::DjIaVstProcessor()
 	midiLearnManager.setProcessor(this);
 	projectId = "legacy";
 	loadGlobalConfig();
+	promptBank = std::make_unique<PromptBank>();
+	if (!promptBank->hasMigrated() && !customPrompts.isEmpty())
+	{
+		promptBank->migrateFromCustomPrompts(customPrompts);
+		customPrompts.clear();
+		saveGlobalConfig();
+	}
+	if (!promptBank->hasSeeded())
+		promptBank->seedDefaultPromptsAndCategories();
+
 	sharedFormatManager.registerBasicFormats();
 	obsidianEngine->initialize();
 
@@ -123,6 +133,7 @@ void DjIaVstProcessor::loadGlobalConfig()
 			onboardingDone = object->getProperty("onboardingDone").toString() == "true";
 			useLocalModel = object->getProperty("useLocalModel").toString() == "true";
 			localModelsPath = object->getProperty("localModelsPath").toString();
+			panelStateJson = object->getProperty("panelStateJson").toString();
 
 			if (!object->hasProperty("useLocalModel"))
 			{
@@ -181,6 +192,7 @@ void DjIaVstProcessor::saveGlobalConfig()
 	config->setProperty("useLocalModel", useLocalModel ? "true" : "false");
 	config->setProperty("localModelsPath", localModelsPath);
 	config->setProperty("onboardingDone", onboardingDone ? "true" : "false");
+	config->setProperty("panelStateJson", panelStateJson);
 
 	juce::StringArray sortedPrompts = customPrompts;
 	sortedPrompts.sort(true);
@@ -207,55 +219,71 @@ void DjIaVstProcessor::initTracks()
 
 	trackManager.isInitializing.store(true);
 
-	juce::StringArray allAvailablePrompts = promptPresets;
-
-	for (const auto &custom : customPrompts)
+	juce::String defaultPrompt;
+	if (promptBank)
 	{
-		if (!allAvailablePrompts.contains(custom))
-			allAvailablePrompts.add(custom);
-	}
-
-	allAvailablePrompts.sort(true);
-
-	juce::String defaultPrompt = "";
-	if (allAvailablePrompts.size() > 0)
-	{
-		defaultPrompt = allAvailablePrompts[0];
-	}
-	else
-	{
-		defaultPrompt = "Techno kick rhythm";
+		auto all = promptBank->getAllPrompts();
+		if (!all.empty())
+			defaultPrompt = all[0]->text;
 	}
 
 	for (int i = 0; i < 8; ++i)
 	{
 		juce::String newTrackId = trackManager.createTrack();
-
 		if (auto *track = trackManager.getTrack(newTrackId))
 		{
 			track->slotIndex = i;
-
 			attachPageChangeCallback(track);
-
 			auto serverModels = AiModelDefinitions::getModelsForMode(false);
 			juce::String modelName = serverModels[i % serverModels.size()];
+
+			juce::String promptForThisModel = defaultPrompt;
+			if (promptBank)
+			{
+				auto modelPrompts = promptBank->getPromptsByCategory("");
+				for (auto *p : promptBank->getAllPrompts())
+				{
+					if (p->modelName == modelName)
+					{
+						promptForThisModel = p->text;
+						break;
+					}
+				}
+			}
 
 			for (int p = 0; p < 4; ++p)
 			{
 				auto &page = track->pages[p];
-
 				page.selectedModel = modelName;
-				page.prompt = defaultPrompt;
-				page.generationPrompt = defaultPrompt;
-				page.selectedPrompt = defaultPrompt;
+				page.prompt = promptForThisModel;
+				page.generationPrompt = promptForThisModel;
+				page.selectedPrompt = promptForThisModel;
 				page.selectedKeywords = customKeywords;
 			}
-
 			if (i == 0)
 				selectedTrackId = newTrackId;
 		}
 	}
 	trackManager.isInitializing.store(false);
+}
+
+juce::StringArray DjIaVstProcessor::getAvailablePromptsForModel(const juce::String &modelName) const
+{
+	juce::StringArray result;
+	if (!promptBank)
+		return result;
+
+	auto allPrompts = const_cast<PromptBank *>(promptBank.get())->getAllPrompts();
+
+	for (auto *p : allPrompts)
+	{
+		if (modelName.isNotEmpty() && p->modelName != modelName)
+			continue;
+		result.add(p->text);
+	}
+
+	result.sort(true);
+	return result;
 }
 
 void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
@@ -736,11 +764,6 @@ void DjIaVstProcessor::selectTrack(const juce::String &trackId)
 	}
 }
 
-const juce::StringArray &DjIaVstProcessor::getBuiltInPrompts() const
-{
-	return promptPresets;
-}
-
 void DjIaVstProcessor::handleAsyncUpdate()
 {
 	if (!hasPendingNotification)
@@ -888,16 +911,26 @@ double DjIaVstProcessor::getHostBpm() const
 
 void DjIaVstProcessor::addCustomPrompt(const juce::String &prompt)
 {
-	if (!prompt.isEmpty() && !customPrompts.contains(prompt))
-	{
-		customPrompts.add(prompt);
-		saveGlobalConfig();
-	}
+	if (prompt.isEmpty() || !promptBank)
+		return;
+
+	for (auto *p : promptBank->getAllPrompts())
+		if (p->text == prompt)
+			return;
+
+	promptBank->addPrompt(prompt, "stable-audio-open-1.0", "");
 }
 
-const juce::StringArray &DjIaVstProcessor::getCustomPrompts() const
+const juce::StringArray DjIaVstProcessor::getCustomPrompts() const
 {
-	return customPrompts;
+	juce::StringArray result;
+	if (promptBank)
+	{
+		auto allPrompts = const_cast<PromptBank *>(promptBank.get())->getAllPrompts();
+		for (auto *p : allPrompts)
+			result.add(p->text);
+	}
+	return result;
 }
 
 void DjIaVstProcessor::getStateInformation(juce::MemoryBlock &destData)

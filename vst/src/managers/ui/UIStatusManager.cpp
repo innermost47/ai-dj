@@ -23,8 +23,8 @@ void UIStatusManager::setStatusWithTimeout(const juce::String &message, int time
 
 void UIStatusManager::updateLCD()
 {
-	editor.lcdScreen.setLines(editor.creditsLabel.getText(), editor.statusLabel.getText(),
-	                          editor.midiIndicator.getText());
+	editor.lcdScreen->setLines(editor.creditsLabel.getText(), editor.statusLabel.getText(),
+	                           editor.midiIndicator.getText());
 }
 
 void UIStatusManager::refreshCredits()

@@ -124,10 +124,7 @@ bool UIMidiManager::keyStateChanged(bool isKeyDown)
 {
 	if (isKeyDown && !editor.hasKeyboardFocus(true))
 	{
-		if (!editor.promptInput.hasKeyboardFocus(true))
-		{
-			editor.grabKeyboardFocus();
-		}
+		editor.grabKeyboardFocus();
 	}
 	return false;
 }

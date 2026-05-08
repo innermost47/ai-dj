@@ -10,10 +10,10 @@ class UILayoutManager
 	~UILayoutManager() = default;
 
 	void resized();
-	void layoutPromptSection(juce::Rectangle<int> area, int spacing, int controlsZoneW);
+	void layoutConfigSection(juce::Rectangle<int> area, int spacing);
 	void layoutTracksGrid();
 
-	static constexpr int TRACK_CELL_H = 140;
+	static constexpr int TRACK_CELL_H = 145;
 	static constexpr int TRACK_ROWS = 4;
 	static constexpr int TRACK_COLS = 2;
 

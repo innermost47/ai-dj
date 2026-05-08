@@ -309,41 +309,6 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 
 		if (matches && mapping.processor)
 		{
-			if (mapping.parameterName == "promptPresetSelector")
-			{
-				if (mapping.uiCallback && mapping.processor->getActiveEditor())
-				{
-					mapping.uiCallback(value);
-
-					juce::MessageManager::callAsync(
-					    [mapping, statusMessage]()
-					    {
-						    if (mapping.processor->getActiveEditor())
-						    {
-							    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-							    {
-								    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-								    editor->uiStatusManager->updateLCD();
-								    juce::Timer::callAfterDelay(
-								        2000,
-								        [mapping]()
-								        {
-									        if (mapping.processor->getActiveEditor())
-									        {
-										        if (auto *editor = dynamic_cast<DjIaVstEditor *>(
-										                mapping.processor->getActiveEditor()))
-										        {
-											        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-											        editor->uiStatusManager->updateLCD();
-										        }
-									        }
-								        });
-							    }
-						    }
-					    });
-				}
-				continue;
-			}
 			if (mapping.parameterName.startsWith("promptSelector_slot"))
 			{
 				if (mapping.uiCallback && mapping.processor->getActiveEditor())
@@ -495,51 +460,6 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 							    }
 						    });
 					}
-				}
-				continue;
-			}
-			if (mapping.parameterName == "generate")
-			{
-				if (message.isNoteOn() && isBooleanParameter(mapping.parameterName))
-				{
-					if (mapping.processor->getIsGenerating())
-					{
-						statusMessage += " (Generation already in progress)";
-						isWarning = true;
-					}
-					else
-					{
-						mapping.processor->getGenerationManager().triggerGlobalGeneration();
-						statusMessage += " (Generation triggered)";
-					}
-
-					juce::MessageManager::callAsync(
-					    [mapping, statusMessage, isWarning]()
-					    {
-						    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-						    {
-							    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-							    editor->uiStatusManager->updateLCD();
-							    if (isWarning)
-							    {
-								    editor->statusLabel.setColour(juce::Label::textColourId,
-								                                  ColourPalette::textWarning);
-							    }
-							    juce::Timer::callAfterDelay(
-							        2000,
-							        [mapping]()
-							        {
-								        if (auto *editor =
-								                dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-								        {
-									        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-									        editor->statusLabel.setColour(juce::Label::textColourId,
-									                                      ColourPalette::violet);
-									        editor->uiStatusManager->updateLCD();
-								        }
-							        });
-						    }
-					    });
 				}
 				continue;
 			}

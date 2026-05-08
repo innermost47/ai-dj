@@ -7,19 +7,13 @@ UILayoutManager::UILayoutManager(DjIaVstEditor &editor) : editor(editor)
 {
 }
 
-void UILayoutManager::layoutPromptSection(juce::Rectangle<int> area, int spacing, int controlsZoneW)
+void UILayoutManager::layoutConfigSection(juce::Rectangle<int> area, int spacing)
 {
-	const int itemH = 28;
-	const int vPad = (area.getHeight() - itemH) / 2;
-	area = area.reduced(0, vPad);
-
-	constexpr int numCtrl = 8;
-	const int totalCtrlSpacing = numCtrl * spacing;
-	const int ctrlBtnW = juce::jmax(24, (controlsZoneW - totalCtrlSpacing) / numCtrl);
+	constexpr int numCtrl = 7;
+	const int totalCtrlSpacing = (numCtrl - 1) * spacing;
+	const int ctrlBtnW = juce::jmax(24, (area.getWidth() - totalCtrlSpacing) / numCtrl);
 
 	editor.configButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	editor.toggleBankButton.setBounds(area.removeFromLeft(ctrlBtnW));
 	area.removeFromLeft(spacing);
 	editor.helpButton.setBounds(area.removeFromLeft(ctrlBtnW));
 	area.removeFromLeft(spacing);
@@ -31,62 +25,7 @@ void UILayoutManager::layoutPromptSection(juce::Rectangle<int> area, int spacing
 	area.removeFromLeft(spacing);
 	editor.bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW));
 	area.removeFromLeft(spacing);
-	editor.bypassLLMButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	if (editor.sampleBankPanel && editor.sampleBankPanel->isVisible())
-	{
-		area.removeFromLeft(2);
-	}
-
-	const int genBtnW = 50;
-	const int saveBtnW = 34;
-
-	area.removeFromRight(2);
-	editor.generateButton.setBounds(area.removeFromRight(genBtnW));
-	area.removeFromRight(spacing);
-	editor.savePresetButton.setBounds(area.removeFromRight(saveBtnW));
-	area.removeFromRight(spacing);
-
-	const int idealKeyW = 180;
-	const int idealDurW = 100;
-	const int idealPresetW = 600;
-	const int idealPromptW = 600;
-
-	const int minKeyW = 120;
-	const int minDurW = 80;
-	const int minPresetW = 280;
-	const int minPromptW = 280;
-
-	const int remaining = area.getWidth();
-	const int idealTotal = idealKeyW + idealDurW + idealPresetW + idealPromptW + spacing * 3;
-
-	int keyW, durW, presetW, promptW;
-
-	if (remaining >= idealTotal)
-	{
-		keyW = idealKeyW;
-		durW = idealDurW;
-		const int extra = remaining - idealTotal;
-		presetW = idealPresetW + extra / 2;
-		promptW = remaining - keyW - durW - presetW - spacing * 3;
-	}
-	else
-	{
-		const float scale = static_cast<float>(remaining) / static_cast<float>(idealTotal);
-		keyW = juce::jmax(minKeyW, static_cast<int>(idealKeyW * scale));
-		durW = juce::jmax(minDurW, static_cast<int>(idealDurW * scale));
-		presetW = juce::jmax(minPresetW, static_cast<int>(idealPresetW * scale));
-		promptW = juce::jmax(minPromptW, remaining - keyW - durW - presetW - spacing * 3);
-	}
-
-	editor.keySelector.setBounds(area.removeFromRight(keyW));
-	area.removeFromRight(spacing);
-	editor.durationSelector.setBounds(area.removeFromRight(durW));
-	area.removeFromRight(spacing);
-	editor.promptPresetSelector.setBounds(area.removeFromRight(presetW));
-	area.removeFromRight(spacing);
-
-	editor.promptInput.setBounds(area);
+	editor.bypassLLMButton.setBounds(area);
 }
 
 void UILayoutManager::layoutTracksGrid()
@@ -137,30 +76,34 @@ void UILayoutManager::resized()
 	const int padding = 6;
 	auto fullBounds = editor.getLocalBounds();
 
-	const int bannerHeight = 40;
-
-	const int bankWidth = (editor.sampleBankPanel && editor.sampleBankPanel->isVisible())
+	const int configBarHeight = 36;
+	const int bankWidth = (editor.leftPanelWrapper && editor.leftPanelWrapper->isVisible())
 	                          ? juce::jmax(290, fullBounds.getWidth() / 6)
 	                          : 0;
 
-	auto headerArea = fullBounds.removeFromTop(bannerHeight);
-	headerArea.reduce(padding, 0);
-
-	const int ctrlZoneW = 290;
-
-	layoutPromptSection(headerArea, spacing, ctrlZoneW);
-
-	if (editor.sampleBankPanel && editor.sampleBankPanel->isVisible())
+	if (editor.leftPanelWrapper && editor.leftPanelWrapper->isVisible())
 	{
-		auto bankArea = fullBounds.removeFromLeft(bankWidth);
-		editor.sampleBankPanel->setBounds(bankArea);
+		auto leftCol = fullBounds.removeFromLeft(bankWidth);
+
+		auto configArea = leftCol.removeFromTop(configBarHeight).reduced(padding, 4);
+		layoutConfigSection(configArea, spacing);
+
+		editor.leftPanelWrapper->setBounds(leftCol);
 	}
+	else
+	{
+		auto configArea = fullBounds.removeFromTop(configBarHeight).reduced(padding, 4);
+		auto configZone = configArea.removeFromLeft(290);
+		layoutConfigSection(configZone, spacing);
+	}
+
 	fullBounds.removeFromLeft(padding);
 	fullBounds.removeFromRight(padding);
+	fullBounds.removeFromTop(6);
 	auto area = fullBounds;
 	const int totalHeight = area.getHeight();
-	const int maxMixerHeight = 220;
-	const int minMixerHeight = 220;
+	const int maxMixerHeight = 240;
+	const int minMixerHeight = 240;
 	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight, static_cast<int>(totalHeight * 0.28f));
 	int tracksHeight = totalHeight - mixerHeight - spacing;
 	auto tracksArea = area.removeFromTop(tracksHeight);

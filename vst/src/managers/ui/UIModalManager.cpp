@@ -79,19 +79,6 @@ void UIModalManager::showConfigDialog()
 	    });
 }
 
-void UIModalManager::editCustomPromptDialog(const juce::String &selectedPrompt)
-{
-	ObsidianAlertManager::showEditPrompt(&editor, selectedPrompt,
-	                                     [this, selectedPrompt](const juce::String &newPrompt)
-	                                     {
-		                                     editor.audioProcessor.editCustomPrompt(selectedPrompt, newPrompt);
-		                                     int index = editor.audioProcessor.promptPresets.indexOf(selectedPrompt);
-		                                     if (index >= 0)
-			                                     editor.audioProcessor.promptPresets.set(index, newPrompt);
-		                                     editor.uiPresetManager->loadPromptPresets();
-	                                     });
-}
-
 void UIModalManager::showOnboardingTour()
 {
 	if (editor.audioProcessor.getOnboardingDone())

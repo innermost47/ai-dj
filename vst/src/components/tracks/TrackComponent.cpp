@@ -254,7 +254,11 @@ juce::Colour TrackComponent::getCurrentModelColour() const
 
 void TrackComponent::syncBorderOverlay()
 {
-	borderOverlay.setVisualState(isGenerating, hasSamplePending, isSelected, isDragOver, blinkState, cachedModelColour);
+	juce::Colour overlayColour = cachedModelColour;
+	if (isDragOver && isDraggingPrompt)
+		overlayColour = ColourPalette::violet;
+
+	borderOverlay.setVisualState(isGenerating, hasSamplePending, isSelected, isDragOver, blinkState, overlayColour);
 }
 
 void TrackComponent::updateFromTrackData()
@@ -1569,35 +1573,31 @@ void TrackComponent::loadPromptPresets()
 		    if (promptPresetSelector.isVisible() || promptPresetSelector.getParentComponent() != nullptr)
 		    {
 			    promptPresetSelector.clear();
-			    juce::StringArray allPrompts = audioProcessor.getBuiltInPrompts();
-			    auto customPrompts = audioProcessor.getCustomPrompts();
 
-			    for (const auto &customPrompt : customPrompts)
-			    {
-				    if (!allPrompts.contains(customPrompt))
-				    {
-					    allPrompts.add(customPrompt);
-				    }
-			    }
-			    allPrompts.sort(true);
+			    juce::String currentModel = track ? track->getCurrentPage().selectedModel : "";
+			    juce::StringArray allPrompts = audioProcessor.getAvailablePromptsForModel(currentModel);
+
 			    promptPresets = allPrompts;
-
 			    for (int i = 0; i < allPrompts.size(); ++i)
 			    {
 				    promptPresetSelector.addItem(allPrompts[i], i + 1);
 			    }
-
+			    bool selected = false;
 			    if (track && !track->getCurrentPage().selectedPrompt.isEmpty())
 			    {
 				    int index = allPrompts.indexOf(track->getCurrentPage().selectedPrompt);
 				    if (index >= 0)
 				    {
 					    promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
+					    selected = true;
 				    }
 			    }
-			    else if (allPrompts.size() > 0)
+
+			    if (!selected && allPrompts.size() > 0)
 			    {
 				    promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
+				    if (track)
+					    track->getCurrentPage().selectedPrompt = allPrompts[0];
 			    }
 		    }
 	    });
@@ -1837,9 +1837,10 @@ bool TrackComponent::isInterestedInDragSource(const SourceDetails &dragSourceDet
 	return dragSourceDetails.description.isString() && dragSourceDetails.description.toString().isNotEmpty();
 }
 
-void TrackComponent::itemDragEnter(const SourceDetails &)
+void TrackComponent::itemDragEnter(const SourceDetails &dragSourceDetails)
 {
 	isDragOver = true;
+	isDraggingPrompt = dragSourceDetails.description.toString().startsWith("prompt:");
 	syncBorderOverlay();
 }
 
@@ -1850,74 +1851,83 @@ void TrackComponent::itemDragMove(const SourceDetails &)
 void TrackComponent::itemDragExit(const SourceDetails &)
 {
 	isDragOver = false;
+	isDraggingPrompt = false;
 	syncBorderOverlay();
 }
 
 void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 {
 	isDragOver = false;
+	isDraggingPrompt = false;
 	syncBorderOverlay();
-	juce::String sampleId = dragSourceDetails.description.toString();
-	if (sampleId.isNotEmpty() && track)
-	{
-		audioProcessor.getAudioManager().loadSampleFromBank(sampleId, trackId);
 
-		if (auto *sampleBank = audioProcessor.getSampleBank())
+	juce::String description = dragSourceDetails.description.toString();
+	if (description.isEmpty() || !track)
+		return;
+
+	if (description.startsWith("prompt:"))
+	{
+		juce::String promptId = description.fromFirstOccurrenceOf("prompt:", false, false);
+		applyPromptFromBank(promptId);
+		return;
+	}
+
+	juce::String sampleId = description;
+	audioProcessor.getAudioManager().loadSampleFromBank(sampleId, trackId);
+
+	if (auto *sampleBank = audioProcessor.getSampleBank())
+	{
+		auto *sampleEntry = sampleBank->getSample(sampleId);
+		if (sampleEntry)
 		{
-			auto *sampleEntry = sampleBank->getSample(sampleId);
-			if (sampleEntry)
+			if (!sampleEntry->originalPrompt.isEmpty())
 			{
-				if (!sampleEntry->originalPrompt.isEmpty())
+				for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 				{
-					for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+					if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
 					{
-						if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
-						{
-							promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-							track->getCurrentPage().selectedPrompt = sampleEntry->originalPrompt;
-							break;
-						}
+						promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+						track->getCurrentPage().selectedPrompt = sampleEntry->originalPrompt;
+						break;
 					}
 				}
+			}
 
-				if (!sampleEntry->modelName.isEmpty())
+			if (!sampleEntry->modelName.isEmpty())
+			{
+				for (int i = 0; i < modelSelector.getNumItems(); ++i)
 				{
-					for (int i = 0; i < modelSelector.getNumItems(); ++i)
+					if (modelSelector.getItemText(i) == sampleEntry->modelName)
 					{
-						if (modelSelector.getItemText(i) == sampleEntry->modelName)
-						{
-							modelSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-							track->getCurrentPage().selectedModel = sampleEntry->modelName;
-							break;
-						}
+						modelSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+						track->getCurrentPage().selectedModel = sampleEntry->modelName;
+						break;
 					}
 				}
 			}
 		}
-
-		if (track->slotIndex >= 0 && track->slotIndex < audioProcessor.getAudioManager().MAX_SLOTS)
-		{
-			auto &apvts = audioProcessor.getParameterManager().getAPVTS();
-			juce::String s = "slot" + juce::String(track->slotIndex + 1);
-
-			auto resetParam = [&](const juce::String &id, float defaultValue)
-			{
-				if (auto *p = apvts.getParameter(id))
-				{
-					auto range = apvts.getParameterRange(id);
-					p->setValueNotifyingHost(range.convertTo0to1(defaultValue));
-				}
-			};
-
-			resetParam(s + "Pitch", 0.0f);
-			resetParam(s + "Fine", 0.0f);
-		}
-
-		if (onStatusMessage)
-		{
-			onStatusMessage("Sample loaded from bank!");
-		}
 	}
+
+	if (track->slotIndex >= 0 && track->slotIndex < audioProcessor.getAudioManager().MAX_SLOTS)
+	{
+		auto &apvts = audioProcessor.getParameterManager().getAPVTS();
+		juce::String s = "slot" + juce::String(track->slotIndex + 1);
+
+		auto resetParam = [&](const juce::String &id, float defaultValue)
+		{
+			if (auto *p = apvts.getParameter(id))
+			{
+				auto range = apvts.getParameterRange(id);
+				p->setValueNotifyingHost(range.convertTo0to1(defaultValue));
+			}
+		};
+
+		resetParam(s + "Pitch", 0.0f);
+		resetParam(s + "Fine", 0.0f);
+	}
+
+	if (onStatusMessage)
+		onStatusMessage("Sample loaded from bank!");
 }
 
 void TrackComponent::setPreviewPlaying(bool playing)
@@ -1984,10 +1994,62 @@ void TrackComponent::updateModelUI()
 		sequencer->setAccentColour(modelColour);
 
 	syncBorderOverlay();
+	loadPromptPresets();
 }
 
 void TrackComponent::detachWaveformTrack()
 {
 	if (waveformDisplay)
 		waveformDisplay->setTrack(nullptr);
+}
+
+void TrackComponent::applyPromptFromBank(const juce::String &promptId)
+{
+	auto *bank = audioProcessor.getPromptBank();
+	if (!bank)
+		return;
+
+	auto *entry = bank->getPrompt(promptId);
+	if (!entry || !track)
+		return;
+
+	if (entry->modelName.isNotEmpty())
+	{
+		for (int i = 0; i < modelSelector.getNumItems(); ++i)
+		{
+			if (modelSelector.getItemText(i) == entry->modelName)
+			{
+				modelSelector.setSelectedItemIndex(i, juce::sendNotification);
+				track->getCurrentPage().selectedModel = entry->modelName;
+				break;
+			}
+		}
+	}
+
+	if (entry->text.isNotEmpty())
+	{
+		bool found = false;
+		for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+		{
+			if (promptPresetSelector.getItemText(i) == entry->text)
+			{
+				promptPresetSelector.setSelectedItemIndex(i, juce::sendNotification);
+				track->getCurrentPage().selectedPrompt = entry->text;
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			promptPresetSelector.addItem(entry->text, promptPresetSelector.getNumItems() + 1);
+			promptPresetSelector.setSelectedId(promptPresetSelector.getNumItems(), juce::sendNotification);
+			track->getCurrentPage().selectedPrompt = entry->text;
+		}
+	}
+
+	bank->incrementUsage(promptId);
+
+	if (onStatusMessage)
+		onStatusMessage("Prompt loaded from bank!");
 }

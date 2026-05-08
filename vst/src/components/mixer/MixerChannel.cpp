@@ -672,7 +672,7 @@ void MixerChannel::resized()
 	trackNameLabel.setBounds(area.removeFromTop(16));
 	area.removeFromTop(3);
 
-	auto bottomRow2 = area.removeFromBottom(22);
+	auto bottomRow2 = area.removeFromBottom(24);
 	int btnW = width / 2 - 2;
 	int totalW = btnW * 2 + 2;
 	int offsetX = (width - totalW) / 2;
@@ -681,7 +681,7 @@ void MixerChannel::resized()
 	bottomRow2.removeFromLeft(1);
 	soloButton.setBounds(bottomRow2.removeFromLeft(btnW).reduced(1));
 
-	auto bottomRow1 = area.removeFromBottom(22);
+	auto bottomRow1 = area.removeFromBottom(24);
 	bottomRow1.removeFromLeft(offsetX);
 	playButton.setBounds(bottomRow1.removeFromLeft(btnW).reduced(1));
 	bottomRow1.removeFromLeft(1);

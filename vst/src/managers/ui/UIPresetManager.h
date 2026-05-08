@@ -9,12 +9,7 @@ class UIPresetManager
 	explicit UIPresetManager(DjIaVstEditor &editor);
 	~UIPresetManager() = default;
 
-	void loadPromptPresets();
-	void onPresetSelected();
-	void onSavePreset();
 	void notifyTracksPromptUpdate();
-	void refreshAllPromptLists();
-	juce::StringArray getAllPrompts() const;
 
   private:
 	DjIaVstEditor &editor;

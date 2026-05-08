@@ -1,4 +1,487 @@
 #include "ObsidianAlertManager.h"
+#include "AiModelDefinitions.h"
+#include "PromptModelDefinitions.h"
+
+struct GroupLabelInfo
+{
+	juce::String label;
+	juce::Rectangle<int> bounds;
+};
+
+class ModelCard : public juce::Component
+{
+  public:
+	ModelCard(const juce::String &name, juce::Colour col) : modelName(name), colour(col)
+	{
+		setMouseCursor(juce::MouseCursor::PointingHandCursor);
+	}
+
+	void setSelected(bool s)
+	{
+		selected = s;
+		repaint();
+	}
+
+	void mouseDown(const juce::MouseEvent &) override
+	{
+		if (onClick)
+			onClick();
+	}
+
+	void mouseEnter(const juce::MouseEvent &) override
+	{
+		hovered = true;
+		repaint();
+	}
+	void mouseExit(const juce::MouseEvent &) override
+	{
+		hovered = false;
+		repaint();
+	}
+
+	void paint(juce::Graphics &g) override
+	{
+		auto bounds = getLocalBounds().toFloat();
+		juce::Colour bg =
+		    selected ? colour.withAlpha(0.25f)
+		             : (hovered ? ColourPalette::backgroundDeep.brighter(0.05f) : ColourPalette::backgroundDeep);
+		g.setColour(bg);
+		g.fillRoundedRectangle(bounds, 4.0f);
+
+		g.setColour(selected ? colour : ColourPalette::backgroundLight.withAlpha(0.4f));
+		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, selected ? 2.0f : 1.0f);
+
+		const float dotSize = 8.0f;
+		auto dotRect = juce::Rectangle<float>(8.0f, bounds.getCentreY() - dotSize * 0.5f, dotSize, dotSize);
+		g.setColour(colour);
+		g.fillEllipse(dotRect);
+		auto textArea = bounds.withTrimmedLeft(22).reduced(4, 0);
+		g.setColour(selected ? ColourPalette::textPrimary : ColourPalette::textSecondary);
+		g.setFont(juce::FontOptions(11.5f, selected ? juce::Font::bold : juce::Font::plain));
+		g.drawText(modelName, textArea.toNearestInt(), juce::Justification::centredLeft, true);
+	}
+
+	juce::String getModelName() const
+	{
+		return modelName;
+	}
+
+	std::function<void()> onClick;
+
+  private:
+	juce::String modelName;
+	juce::Colour colour;
+	bool selected = false;
+	bool hovered = false;
+};
+class ExampleCard : public juce::Component
+{
+  public:
+	ExampleCard(const juce::String &textIn) : text(textIn)
+	{
+		setMouseCursor(juce::MouseCursor::PointingHandCursor);
+	}
+
+	void mouseDown(const juce::MouseEvent &) override
+	{
+		if (onClick)
+			onClick(text);
+	}
+
+	void mouseEnter(const juce::MouseEvent &) override
+	{
+		hovered = true;
+		repaint();
+	}
+	void mouseExit(const juce::MouseEvent &) override
+	{
+		hovered = false;
+		repaint();
+	}
+
+	void paint(juce::Graphics &g) override
+	{
+		auto bounds = getLocalBounds().toFloat();
+
+		g.setColour(hovered ? ColourPalette::backgroundDeep.brighter(0.08f) : ColourPalette::backgroundDeep);
+		g.fillRoundedRectangle(bounds, 4.0f);
+
+		g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
+		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
+
+		g.setColour(ColourPalette::textPrimary);
+		g.setFont(juce::FontOptions(12.0f, juce::Font::plain));
+
+		juce::AttributedString attr;
+		attr.append(text, juce::FontOptions(12.0f, juce::Font::plain), ColourPalette::textPrimary);
+		attr.setWordWrap(juce::AttributedString::byWord);
+		attr.setJustification(juce::Justification::centredLeft);
+		attr.draw(g, bounds.reduced(10, 6));
+	}
+
+	int getPreferredHeight(int width) const
+	{
+		juce::Font f(juce::FontOptions(12.0f, juce::Font::plain));
+		juce::AttributedString attr;
+		attr.append(text, f);
+		attr.setWordWrap(juce::AttributedString::byWord);
+		juce::TextLayout layout;
+		layout.createLayout(attr, (float)(width - 20));
+		return juce::jmax(36, (int)layout.getHeight() + 16);
+	}
+
+	std::function<void(const juce::String &)> onClick;
+
+  private:
+	juce::String text;
+	bool hovered = false;
+};
+class KeywordsContainerComponent : public juce::Component
+{
+  public:
+	std::vector<GroupLabelInfo> *groupLabels = nullptr;
+
+	void paint(juce::Graphics &g) override
+	{
+		if (!groupLabels)
+			return;
+
+		for (const auto &gl : *groupLabels)
+		{
+			float y = (float)gl.bounds.getCentreY();
+			float lineY = y - 1;
+
+			g.setColour(ColourPalette::backgroundLight.withAlpha(0.15f));
+			g.drawLine(0.0f, lineY, (float)gl.bounds.getWidth(), lineY, 0.5f);
+
+			juce::Font labelFont(juce::FontOptions(11.5f, juce::Font::bold));
+			g.setFont(labelFont);
+
+			juce::GlyphArrangement ga;
+			ga.addLineOfText(labelFont, gl.label, 0.0f, 0.0f);
+			float textW = ga.getBoundingBox(0, -1, true).getWidth();
+			float textX = (gl.bounds.getWidth() - textW) * 0.5f;
+			float padding = 8.0f;
+
+			g.setColour(ColourPalette::backgroundDeep);
+			g.fillRect(juce::Rectangle<float>(textX - padding, lineY - 6.0f, textW + 2 * padding, 12.0f));
+
+			g.setColour(ColourPalette::textAccent.withAlpha(0.9f));
+			g.drawText(gl.label, gl.bounds, juce::Justification::centred, false);
+		}
+	}
+};
+class PromptEditorContent : public juce::Component
+{
+  public:
+	juce::Label categoryLbl, promptLbl, examplesLbl, keywordsLbl, descLbl;
+	juce::ComboBox categoryCombo;
+	juce::TextEditor promptEditor;
+	juce::Viewport examplesViewport, keywordsViewport;
+	juce::Component examplesContainer;
+	KeywordsContainerComponent keywordsContainer;
+
+	std::vector<std::unique_ptr<ModelCard>> modelCards;
+	juce::String currentModel;
+	std::vector<std::unique_ptr<ExampleCard>> exampleCards;
+	std::vector<std::unique_ptr<juce::TextButton>> keywordButtons;
+
+	std::vector<GroupLabelInfo> groupLabels;
+
+	PromptEditorContent(const juce::String &text, const juce::String &model, const juce::String &category,
+	                    const juce::StringArray &categories)
+	    : currentModel(model)
+	{
+		categoryLbl.setText("Category:", juce::dontSendNotification);
+		categoryLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		addAndMakeVisible(categoryLbl);
+
+		categoryCombo.addItem("Uncategorized", 1);
+		int catId = 2;
+		int selectedId = 1;
+		for (const auto &c : categories)
+		{
+			categoryCombo.addItem(c, catId);
+			if (c == category)
+				selectedId = catId;
+			catId++;
+		}
+		categoryCombo.setSelectedId(selectedId);
+		categoryCombo.setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
+		categoryCombo.setColour(juce::ComboBox::textColourId, ColourPalette::textPrimary);
+		categoryCombo.setColour(juce::ComboBox::outlineColourId, ColourPalette::backgroundLight);
+		addAndMakeVisible(categoryCombo);
+
+		const auto &models = PromptModelDefinitions::getAllModels();
+		for (const auto &m : models)
+		{
+			juce::Colour modelCol = AiModelDefinitions::getColourForModel(m.modelName);
+			auto card = std::make_unique<ModelCard>(m.modelName, modelCol);
+			card->setSelected(m.modelName == currentModel);
+
+			juce::String modelNameCopy = m.modelName;
+			card->onClick = [this, modelNameCopy]() { switchModel(modelNameCopy); };
+
+			addAndMakeVisible(*card);
+			modelCards.push_back(std::move(card));
+		}
+
+		descLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary.withAlpha(0.8f));
+		descLbl.setFont(juce::FontOptions(11.0f, juce::Font::italic));
+		addAndMakeVisible(descLbl);
+
+		promptLbl.setText("Prompt:", juce::dontSendNotification);
+		promptLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		addAndMakeVisible(promptLbl);
+
+		promptEditor.setText(text);
+		promptEditor.setMultiLine(true);
+		promptEditor.setReturnKeyStartsNewLine(true);
+		promptEditor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
+		promptEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+		promptEditor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+		promptEditor.applyFontToAllText(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+		addAndMakeVisible(promptEditor);
+
+		examplesLbl.setText("Examples (click to use):", juce::dontSendNotification);
+		examplesLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		examplesLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+		addAndMakeVisible(examplesLbl);
+
+		keywordsLbl.setText("Keywords (click to insert):", juce::dontSendNotification);
+		keywordsLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		keywordsLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+		addAndMakeVisible(keywordsLbl);
+
+		examplesViewport.setViewedComponent(&examplesContainer, false);
+		examplesViewport.setScrollBarsShown(true, false);
+		addAndMakeVisible(examplesViewport);
+
+		keywordsViewport.setViewedComponent(&keywordsContainer, false);
+		keywordsViewport.setScrollBarsShown(true, false);
+		addAndMakeVisible(keywordsViewport);
+		keywordsContainer.groupLabels = &groupLabels;
+		rebuildModelContent();
+	}
+
+	void switchModel(const juce::String &newModel)
+	{
+		currentModel = newModel;
+		for (auto &c : modelCards)
+			c->setSelected(c->getModelName() == newModel);
+		rebuildModelContent();
+	}
+
+	void rebuildModelContent()
+	{
+		const auto *info = PromptModelDefinitions::getModel(currentModel);
+
+		descLbl.setText(info ? info->description : "", juce::dontSendNotification);
+
+		examplesContainer.removeAllChildren();
+		exampleCards.clear();
+
+		if (info)
+		{
+			int y = 0;
+			const int cardSpacing = 4;
+			int containerW = examplesViewport.getWidth() - 12;
+
+			for (const auto &ex : info->examples)
+			{
+				auto card = std::make_unique<ExampleCard>(ex);
+				int h = card->getPreferredHeight(containerW);
+
+				card->onClick = [this](const juce::String &txt) { promptEditor.setText(txt); };
+
+				card->setBounds(0, y, containerW, h);
+				examplesContainer.addAndMakeVisible(*card);
+				exampleCards.push_back(std::move(card));
+
+				y += h + cardSpacing;
+			}
+
+			examplesContainer.setSize(containerW, juce::jmax(y, examplesViewport.getHeight()));
+		}
+
+		keywordsContainer.removeAllChildren();
+		keywordButtons.clear();
+		groupLabels.clear();
+
+		if (info)
+		{
+			int containerW = keywordsViewport.getWidth() - 12;
+			int y = 0;
+			const int kwH = 26;
+			const int kwSpacing = 6;
+			const int groupTopSpacing = 18;
+			const int groupBottomSpacing = 8;
+			const int groupLabelH = 22;
+
+			bool isFirstGroup = true;
+
+			for (const auto &group : info->keywordGroups)
+			{
+				if (!isFirstGroup)
+					y += groupTopSpacing;
+				isFirstGroup = false;
+
+				GroupLabelInfo gl;
+				gl.label = group.label;
+				gl.bounds = juce::Rectangle<int>(0, y, containerW, groupLabelH);
+				groupLabels.push_back(gl);
+
+				y += groupLabelH + groupBottomSpacing;
+
+				int x = 0;
+				juce::Font kwFont(juce::FontOptions(11.5f, juce::Font::plain));
+				for (const auto &kw : group.keywords)
+				{
+					juce::GlyphArrangement ga;
+					ga.addLineOfText(kwFont, kw, 0.0f, 0.0f);
+					int textW = (int)ga.getBoundingBox(0, -1, true).getWidth();
+					int w = textW + 28;
+
+					bool isOversized = (w > containerW);
+
+					if (isOversized)
+					{
+						if (x > 0)
+						{
+							x = 0;
+							y += kwH + kwSpacing;
+						}
+						w = containerW;
+					}
+					else if (x + w > containerW)
+					{
+						x = 0;
+						y += kwH + kwSpacing;
+					}
+					auto btn = std::make_unique<juce::TextButton>(kw);
+					btn->setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep.brighter(0.04f));
+					btn->setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundDeep.brighter(0.12f));
+					btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary.withAlpha(0.85f));
+					if (isOversized)
+					{
+						w -= 24;
+						x = 12;
+					}
+
+					juce::String kwCopy = kw;
+					btn->onClick = [this, kwCopy]() { insertKeyword(kwCopy); };
+
+					btn->setBounds(x, y, w, kwH);
+					keywordsContainer.addAndMakeVisible(*btn);
+					keywordButtons.push_back(std::move(btn));
+
+					if (isOversized)
+					{
+						x = 0;
+						y += kwH + kwSpacing;
+					}
+					else
+					{
+						x += w + kwSpacing;
+					}
+				}
+				y += kwH;
+			}
+
+			keywordsContainer.setSize(containerW, juce::jmax(y + 8, keywordsViewport.getHeight()));
+			keywordsContainer.repaint();
+		}
+	}
+
+	void insertKeyword(const juce::String &kw)
+	{
+		auto pos = promptEditor.getCaretPosition();
+		juce::String currentText = promptEditor.getText();
+
+		juce::String prefix;
+		if (pos > 0 && currentText.length() > 0)
+		{
+			juce::juce_wchar prevChar = currentText[pos - 1];
+			if (prevChar != ' ' && prevChar != ',' && prevChar != '\n')
+				prefix = ", ";
+		}
+
+		promptEditor.insertTextAtCaret(prefix + kw);
+		promptEditor.grabKeyboardFocus();
+	}
+
+	juce::String getPrompt() const
+	{
+		return promptEditor.getText().trim();
+	}
+	juce::String getModel() const
+	{
+		return currentModel;
+	}
+	juce::String getCategory() const
+	{
+		int sel = categoryCombo.getSelectedId();
+		return sel <= 1 ? "" : categoryCombo.getText();
+	}
+
+	void resized() override
+	{
+		auto area = getLocalBounds().reduced(16);
+
+		const int cardH = 30;
+		const int cardSpacing = 6;
+		const int numCols = 4;
+
+		int totalCards = (int)modelCards.size();
+		int numRows = (totalCards + numCols - 1) / numCols;
+
+		int totalTabsHeight = numRows * cardH + (numRows - 1) * cardSpacing;
+
+		auto tabsArea = area.removeFromTop(totalTabsHeight);
+		int cardW = (tabsArea.getWidth() - (numCols - 1) * cardSpacing) / numCols;
+
+		for (int i = 0; i < totalCards; ++i)
+		{
+			int row = i / numCols;
+			int col = i % numCols;
+			int x = tabsArea.getX() + col * (cardW + cardSpacing);
+			int y = tabsArea.getY() + row * (cardH + cardSpacing);
+			modelCards[i]->setBounds(x, y, cardW, cardH);
+		}
+
+		area.removeFromTop(8);
+
+		descLbl.setBounds(area.removeFromTop(18));
+		area.removeFromTop(12);
+
+		const int colSpacing = 16;
+		int colW = (area.getWidth() - colSpacing) / 2;
+
+		auto leftCol = area.removeFromLeft(colW);
+		area.removeFromLeft(colSpacing);
+		auto rightCol = area;
+
+		categoryLbl.setBounds(leftCol.removeFromTop(16));
+		leftCol.removeFromTop(2);
+		categoryCombo.setBounds(leftCol.removeFromTop(28));
+		leftCol.removeFromTop(12);
+
+		promptLbl.setBounds(leftCol.removeFromTop(16));
+		leftCol.removeFromTop(2);
+		promptEditor.setBounds(leftCol.removeFromTop(140));
+		leftCol.removeFromTop(12);
+
+		examplesLbl.setBounds(leftCol.removeFromTop(16));
+		leftCol.removeFromTop(2);
+		examplesViewport.setBounds(leftCol);
+
+		keywordsLbl.setBounds(rightCol.removeFromTop(16));
+		rightCol.removeFromTop(2);
+		keywordsViewport.setBounds(rightCol);
+
+		rebuildModelContent();
+	}
+};
 
 juce::Component *ObsidianAlertManager::getSafePluginWindow(juce::Component *c)
 {
@@ -492,4 +975,50 @@ void ObsidianAlertManager::showUpdateAvailable(juce::Component *parent, const ju
 		    juce::URL("https://github.com/innermost47/ai-dj/releases/latest").launchInDefaultBrowser();
 		    overlay->close();
 	    });
+}
+
+void ObsidianAlertManager::showPromptEditor(juce::Component *parent, const juce::String &initialText,
+                                            const juce::String &initialModel, const juce::String &initialCategory,
+                                            const juce::StringArray &availableCategories,
+                                            std::function<void(const PromptEditorResult &)> callback)
+{
+
+	juce::String title = initialText.isEmpty() ? "Create Prompt" : "Edit Prompt";
+	auto modal = std::make_unique<ObsidianModalWindow>(title, 1100, 860);
+
+	auto content =
+	    std::make_unique<PromptEditorContent>(initialText, initialModel, initialCategory, availableCategories);
+	auto *contentPtr = content.get();
+	modal->setContent(std::move(content));
+
+	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr)
+		return;
+
+	overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
+	                                [overlay, callback]()
+	                                {
+		                                if (callback)
+			                                callback({false, "", "", ""});
+		                                overlay->close();
+	                                });
+
+	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary,
+	                                [overlay, contentPtr, parent, callback]()
+	                                {
+		                                juce::String txt = contentPtr->getPrompt();
+		                                if (txt.isEmpty())
+		                                {
+			                                showError(parent, "Save Prompt", "Prompt cannot be empty.");
+			                                return;
+		                                }
+		                                PromptEditorResult res;
+		                                res.confirmed = true;
+		                                res.text = txt;
+		                                res.modelName = contentPtr->getModel();
+		                                res.category = contentPtr->getCategory();
+		                                if (callback)
+			                                callback(res);
+		                                overlay->close();
+	                                });
 }

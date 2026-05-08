@@ -2,12 +2,12 @@
 #include "CustomLookAndFeel.h"
 #include "IconButton.h"
 #include "LCDScreen.h"
+#include "LeftPanelWrapper.h"
 #include "MasterWaveformDisplay.h"
 #include "MidiLearnableComponents.h"
 #include "MixerPanel.h"
 #include "ObsidianModal.h"
 #include "PluginProcessor.h"
-#include "SampleBankPanel.h"
 #include "TrackComponent.h"
 #include "UIGenerationManager.h"
 #include "UILayoutManager.h"
@@ -40,7 +40,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::Component tracksContainer;
 
 	std::unique_ptr<MixerPanel> mixerPanel;
-	std::unique_ptr<SampleBankPanel> sampleBankPanel;
 	std::unique_ptr<UILayoutManager> uiLayoutManager;
 	std::unique_ptr<UIStatusManager> uiStatusManager;
 	std::unique_ptr<UIModalManager> uiModalManager;
@@ -48,12 +47,14 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<UITrackManager> uiTrackManager;
 	std::unique_ptr<UIPresetManager> uiPresetManager;
 	std::unique_ptr<UIMidiManager> uiMidiManager;
+	std::unique_ptr<LeftPanelWrapper> leftPanelWrapper;
+	std::unique_ptr<LCDScreen> lcdScreen;
+	std::unique_ptr<CustomLookAndFeel> customLookAndFeel;
+	std::unique_ptr<MasterWaveformDisplay> masterWaveformDisplay;
 
 	juce::Label statusLabel;
 
 	std::atomic<bool> isBeingDestroyed{false};
-
-	LCDScreen lcdScreen;
 
 	void paint(juce::Graphics &) override;
 	void resized() override;
@@ -72,18 +73,10 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	}
 
 	DjIaVstProcessor &audioProcessor;
-	CustomLookAndFeel customLookAndFeel;
-	MasterWaveformDisplay masterWaveformDisplay;
-	std::vector<std::unique_ptr<ObsidianModalOverlay>> activeModals;
-	juce::Image logoImage;
-	juce::ImageComponent logoComponent;
-	juce::Image bannerImage;
-	juce::Rectangle<int> bannerArea;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;
 	static constexpr int TRACK_CELL_H = 140;
 	static constexpr int TRACK_ROWS = 4;
 	static constexpr int TRACK_COLS = 2;
-	bool sampleBankVisible = true;
 
 	void visibilityChanged() override;
 	void openMidiMappingEditor();
@@ -93,7 +86,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void onLoadSampleClicked();
 	void updateLoadButtonState();
 	void finalizeInit();
-	void mouseDown(const juce::MouseEvent &event) override;
 
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
 	bool keyPressed(const juce::KeyPress &key) override;
@@ -112,29 +104,11 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	IconButtonSimple configButton{"Config", ""};
 	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
 	IconButtonSimple helpButton{"Help", ""};
-	IconButtonSimple toggleBankButton{"ToggleBank", ""};
 	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
 
-	juce::Label pluginNameLabel;
-	juce::Label developerLabel;
-	juce::Label stabilityLabel;
 	juce::Typeface::Ptr customFont;
-	MidiLearnableComboBox promptPresetSelector;
-	IconButtonSimple savePresetButton{"SavePreset", "SAVE"};
-	juce::TextEditor promptInput;
-	juce::ComboBox styleSelector;
-	juce::Label bpmLabel;
-	juce::ComboBox keySelector;
-	IconButton generateButton{"GenerateBtn", "GEN"};
-	juce::Label serverUrlLabel;
-	juce::TextEditor serverUrlInput;
-	juce::Label apiKeyLabel;
-	juce::TextEditor apiKeyInput;
-	juce::TextButton playButton;
-	juce::ComboBox durationSelector;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
-	juce::Label tracksLabel;
 	juce::Label creditsLabel;
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(DjIaVstEditor)

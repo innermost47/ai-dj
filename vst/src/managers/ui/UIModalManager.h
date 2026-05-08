@@ -14,7 +14,6 @@ class UIModalManager
 	void removeModal(ObsidianModalOverlay *overlay);
 	void showFirstTimeSetup();
 	void showConfigDialog();
-	void editCustomPromptDialog(const juce::String &selectedPrompt);
 	void showOnboardingStep(int step);
 	void showOnboardingTour();
 	void openMidiMappingEditor();

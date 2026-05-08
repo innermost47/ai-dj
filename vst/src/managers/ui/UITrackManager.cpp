@@ -204,8 +204,6 @@ void UITrackManager::onSampleLoaded(const juce::String &trackId)
 void UITrackManager::refreshUIForMode()
 {
 	bool isLocalMode = editor.audioProcessor.getUseLocalModel();
-	editor.durationSelector.setEnabled(!isLocalMode);
-
 	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
 
 	for (auto &tc : trackComponents)
@@ -288,7 +286,6 @@ void UITrackManager::updateUIComponents()
 	{
 		editor.uiGenerationManager->setIsGenerating(true);
 		editor.uiGenerationManager->setWasGenerating(true);
-		editor.uiGenerationManager->startGenerationButtonAnimation();
 		editor.startTimer(200);
 	}
 	for (auto &trackComp : trackComponents)
@@ -338,7 +335,7 @@ void UITrackManager::updateUIComponents()
 	}
 
 	static bool currentWasGenerating = false;
-	bool isCurrentlyGenerating = editor.generateButton.isEnabled() == false;
+	bool isCurrentlyGenerating = editor.audioProcessor.getIsGenerating();
 	if (currentWasGenerating && !isCurrentlyGenerating)
 	{
 		for (auto &trackComp : trackComponents)

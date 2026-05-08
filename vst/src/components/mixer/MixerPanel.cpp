@@ -243,8 +243,7 @@ void MixerPanel::resized()
 	{
 		centerStack.removeFromTop(6);
 		centerStack.removeFromBottom(6);
-		const int lcdHeight = standaloneTransport ? juce::jmin(36, centerStack.getHeight() / 3)
-		                                          : juce::jmin(48, centerStack.getHeight() / 3);
+		const int lcdHeight = juce::jmin(48, centerStack.getHeight() / 3);
 		auto lcdArea = centerStack.removeFromBottom(lcdHeight);
 		centerStack.removeFromBottom(6);
 

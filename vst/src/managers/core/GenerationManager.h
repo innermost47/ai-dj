@@ -20,7 +20,6 @@ class GenerationManager
 	void reEnableCanvasGenerate();
 	void generateLoopFromMidi(const juce::String &trackId);
 	void generateLoopFromGlobalSettings();
-	void triggerGlobalGeneration();
 	void syncSelectedTrackWithGlobalPrompt();
 	void handleGenerate();
 	void clearPendingAudio();

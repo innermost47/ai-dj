@@ -493,50 +493,6 @@ void GenerationManager::handleGenerate()
 	}
 }
 
-void GenerationManager::triggerGlobalGeneration()
-{
-	if (audioProcessor.getIsGenerating())
-	{
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			    {
-				    editor->uiStatusManager->setStatusWithTimeout("Generation already in progress, please wait", 3000);
-			    }
-		    });
-		return;
-	}
-
-	if (audioProcessor.getSelectedTrackId().isEmpty())
-	{
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			    {
-				    editor->uiStatusManager->setStatusWithTimeout("No track selected for generation", 3000);
-			    }
-		    });
-		return;
-	}
-
-	syncSelectedTrackWithGlobalPrompt();
-
-	juce::MessageManager::callAsync(
-	    [this]()
-	    {
-		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-		    {
-			    editor->uiGenerationManager->onGenerateButtonClicked();
-		    }
-		    else
-		    {
-			    generateLoopFromGlobalSettings();
-		    }
-	    });
-}
-
 void GenerationManager::syncSelectedTrackWithGlobalPrompt()
 {
 	TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());

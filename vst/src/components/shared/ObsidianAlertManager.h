@@ -72,6 +72,19 @@ class ObsidianAlertManager
 		int timeoutMs;
 	};
 
+	struct PromptEditorResult
+	{
+		bool confirmed = false;
+		juce::String text;
+		juce::String modelName;
+		juce::String category;
+	};
+
+	static void showPromptEditor(juce::Component *parent, const juce::String &initialText,
+	                             const juce::String &initialModel, const juce::String &initialCategory,
+	                             const juce::StringArray &availableCategories,
+	                             std::function<void(const PromptEditorResult &)> callback);
+
 	static void showInfo(juce::Component *parent, const juce::String &title, const juce::String &message,
 	                     const juce::String &buttonText = "OK", std::function<void()> onConfirm = nullptr);
 

@@ -382,7 +382,7 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("crossfadeMode", audioProcessor.getCrossfadeMode(), nullptr);
 	state.setProperty("windowWidth", audioProcessor.getSavedWindowWidth(), nullptr);
 	state.setProperty("windowHeight", audioProcessor.getSavedWindowHeight(), nullptr);
-	state.setProperty("bankVisible", audioProcessor.getSavedBankVisible(), nullptr);
+	state.setProperty("bankVisible", audioProcessor.getSavedPanelVisible(), nullptr);
 
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = audioProcessor.getMidiLearnManager().getAllMappings();
@@ -468,7 +468,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setAutoLoadEnabled(state.getProperty("autoLoadEnabled", true));
 	audioProcessor.setBypassLLM(state.getProperty("bypassLLM", false));
 	audioProcessor.setWindowSize(state.getProperty("windowWidth", 1620), state.getProperty("windowHeight", 840));
-	audioProcessor.setBankVisible(state.getProperty("bankVisible", true));
+	audioProcessor.setPanelVisible(state.getProperty("bankVisible", true));
 
 	bool bypassValue = state.getProperty("bypassSequencer", false);
 	audioProcessor.setBypassSequencer(bypassValue);

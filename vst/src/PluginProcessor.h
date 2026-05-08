@@ -6,6 +6,7 @@
 #include "MidiManager.h"
 #include "ObsidianEngine.h"
 #include "ParameterManager.h"
+#include "PromptBank.h"
 #include "SampleBank.h"
 #include "SequencerManager.h"
 #include "StateManager.h"
@@ -46,6 +47,11 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::function<void(const juce::String &)> midiIndicatorCallback;
 
 	std::atomic<bool> isShuttingDown{false};
+
+	PromptBank *getPromptBank()
+	{
+		return promptBank.get();
+	}
 
 	TrackManager &getTrackManager()
 	{
@@ -317,13 +323,12 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return timeSignatureDenominator.load();
 	}
-
-	const juce::StringArray &getBuiltInPrompts() const;
+	juce::StringArray getAvailablePromptsForModel(const juce::String &modelName = "") const;
 	const juce::StringArray &getCustomKeywords() const
 	{
 		return customKeywords;
 	}
-	const juce::StringArray &getCustomPrompts() const;
+	const juce::StringArray getCustomPrompts() const;
 	const juce::StringArray &getFloatParamIds() const
 	{
 		return parameterManager.getFloatParamIds();
@@ -332,12 +337,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return parameterManager.getBooleanParamIds();
 	}
-
-	juce::StringArray promptPresets = {
-	    "Acidic 303 bassline",   "Ambient flute psychedelic", "Dark atmospheric pad", "Deep rolling bass",
-	    "Distorted noise chops", "Drum and bass rhythm",      "Dub kick rhythm",      "Glitchy percussion loop",
-	    "Hardcore kick pattern", "Industrial noise texture",  "Techno kick rhythm",   "Vintage analog lead",
-	};
 
 	juce::AudioProcessorEditor *createEditor() override;
 	juce::AudioFormatManager sharedFormatManager;
@@ -453,9 +452,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		savedWindowWidth = w;
 		savedWindowHeight = h;
 	}
-	void setBankVisible(bool v)
+	void setPanelVisible(bool v)
 	{
-		savedBankVisible = v;
+		savedPanelVisible = v;
 	}
 	void setGenerationListener(GenerationListener *l)
 	{
@@ -486,11 +485,19 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return savedWindowHeight;
 	}
-	bool getSavedBankVisible() const
+	bool getSavedPanelVisible() const
 	{
-		return savedBankVisible;
+		return savedPanelVisible;
 	}
-
+	juce::String getPanelStateJson() const
+	{
+		return panelStateJson;
+	}
+	void setPanelStateJson(const juce::String &json)
+	{
+		panelStateJson = json;
+		saveGlobalConfig();
+	}
 	void setPendingTrackId(const juce::String &id)
 	{
 		pendingTrackId = id;
@@ -685,6 +692,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	AudioManager audioManager;
 	std::unique_ptr<SampleBank> sampleBank;
 	std::unique_ptr<ObsidianEngine> obsidianEngine;
+	std::unique_ptr<PromptBank> promptBank;
+
+	juce::String panelStateJson;
 
 	juce::String globalPrompt;
 	juce::String globalKey = "C Minor";
@@ -728,7 +738,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	bool useLocalModel = false;
 	bool isGenerating = false;
 	bool onboardingDone = false;
-	bool savedBankVisible = true;
+	bool savedPanelVisible = true;
 	bool hasPendingNotification = false;
 
 	juce::StringArray customKeywords;
