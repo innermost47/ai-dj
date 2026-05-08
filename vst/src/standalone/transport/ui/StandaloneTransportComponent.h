@@ -15,6 +15,7 @@ class StandaloneTransportComponent : public juce::Component, private juce::Timer
 	void resized() override;
 	void paint(juce::Graphics &g) override;
 	void udpatePlayButtonDisplay(bool isPlaying);
+	void syncFromTransport();
 
 	std::function<void(double)> onBpmChanged;
 	std::function<void(int, int)> onTimeSignatureChanged;

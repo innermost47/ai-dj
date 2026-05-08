@@ -149,19 +149,25 @@ void MixerPanel::paint(juce::Graphics &g)
 	juce::Component *centerComp = standaloneTransport ? static_cast<juce::Component *>(standaloneTransport.get())
 	                                                  : static_cast<juce::Component *>(masterWaveform);
 
-	if (crossfader && masterChannel && centerComp)
+	if (crossfader)
 	{
-		auto unified = crossfader->getBounds()
-		                   .getUnion(centerComp->getBounds())
+		auto crossfaderBg = crossfader->getBounds().expanded(4, 2);
+		g.setColour(ColourPalette::backgroundDeep.brighter(0.04f));
+		g.fillRoundedRectangle(crossfaderBg.toFloat(), 6.0f);
+		g.setColour(ColourPalette::sliderTrack);
+		g.drawRoundedRectangle(crossfaderBg.toFloat().reduced(0.5f), 6.0f, 1.0f);
+	}
+
+	if (masterChannel && centerComp && lcdScreen)
+	{
+		auto rightBg = centerComp->getBounds()
 		                   .getUnion(lcdScreen->getBounds())
 		                   .getUnion(masterChannel->getBounds())
 		                   .expanded(4, 2);
-
 		g.setColour(ColourPalette::backgroundDeep.brighter(0.04f));
-		g.fillRoundedRectangle(unified.toFloat(), 6.0f);
-
+		g.fillRoundedRectangle(rightBg.toFloat(), 6.0f);
 		g.setColour(ColourPalette::sliderTrack);
-		g.drawRoundedRectangle(unified.toFloat().reduced(0.5f), 6.0f, 1.0f);
+		g.drawRoundedRectangle(rightBg.toFloat().reduced(0.5f), 6.0f, 1.0f);
 	}
 }
 
@@ -198,41 +204,45 @@ void MixerPanel::resized()
 	auto area = getLocalBounds();
 	const int channelH = getHeight();
 	const int spacing = 4;
-
 	const int crossfaderWidth = 220;
 	const int masterChannelWidth = 120;
 	const int waveformWidth = 200;
 	const int centerInternalPad = 8;
 	const int centerOuterMargin = 4;
-	const int centerBlockWidth = crossfaderWidth + waveformWidth + masterChannelWidth + centerInternalPad * 2;
 
-	const int totalCenterFootprint = centerBlockWidth + centerOuterMargin * 2;
-	const int sideWidth = (area.getWidth() - totalCenterFootprint) / 2;
+	const int rightBlockWidth = masterChannelWidth + waveformWidth + centerInternalPad * 2;
+	const int rightBlockFootprint = rightBlockWidth + centerOuterMargin * 2;
+
+	const int centerBlockWidth = crossfaderWidth + centerInternalPad * 2;
+	const int centerBlockFootprint = centerBlockWidth + centerOuterMargin * 2;
+
+	const int sideWidth = (area.getWidth() - centerBlockFootprint - rightBlockFootprint) / 2;
 	const int channelWidth = juce::jlimit(40, 100, (sideWidth - spacing * 3) / 4);
+
 	auto deckAArea = area.removeFromLeft(channelWidth * 4 + spacing * 3);
 	area.removeFromLeft(centerOuterMargin);
-
 	auto centerBlock = area.removeFromLeft(centerBlockWidth);
 	area.removeFromLeft(centerOuterMargin);
+
+	auto rightBlock = area.removeFromRight(rightBlockWidth);
+	area.removeFromRight(centerOuterMargin);
 
 	auto deckBArea = area;
 
 	centerBlock.reduce(centerInternalPad, 3);
+	crossfader->setBounds(centerBlock);
 
-	auto cfArea = centerBlock.removeFromLeft(crossfaderWidth);
-	centerBlock.removeFromLeft(centerInternalPad);
-	auto mcArea = centerBlock.removeFromRight(masterChannelWidth);
-	centerBlock.removeFromRight(centerInternalPad);
-	auto centerStack = centerBlock;
+	rightBlock.reduce(centerInternalPad, 3);
+	auto mcArea = rightBlock.removeFromLeft(masterChannelWidth);
+	rightBlock.removeFromLeft(centerInternalPad);
+	auto centerStack = rightBlock;
 
-	crossfader->setBounds(cfArea);
 	masterChannel->setBounds(mcArea);
 
 	if (lcdScreen && (masterWaveform || standaloneTransport))
 	{
 		centerStack.removeFromTop(6);
 		centerStack.removeFromBottom(6);
-
 		const int lcdHeight = standaloneTransport ? juce::jmin(36, centerStack.getHeight() / 3)
 		                                          : juce::jmin(48, centerStack.getHeight() / 3);
 		auto lcdArea = centerStack.removeFromBottom(lcdHeight);
@@ -242,7 +252,6 @@ void MixerPanel::resized()
 			standaloneTransport->setBounds(centerStack);
 		else if (masterWaveform)
 			masterWaveform->setBounds(centerStack);
-
 		lcdScreen->setBounds(lcdArea);
 	}
 	else if (standaloneTransport)

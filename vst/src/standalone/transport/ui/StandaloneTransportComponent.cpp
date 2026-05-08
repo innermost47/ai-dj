@@ -562,3 +562,10 @@ void StandaloneTransportComponent::registerTapTempo()
 			                            safeBtn->setToggleState(false, juce::dontSendNotification);
 	                            });
 }
+
+void StandaloneTransportComponent::syncFromTransport()
+{
+	bpmField.setBpmValue(transport.getBpm());
+	timeSigNumerator.setSelectedId(transport.getTimeSigNumerator(), juce::dontSendNotification);
+	timeSigDenominator.setSelectedId(transport.getTimeSigDenominator(), juce::dontSendNotification);
+}

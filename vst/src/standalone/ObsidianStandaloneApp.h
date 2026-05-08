@@ -851,6 +851,8 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 			                         editor->uiTrackManager->refreshTrackComponents();
 			                         editor->updateUIFromProcessor();
 			                         editor->uiPresetManager->refreshAllPromptLists();
+			                         if (editor->mixerPanel && editor->mixerPanel->getStandaloneTransportComponent())
+				                         editor->mixerPanel->getStandaloneTransportComponent()->syncFromTransport();
 			                         editor->uiStatusManager->setStatusWithTimeout("Session loaded!", 3000);
 		                         });
 	}
