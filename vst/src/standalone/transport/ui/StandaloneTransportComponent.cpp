@@ -375,7 +375,7 @@ void StandaloneTransportComponent::udpatePlayButtonDisplay(bool isPlaying)
 
 void StandaloneTransportComponent::resized()
 {
-	auto area = getLocalBounds().reduced(12, 6);
+	auto area = getLocalBounds().reduced(4);
 	const int rowGap = 8;
 
 	const int lcdH = juce::jlimit(46, 68, (int)(area.getHeight() * 0.28f));
@@ -420,16 +420,8 @@ void StandaloneTransportComponent::resized()
 	timeSigDenominator.setBounds(comboRow.removeFromLeft(comboW));
 }
 
-void StandaloneTransportComponent::paint(juce::Graphics &g)
+void StandaloneTransportComponent::paint(juce::Graphics & /*g*/)
 {
-	auto bounds = getLocalBounds().toFloat();
-	const float corner = 5.0f;
-
-	g.setColour(ColourPalette::backgroundMid);
-	g.fillRoundedRectangle(bounds.toFloat(), corner);
-
-	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.0f);
 }
 
 void StandaloneTransportComponent::timerCallback()

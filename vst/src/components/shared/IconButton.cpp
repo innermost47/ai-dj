@@ -32,16 +32,8 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 			juce::Colour baseColour = toggled ? btn.findColour(juce::TextButton::buttonOnColourId)
 			                                  : btn.findColour(juce::TextButton::buttonColourId);
 
-			juce::ColourGradient bgGradient(baseColour.brighter(0.04f), bounds.getX(), bounds.getY(),
-			                                baseColour.darker(0.08f), bounds.getX(), bounds.getBottom(), false);
-			g.setGradientFill(bgGradient);
+			g.setColour(baseColour);
 			g.fillRoundedRectangle(bounds, cornerSize);
-
-			if (!isButtonDown)
-			{
-				g.setColour(juce::Colours::white.withAlpha(0.04f));
-				g.fillRoundedRectangle(bounds.withHeight(bounds.getHeight() * 0.45f), cornerSize);
-			}
 
 			g.setColour(isMouseOver ? borderColour.withAlpha(0.6f) : borderColour);
 			g.drawRoundedRectangle(bounds, cornerSize, 0.8f);

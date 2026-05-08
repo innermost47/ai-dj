@@ -205,16 +205,16 @@ void MixerPanel::resized()
 	const int channelH = getHeight();
 	const int spacing = 4;
 	const int crossfaderWidth = 220;
-	const int masterChannelWidth = 120;
+	const int masterChannelWidth = 100;
 	const int waveformWidth = 200;
 	const int centerInternalPad = 8;
-	const int centerOuterMargin = 4;
+	const int centerOuterMargin = 2;
 
-	const int rightBlockWidth = masterChannelWidth + waveformWidth + centerInternalPad * 2;
-	const int rightBlockFootprint = rightBlockWidth + centerOuterMargin * 2;
+	const int rightBlockWidth = 300;
+	const int rightBlockFootprint = rightBlockWidth + centerOuterMargin;
 
-	const int centerBlockWidth = crossfaderWidth + centerInternalPad * 2;
-	const int centerBlockFootprint = centerBlockWidth + centerOuterMargin * 2;
+	const int centerBlockWidth = crossfaderWidth + centerInternalPad;
+	const int centerBlockFootprint = centerBlockWidth + centerOuterMargin;
 
 	const int sideWidth = (area.getWidth() - centerBlockFootprint - rightBlockFootprint) / 2;
 	const int channelWidth = juce::jlimit(40, 100, (sideWidth - spacing * 3) / 4);

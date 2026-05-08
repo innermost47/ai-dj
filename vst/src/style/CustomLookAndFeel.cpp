@@ -93,13 +93,6 @@ void CustomLookAndFeel::drawButtonBackground(juce::Graphics &g, juce::Button &bu
 	g.setColour(baseColour);
 	g.fillRoundedRectangle(bounds, 4.0f);
 
-	if (!shouldDrawButtonAsDown)
-	{
-		g.setColour(juce::Colours::white.withAlpha(0.05f));
-		auto topBounds = bounds.withHeight(bounds.getHeight() * 0.4f);
-		g.fillRoundedRectangle(topBounds, 4.0f);
-	}
-
 	g.setColour(baseColour.brighter(0.2f).withAlpha(0.4f));
 	g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
 }
@@ -225,18 +218,8 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
 		g.fillRoundedRectangle(bounds.translated(0, 1.0f), corner);
 	}
 
-	juce::ColourGradient bgGradient(ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
-	                                ColourPalette::backgroundMid.darker(0.08f), bounds.getX(), bounds.getBottom(),
-	                                false);
-	g.setGradientFill(bgGradient);
+	g.setColour(ColourPalette::backgroundMid);
 	g.fillRoundedRectangle(bounds, corner);
-
-	if (!isButtonDown)
-	{
-		g.setColour(juce::Colours::white.withAlpha(0.04f));
-		auto topHighlight = bounds.withHeight(bounds.getHeight() * 0.45f);
-		g.fillRoundedRectangle(topHighlight, corner);
-	}
 
 	auto borderColour = ColourPalette::trackSelected.withAlpha(0.4f);
 	float borderThickness = 0.8f;
@@ -669,15 +652,8 @@ void CustomLookAndFeel::fillTextEditorBackground(juce::Graphics &g, int width, i
 	g.setColour(juce::Colours::black.withAlpha(0.25f));
 	g.fillRoundedRectangle(bounds.translated(0, 1.0f), corner);
 
-	juce::ColourGradient bgGradient(ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
-	                                ColourPalette::backgroundMid.darker(0.08f), bounds.getX(), bounds.getBottom(),
-	                                false);
-	g.setGradientFill(bgGradient);
+	g.setColour(ColourPalette::backgroundMid);
 	g.fillRoundedRectangle(bounds, corner);
-
-	g.setColour(juce::Colours::white.withAlpha(0.04f));
-	auto topHighlight = bounds.withHeight(bounds.getHeight() * 0.45f);
-	g.fillRoundedRectangle(topHighlight, corner);
 }
 
 void CustomLookAndFeel::drawTextEditorOutline(juce::Graphics &g, int width, int height, juce::TextEditor &textEditor)

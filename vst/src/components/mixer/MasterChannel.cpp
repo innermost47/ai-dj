@@ -262,13 +262,13 @@ void MasterChannel::paint(juce::Graphics &g)
 
 void MasterChannel::resized()
 {
-	auto area = getLocalBounds().reduced(4);
+	auto area = getLocalBounds().reduced(2);
 	int width = area.getWidth();
 
 	masterLabel.setBounds(area.removeFromTop(20));
 	area.removeFromTop(5);
 
-	const int colSpacing = 4;
+	const int colSpacing = 2;
 	const int knobColWidth = (width - colSpacing * 2) / 3;
 
 	auto leftCol = area.removeFromLeft(knobColWidth);
