@@ -50,7 +50,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<UIMidiManager> uiMidiManager;
 	std::unique_ptr<LeftPanelWrapper> leftPanelWrapper;
 	std::unique_ptr<LCDScreen> lcdScreen;
-	std::unique_ptr<CustomLookAndFeel> customLookAndFeel;
 	std::unique_ptr<MasterWaveformDisplay> masterWaveformDisplay;
 	std::unique_ptr<RightPanelWrapper> rightPanelWrapper;
 
@@ -84,9 +83,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void openMidiMappingEditor();
 	void setupUI();
 	void addEventListeners();
-	void onAutoLoadToggled();
-	void onLoadSampleClicked();
-	void updateLoadButtonState();
 	void finalizeInit();
 
 	bool keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected);
@@ -100,8 +96,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
 
-	IconButtonSimple autoLoadButton{"AutoLoad", ""};
-	IconButtonSimple loadSampleButton{"LoadSample", ""};
 	IconButtonSimple bypassSequencerButton{"BypassSeq", ""};
 	IconButtonSimple configButton{"Config", ""};
 	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
@@ -112,6 +106,8 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::Label creditsLabel;
+
+	CustomLookAndFeel customLookAndFeel;
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(DjIaVstEditor)
 };

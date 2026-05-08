@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "AudioManager.h"
 #include "Console6Bus.h"
+#include "DelaySend.h"
 #include "DjIaClient.h"
 #include "GenerationManager.h"
 #include "MidiLearnManager.h"
@@ -70,6 +71,11 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	const StateManager &getStateManager() const
 	{
 		return stateManager;
+	}
+
+	DelaySend &getDelaySend()
+	{
+		return delaySend;
 	}
 
 	GenerationManager &getGenerationManager()
@@ -170,10 +176,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	const juce::String &getGlobalPrompt() const
 	{
 		return globalPrompt;
-	}
-	const juce::String &getSelectedTrackId() const
-	{
-		return selectedTrackId;
 	}
 	const juce::String &getGeneratingTrackId() const
 	{
@@ -360,10 +362,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void setGlobalBpm(float bpm)
 	{
 		globalBpm = bpm;
-	}
-	void setSelectedTrackId(const juce::String &id)
-	{
-		selectedTrackId = id;
 	}
 	void setGeneratingTrackId(const juce::String &id)
 	{
@@ -563,7 +561,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	void initTracks();
 	void cleanProcessor();
-	void selectTrack(const juce::String &trackId);
 	void startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double hostBpm = 126.0);
 	void previewTrack(const juce::String &trackId);
 	void loadPendingSample();
@@ -691,10 +688,14 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	ParameterManager parameterManager;
 	SequencerManager sequencerManager;
 	AudioManager audioManager;
+	DelaySend delaySend;
 	Console6Buss masterConsoleBuss;
+
 	std::unique_ptr<SampleBank> sampleBank;
 	std::unique_ptr<ObsidianEngine> obsidianEngine;
 	std::unique_ptr<PromptBank> promptBank;
+
+	juce::AudioBuffer<float> delaySendBuffer;
 
 	juce::String panelStateJson;
 
@@ -704,7 +705,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::String apiKey;
 	juce::String lastPrompt;
 	juce::String lastKey = "C Minor";
-	juce::String selectedTrackId;
 	juce::String generatingTrackId;
 	juce::String projectId;
 	juce::String pendingTrackId;

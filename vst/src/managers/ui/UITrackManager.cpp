@@ -23,7 +23,6 @@ void UITrackManager::refreshTracks()
 	refreshTrackComponents();
 	for (auto &trackComp : trackComponents)
 		trackComp->loadPromptPresets();
-	updateSelectedTrack();
 	editor.repaint();
 }
 
@@ -59,12 +58,10 @@ void UITrackManager::refreshTrackComponents()
 				if (auto *sequencer = trackComponents[i]->getSequencer())
 					sequencer->updateFromTrackData();
 			}
-			updateSelectedTrack();
 			return;
 		}
 	}
 
-	juce::String previousSelectedId = editor.audioProcessor.getSelectedTrackId();
 	juce::String generatingId = editor.audioProcessor.getGeneratingTrackId();
 	bool wasGeneratingLocal = editor.audioProcessor.getIsGenerating();
 
@@ -79,12 +76,6 @@ void UITrackManager::refreshTrackComponents()
 
 		auto trackComp = std::make_unique<TrackComponent>(trackId, editor.audioProcessor);
 		trackComp->setTrackData(trackData);
-
-		trackComp->onSelectTrack = [this](const juce::String &id)
-		{
-			editor.audioProcessor.selectTrack(id);
-			updateSelectedTrack();
-		};
 
 		trackComp->onGenerateWithImage =
 		    [this](const juce::String &trackId, const juce::String &image, const juce::StringArray &keywords)
@@ -107,10 +98,7 @@ void UITrackManager::refreshTrackComponents()
 		};
 
 		trackComp->onGenerateForTrack = [this](const juce::String &id)
-		{
-			editor.audioProcessor.selectTrack(id);
-			editor.uiGenerationManager->generateFromTrackComponent(id);
-		};
+		{ editor.uiGenerationManager->generateFromTrackComponent(id); };
 
 		trackComp->onPreviewTrack = [this](const juce::String &trackId)
 		{ editor.audioProcessor.previewTrack(trackId); };
@@ -127,10 +115,6 @@ void UITrackManager::refreshTrackComponents()
 		trackComp->onStopPreview = [this](const juce::String &trackId)
 		{ editor.audioProcessor.getAudioManager().stopTrackPreview(trackId); };
 
-		if (trackId == editor.audioProcessor.getSelectedTrackId())
-		{
-			trackComp->setSelected(true);
-		}
 		if (wasGeneratingLocal && trackId == generatingId)
 		{
 			trackComp->startGeneratingAnimation();
@@ -157,32 +141,6 @@ void UITrackManager::refreshTrackComponents()
 		    }
 	    });
 	editor.tracksContainer.repaint();
-}
-
-void UITrackManager::updateSelectedTrack()
-{
-	for (auto &trackComp : trackComponents)
-	{
-		trackComp->setSelected(false);
-	}
-
-	juce::String selectedId = editor.audioProcessor.getSelectedTrackId();
-
-	bool found = false;
-	for (auto &trackComp : trackComponents)
-	{
-		if (trackComp->getTrackId() == selectedId)
-		{
-			trackComp->setSelected(true);
-			found = true;
-			break;
-		}
-	}
-
-	if (editor.mixerPanel)
-	{
-		editor.mixerPanel->trackSelected(selectedId);
-	}
 }
 
 void UITrackManager::onSampleLoaded(const juce::String &trackId)
@@ -314,11 +272,6 @@ void UITrackManager::updateUIComponents()
 			editor.uiStatusManager->updateLCD();
 			midiBlinkCounter = 0;
 		}
-	}
-
-	if (!editor.autoLoadButton.getToggleState())
-	{
-		editor.updateLoadButtonState();
 	}
 
 	for (auto &trackComp : trackComponents)

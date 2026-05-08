@@ -219,6 +219,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/AudioAnalyzer.cpp
+    src/dsp/DelaySend.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
     src/engines/ObsidianEngine.cpp
@@ -298,6 +299,7 @@ target_link_libraries(ObsidianNeuralVST
         ObsidianBinaryData
         juce::juce_audio_utils
         juce::juce_audio_processors
+        juce::juce_dsp
         juce::juce_gui_extra
         SoundTouch
         nlohmann_json::nlohmann_json

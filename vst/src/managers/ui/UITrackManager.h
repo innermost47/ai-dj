@@ -12,7 +12,6 @@ class UITrackManager
 
 	void refreshTracks();
 	void refreshTrackComponents();
-	void updateSelectedTrack();
 	void onSampleLoaded(const juce::String &trackId);
 	void refreshUIForMode();
 	void checkLocalModelsAndNotify();

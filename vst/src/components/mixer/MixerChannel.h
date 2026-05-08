@@ -51,7 +51,6 @@ class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::
 	bool stopBlinkState = false;
 	bool hasSamplePending = false;
 
-	bool isSelected = false;
 	int bypassMidiFrames = 0;
 	std::atomic<bool> isUpdatingButtons{false};
 

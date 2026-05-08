@@ -649,11 +649,6 @@ void MixerChannel::paint(juce::Graphics &g)
 		borderColour = ColourPalette::samplePending;
 		borderWidth = 2.0f;
 	}
-	else if (isSelected)
-	{
-		borderColour = ColourPalette::trackSelected;
-		borderWidth = 2.0f;
-	}
 	else
 	{
 		borderColour = ColourPalette::sliderTrack;
@@ -729,12 +724,6 @@ void MixerChannel::updateVUMeter()
 	{
 		vuMeter.updateMeter(nullptr, 0.0, 0.0f, false);
 	}
-}
-
-void MixerChannel::setSelected(bool selected)
-{
-	isSelected = selected;
-	repaint();
 }
 
 void MixerChannel::setupUI()

@@ -371,7 +371,6 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("lastPresetIndex", audioProcessor.getLastPresetIndex(), nullptr);
 	state.setProperty("hostBpmEnabled", audioProcessor.isHostBpmEnabled(), nullptr);
 	state.setProperty("lastDuration", audioProcessor.getLastDuration(), nullptr);
-	state.setProperty("selectedTrackId", audioProcessor.getSelectedTrackId(), nullptr);
 	state.setProperty("lastKeyIndex", audioProcessor.getLastKeyIndex(), nullptr);
 	state.setProperty("isGenerating", audioProcessor.getIsGenerating(), nullptr);
 	state.setProperty("autoLoadEnabled", audioProcessor.getAutoLoadEnabled(), nullptr);
@@ -478,20 +477,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		loadState(tracksState);
 	}
 
-	audioProcessor.setSelectedTrackId(state.getProperty("selectedTrackId", "").toString());
-	auto loadedTrackIds = audioProcessor.getAllTrackIds();
-
-	if (audioProcessor.getSelectedTrackId().isEmpty() || !audioProcessor.getTrack(audioProcessor.getSelectedTrackId()))
-	{
-		if (!loadedTrackIds.empty())
-		{
-			audioProcessor.setSelectedTrackId(loadedTrackIds[0]);
-		}
-		else
-		{
-			audioProcessor.setSelectedTrackId(audioProcessor.getTrackManager().createTrack("Main"));
-		}
-	}
 	audioProcessor.setCrossfaderValue((float)state.getProperty("crossfaderValue", juce::var(0.5f)));
 	audioProcessor.setCrossfadeMode((int)state.getProperty("crossfadeMode", juce::var(0)));
 

@@ -31,7 +31,6 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	leftPanelWrapper = std::make_unique<LeftPanelWrapper>(audioProcessor, *this);
 	mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
 	lcdScreen = std::make_unique<LCDScreen>();
-	customLookAndFeel = std::make_unique<CustomLookAndFeel>();
 	masterWaveformDisplay = std::make_unique<MasterWaveformDisplay>();
 	rightPanelWrapper = std::make_unique<RightPanelWrapper>(audioProcessor);
 
@@ -126,8 +125,9 @@ DjIaVstEditor::~DjIaVstEditor()
 	mixerPanel = nullptr;
 	lcdScreen = nullptr;
 	masterWaveformDisplay = nullptr;
-	customLookAndFeel = nullptr;
 	rightPanelWrapper = nullptr;
+
+	setLookAndFeel(nullptr);
 
 	ObsidianAlertManager::shutdown();
 }
@@ -297,17 +297,6 @@ void DjIaVstEditor::setupUI()
 	configButton.setTooltip("Configure settings globally");
 	configButton.onClick = [this]() { uiModalManager->showConfigDialog(); };
 
-	addAndMakeVisible(autoLoadButton);
-	autoLoadButton.loadIcon(BinaryData::refresh_svg, BinaryData::refresh_svgSize);
-	autoLoadButton.setClickingTogglesState(true);
-	autoLoadButton.setToggleState(audioProcessor.getAutoLoadEnabled(), juce::dontSendNotification);
-	autoLoadButton.setTooltip("Toggle between automatic and manual sample loading");
-
-	addAndMakeVisible(loadSampleButton);
-	loadSampleButton.loadIcon(BinaryData::upload_svg, BinaryData::upload_svgSize);
-	loadSampleButton.setEnabled(!audioProcessor.getAutoLoadEnabled());
-	loadSampleButton.setTooltip("Manually load pending generated sample");
-
 	addAndMakeVisible(tracksViewport);
 	tracksViewport.setViewedComponent(&tracksContainer, false);
 	tracksViewport.setScrollBarsShown(true, true);
@@ -363,8 +352,6 @@ void DjIaVstEditor::setupUI()
 
 	bypassLLMButton.setTooltip("Disables prompt enhancement for faster, raw generation");
 	configButton.setTooltip("Configure API settings and generation mode");
-	autoLoadButton.setTooltip("Automatically load generated samples (disable for manual control)");
-	loadSampleButton.setTooltip("Manually load pending generated sample");
 
 	addAndMakeVisible(leftPanelWrapper.get());
 
@@ -403,8 +390,6 @@ void DjIaVstEditor::setupUI()
 	};
 
 	setupControlBtn(bypassSequencerButton);
-	setupControlBtn(autoLoadButton);
-	setupControlBtn(loadSampleButton, false);
 	setupControlBtn(openMidiEditorButton, false);
 	setupControlBtn(configButton, false);
 	setupControlBtn(helpButton, false);
@@ -426,8 +411,6 @@ void DjIaVstEditor::setupUI()
 
 void DjIaVstEditor::addEventListeners()
 {
-	autoLoadButton.onClick = [this] { onAutoLoadToggled(); };
-	loadSampleButton.onClick = [this] { onLoadSampleClicked(); };
 
 	bypassSequencerButton.onClick = [this]()
 	{
@@ -485,22 +468,6 @@ void DjIaVstEditor::addEventListeners()
 
 void DjIaVstEditor::updateUIFromProcessor()
 {
-	bool autoLoadOn = audioProcessor.getAutoLoadEnabled();
-	autoLoadButton.setToggleState(autoLoadOn, juce::dontSendNotification);
-	loadSampleButton.setEnabled(!autoLoadOn);
-
-	if (leftPanelWrapper && leftPanelWrapper->getPromptBankPanel())
-	{
-	}
-
-	if (autoLoadOn)
-	{
-		autoLoadButton.setButtonText("Auto-Load Mode");
-	}
-	else
-	{
-		autoLoadButton.setButtonText("Manual Mode");
-	}
 
 	bool bypassOn = audioProcessor.getBypassSequencer();
 	bypassSequencerButton.setToggleState(bypassOn, juce::dontSendNotification);
@@ -541,64 +508,6 @@ void DjIaVstEditor::paint(juce::Graphics &g)
 bool DjIaVstEditor::keyMatches(const juce::KeyPress &pressed, const juce::KeyPress &expected)
 {
 	return uiMidiManager->keyMatches(pressed, expected);
-}
-
-void DjIaVstEditor::onAutoLoadToggled()
-{
-	bool autoLoadOn = autoLoadButton.getToggleState();
-	audioProcessor.setAutoLoadEnabled(autoLoadOn);
-
-	if (autoLoadOn)
-	{
-		autoLoadButton.setButtonText("Auto-Load Mode");
-		statusLabel.setText("Auto-load enabled - samples load automatically", juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-		loadSampleButton.setButtonText("Load\nSample");
-		loadSampleButton.setEnabled(false);
-	}
-	else
-	{
-		autoLoadButton.setButtonText("Manual\nMode");
-		statusLabel.setText("Manual mode - click Load Sample when ready", juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-		loadSampleButton.setEnabled(true);
-		updateLoadButtonState();
-	}
-}
-
-void DjIaVstEditor::onLoadSampleClicked()
-{
-	if (audioProcessor.hasSampleWaiting())
-	{
-		juce::String trackId = audioProcessor.getSelectedTrackId();
-
-		audioProcessor.loadPendingSample();
-		statusLabel.setText("Sample loaded manually!", juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-
-		uiTrackManager->onSampleLoaded(trackId);
-		updateLoadButtonState();
-	}
-	else
-	{
-		statusLabel.setText("Generate a loop first", juce::dontSendNotification);
-		uiStatusManager->updateLCD();
-	}
-}
-
-void DjIaVstEditor::updateLoadButtonState()
-{
-	if (!autoLoadButton.getToggleState())
-	{
-		if (audioProcessor.hasSampleWaiting())
-		{
-			loadSampleButton.setButtonText("Ready");
-		}
-		else
-		{
-			loadSampleButton.setButtonText("Load\nSample");
-		}
-	}
 }
 
 void DjIaVstEditor::visibilityChanged()

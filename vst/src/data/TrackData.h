@@ -144,6 +144,8 @@ struct TrackData
 	juce::String trackName;
 	juce::String style;
 	juce::String currentSampleId;
+	std::atomic<float> delaySend{0.0f};
+	std::atomic<float> reverbSend{0.0f};
 
 	std::atomic<bool> showWaveform{true};
 	std::atomic<bool> showSequencer{true};

@@ -32,7 +32,7 @@ void RightPanelWrapper::resized()
 	auto area = getLocalBounds().reduced(4);
 	const int spacing = 6;
 
-	const int sendsHeight = 140;
+	const int sendsHeight = 160;
 	auto sendsArea = area.removeFromBottom(sendsHeight);
 	sendsPanel->setBounds(sendsArea);
 

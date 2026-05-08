@@ -130,6 +130,21 @@ class ParameterManager
 		return juce::jlimit(0, 2, (int)safeLoad(crossfaderCurveModeParam));
 	}
 
+	int getDelayDivisionIndex() const
+	{
+		return delayDivisionParam ? static_cast<int>(delayDivisionParam->load()) : 0;
+	}
+
+	int getDelayModeIndex() const
+	{
+		return delayModeParam ? static_cast<int>(delayModeParam->load()) : 0;
+	}
+
+	float getFeedback() const noexcept
+	{
+		return delayFeedbackParam ? delayFeedbackParam->load() : 0.0f;
+	}
+
 	static constexpr int MAX_SLOTS = 8;
 	static constexpr int MAX_PAIRS = 4;
 
@@ -143,6 +158,13 @@ class ParameterManager
 	std::atomic<float> *masterLowParam = nullptr;
 	std::atomic<float> *generateParam = nullptr;
 	std::atomic<float> *playParam = nullptr;
+	std::atomic<float> *delayDivisionParam = nullptr;
+	std::atomic<float> *delayFeedbackParam = nullptr;
+	std::atomic<float> *delayModeParam = nullptr;
+	std::atomic<float> *reverbSizeParam = nullptr;
+	std::atomic<float> *reverbDampingParam = nullptr;
+	std::atomic<float> *reverbWidthParam = nullptr;
+	std::atomic<float> *reverbMixParam = nullptr;
 
 	std::atomic<float> *slotVolumeParams[MAX_SLOTS] = {};
 	std::atomic<float> *slotPanParams[MAX_SLOTS] = {};

@@ -41,7 +41,6 @@ class TrackComponent : public ObsidianComponent,
 	}
 
 	std::function<void(const juce::String &)> onDeleteTrack;
-	std::function<void(const juce::String &)> onSelectTrack;
 	std::function<void(const juce::String &)> onGenerateForTrack;
 	std::function<void(const juce::String &, const juce::String &)> onTrackRenamed;
 	std::function<void(const juce::String &, const juce::String &)> onTrackPromptChanged;
@@ -59,11 +58,11 @@ class TrackComponent : public ObsidianComponent,
 	static const int BASE_HEIGHT = 80;
 	static const int WAVEFORM_HEIGHT = 45;
 	static const int SEQUENCER_HEIGHT = 45;
-	static const int PAGE_BUTTON_SIZE = 18;
+	static const int PAGE_BUTTON_SIZE = 16;
 	static const int ICON_BUTTON_WIDTH = 42;
 	static const int ICON_BUTTON_HEIGHT = 50;
-	static const int CLUSTER_GAP = 14;
-	static const int INTRA_CLUSTER_GAP = 2;
+	static const int CLUSTER_GAP = 4;
+	static const int INTRA_CLUSTER_GAP = 1;
 
 	TrackData *getTrack() const
 	{
@@ -315,11 +314,9 @@ class TrackComponent : public ObsidianComponent,
 	void updateModelUI();
 	void syncBorderOverlay();
 	juce::Colour getCurrentModelColour() const;
-	void mouseDown(const juce::MouseEvent &event) override;
 	void setupAdsrKnobs();
 	void updateAdsrKnobsFromPage();
 	void syncAdsrToWaveform();
-	void syncParamsToCurrentPage();
 	void applyPromptFromBank(const juce::String &promptId);
 
 	float calculateEffectiveBpm();

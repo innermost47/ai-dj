@@ -19,8 +19,6 @@ class GenerationManager
 	void generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId, int timeoutMS);
 	void reEnableCanvasGenerate();
 	void generateLoopFromMidi(const juce::String &trackId);
-	void generateLoopFromGlobalSettings();
-	void syncSelectedTrackWithGlobalPrompt();
 	void handleGenerate();
 	void clearPendingAudio();
 

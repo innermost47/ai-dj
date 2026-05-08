@@ -290,7 +290,7 @@ void CustomLookAndFeel::positionComboBoxText(juce::ComboBox &box, juce::Label &l
 {
 	auto buttonWidth = juce::jmin(box.getHeight(), 24);
 
-	label.setBounds(10, 1, box.getWidth() - buttonWidth - 12, box.getHeight() - 2);
+	label.setBounds(2, 1, box.getWidth() - buttonWidth - 12, box.getHeight() - 2);
 
 	label.setFont(getComboBoxFont(box));
 	label.setJustificationType(juce::Justification::centredLeft);

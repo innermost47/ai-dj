@@ -299,15 +299,6 @@ void MixerPanel::refreshAllChannels()
 	}
 }
 
-void MixerPanel::trackSelected(const juce::String &trackId)
-{
-	for (auto &channel : mixerChannels)
-	{
-		bool isThisTrackSelected = (channel->getTrackId() == trackId);
-		channel->setSelected(isThisTrackSelected);
-	}
-}
-
 void MixerPanel::startGeneratingAnimationForTrack(const juce::String &trackId)
 {
 	for (auto &channel : mixerChannels)

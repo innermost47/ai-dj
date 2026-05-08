@@ -9,9 +9,8 @@ GenerationManager::GenerationManager(DjIaVstProcessor &processor) : audioProcess
 
 void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, const juce::String &targetTrackId)
 {
-	juce::String trackId = targetTrackId.isEmpty() ? audioProcessor.getSelectedTrackId() : targetTrackId;
-
-	if (TrackData *track = audioProcessor.getTrack(trackId))
+	TrackData *track = audioProcessor.getTrack(targetTrackId);
+	if (track)
 	{
 		track->stagingTargetPageIndex.store(track->currentPageIndex.load());
 	}
@@ -20,12 +19,12 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, con
 	{
 		if (audioProcessor.getUseLocalModel())
 		{
-			generateLoopLocal(request, trackId);
+			generateLoopLocal(request, targetTrackId);
 		}
 		else
 		{
 			DjIaClient::LoopRequest apiRequest = request;
-			generateLoopAPI(apiRequest, trackId);
+			generateLoopAPI(apiRequest, targetTrackId);
 		}
 	}
 	catch (const std::exception &e)
@@ -36,12 +35,12 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, con
 		audioProcessor.setCorrectMidiNoteReceived(false);
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
-		if (TrackData *track = audioProcessor.getTrack(trackId))
+		if (track)
 		{
 			track->stagingTargetPageIndex.store(-1);
 		}
 		reEnableCanvasGenerate();
-		notifyGenerationComplete(trackId, "Error: " + juce::String(e.what()));
+		notifyGenerationComplete(targetTrackId, "Error: " + juce::String(e.what()));
 	}
 }
 
@@ -491,74 +490,6 @@ void GenerationManager::handleGenerate()
 		}
 		audioProcessor.getMidiLearnManager().changedGenerateSlotIndex.store(-1);
 	}
-}
-
-void GenerationManager::syncSelectedTrackWithGlobalPrompt()
-{
-	TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
-	if (!track)
-		return;
-	juce::String currentGlobalPrompt = audioProcessor.getGlobalPrompt();
-	track->getCurrentPage().selectedPrompt = currentGlobalPrompt;
-	juce::MessageManager::callAsync(
-	    [this, currentGlobalPrompt]()
-	    {
-		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-		    {
-			    for (auto &trackComp : editor->uiTrackManager->getTrackComponents())
-			    {
-				    if (trackComp->getTrackId() == audioProcessor.getSelectedTrackId())
-				    {
-					    trackComp->updatePromptSelection(currentGlobalPrompt);
-					    break;
-				    }
-			    }
-			    editor->uiStatusManager->setStatusWithTimeout(
-			        "Track prompt synced: " + currentGlobalPrompt.substring(0, 30) + "...", 2000);
-		    }
-	    });
-}
-
-void GenerationManager::generateLoopFromGlobalSettings()
-{
-	if (audioProcessor.getIsGenerating())
-		return;
-
-	TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
-	if (!track)
-		return;
-
-	track->stagingTargetPageIndex.store(track->currentPageIndex.load());
-
-	syncSelectedTrackWithGlobalPrompt();
-	audioProcessor.setIsGenerating(true);
-	audioProcessor.setGeneratingTrackId(audioProcessor.getSelectedTrackId());
-
-	juce::Thread::launch(
-	    [this]()
-	    {
-		    try
-		    {
-			    TrackData *track = audioProcessor.getTrack(audioProcessor.getSelectedTrackId());
-			    if (!track)
-				    return;
-
-			    auto &currentPage = track->getCurrentPage();
-
-			    currentPage.selectedPrompt = audioProcessor.getGlobalPrompt();
-			    currentPage.generationBpm = audioProcessor.getGlobalBpm();
-			    currentPage.generationKey = audioProcessor.getGlobalKey();
-			    currentPage.generationDuration = audioProcessor.getGlobalDuration();
-
-			    auto request = audioProcessor.createGlobalLoopRequest();
-			    generateLoop(request, audioProcessor.getSelectedTrackId());
-		    }
-		    catch (const std::exception & /*e*/)
-		    {
-			    audioProcessor.setIsGenerating(false);
-			    audioProcessor.setGeneratingTrackId("");
-		    }
-	    });
 }
 
 void GenerationManager::clearPendingAudio()

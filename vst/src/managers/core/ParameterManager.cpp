@@ -18,6 +18,24 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	apvts.addParameterListener("generate", listener);
 	apvts.addParameterListener("play", listener);
 
+	delayDivisionParam = apvts.getRawParameterValue("delayDivision");
+	delayFeedbackParam = apvts.getRawParameterValue("delayFeedback");
+	delayModeParam = apvts.getRawParameterValue("delayMode");
+
+	apvts.addParameterListener("delayDivision", listener);
+	apvts.addParameterListener("delayFeedback", listener);
+	apvts.addParameterListener("delayMode", listener);
+
+	reverbSizeParam = apvts.getRawParameterValue("reverbSize");
+	reverbDampingParam = apvts.getRawParameterValue("reverbDamping");
+	reverbWidthParam = apvts.getRawParameterValue("reverbWidth");
+	reverbMixParam = apvts.getRawParameterValue("reverbMix");
+
+	apvts.addParameterListener("reverbSize", listener);
+	apvts.addParameterListener("reverbDamping", listener);
+	apvts.addParameterListener("reverbWidth", listener);
+	apvts.addParameterListener("reverbMix", listener);
+
 	for (int i = 0; i < MAX_SLOTS; ++i)
 	{
 		juce::String s = "slot" + juce::String(i + 1);
@@ -79,6 +97,13 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 	apvts.removeParameterListener("play", listener);
 	apvts.removeParameterListener("nextTrack", listener);
 	apvts.removeParameterListener("prevTrack", listener);
+	apvts.removeParameterListener("delayDivision", listener);
+	apvts.removeParameterListener("delayFeedback", listener);
+	apvts.removeParameterListener("delayMode", listener);
+	apvts.removeParameterListener("reverbSize", listener);
+	apvts.removeParameterListener("reverbDamping", listener);
+	apvts.removeParameterListener("reverbWidth", listener);
+	apvts.removeParameterListener("reverbMix", listener);
 
 	for (int slot = 1; slot <= 8; ++slot)
 	{
@@ -128,6 +153,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterLow", "Master Low EQ", -12.0f, 12.0f, 0.0f));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("globalCrossfader", "Global Crossfader (Deck A/B)",
 	                                                             0.0f, 1.0f, 0.5f));
+
+	params.push_back(std::make_unique<juce::AudioParameterChoice>(
+	    "delayDivision", "Delay Time Division",
+	    juce::StringArray{"1/16", "1/8.", "1/8", "1/4.", "1/4", "1/2", "1 bar", "2 bars"}, 4));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("delayFeedback", "Delay Feedback", 0.0f, 0.95f, 0.4f));
+	params.push_back(std::make_unique<juce::AudioParameterChoice>("delayMode", "Delay Mode",
+	                                                              juce::StringArray{"Stereo", "Ping-Pong", "Mono"}, 0));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("reverbSize", "Reverb Size", 0.0f, 1.0f, 0.5f));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("reverbDamping", "Reverb Damping", 0.0f, 1.0f, 0.5f));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("reverbWidth", "Reverb Width", 0.0f, 1.0f, 1.0f));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("reverbMix", "Reverb Mix", 0.0f, 1.0f, 0.3f));
 
 	for (int i = 1; i <= 4; ++i)
 	{

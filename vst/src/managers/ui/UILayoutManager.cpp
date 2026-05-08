@@ -9,7 +9,7 @@ UILayoutManager::UILayoutManager(DjIaVstEditor &editor) : editor(editor)
 
 void UILayoutManager::layoutConfigSection(juce::Rectangle<int> area, int spacing)
 {
-	constexpr int numCtrl = 7;
+	constexpr int numCtrl = 5;
 	const int totalCtrlSpacing = (numCtrl - 1) * spacing;
 	const int ctrlBtnW = juce::jmax(24, (area.getWidth() - totalCtrlSpacing) / numCtrl);
 
@@ -18,10 +18,6 @@ void UILayoutManager::layoutConfigSection(juce::Rectangle<int> area, int spacing
 	editor.helpButton.setBounds(area.removeFromLeft(ctrlBtnW));
 	area.removeFromLeft(spacing);
 	editor.openMidiEditorButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	editor.loadSampleButton.setBounds(area.removeFromLeft(ctrlBtnW));
-	area.removeFromLeft(spacing);
-	editor.autoLoadButton.setBounds(area.removeFromLeft(ctrlBtnW));
 	area.removeFromLeft(spacing);
 	editor.bypassSequencerButton.setBounds(area.removeFromLeft(ctrlBtnW));
 	area.removeFromLeft(spacing);
@@ -74,11 +70,12 @@ void UILayoutManager::resized()
 	resizing = true;
 	const int spacing = 4;
 	const int padding = 6;
+	const int panelWidth = 290;
 	auto fullBounds = editor.getLocalBounds();
 
 	const int configBarHeight = 36;
 	const int bankWidth = (editor.leftPanelWrapper && editor.leftPanelWrapper->isVisible())
-	                          ? juce::jmax(290, fullBounds.getWidth() / 6)
+	                          ? juce::jmax(panelWidth, fullBounds.getWidth() / 6)
 	                          : 0;
 
 	if (editor.leftPanelWrapper && editor.leftPanelWrapper->isVisible())
@@ -93,7 +90,7 @@ void UILayoutManager::resized()
 	else
 	{
 		auto configArea = fullBounds.removeFromTop(configBarHeight).reduced(padding, 4);
-		auto configZone = configArea.removeFromLeft(290);
+		auto configZone = configArea.removeFromLeft(panelWidth);
 		layoutConfigSection(configZone, spacing);
 	}
 
@@ -107,7 +104,7 @@ void UILayoutManager::resized()
 	int mixerHeight = juce::jlimit(minMixerHeight, maxMixerHeight, static_cast<int>(totalHeight * 0.28f));
 	int tracksHeight = totalHeight - mixerHeight - spacing;
 	auto tracksArea = area.removeFromTop(tracksHeight);
-	const int rightPanelWidth = 290;
+	const int rightPanelWidth = panelWidth;
 
 	if (editor.rightPanelWrapper)
 	{

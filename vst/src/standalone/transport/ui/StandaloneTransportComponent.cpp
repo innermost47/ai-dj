@@ -375,7 +375,7 @@ void StandaloneTransportComponent::udpatePlayButtonDisplay(bool isPlaying)
 
 void StandaloneTransportComponent::resized()
 {
-	auto area = getLocalBounds().reduced(8);
+	auto area = getLocalBounds().reduced(12, 6);
 	const int rowGap = 8;
 
 	const int lcdH = juce::jlimit(46, 68, (int)(area.getHeight() * 0.28f));
@@ -425,17 +425,11 @@ void StandaloneTransportComponent::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 	const float corner = 5.0f;
 
-	g.setColour(juce::Colours::black.withAlpha(0.3f));
-	g.fillRoundedRectangle(bounds.translated(0, 1.0f), corner);
+	g.setColour(ColourPalette::backgroundMid);
+	g.fillRoundedRectangle(bounds.toFloat(), corner);
 
-	juce::ColourGradient bgGradient(ColourPalette::backgroundMid.brighter(0.04f), bounds.getX(), bounds.getY(),
-	                                ColourPalette::backgroundMid.darker(0.08f), bounds.getX(), bounds.getBottom(),
-	                                false);
-	g.setGradientFill(bgGradient);
-	g.fillRoundedRectangle(bounds, corner);
-
-	g.setColour(juce::Colours::white.withAlpha(0.04f));
-	g.fillRoundedRectangle(bounds.withHeight(bounds.getHeight() * 0.4f), corner);
+	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
+	g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.0f);
 }
 
 void StandaloneTransportComponent::timerCallback()

@@ -22,30 +22,14 @@ TrackComponent::~TrackComponent()
 
 	for (int i = 0; i < 4; ++i)
 	{
-		pageButtons[i].setLookAndFeel(nullptr);
 		pageButtons[i].onClick = nullptr;
 		pageButtons[i].onMidiLearn = nullptr;
 		pageButtons[i].onMidiRemove = nullptr;
 	}
 
-	drawButton.setLookAndFeel(nullptr);
-	generateButton.setLookAndFeel(nullptr);
-	previewButton.setLookAndFeel(nullptr);
-	originalSyncButton.setLookAndFeel(nullptr);
-	randomRetriggerButton.setLookAndFeel(nullptr);
-	randomDurationToggle.setLookAndFeel(nullptr);
-	intervalKnob.setLookAndFeel(nullptr);
-
-	adsrAttackKnob.setLookAndFeel(nullptr);
-	adsrDecayKnob.setLookAndFeel(nullptr);
-	adsrSustainKnob.setLookAndFeel(nullptr);
-	adsrReleaseKnob.setLookAndFeel(nullptr);
-
 	sequencer.reset();
 	waveformDisplay.reset();
 	drawingCanvas.reset();
-
-	removeAllChildren();
 
 	if (track && track->slotIndex != -1)
 	{
@@ -385,12 +369,6 @@ void TrackComponent::setSelected(bool selected)
 	syncBorderOverlay();
 }
 
-void TrackComponent::mouseDown(const juce::MouseEvent &)
-{
-	if (onSelectTrack)
-		onSelectTrack(trackId);
-}
-
 void TrackComponent::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
@@ -495,12 +473,28 @@ void TrackComponent::resized()
 	auto area = fullBounds.reduced(6);
 	auto headerArea = area.removeFromTop(32);
 	auto &currentPage = track->getCurrentPage();
-	auto pagesArea = headerArea.removeFromLeft(48);
+	auto pagesArea = headerArea.removeFromLeft(38);
 	int pagesGridHeight = PAGE_BUTTON_SIZE * 2 + 2;
 	int yOffset = (pagesArea.getHeight() - pagesGridHeight) / 2;
 	pagesArea.removeFromTop(yOffset);
 	pagesArea.setHeight(pagesGridHeight);
 	layoutPagesButtons(pagesArea);
+
+	{
+		const int selectorsWidth = 82;
+		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
+		selectorsArea.removeFromTop(2);
+		const int selectorHeight = 16;
+		const int gap = 3;
+		const int totalStackHeight = selectorHeight * 2 + gap;
+		int selectorsYOffset = (selectorsArea.getHeight() - totalStackHeight) / 2;
+
+		promptPresetSelector.setBounds(selectorsArea.getX(), selectorsArea.getY() + selectorsYOffset,
+		                               selectorsArea.getWidth(), selectorHeight);
+
+		modelSelector.setBounds(selectorsArea.getX(), selectorsArea.getY() + selectorsYOffset + selectorHeight + gap,
+		                        selectorsArea.getWidth(), selectorHeight);
+	}
 
 	headerArea.removeFromLeft(INTRA_CLUSTER_GAP);
 
@@ -540,7 +534,7 @@ void TrackComponent::resized()
 		                        labelHeight);
 	}
 
-	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+	headerArea.removeFromLeft(INTRA_CLUSTER_GAP);
 	{
 		const int adsrKnobDiam = 32;
 		const int adsrLabelH = 8;
@@ -747,6 +741,7 @@ void TrackComponent::layoutPagesButtons(juce::Rectangle<int> area)
 	int buttonSize = PAGE_BUTTON_SIZE;
 	int spacing = 2;
 
+	area.removeFromTop(spacing);
 	auto topRow = area.removeFromTop(buttonSize);
 	pageButtons[0].setBounds(topRow.removeFromLeft(buttonSize));
 	topRow.removeFromLeft(spacing);
@@ -1217,9 +1212,6 @@ void TrackComponent::setupUI()
 	addAndMakeVisible(promptPresetSelector);
 	addAndMakeVisible(modelSelector);
 
-	promptPresetSelector.setVisible(false);
-	modelSelector.setVisible(false);
-
 	auto &models = AiModelDefinitions::getAvailableModels();
 	for (int i = 0; i < models.size(); ++i)
 	{
@@ -1554,41 +1546,47 @@ void TrackComponent::setSliderParameter(juce::String name, juce::Slider &slider)
 
 void TrackComponent::loadPromptPresets()
 {
+	juce::Component::SafePointer<TrackComponent> safeThis(this);
+
 	juce::MessageManager::callAsync(
-	    [this]()
+	    [safeThis]() mutable
 	    {
-		    if (promptPresetSelector.isVisible() || promptPresetSelector.getParentComponent() != nullptr)
+		    if (safeThis == nullptr)
+			    return;
+
+		    safeThis->promptPresetSelector.clear(juce::dontSendNotification);
+
+		    if (safeThis->track == nullptr)
+			    return;
+
+		    auto &audioProcessor = safeThis->audioProcessor;
+		    juce::String currentModel = safeThis->track->getCurrentPage().selectedModel;
+		    juce::StringArray allPrompts = audioProcessor.getAvailablePromptsForModel(currentModel);
+
+		    safeThis->promptPresets = allPrompts;
+
+		    for (int i = 0; i < allPrompts.size(); ++i)
 		    {
-			    if (promptPresetSelector.getNumItems() > 0)
-			    {
-				    promptPresetSelector.clear();
-			    }
+			    safeThis->promptPresetSelector.addItem(allPrompts[i], i + 1);
+		    }
 
-			    juce::String currentModel = track ? track->getCurrentPage().selectedModel : "";
-			    juce::StringArray allPrompts = audioProcessor.getAvailablePromptsForModel(currentModel);
+		    bool selected = false;
+		    const auto &selectedPrompt = safeThis->track->getCurrentPage().selectedPrompt;
 
-			    promptPresets = allPrompts;
-			    for (int i = 0; i < allPrompts.size(); ++i)
+		    if (selectedPrompt.isNotEmpty())
+		    {
+			    int index = allPrompts.indexOf(selectedPrompt);
+			    if (index >= 0)
 			    {
-				    promptPresetSelector.addItem(allPrompts[i], i + 1);
+				    safeThis->promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
+				    selected = true;
 			    }
-			    bool selected = false;
-			    if (track && !track->getCurrentPage().selectedPrompt.isEmpty())
-			    {
-				    int index = allPrompts.indexOf(track->getCurrentPage().selectedPrompt);
-				    if (index >= 0)
-				    {
-					    promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
-					    selected = true;
-				    }
-			    }
+		    }
 
-			    if (!selected && allPrompts.size() > 0)
-			    {
-				    promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
-				    if (track)
-					    track->getCurrentPage().selectedPrompt = allPrompts[0];
-			    }
+		    if (!selected && allPrompts.size() > 0)
+		    {
+			    safeThis->promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
+			    safeThis->track->getCurrentPage().selectedPrompt = allPrompts[0];
 		    }
 	    });
 }
