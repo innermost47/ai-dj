@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "AudioManager.h"
+#include "Console6Bus.h"
 #include "DjIaClient.h"
 #include "GenerationManager.h"
 #include "MidiLearnManager.h"
@@ -690,6 +691,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	ParameterManager parameterManager;
 	SequencerManager sequencerManager;
 	AudioManager audioManager;
+	Console6Buss masterConsoleBuss;
 	std::unique_ptr<SampleBank> sampleBank;
 	std::unique_ptr<ObsidianEngine> obsidianEngine;
 	std::unique_ptr<PromptBank> promptBank;

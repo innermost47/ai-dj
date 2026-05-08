@@ -83,6 +83,7 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	if (standaloneTransport)
 		setPlayHead(standaloneTransport.get());
 #endif
+	masterConsoleBuss.prepare(sampleRate);
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -423,6 +424,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	audioManager.copyToIndividualOutputs(buffer);
 	audioManager.applyMasterEffects(mainOutput);
+	masterConsoleBuss.process(mainOutput, 0, mainOutput.getNumSamples());
 	auto *lastBus = getBus(false, getBusCount(false) - 1);
 	bool previewBusIsEffectivelyEnabled = (lastBus != nullptr && lastBus->isEnabled());
 	audioManager.renderPreviewToOutput(previewBus, mainOutput, buffer.getNumSamples(), getSampleRate(),

@@ -212,6 +212,8 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/tracks/SequencerComponent.cpp
     src/components/tracks/TrackComponent.cpp
     src/components/tracks/WaveformDisplay.cpp
+    src/dsp/airwindows/Console6Channel.cpp
+    src/dsp/airwindows/Console6Bus.cpp
     src/dsp/AudioAnalyzer.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
@@ -254,6 +256,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/config
     src/data
     src/dsp
+    src/dsp/airwindows
     src/engines
     src/managers/core
     src/managers/ui

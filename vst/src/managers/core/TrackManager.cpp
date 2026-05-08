@@ -91,6 +91,11 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, previewOutput, numSamples, bufferIndex,
 			                  hostBpm);
 
+			track->consoleChannel.process(tempIndividualBuffer, 0, numSamples);
+
+			for (int ch = 0; ch < std::min(tempMixBuffer.getNumChannels(), tempIndividualBuffer.getNumChannels()); ++ch)
+				tempMixBuffer.copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
+
 			float deckGainStart = 1.0f;
 			float deckGainEnd = 1.0f;
 			int pairIdx = track->getPairIndex();

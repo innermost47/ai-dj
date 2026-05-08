@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Console6Channel.h"
 #include "DjIaClient.h"
 #include <JuceHeader.h>
 
@@ -136,6 +137,8 @@ struct TrackData
 
 	juce::AudioSampleBuffer stagingBuffer;
 	juce::AudioBuffer<float> originalStagingBuffer;
+
+	Console6Channel consoleChannel;
 
 	juce::String trackId;
 	juce::String trackName;
