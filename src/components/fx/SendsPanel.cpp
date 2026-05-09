@@ -1,10 +1,8 @@
 ﻿#include "SendsPanel.h"
 #include "PluginProcessor.h"
 
-SendsPanel::SendsPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
+SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(processor)
 {
-	auto &apvts = audioProcessor.getParameterManager().getAPVTS();
-
 	delayTitleLbl.setText("DELAY", juce::dontSendNotification);
 	delayTitleLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
 	delayTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
@@ -31,8 +29,6 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 	delayFeedbackKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	styleKnob(delayFeedbackKnob, ColourPalette::violet);
 	addAndMakeVisible(delayFeedbackKnob);
-	feedbackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "delayFeedback",
-	                                                                                            delayFeedbackKnob);
 
 	reverbTitleLbl.setText("REVERB", juce::dontSendNotification);
 	reverbTitleLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
@@ -43,69 +39,104 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 	styleSubLbl(reverbDampingLbl, "Damping");
 	styleSubLbl(reverbWidthLbl, "Width");
 	styleSubLbl(reverbMixLbl, "Mix");
+
 	addAndMakeVisible(reverbSizeLbl);
 	addAndMakeVisible(reverbDampingLbl);
 	addAndMakeVisible(reverbWidthLbl);
 	addAndMakeVisible(reverbMixLbl);
 
-	auto setupKnob = [&](juce::Slider &s)
+	wireParameters();
+
+	auto setupKnob = [&](MidiLearnableSlider &s, juce::String paramId)
 	{
 		s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 		s.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 		styleKnob(s, ColourPalette::teal);
+		syncSliderRange(s, paramId);
 		addAndMakeVisible(s);
 	};
 
-	setupKnob(reverbSizeKnob);
-	setupKnob(reverbDampingKnob);
-	setupKnob(reverbWidthKnob);
-	setupKnob(reverbMixKnob);
+	setupKnob(reverbSizeKnob, "reverbSize");
+	setupKnob(reverbDampingKnob, "reverbDamping");
+	setupKnob(reverbWidthKnob, "reverbWidth");
+	setupKnob(reverbMixKnob, "reverbMix");
 
-	reverbSizeAttachment =
-	    std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "reverbSize", reverbSizeKnob);
-	reverbDampingAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-	    apvts, "reverbDamping", reverbDampingKnob);
-	reverbWidthAttachment =
-	    std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "reverbWidth", reverbWidthKnob);
-	reverbMixAttachment =
-	    std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(apvts, "reverbMix", reverbMixKnob);
+	syncSliderRange(delayFeedbackKnob, "delayFeedback");
 
-	apvts.addParameterListener("delayDivision", this);
-	apvts.addParameterListener("delayMode", this);
+	refreshRadioButtonsForParam("delayDivision");
+	refreshRadioButtonsForParam("delayMode");
 }
 
-SendsPanel::~SendsPanel()
+void SendsPanel::wireParameters()
 {
-	auto &apvts = audioProcessor.getParameterManager().getAPVTS();
-	apvts.removeParameterListener("delayDivision", this);
-	apvts.removeParameterListener("delayMode", this);
+	registerSliderParam("delayFeedback", delayFeedbackKnob);
+	registerSliderParam("reverbSize", reverbSizeKnob);
+	registerSliderParam("reverbDamping", reverbDampingKnob);
+	registerSliderParam("reverbWidth", reverbWidthKnob);
+	registerSliderParam("reverbMix", reverbMixKnob);
+
+	registerMidiLearn("delayFeedback", &delayFeedbackKnob);
+	registerMidiLearn("reverbSize", &reverbSizeKnob);
+	registerMidiLearn("reverbDamping", &reverbDampingKnob);
+	registerMidiLearn("reverbWidth", &reverbWidthKnob);
+	registerMidiLearn("reverbMix", &reverbMixKnob);
+
+	subscribeToParam("delayDivision");
+	subscribeToParam("delayMode");
+
+	auto curveCallback = [this](const juce::String &paramID, int targetIndex, int totalCount)
+	{
+		return [this, paramID, targetIndex, totalCount](float value)
+		{
+			if (value > 0.5f)
+			{
+				juce::MessageManager::callAsync(
+				    [this, paramID, targetIndex, totalCount]()
+				    {
+					    if (auto *p = getProcessor().getParameterTreeState().getParameter(paramID))
+					    {
+						    p->beginChangeGesture();
+						    p->setValueNotifyingHost((float)targetIndex / (float)(totalCount - 1));
+						    p->endChangeGesture();
+					    }
+				    });
+			}
+		};
+	};
+
+	for (int i = 0; i < (int)delayDivisionButtons.size(); ++i)
+	{
+		registerMidiLearn("delayDivision", delayDivisionButtons[i].get(),
+		                  curveCallback("delayDivision", i, (int)delayDivisionButtons.size()));
+	}
+	for (int i = 0; i < (int)delayModeButtons.size(); ++i)
+	{
+		registerMidiLearn("delayMode", delayModeButtons[i].get(),
+		                  curveCallback("delayMode", i, (int)delayModeButtons.size()));
+	}
 }
 
-void SendsPanel::parameterChanged(const juce::String &paramID, float /*newValue*/)
+void SendsPanel::onParameterChangedUI(const juce::String &paramSuffix, float /*normalizedValue*/)
 {
-	juce::MessageManager::callAsync(
-	    [this, paramID]()
-	    {
-		    auto &apvts = audioProcessor.getParameterManager().getAPVTS();
+	if (paramSuffix == "delayDivision" || paramSuffix == "delayMode")
+		refreshRadioButtonsForParam(paramSuffix);
+}
 
-		    if (paramID == "delayDivision")
-		    {
-			    int idx = (int)apvts.getParameter("delayDivision")->getValue() * ((int)delayDivisionButtons.size() - 1);
-			    auto *p = apvts.getParameter("delayDivision");
-			    int max = (int)delayDivisionButtons.size() - 1;
-			    idx = juce::jlimit(0, max, (int)(p->getValue() * max + 0.5f));
-			    for (int i = 0; i < (int)delayDivisionButtons.size(); ++i)
-				    delayDivisionButtons[i]->setToggleState(i == idx, juce::dontSendNotification);
-		    }
-		    else if (paramID == "delayMode")
-		    {
-			    auto *p = apvts.getParameter("delayMode");
-			    int max = (int)delayModeButtons.size() - 1;
-			    int idx = juce::jlimit(0, max, (int)(p->getValue() * max + 0.5f));
-			    for (int i = 0; i < (int)delayModeButtons.size(); ++i)
-				    delayModeButtons[i]->setToggleState(i == idx, juce::dontSendNotification);
-		    }
-	    });
+void SendsPanel::refreshRadioButtonsForParam(const juce::String &paramID)
+{
+	auto &apvts = getProcessor().getParameterTreeState();
+	auto *p = apvts.getParameter(paramID);
+	if (!p)
+		return;
+
+	auto &buttons = (paramID == "delayDivision") ? delayDivisionButtons : delayModeButtons;
+	int max = (int)buttons.size() - 1;
+	if (max < 0)
+		return;
+
+	int idx = juce::jlimit(0, max, (int)(p->getValue() * max + 0.5f));
+	for (int i = 0; i < (int)buttons.size(); ++i)
+		buttons[i]->setToggleState(i == idx, juce::dontSendNotification);
 }
 
 void SendsPanel::styleKnob(juce::Slider &s, juce::Colour col)
@@ -117,24 +148,25 @@ void SendsPanel::styleKnob(juce::Slider &s, juce::Colour col)
 
 void SendsPanel::setupDelayDivisionButtons()
 {
-	auto &apvts = audioProcessor.getParameterManager().getAPVTS();
+	auto &apvts = getProcessor().getParameterTreeState();
 	auto *param = apvts.getParameter("delayDivision");
 
 	juce::StringArray labels{"1/16", "1/8.", "1/8", "1/4.", "1/4", "1/2", "1 bar", "2 bars"};
 
 	for (int i = 0; i < labels.size(); ++i)
 	{
-		auto btn = std::make_unique<LedRadioButton>(labels[i], ColourPalette::violet);
+		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::violet);
 		btn->setRadioGroupId(0xDEAD);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
 
 		int idx = i;
-		btn->onClick = [param, idx, labels]()
+		int total = labels.size();
+		btn->onClick = [param, idx, total]()
 		{
 			param->beginChangeGesture();
-			param->setValueNotifyingHost((float)idx / (float)(labels.size() - 1));
+			param->setValueNotifyingHost((float)idx / (float)(total - 1));
 			param->endChangeGesture();
 		};
 
@@ -145,24 +177,25 @@ void SendsPanel::setupDelayDivisionButtons()
 
 void SendsPanel::setupDelayModeButtons()
 {
-	auto &apvts = audioProcessor.getParameterManager().getAPVTS();
+	auto &apvts = getProcessor().getParameterTreeState();
 	auto *param = apvts.getParameter("delayMode");
 
 	juce::StringArray labels{"Stereo", "Ping-Pong", "Mono"};
 
 	for (int i = 0; i < labels.size(); ++i)
 	{
-		auto btn = std::make_unique<LedRadioButton>(labels[i], ColourPalette::amber);
+		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::amber);
 		btn->setRadioGroupId(0xBEEF);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
 
 		int idx = i;
-		btn->onClick = [param, idx, labels]()
+		int total = labels.size();
+		btn->onClick = [param, idx, total]()
 		{
 			param->beginChangeGesture();
-			param->setValueNotifyingHost((float)idx / (float)(labels.size() - 1));
+			param->setValueNotifyingHost((float)idx / (float)(total - 1));
 			param->endChangeGesture();
 		};
 

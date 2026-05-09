@@ -107,6 +107,12 @@ void ObsidianBaseMidiComponent::pushSliderToParam(Binding &b)
 	p->setValueNotifyingHost(range.convertTo0to1(value));
 }
 
+void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, juce::String paramId)
+{
+	auto range = audioProcessor.getParameterTreeState().getParameterRange(paramId);
+	s.setRange(range.start, range.end, range.interval);
+}
+
 void ObsidianBaseMidiComponent::pushButtonToParam(Binding &b)
 {
 	if (!b.button)

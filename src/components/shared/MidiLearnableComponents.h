@@ -17,7 +17,7 @@ template <typename ComponentType>
 class MidiLearnable : public ComponentType, public MidiLearnableBase, private juce::Timer
 {
   public:
-	MidiLearnable()
+	template <typename... Args> MidiLearnable(Args &&...args) : ComponentType(std::forward<Args>(args)...)
 	{
 		learningMode = false;
 		blinkState = false;

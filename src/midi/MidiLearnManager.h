@@ -70,7 +70,7 @@ class MidiLearnManager : public juce::Timer
 	MidiMapping learningMapping;
 	DjIaVstEditor *currentEditor = nullptr;
 	MidiLearnableBase *currentLearningComponent = nullptr;
-	void showStatus(const MidiMapping &mapping, const juce::String &text, bool isWarning);
+	void showStatus(const MidiMapping &mapping, const juce::String &text, bool isWarning = false);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiLearnManager)
 };

@@ -174,25 +174,7 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 	}
 
 	juce::String fullMessage = "MIDI mapping created: " + midiDescription + " >> " + learningDescription;
-	juce::MessageManager::callAsync(
-	    [mapping, fullMessage]()
-	    {
-		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-		    {
-			    editor->statusLabel.setText(fullMessage, juce::dontSendNotification);
-			    editor->uiStatusManager->updateLCD();
-			    juce::Timer::callAfterDelay(
-			        2000,
-			        [mapping]()
-			        {
-				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-				        {
-					        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-					        editor->uiStatusManager->updateLCD();
-				        }
-			        });
-		    }
-	    });
+	showStatus(mapping, fullMessage);
 
 	stopLearning();
 
@@ -314,33 +296,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				if (mapping.uiCallback && mapping.processor->getActiveEditor())
 				{
 					mapping.uiCallback(value);
-
-					juce::MessageManager::callAsync(
-					    [mapping, statusMessage]()
-					    {
-						    if (mapping.processor->getActiveEditor())
-						    {
-							    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-							    {
-								    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-								    editor->uiStatusManager->updateLCD();
-								    juce::Timer::callAfterDelay(
-								        2000,
-								        [mapping]()
-								        {
-									        if (mapping.processor->getActiveEditor())
-									        {
-										        if (auto *editor = dynamic_cast<DjIaVstEditor *>(
-										                mapping.processor->getActiveEditor()))
-										        {
-											        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-											        editor->uiStatusManager->updateLCD();
-										        }
-									        }
-								        });
-							    }
-						    }
-					    });
+					showStatus(mapping, statusMessage);
 				}
 				continue;
 			}
@@ -348,26 +304,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 			{
 				if (message.isNoteOn() && isBooleanParameter(mapping.parameterName))
 				{
-					juce::MessageManager::callAsync(
-					    [mapping, statusMessage]()
-					    {
-						    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-						    {
-							    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-							    editor->uiStatusManager->updateLCD();
-							    juce::Timer::callAfterDelay(
-							        2000,
-							        [mapping]()
-							        {
-								        if (auto *editor =
-								                dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-								        {
-									        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-									        editor->uiStatusManager->updateLCD();
-								        }
-							        });
-						    }
-					    });
+					showStatus(mapping, statusMessage);
 				}
 				continue;
 			}
@@ -398,27 +335,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 
 							statusMessage += " (Page " + juce::String((char)('A' + pageIndex)) + " triggered)";
 
-							juce::MessageManager::callAsync(
-							    [mapping, statusMessage]()
-							    {
-								    if (auto *editor =
-								            dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-								    {
-									    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-									    editor->uiStatusManager->updateLCD();
-									    juce::Timer::callAfterDelay(
-									        2000,
-									        [mapping]()
-									        {
-										        if (auto *editor = dynamic_cast<DjIaVstEditor *>(
-										                mapping.processor->getActiveEditor()))
-										        {
-											        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-											        editor->uiStatusManager->updateLCD();
-										        }
-									        });
-								    }
-							    });
+							showStatus(mapping, statusMessage);
 						}
 					}
 				}
@@ -439,26 +356,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 
 						statusMessage += " (Sequence " + seqStr + " selected)";
 
-						juce::MessageManager::callAsync(
-						    [mapping, statusMessage]()
-						    {
-							    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-							    {
-								    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-								    editor->uiStatusManager->updateLCD();
-								    juce::Timer::callAfterDelay(
-								        2000,
-								        [mapping]()
-								        {
-									        if (auto *editor =
-									                dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-									        {
-										        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-										        editor->uiStatusManager->updateLCD();
-									        }
-								        });
-							    }
-						    });
+						showStatus(mapping, statusMessage);
 					}
 				}
 				continue;
@@ -484,31 +382,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 					}
 				}
 				param->setValueNotifyingHost(value);
-				juce::MessageManager::callAsync(
-				    [mapping, statusMessage, isWarning]()
-				    {
-					    if (auto *editor = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-					    {
-						    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
-						    editor->uiStatusManager->updateLCD();
-						    if (isWarning)
-						    {
-							    editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
-						    }
-						    juce::Timer::callAfterDelay(
-						        2000,
-						        [mapping]()
-						        {
-							        if (auto *editor =
-							                dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-							        {
-								        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-								        editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-								        editor->uiStatusManager->updateLCD();
-							        }
-						        });
-					    }
-				    });
+				showStatus(mapping, statusMessage, isWarning);
 
 				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Play"))
 				{
@@ -573,18 +447,6 @@ void MidiLearnManager::showStatus(const MidiMapping &mapping, const juce::String
 			    editor->uiStatusManager->updateLCD();
 			    if (isWarning)
 				    editor->statusLabel.setColour(juce::Label::textColourId, ColourPalette::textWarning);
-
-			    juce::Timer::callAfterDelay(
-			        2000,
-			        [mapping]()
-			        {
-				        if (auto *ed = dynamic_cast<DjIaVstEditor *>(mapping.processor->getActiveEditor()))
-				        {
-					        ed->statusLabel.setText("Ready", juce::dontSendNotification);
-					        ed->statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-					        ed->uiStatusManager->updateLCD();
-				        }
-			        });
 		    }
 	    });
 }
@@ -685,6 +547,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 	const int CH_PERF = 0;
 	const int CH_SHAPE = 1;
 	const int CH_XFADER = 2;
+	const int CH_FX = 3;
 
 	auto addNote = [&](const juce::String &param, int note, int channel, const juce::String &desc)
 	{
@@ -712,6 +575,14 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 
 	addCC("masterVolume", 7, CH_PERF, "Master Volume");
 	addCC("masterPan", 10, CH_PERF, "Master Pan");
+
+	addCC("delayFeedback", 20, CH_FX, "Delay Feedback");
+	addCC("delayDivision", 21, CH_FX, "Delay Division");
+	addCC("delayMode", 22, CH_FX, "Delay Mode");
+	addCC("reverbSize", 23, CH_FX, "Reverb Size");
+	addCC("reverbDamping", 24, CH_FX, "Reverb Damping");
+	addCC("reverbWidth", 25, CH_FX, "Reverb Width");
+	addCC("reverbMix", 26, CH_FX, "Reverb Mix");
 
 	for (int i = 1; i <= 8; ++i)
 	{

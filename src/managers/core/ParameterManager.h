@@ -114,6 +114,23 @@ class ParameterManager
 		return booleanParamIds;
 	}
 
+	float getReverbSize() const
+	{
+		return safeLoad(reverbSizeParam);
+	}
+	float getReverbDamping() const
+	{
+		return safeLoad(reverbDampingParam);
+	}
+	float getReverbWidth() const
+	{
+		return safeLoad(reverbWidthParam);
+	}
+	float getReverbMix() const
+	{
+		return safeLoad(reverbMixParam);
+	}
+
 	void removeAllListeners(juce::AudioProcessorValueTreeState::Listener *listener);
 
 	float getRandomRetrigger(int slot) const

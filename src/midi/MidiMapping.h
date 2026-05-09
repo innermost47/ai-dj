@@ -1,8 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <JuceHeader.h>
-
 class DjIaVstProcessor;
-
 struct MidiMapping
 {
 	int midiType;
@@ -15,10 +13,12 @@ struct MidiMapping
 
 	static const int feedbackChannelMixer = 4;
 	static const int feedbackChannelShaping = 5;
+	static const int feedbackChannelSends = 6;
 
 	static const int feedbackIdle = 0;
 	static const int feedbackPending = 64;
 	static const int feedbackActive = 127;
+
 	static const int ccRequestState = 118;
 
 	static int ccFeedbackPlay(int slot)
@@ -82,6 +82,7 @@ struct MidiMapping
 	{
 		return 50 + slot;
 	}
+
 	static int ccFeedbackPairCrossfader(int pair)
 	{
 		return 59 + pair;
@@ -91,6 +92,14 @@ struct MidiMapping
 	static const int ccFeedbackMasterHigh = 66;
 	static const int ccFeedbackMasterMid = 67;
 	static const int ccFeedbackMasterLow = 68;
+
+	static const int ccFeedbackDelayFeedback = 20;
+	static const int ccFeedbackReverbSize = 21;
+	static const int ccFeedbackReverbDamping = 22;
+	static const int ccFeedbackReverbWidth = 23;
+	static const int ccFeedbackReverbMix = 24;
+	static const int ccFeedbackDelayDivision = 30;
+	static const int ccFeedbackDelayMode = 31;
 
 	static int adsrToMidi(float value, float rangeMin, float rangeMax)
 	{
@@ -112,5 +121,17 @@ struct MidiMapping
 	static int fineToMidi(float f)
 	{
 		return juce::jlimit(0, 127, juce::roundToInt((f + 100.0f) / 200.0f * 127.0f));
+	}
+
+	static int normalizedToMidi(float v)
+	{
+		return juce::jlimit(0, 127, juce::roundToInt(v * 127.0f));
+	}
+
+	static int indexToMidi(int idx, int total)
+	{
+		if (total <= 1)
+			return 0;
+		return juce::jlimit(0, 127, (idx * 127) / (total - 1));
 	}
 };

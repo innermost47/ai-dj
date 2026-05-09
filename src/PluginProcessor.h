@@ -778,6 +778,15 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages);
 	void getDawInformations(juce::AudioPlayHead *playHead, bool &isPlaying, double &bpm, double &ppq);
 	void handleSampleParams(int slot, TrackData *track);
+	void handleSendsParams();
+
+	std::atomic<float> lastFeedbackDelayFeedback{0.0f};
+	std::atomic<float> lastFeedbackReverbSize{0.0f};
+	std::atomic<float> lastFeedbackReverbDamping{0.0f};
+	std::atomic<float> lastFeedbackReverbWidth{0.0f};
+	std::atomic<float> lastFeedbackReverbMix{0.0f};
+	std::atomic<int> lastFeedbackDelayDivision{-1};
+	std::atomic<int> lastFeedbackDelayMode{-1};
 
 	static juce::File getGlobalConfigFile();
 

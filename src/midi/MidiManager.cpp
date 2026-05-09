@@ -79,6 +79,18 @@ void MidiManager::sendFullStateFeedback()
 	                 MidiMapping::feedbackChannelShaping);
 	sendMidiFeedback(MidiMapping::ccFeedbackCrossfaderCurve, audioProcessor.getCrossfaderCurveMode() * 63,
 	                 MidiMapping::feedbackChannelShaping);
+
+	const int chFx = MidiMapping::feedbackChannelSends;
+
+	sendMidiFeedback(MidiMapping::ccFeedbackDelayFeedback, MidiMapping::normalizedToMidi(pm.getFeedback()), chFx);
+	sendMidiFeedback(MidiMapping::ccFeedbackReverbSize, MidiMapping::normalizedToMidi(pm.getReverbSize()), chFx);
+	sendMidiFeedback(MidiMapping::ccFeedbackReverbDamping, MidiMapping::normalizedToMidi(pm.getReverbDamping()), chFx);
+	sendMidiFeedback(MidiMapping::ccFeedbackReverbWidth, MidiMapping::normalizedToMidi(pm.getReverbWidth()), chFx);
+	sendMidiFeedback(MidiMapping::ccFeedbackReverbMix, MidiMapping::normalizedToMidi(pm.getReverbMix()), chFx);
+
+	sendMidiFeedback(MidiMapping::ccFeedbackDelayDivision, MidiMapping::indexToMidi(pm.getDelayDivisionIndex(), 8),
+	                 chFx);
+	sendMidiFeedback(MidiMapping::ccFeedbackDelayMode, MidiMapping::indexToMidi(pm.getDelayModeIndex(), 3), chFx);
 }
 
 void MidiManager::notifyPageChangedFeedback(int slotNumber, int pageIndex)

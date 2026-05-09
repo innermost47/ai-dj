@@ -41,6 +41,8 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 
 	void syncBindingsFromParameters();
 
+	void syncSliderRange(juce::Slider &s, juce::String paramId);
+
 	void subscribeToParam(const juce::String &paramSuffix);
 
 	void markForDestruction()

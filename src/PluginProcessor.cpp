@@ -37,7 +37,11 @@ DjIaVstProcessor::DjIaVstProcessor()
 	{ juce::MessageManager::callAsync([this, trackId]() { audioManager.stopTrackPreview(trackId); }); };
 
 	static auto safeCallback = std::make_shared<std::function<void(int, TrackData *)>>(
-	    [this](int slot, TrackData *track) { handleSampleParams(slot, track); });
+	    [this](int slot, TrackData *track)
+	    {
+		    handleSampleParams(slot, track);
+		    handleSendsParams();
+	    });
 	trackManager.parameterUpdateCallback.store(safeCallback.get());
 
 	startTimerHz(30);
@@ -741,6 +745,39 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 				track->beatRepeatEndPosition.store(maxSamples);
 		}
 	}
+}
+
+void DjIaVstProcessor::handleSendsParams()
+{
+	auto &pm = parameterManager;
+	const int ch = MidiMapping::feedbackChannelSends;
+
+	auto pushFloatIfChanged = [&](std::atomic<float> &last, float cur, int cc)
+	{
+		if (std::abs(last.load() - cur) > 0.001f)
+		{
+			last.store(cur);
+			midiManager.sendMidiFeedback(cc, MidiMapping::normalizedToMidi(cur), ch);
+		}
+	};
+
+	auto pushIntIfChanged = [&](std::atomic<int> &last, int cur, int cc, int total)
+	{
+		if (last.load() != cur)
+		{
+			last.store(cur);
+			midiManager.sendMidiFeedback(cc, MidiMapping::indexToMidi(cur, total), ch);
+		}
+	};
+
+	pushFloatIfChanged(lastFeedbackDelayFeedback, pm.getFeedback(), MidiMapping::ccFeedbackDelayFeedback);
+	pushFloatIfChanged(lastFeedbackReverbSize, pm.getReverbSize(), MidiMapping::ccFeedbackReverbSize);
+	pushFloatIfChanged(lastFeedbackReverbDamping, pm.getReverbDamping(), MidiMapping::ccFeedbackReverbDamping);
+	pushFloatIfChanged(lastFeedbackReverbWidth, pm.getReverbWidth(), MidiMapping::ccFeedbackReverbWidth);
+	pushFloatIfChanged(lastFeedbackReverbMix, pm.getReverbMix(), MidiMapping::ccFeedbackReverbMix);
+
+	pushIntIfChanged(lastFeedbackDelayDivision, pm.getDelayDivisionIndex(), MidiMapping::ccFeedbackDelayDivision, 8);
+	pushIntIfChanged(lastFeedbackDelayMode, pm.getDelayModeIndex(), MidiMapping::ccFeedbackDelayMode, 3);
 }
 
 void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double /*hostBpm*/)
