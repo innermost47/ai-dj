@@ -20,11 +20,7 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor) : audioProcess
 
 void RightPanelWrapper::paint(juce::Graphics &g)
 {
-	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRect(getLocalBounds(), 1);
+	paintBaseBackground(g);
 }
 
 void RightPanelWrapper::resized()

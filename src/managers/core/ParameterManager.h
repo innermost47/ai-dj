@@ -18,39 +18,39 @@ class ParameterManager
 
 	float getVolume(int slot) const
 	{
-		return safeLoad(slotVolumeParams[slot]);
+		return safeLoadIndexed(slotVolumeParams, slot);
 	}
 	float getPan(int slot) const
 	{
-		return safeLoad(slotPanParams[slot]);
+		return safeLoadIndexed(slotPanParams, slot);
 	}
 	float getPitch(int slot) const
 	{
-		return safeLoad(slotPitchParams[slot]);
+		return safeLoadIndexed(slotPitchParams, slot);
 	}
 	float getFine(int slot) const
 	{
-		return safeLoad(slotFineParams[slot]);
+		return safeLoadIndexed(slotFineParams, slot);
 	}
 	float getAttack(int slot) const
 	{
-		return safeLoad(slotAdsrAttackParams[slot]);
+		return safeLoadIndexed(slotAdsrAttackParams, slot);
 	}
 	float getDecay(int slot) const
 	{
-		return safeLoad(slotAdsrDecayParams[slot]);
+		return safeLoadIndexed(slotAdsrDecayParams, slot);
 	}
 	float getSustain(int slot) const
 	{
-		return safeLoad(slotAdsrSustainParams[slot]);
+		return safeLoadIndexed(slotAdsrSustainParams, slot);
 	}
 	float getRelease(int slot) const
 	{
-		return safeLoad(slotAdsrReleaseParams[slot]);
+		return safeLoadIndexed(slotAdsrReleaseParams, slot);
 	}
 	float getGenerate(int slot) const
 	{
-		return safeLoad(slotGenerateParams[slot]);
+		return safeLoadIndexed(slotGenerateParams, slot);
 	}
 
 	bool getMute(int slot) const
@@ -289,6 +289,14 @@ class ParameterManager
 	static float safeLoad(const std::atomic<float> *p)
 	{
 		return p ? p->load() : 0.0f;
+	}
+
+  private:
+	template <size_t N> static float safeLoadIndexed(std::atomic<float> *const (&arr)[N], int index)
+	{
+		if (index < 0 || index >= (int)N)
+			return 0.0f;
+		return safeLoad(arr[index]);
 	}
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ParameterManager)

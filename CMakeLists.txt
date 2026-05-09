@@ -208,6 +208,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/mixer/MixerChannel.cpp
     src/components/mixer/MixerPanel.cpp
     src/components/mixer/VuMeter.cpp
+    src/components/ObsidianBaseMidiComponent.cpp
     src/components/shared/ColourPicker.cpp
     src/components/shared/IconButton.cpp
     src/components/shared/LedRadioButton.cpp

@@ -145,9 +145,6 @@ void DjIaVstEditor::parentHierarchyChanged()
 		window->setTitleBarButtonsRequired(juce::DocumentWindow::minimiseButton | juce::DocumentWindow::maximiseButton |
 		                                       juce::DocumentWindow::closeButton,
 		                                   false);
-
-		window->setResizable(true, false);
-		window->setFullScreen(true);
 	}
 }
 #endif

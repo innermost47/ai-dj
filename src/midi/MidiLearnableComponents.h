@@ -8,6 +8,9 @@ class MidiLearnableBase
 	virtual ~MidiLearnableBase() = default;
 	virtual void setLearningMode(bool isLearning) = 0;
 	virtual bool isLearning() const = 0;
+
+	std::function<void()> onMidiLearn;
+	std::function<void()> onMidiRemove;
 };
 
 template <typename ComponentType>
@@ -33,9 +36,6 @@ class MidiLearnable : public ComponentType, public MidiLearnableBase, private ju
 		stopTimer();
 		this->setVisible(false);
 	}
-
-	std::function<void()> onMidiLearn;
-	std::function<void()> onMidiRemove;
 
 	void setLearningMode(bool isLearning) override
 	{

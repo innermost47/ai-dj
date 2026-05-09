@@ -14,4 +14,13 @@ class ObsidianComponent : public juce::Component
 	{
 		return createIgnoredAccessibilityHandler(*this);
 	}
+
+	void paintBaseBackground(juce::Graphics &g)
+	{
+		auto bounds = getLocalBounds().toFloat();
+		g.setColour(ColourPalette::backgroundDark);
+		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
+		g.drawRect(getLocalBounds(), 1);
+	}
 };

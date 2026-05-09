@@ -291,7 +291,6 @@ void MixerPanel::refreshAllChannels()
 		if (mixerChannel && mixerChannel->track)
 		{
 			mixerChannel->cleanup();
-			mixerChannel->addEventListeners();
 			mixerChannel->updateFromTrackData();
 		}
 	}

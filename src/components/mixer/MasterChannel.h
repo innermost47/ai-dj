@@ -1,11 +1,11 @@
 #pragma once
 #include "MidiLearnableComponents.h"
-#include "ObsidianBase.h"
+#include "ObsidianBaseMidiComponent.h"
 #include "PluginProcessor.h"
 #include "VuMeter.h"
 #include <JuceHeader.h>
 
-class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParameter::Listener
+class MasterChannel : public ObsidianBaseMidiComponent
 {
   public:
 	MasterChannel(DjIaVstProcessor &processor);
@@ -18,15 +18,12 @@ class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParam
 	std::function<void(float, float, float)> onMasterEQChanged;
 
   private:
-	DjIaVstProcessor &audioProcessor;
 	VuMeter vuMeter;
 	MidiLearnableSlider masterVolumeSlider;
 	MidiLearnableSlider masterPanKnob;
 	MidiLearnableSlider highKnob, midKnob, lowKnob;
 
 	juce::Rectangle<int> masterVUBounds;
-
-	std::atomic<bool> isDestroyed{false};
 
 	bool hasRealAudio = false;
 
@@ -50,17 +47,13 @@ class MasterChannel : public ObsidianComponent, public juce::AudioProcessorParam
 	void setupUI();
 	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void parameterValueChanged(int parameterIndex, float newValue) override;
-	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
-	void setupMidiLearn();
-	void removeMidiMapping(const juce::String &param);
-	void learn(juce::String param, juce::String description, MidiLearnableBase *component,
-	           std::function<void(float)> uiCallback = nullptr);
-	void removeListener(juce::String name);
-	void addListener(juce::String name);
-	void addEventListeners();
-	void setSliderParameter(juce::String name, juce::Slider &slider);
-	void updateUIFromParameter(const juce::String &paramName, float newValue);
+	void wireParameters();
+
+  protected:
+	juce::String getMidiLearnDescriptionPrefix() const override
+	{
+		return "Master ";
+	}
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterChannel)
 };

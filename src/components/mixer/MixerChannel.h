@@ -1,6 +1,5 @@
 #pragma once
-#include "MidiLearnableComponents.h"
-#include "ObsidianBase.h"
+#include "ObsidianBaseMidiComponent.h"
 #include "PluginProcessor.h"
 #include "VuMeter.h"
 #include <JuceHeader.h>
@@ -11,7 +10,7 @@ struct StereoLevel
 	float right;
 };
 
-class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::AudioProcessorParameter::Listener
+class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 {
   public:
 	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData);
@@ -22,6 +21,7 @@ class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::
 	}
 	juce::Label trackNameLabel;
 	TrackData *track;
+
 	void setSelected(bool selected);
 	void updateFromTrackData();
 	void updateModelUI();
@@ -29,7 +29,6 @@ class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::
 	void setTrackData(TrackData *trackData);
 	void updateButtonColors();
 	void cleanup();
-	void addEventListeners();
 	void startGeneratingAnimation();
 	void stopGeneratingAnimation();
 	void setSamplePending(bool pending)
@@ -38,12 +37,13 @@ class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::
 		repaint();
 	}
 	void setTrackName(const juce::String &name);
+	void wireParameters();
+	void addEventListeners();
 	std::function<void(const juce::String &)> onTrackRenamed;
 
   private:
-	DjIaVstProcessor &audioProcessor;
 	VuMeter vuMeter;
-	std::atomic<bool> isDestroyed{false};
+
 	juce::String trackId;
 
 	bool isGenerating = false;
@@ -88,22 +88,33 @@ class MixerChannel : public ObsidianComponent, public juce::Timer, public juce::
 	std::vector<float> levelHistoryLeft;
 	std::vector<float> levelHistoryRight;
 
+	bool isApplyingPlayState = false;
+
+	bool allSequencerStepsAreFalse() const;
+	void applyPlayState(bool shouldArm);
+
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void updateVUMeter();
 	void timerCallback() override;
-	void setupMidiLearn();
 	void setupUI();
-	void parameterValueChanged(int parameterIndex, float newValue) override;
-	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
-	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
-	void removeListener(juce::String name);
-	void addListener(juce::String name);
-	void setSliderParameter(juce::String name, juce::Slider &slider);
-	void setButtonParameter(juce::String name, juce::Button &button);
-	void updateUIFromParameter(const juce::String &paramName, const juce::String &slotPrefix, float newValue);
-	void removeMidiMapping(const juce::String &param);
 	void stopTrackImmediatly();
+
+  protected:
+	juce::String getParameterPrefix() const override
+	{
+		if (!track || track->slotIndex == -1)
+			return {};
+		return "slot" + juce::String(track->slotIndex + 1);
+	}
+
+	juce::String getMidiLearnDescriptionPrefix() const override
+	{
+		if (!track || track->slotIndex == -1)
+			return {};
+		return "Slot " + juce::String(track->slotIndex + 1) + " ";
+	}
+	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MixerChannel);
 	JUCE_DECLARE_WEAK_REFERENCEABLE(MixerChannel);

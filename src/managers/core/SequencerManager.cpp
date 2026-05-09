@@ -238,9 +238,8 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				                                                 MidiMapping::feedbackIdle);
 			}
 		}
-		audioProcessor.needsUIUpdate.store(true);
 	}
-
+	audioProcessor.needsUIUpdate.store(true);
 	wasPlaying = hostIsPlaying;
 }
 

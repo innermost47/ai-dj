@@ -348,7 +348,7 @@ void DjIaVstProcessor::timerCallback()
 	{
 		onUIUpdateNeeded();
 	}
-	needsUIUpdate = false;
+	needsUIUpdate.store(false);
 }
 
 bool DjIaVstProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
@@ -548,7 +548,7 @@ void DjIaVstProcessor::checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages)
 
 	if (anyTrackPlaying || midiMessages.getNumEvents() > 0)
 	{
-		needsUIUpdate = true;
+		needsUIUpdate.store(true);
 	}
 }
 
@@ -615,7 +615,7 @@ void DjIaVstProcessor::previewTrack(const juce::String &trackId)
 	track->isPlaying.store(true);
 	track->isPreviewMode.store(true);
 	track->previewEndPending.store(false);
-	needsUIUpdate = true;
+	needsUIUpdate.store(true);
 
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
 	{
@@ -653,6 +653,9 @@ void DjIaVstProcessor::playTrack(const juce::MidiMessage &message, double hostBp
 
 void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 {
+	jassert(slot >= 0 && slot < ParameterManager::MAX_SLOTS);
+	jassert(track != nullptr);
+
 	auto &pm = parameterManager;
 	auto &currentPage = track->getCurrentPage();
 	float paramVolume = pm.getVolume(slot);

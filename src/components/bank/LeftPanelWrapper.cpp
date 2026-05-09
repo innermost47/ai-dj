@@ -32,12 +32,7 @@ LeftPanelWrapper::~LeftPanelWrapper() = default;
 
 void LeftPanelWrapper::paint(juce::Graphics &g)
 {
-	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1);
+	paintBaseBackground(g);
 }
 
 void LeftPanelWrapper::resized()
