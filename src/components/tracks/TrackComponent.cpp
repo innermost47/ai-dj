@@ -5,7 +5,7 @@
 #include "WaveformDisplay.h"
 
 TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &processor)
-    : trackId(trackId), track(nullptr), audioProcessor(processor)
+    : trackId(trackId), ObsidianBaseMidiComponent(processor), track(nullptr)
 {
 	setupUI();
 	setupAdsrKnobs();
@@ -14,43 +14,18 @@ TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &pr
 TrackComponent::~TrackComponent()
 {
 	setVisible(false);
-	isDestroyed.store(true);
 	stopTimer();
 
 	for (int i = 0; i < 4; ++i)
 	{
 		pageButtons[i].onClick = nullptr;
-		pageButtons[i].onMidiLearn = nullptr;
-		pageButtons[i].onMidiRemove = nullptr;
 	}
 
 	sequencer.reset();
 	waveformDisplay.reset();
 	drawingCanvas.reset();
 
-	if (track && track->slotIndex != -1)
-	{
-		removeListener("Generate");
-		removeListener("RandomRetrigger");
-		removeListener("RetriggerInterval");
-		removeListener("AdsrAttack");
-		removeListener("AdsrDecay");
-		removeListener("AdsrSustain");
-		removeListener("AdsrRelease");
-	}
-
 	track = nullptr;
-}
-
-void TrackComponent::addEventListeners()
-{
-	addListener("Generate");
-	addListener("RandomRetrigger");
-	addListener("RetriggerInterval");
-	addListener("AdsrAttack");
-	addListener("AdsrDecay");
-	addListener("AdsrSustain");
-	addListener("AdsrRelease");
 }
 
 void TrackComponent::setTrackData(TrackData *trackData)
@@ -59,9 +34,8 @@ void TrackComponent::setTrackData(TrackData *trackData)
 	updateFromTrackData();
 	if (track && track->slotIndex != -1)
 	{
-		addEventListeners();
+		wireParameters();
 	}
-	setupMidiLearn();
 }
 
 bool TrackComponent::isWaveformVisible() const
@@ -74,121 +48,34 @@ void TrackComponent::updateWaveformWithTimeStretch()
 	calculateHostBasedDisplay();
 }
 
-void TrackComponent::updateUIFromParameter(const juce::String &paramName, const juce::String &slotPrefix,
-                                           float newValue)
+void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float newValue)
 {
-	if (isDestroyed.load())
-		return;
-	if (!track)
-		return;
-	if (paramName == slotPrefix + " Generate")
+	if (paramSuffix == "Generate")
 	{
-		if (newValue > 0.5 && audioProcessor.getIsGenerating())
-		{
+		if (newValue > 0.5f && audioProcessor.getIsGenerating())
 			return;
-		}
 	}
-	else if (paramName == slotPrefix + " Random Retrigger")
+	else if (paramSuffix == "RandomRetrigger")
 	{
-		bool isEnabled = newValue > 0.5f;
-
 		if (track)
 		{
-			track->randomRetriggerEnabled = isEnabled;
+			track->randomRetriggerEnabled = newValue > 0.5f;
 			updateRandomRetriggerButtonColor();
 		}
 	}
-	else if (paramName == slotPrefix + " Retrigger Interval")
+	else if (paramSuffix == "RetriggerInterval")
 	{
-
-		float denormalizedValue = (newValue * 9.0f) + 1.0f;
-		intervalKnob.setValue(denormalizedValue, juce::dontSendNotification);
-
-		intervalLabel.setText(getIntervalName((int)denormalizedValue), juce::dontSendNotification);
-
 		if (track)
 		{
-			track->randomRetriggerInterval = (int)denormalizedValue;
+			int interval = (int)intervalKnob.getValue();
+			track->randomRetriggerInterval = interval;
+			intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 		}
 	}
-	else if (paramName == slotPrefix + " ADSR Attack")
+	else if (paramSuffix == "AdsrAttack" || paramSuffix == "AdsrDecay" || paramSuffix == "AdsrSustain" ||
+	         paramSuffix == "AdsrRelease")
 	{
-		float denorm = 0.001f + newValue * (4.0f - 0.001f);
-		if (!adsrAttackKnob.isMouseButtonDown())
-			adsrAttackKnob.setValue(denorm, juce::dontSendNotification);
 		syncAdsrToWaveform();
-	}
-	else if (paramName == slotPrefix + " ADSR Decay")
-	{
-		float denorm = 0.001f + newValue * (4.0f - 0.001f);
-		if (!adsrDecayKnob.isMouseButtonDown())
-			adsrDecayKnob.setValue(denorm, juce::dontSendNotification);
-		syncAdsrToWaveform();
-	}
-	else if (paramName == slotPrefix + " ADSR Sustain")
-	{
-		if (!adsrSustainKnob.isMouseButtonDown())
-			adsrSustainKnob.setValue(newValue, juce::dontSendNotification);
-		syncAdsrToWaveform();
-	}
-	else if (paramName == slotPrefix + " ADSR Release")
-	{
-		float denorm = 0.001f + newValue * (4.0f - 0.001f);
-		if (!adsrReleaseKnob.isMouseButtonDown())
-			adsrReleaseKnob.setValue(denorm, juce::dontSendNotification);
-		syncAdsrToWaveform();
-	}
-}
-
-void TrackComponent::parameterGestureChanged(int, bool)
-{
-}
-
-void TrackComponent::parameterValueChanged(int parameterIndex, float newValue)
-{
-	if (!track || track->slotIndex == -1)
-		return;
-
-	juce::String slotPrefix = "Slot " + juce::String(track->slotIndex + 1);
-	auto &allParams = audioProcessor.AudioProcessor::getParameters();
-
-	if (parameterIndex >= 0 && parameterIndex < allParams.size())
-	{
-		auto *param = allParams[parameterIndex];
-		juce::String paramName = param->getName(256);
-
-		juce::MessageManager::callAsync([this, paramName, slotPrefix, newValue]()
-		                                { updateUIFromParameter(paramName, slotPrefix, newValue); });
-	}
-}
-
-void TrackComponent::setButtonParameter(juce::String name)
-{
-	if (!track || track->slotIndex == -1)
-		return;
-	if (this == nullptr)
-		return;
-
-	juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + name;
-	try
-	{
-		auto *param = audioProcessor.getParameters().getParameter(paramName);
-		if (param != nullptr)
-		{
-			if (name == "Generate")
-			{
-				param->setValueNotifyingHost(1.0f);
-				juce::Timer::callAfterDelay(100, [param]() { param->setValueNotifyingHost(0.0f); });
-			}
-			else
-			{
-				bool state = track ? track->randomRetriggerEnabled.load() : false;
-				param->setValueNotifyingHost(state ? 1.0f : 0.0f);
-			}
-		}
-	}
-	catch (...)
-	{
 	}
 }
 
@@ -406,7 +293,6 @@ void TrackComponent::setupAdsrKnobs()
 			return;
 		track->getCurrentPage().adsrAttack = (float)adsrAttackKnob.getValue();
 		syncAdsrToWaveform();
-		setSliderParameter("AdsrAttack", adsrAttackKnob);
 	};
 	adsrDecayKnob.onValueChange = [this]()
 	{
@@ -414,7 +300,6 @@ void TrackComponent::setupAdsrKnobs()
 			return;
 		track->getCurrentPage().adsrDecay = (float)adsrDecayKnob.getValue();
 		syncAdsrToWaveform();
-		setSliderParameter("AdsrDecay", adsrDecayKnob);
 	};
 	adsrSustainKnob.onValueChange = [this]()
 	{
@@ -422,7 +307,6 @@ void TrackComponent::setupAdsrKnobs()
 			return;
 		track->getCurrentPage().adsrSustain = (float)adsrSustainKnob.getValue();
 		syncAdsrToWaveform();
-		setSliderParameter("AdsrSustain", adsrSustainKnob);
 	};
 	adsrReleaseKnob.onValueChange = [this]()
 	{
@@ -430,7 +314,6 @@ void TrackComponent::setupAdsrKnobs()
 			return;
 		track->getCurrentPage().adsrRelease = (float)adsrReleaseKnob.getValue();
 		syncAdsrToWaveform();
-		setSliderParameter("AdsrRelease", adsrReleaseKnob);
 	};
 }
 
@@ -463,7 +346,7 @@ void TrackComponent::resized()
 	auto headerArea = area.removeFromTop(32);
 	auto &currentPage = track->getCurrentPage();
 	auto pagesArea = headerArea.removeFromLeft(38);
-	int pagesGridHeight = PAGE_BUTTON_SIZE * 2 + 2;
+	int pagesGridHeight = ObsidianSizes::PAGE_BUTTON_SIZE * 2 + 2;
 	int yOffset = (pagesArea.getHeight() - pagesGridHeight) / 2;
 	pagesArea.removeFromTop(yOffset);
 	pagesArea.setHeight(pagesGridHeight);
@@ -485,7 +368,7 @@ void TrackComponent::resized()
 		                        selectorsArea.getWidth(), selectorHeight);
 	}
 
-	headerArea.removeFromLeft(INTRA_CLUSTER_GAP);
+	headerArea.removeFromLeft(ObsidianSizes::GAP_4);
 
 	{
 		const int createButtonWidth = 34;
@@ -494,22 +377,22 @@ void TrackComponent::resized()
 
 		drawButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
-	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+	headerArea.removeFromRight(ObsidianSizes::GAP_4);
 
 	{
 		const int labelledButtonWidth = 36;
 		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
-		headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+		headerArea.removeFromRight(ObsidianSizes::GAP_4);
 		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 	}
-	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+	headerArea.removeFromRight(ObsidianSizes::GAP_4);
 
 	const int iconBtnWidth = 34;
 	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+	headerArea.removeFromRight(ObsidianSizes::GAP_4);
 
 	randomDurationToggle.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(INTRA_CLUSTER_GAP);
+	headerArea.removeFromRight(ObsidianSizes::GAP_4);
 
 	{
 		auto knobArea = headerArea.removeFromRight(38);
@@ -523,7 +406,7 @@ void TrackComponent::resized()
 		                        labelHeight);
 	}
 
-	headerArea.removeFromLeft(INTRA_CLUSTER_GAP);
+	headerArea.removeFromLeft(ObsidianSizes::GAP_4);
 	{
 		const int adsrKnobDiam = 32;
 		const int adsrLabelH = 8;
@@ -637,7 +520,7 @@ void TrackComponent::resized()
 	if (waveformDisplay)
 	{
 		area.removeFromTop(8);
-		waveformDisplay->setBounds(area.removeFromTop(WAVEFORM_HEIGHT));
+		waveformDisplay->setBounds(area.removeFromTop(ObsidianSizes::WAVEFORM_HEIGHT));
 		waveformDisplay->setVisible(true);
 	}
 
@@ -658,7 +541,7 @@ void TrackComponent::resized()
 	if (sequencer)
 	{
 		area.removeFromTop(5);
-		sequencer->setBounds(area.removeFromTop(SEQUENCER_HEIGHT));
+		sequencer->setBounds(area.removeFromTop(ObsidianSizes::SEQUENCER_HEIGHT));
 		sequencer->setVisible(true);
 	}
 
@@ -727,7 +610,7 @@ void TrackComponent::openDrawingCanvas()
 
 void TrackComponent::layoutPagesButtons(juce::Rectangle<int> area)
 {
-	int buttonSize = PAGE_BUTTON_SIZE;
+	int buttonSize = ObsidianSizes::PAGE_BUTTON_SIZE;
 	int spacing = 2;
 
 	area.removeFromTop(spacing);
@@ -747,6 +630,7 @@ void TrackComponent::layoutPagesButtons(juce::Rectangle<int> area)
 void TrackComponent::setupPagesUI()
 {
 	const char *pageLabels[4] = {"A", "B", "C", "D"};
+	const char *pageNames[4] = {"PageA", "PageB", "PageC", "PageD"};
 
 	for (int i = 0; i < 4; ++i)
 	{
@@ -768,36 +652,7 @@ void TrackComponent::setupPagesUI()
 		pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 
-		pageButtons[i].onMidiLearn = [this, i]()
-		{
-			if (track && track->slotIndex != -1)
-			{
-				const char *pageNames[4] = {"PageA", "PageB", "PageC", "PageD"};
-				char pageLetter = 'A' + static_cast<char>(i);
-				juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + pageNames[i];
-				juce::String description =
-				    "Slot " + juce::String(track->slotIndex + 1) + " Page " + juce::String::charToString(pageLetter);
-
-				statusCallback("Learning MIDI for " + description + "...");
-
-				audioProcessor.getMidiLearnManager().startLearning(paramName, &audioProcessor, nullptr, description,
-				                                                   &pageButtons[i]);
-			}
-		};
-
-		pageButtons[i].onMidiRemove = [this, i]()
-		{
-			if (track && track->slotIndex != -1)
-			{
-				const char *pageNames[4] = {"PageA", "PageB", "PageC", "PageD"};
-				juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + pageNames[i];
-
-				char pageLetter = 'A' + static_cast<char>(i);
-				statusCallback("MIDI mapping removed for Page " + juce::String::charToString(pageLetter));
-
-				audioProcessor.getMidiLearnManager().removeMappingForParameter(paramName);
-			}
-		};
+		registerMidiLearn(pageNames[i], &pageButtons[i]);
 	}
 }
 
@@ -1159,33 +1014,6 @@ void TrackComponent::setGenerateButtonEnabled(bool enabled)
 	generateButton.setEnabled(enabled);
 }
 
-void TrackComponent::removeListener(juce::String name)
-{
-	if (!track || track->slotIndex == -1)
-		return;
-	juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + name;
-	auto *param = audioProcessor.getParameterTreeState().getParameter(paramName);
-	if (param)
-	{
-		param->removeListener(this);
-	}
-}
-
-void TrackComponent::addListener(juce::String name)
-{
-	if (!track || track->slotIndex == -1)
-	{
-		return;
-	}
-	juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + name;
-
-	auto *param = audioProcessor.getParameterTreeState().getParameter(paramName);
-	if (param)
-	{
-		param->addListener(this);
-	}
-}
-
 void TrackComponent::setupUI()
 {
 	addAndMakeVisible(infoLabel);
@@ -1304,7 +1132,6 @@ void TrackComponent::setupIconButtons()
 				currentPage.generationDuration = audioProcessor.getGlobalDuration();
 			}
 			onGenerateForTrack(trackId);
-			setButtonParameter("Generate");
 		}
 	};
 
@@ -1417,7 +1244,6 @@ void TrackComponent::onRandomRetriggerToggled()
 
 	updateRandomRetriggerButtonColor();
 	statusCallback("Beat Repeat " + juce::String(isEnabled ? "ON" : "OFF"));
-	setButtonParameter("RandomRetrigger");
 }
 
 void TrackComponent::onIntervalChanged()
@@ -1453,7 +1279,6 @@ void TrackComponent::onIntervalChanged()
 	juce::String intervalName = getIntervalName(value);
 	intervalLabel.setText(intervalName, juce::dontSendNotification);
 	statusCallback("Interval: " + intervalName);
-	setSliderParameter("RetriggerInterval", intervalKnob);
 }
 
 juce::String TrackComponent::getIntervalName(int value)
@@ -1495,41 +1320,6 @@ void TrackComponent::statusCallback(const juce::String &message)
 	{
 		editor->statusLabel.setText(message, juce::dontSendNotification);
 		editor->uiStatusManager->updateLCD();
-	}
-}
-
-void TrackComponent::setSliderParameter(juce::String name, juce::Slider &slider)
-{
-	if (!track || track->slotIndex == -1)
-		return;
-	if (this == nullptr)
-		return;
-
-	juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + name;
-	try
-	{
-		auto &parameterTreeState = audioProcessor.getParameterTreeState();
-		auto *param = parameterTreeState.getParameter(paramName);
-
-		if (param != nullptr)
-		{
-			float value = static_cast<float>(slider.getValue());
-			if (!std::isnan(value) && !std::isinf(value))
-			{
-				if (name == "RetriggerInterval")
-				{
-					value = (value - 1.0f) / 9.0f;
-				}
-				else if (name == "AdsrAttack" || name == "AdsrDecay" || name == "AdsrRelease")
-				{
-					value = (value - 0.001f) / (4.0f - 0.001f);
-				}
-				param->setValueNotifyingHost(value);
-			}
-		}
-	}
-	catch (...)
-	{
 	}
 }
 
@@ -1716,97 +1506,6 @@ void TrackComponent::updatePromptSelection(const juce::String &promptText)
 			break;
 		}
 	}
-}
-
-void TrackComponent::learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback)
-{
-	if (audioProcessor.getActiveEditor() && track && track->slotIndex != -1)
-	{
-		juce::String parameterName = "slot" + juce::String(track->slotIndex + 1) + param;
-		juce::String description = "Slot " + juce::String(track->slotIndex + 1) + " " + param;
-		juce::MessageManager::callAsync(
-		    [this, description]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			    {
-				    editor->statusLabel.setText("Learning MIDI for " + description + "...", juce::dontSendNotification);
-				    editor->uiStatusManager->updateLCD();
-			    }
-		    });
-		audioProcessor.getMidiLearnManager().startLearning(parameterName, &audioProcessor, uiCallback, description,
-		                                                   component);
-	}
-}
-
-void TrackComponent::removeMidiMapping(const juce::String &param)
-{
-	if (track && track->slotIndex != -1)
-	{
-		juce::String parameterName = "slot" + juce::String(track->slotIndex + 1) + param;
-		audioProcessor.getMidiLearnManager().removeMappingForParameter(parameterName);
-	}
-}
-
-void TrackComponent::setupMidiLearn()
-{
-	if (!track)
-		return;
-
-	generateButton.onMidiLearn = [this]() { learn("Generate", &generateButton); };
-	generateButton.onMidiRemove = [this]() { removeMidiMapping("Generate"); };
-
-	randomRetriggerButton.onMidiLearn = [this]() { learn("RandomRetrigger", &randomRetriggerButton); };
-
-	randomRetriggerButton.onMidiRemove = [this]()
-	{
-		removeMidiMapping("RandomRetrigger");
-		updateRandomRetriggerButtonColor();
-	};
-
-	intervalKnob.onMidiLearn = [this]() { learn("RetriggerInterval", &intervalKnob); };
-	intervalKnob.onMidiRemove = [this]() { removeMidiMapping("RetriggerInterval"); };
-
-	juce::String paramName = "promptSelector_slot" + juce::String(track->slotIndex + 1);
-	auto promptCallback = [this](float value)
-	{
-		juce::MessageManager::callAsync(
-		    [this, value]()
-		    {
-			    int numItems = promptPresetSelector.getNumItems();
-			    if (numItems > 0)
-			    {
-				    int selectedIndex = (int)(value * (numItems - 1));
-				    promptPresetSelector.setSelectedItemIndex(selectedIndex, juce::sendNotification);
-			    }
-		    });
-	};
-
-	audioProcessor.getMidiLearnManager().registerUICallback(paramName, promptCallback);
-
-	promptPresetSelector.onMidiLearn = [this, paramName, promptCallback]()
-	{
-		if (audioProcessor.getActiveEditor() && track && track->slotIndex != -1)
-		{
-			juce::String description = "Slot " + juce::String(track->slotIndex + 1) + " Prompt Selector";
-			audioProcessor.getMidiLearnManager().startLearning(paramName, &audioProcessor, promptCallback, description,
-			                                                   &promptPresetSelector);
-		}
-	};
-
-	promptPresetSelector.onMidiRemove = [this, paramName]()
-	{ audioProcessor.getMidiLearnManager().removeMappingForParameter(paramName); };
-
-	adsrAttackKnob.onMidiLearn = [this]() { learn("AdsrAttack", &adsrAttackKnob); };
-	adsrAttackKnob.onMidiRemove = [this]() { removeMidiMapping("AdsrAttack"); };
-
-	adsrDecayKnob.onMidiLearn = [this]() { learn("AdsrDecay", &adsrDecayKnob); };
-	adsrDecayKnob.onMidiRemove = [this]() { removeMidiMapping("AdsrDecay"); };
-
-	adsrSustainKnob.onMidiLearn = [this]() { learn("AdsrSustain", &adsrSustainKnob); };
-	adsrSustainKnob.onMidiRemove = [this]() { removeMidiMapping("AdsrSustain"); };
-
-	adsrReleaseKnob.onMidiLearn = [this]() { learn("AdsrRelease", &adsrReleaseKnob); };
-	adsrReleaseKnob.onMidiRemove = [this]() { removeMidiMapping("AdsrRelease"); };
 }
 
 bool TrackComponent::isInterestedInDragSource(const SourceDetails &dragSourceDetails)
@@ -2029,4 +1728,39 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 
 	if (onStatusMessage)
 		onStatusMessage("Prompt loaded from bank!");
+}
+
+void TrackComponent::wireParameters()
+{
+	registerSliderParam("AdsrAttack", adsrAttackKnob);
+	registerSliderParam("AdsrDecay", adsrDecayKnob);
+	registerSliderParam("AdsrSustain", adsrSustainKnob);
+	registerSliderParam("AdsrRelease", adsrReleaseKnob);
+
+	registerSliderParam("RetriggerInterval", intervalKnob);
+	registerButtonParam("RandomRetrigger", randomRetriggerButton);
+	registerButtonParam("Generate", generateButton, true);
+
+	registerMidiLearn("AdsrAttack", &adsrAttackKnob);
+	registerMidiLearn("AdsrDecay", &adsrDecayKnob);
+	registerMidiLearn("AdsrSustain", &adsrSustainKnob);
+	registerMidiLearn("AdsrRelease", &adsrReleaseKnob);
+	registerMidiLearn("RetriggerInterval", &intervalKnob);
+	registerMidiLearn("RandomRetrigger", &randomRetriggerButton);
+	registerMidiLearn("Generate", &generateButton);
+
+	auto promptCallback = [this](float value)
+	{
+		juce::MessageManager::callAsync(
+		    [this, value]()
+		    {
+			    int n = promptPresetSelector.getNumItems();
+			    if (n > 0)
+			    {
+				    int idx = (int)(value * (n - 1));
+				    promptPresetSelector.setSelectedItemIndex(idx, juce::sendNotification);
+			    }
+		    });
+	};
+	registerMidiLearn("promptSelector_", &promptPresetSelector, promptCallback);
 }

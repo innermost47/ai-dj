@@ -309,28 +309,6 @@ TrackComponent *UITrackManager::getTrackComponent(const juce::String &trackId)
 	return nullptr;
 }
 
-void UITrackManager::detachAllListeners()
-{
-	for (auto &tc : trackComponents)
-	{
-		if (tc)
-		{
-			auto *track = tc->getTrack();
-			if (track && track->slotIndex != -1)
-			{
-				tc->removeListener("Generate");
-				tc->removeListener("RandomRetrigger");
-				tc->removeListener("RetriggerInterval");
-				tc->removeListener("AdsrAttack");
-				tc->removeListener("AdsrDecay");
-				tc->removeListener("AdsrSustain");
-				tc->removeListener("AdsrRelease");
-			}
-			tc->detachWaveformTrack();
-		}
-	}
-}
-
 void UITrackManager::forceFullRefresh()
 {
 	trackComponents.clear();

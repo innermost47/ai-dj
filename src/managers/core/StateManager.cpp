@@ -680,7 +680,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		                                                     MidiMapping::feedbackChannelShaping);
 	    });
 
-	audioProcessor.getMidiLearnManager().restoreUICallbacks();
 	audioProcessor.setStateReady(true);
 	audioProcessor.setIsLoadingState(false);
 	juce::MessageManager::callAsync(

@@ -22,7 +22,6 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	juce::Label trackNameLabel;
 	TrackData *track;
 
-	void setSelected(bool selected);
 	void updateFromTrackData();
 	void updateModelUI();
 	void updateVUMeters();

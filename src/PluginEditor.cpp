@@ -509,17 +509,6 @@ void DjIaVstEditor::resized()
 		uiLayoutManager->resized();
 }
 
-void DjIaVstEditor::restoreUICallbacks()
-{
-	for (auto &trackComp : uiTrackManager->getTrackComponents())
-	{
-		if (trackComp->getTrack())
-		{
-			trackComp->setupMidiLearn();
-		}
-	}
-}
-
 void *DjIaVstEditor::getSequencerForTrack(const juce::String &trackId)
 {
 	if (isBeingDestroyed.load())

@@ -1,7 +1,7 @@
 #pragma once
 #include "DrawingCanvas.h"
 #include "MidiLearnableComponents.h"
-#include "ObsidianBase.h"
+#include "ObsidianBaseMidiComponent.h"
 #include "TrackManager.h"
 #include <JuceHeader.h>
 
@@ -25,10 +25,7 @@ class CustomInfoLabelLookAndFeel : public juce::LookAndFeel_V4
 	}
 };
 
-class TrackComponent : public ObsidianComponent,
-                       public juce::Timer,
-                       public juce::AudioProcessorParameter::Listener,
-                       public juce::DragAndDropTarget
+class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, public juce::DragAndDropTarget
 {
   public:
 	TrackComponent(const juce::String &trackId, DjIaVstProcessor &processor);
@@ -53,15 +50,6 @@ class TrackComponent : public ObsidianComponent,
 	void itemDragExit(const SourceDetails &dragSourceDetails) override;
 	void itemDropped(const SourceDetails &dragSourceDetails) override;
 
-	static const int BASE_HEIGHT = 80;
-	static const int WAVEFORM_HEIGHT = 45;
-	static const int SEQUENCER_HEIGHT = 45;
-	static const int PAGE_BUTTON_SIZE = 16;
-	static const int ICON_BUTTON_WIDTH = 42;
-	static const int ICON_BUTTON_HEIGHT = 50;
-	static const int CLUSTER_GAP = 4;
-	static const int INTRA_CLUSTER_GAP = 1;
-
 	TrackData *getTrack() const
 	{
 		return track;
@@ -82,7 +70,6 @@ class TrackComponent : public ObsidianComponent,
 	void updatePlaybackPosition(double timeInSeconds);
 	void refreshWaveformIfNeeded();
 	void updatePromptPresets(const juce::StringArray &presets);
-	void setupMidiLearn();
 	void updatePromptSelection(const juce::String &promptText);
 	void onPageSelected(int pageIndex);
 	void performPageChange(int pageIndex);
@@ -91,7 +78,6 @@ class TrackComponent : public ObsidianComponent,
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String &name);
 	void loadPromptPresets();
-	void removeListener(juce::String name);
 	void detachWaveformTrack();
 
 	bool isEditingLabel = false;
@@ -235,8 +221,6 @@ class TrackComponent : public ObsidianComponent,
 	std::unique_ptr<SequencerComponent> sequencer;
 	std::unique_ptr<DrawingCanvas> drawingCanvas;
 
-	DjIaVstProcessor &audioProcessor;
-
 	CustomInfoLabelLookAndFeel customLookAndFeel;
 
 	MidiLearnableButton pageButtons[4];
@@ -263,8 +247,6 @@ class TrackComponent : public ObsidianComponent,
 
 	juce::Label infoLabel;
 
-	std::atomic<bool> isDestroyed{false};
-
 	bool isGenerating = false;
 	bool blinkState = false;
 	bool isSelected = false;
@@ -286,24 +268,15 @@ class TrackComponent : public ObsidianComponent,
 	void paint(juce::Graphics &g);
 	void resized();
 	void timerCallback() override;
-	void parameterValueChanged(int parameterIndex, float newValue) override;
-	void parameterGestureChanged(int parameterIndex, bool gestureIsStarting) override;
 	void setupUI();
 	void setupIconButtons();
 	void updateButtonsEnabledState();
 	void updateTrackInfo();
-	void learn(juce::String param, MidiLearnableBase *component, std::function<void(float)> uiCallback = nullptr);
-	void removeMidiMapping(const juce::String &param);
-	void addListener(juce::String name);
-	void setButtonParameter(juce::String name);
-	void updateUIFromParameter(const juce::String &paramName, const juce::String &slotPrefix, float newValue);
 	void onTrackPresetSelected();
 	void toggleOriginalSync();
 	void statusCallback(const juce::String &message);
 	void onRandomRetriggerToggled();
 	void onIntervalChanged();
-	void setSliderParameter(juce::String name, juce::Slider &slider);
-	void addEventListeners();
 	void updateRandomRetriggerButtonColor();
 	void updateRandomDurationButtonColor();
 	void openDrawingCanvas();
@@ -315,10 +288,28 @@ class TrackComponent : public ObsidianComponent,
 	void updateAdsrKnobsFromPage();
 	void syncAdsrToWaveform();
 	void applyPromptFromBank(const juce::String &promptId);
+	void wireParameters();
 
 	float calculateEffectiveBpm();
 
 	juce::String getIntervalName(int value);
+
+  protected:
+	juce::String getParameterPrefix() const override
+	{
+		if (!track || track->slotIndex == -1)
+			return {};
+		return "slot" + juce::String(track->slotIndex + 1);
+	}
+
+	juce::String getMidiLearnDescriptionPrefix() const override
+	{
+		if (!track || track->slotIndex == -1)
+			return {};
+		return "Slot " + juce::String(track->slotIndex + 1) + " ";
+	}
+
+	void onParameterChangedUI(const juce::String &paramSuffix, float newValue) override;
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(TrackComponent);
 };

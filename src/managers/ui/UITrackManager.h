@@ -16,7 +16,6 @@ class UITrackManager
 	void refreshUIForMode();
 	void checkLocalModelsAndNotify();
 	void updateUIComponents();
-	void detachAllListeners();
 	void forceFullRefresh();
 
 	std::vector<std::unique_ptr<TrackComponent>> &getTrackComponents()

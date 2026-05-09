@@ -841,7 +841,6 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 				                         return;
 
 			                         editor->audioProcessor.suspendProcessing(true);
-			                         editor->uiTrackManager->detachAllListeners();
 			                         editor->uiTrackManager->forceFullRefresh();
 			                         if (editor->mixerPanel)
 				                         editor->mixerPanel->detachAllTracks();

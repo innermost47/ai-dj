@@ -57,6 +57,8 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 
 	std::atomic<bool> isDestroyed{false};
 
+	DjIaVstProcessor &audioProcessor;
+
   private:
 	struct Binding
 	{
@@ -66,7 +68,6 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 		bool momentary = false;
 	};
 
-	DjIaVstProcessor &audioProcessor;
 	std::vector<juce::String> listenedParams;
 	std::vector<std::unique_ptr<Binding>> bindings;
 
