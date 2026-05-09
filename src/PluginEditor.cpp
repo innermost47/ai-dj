@@ -142,9 +142,14 @@ void DjIaVstEditor::parentHierarchyChanged()
 {
 	if (auto *window = findParentComponentOfClass<juce::DocumentWindow>())
 	{
-		window->setTitleBarButtonsRequired(juce::DocumentWindow::minimiseButton | juce::DocumentWindow::maximiseButton |
-		                                       juce::DocumentWindow::closeButton,
-		                                   false);
+		window->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons, false);
+
+		static bool isFullscreen = false;
+		if (!isFullscreen && juce::JUCEApplication::isStandaloneApp())
+		{
+			window->setFullScreen(true);
+			isFullscreen = true;
+		}
 	}
 }
 #endif
