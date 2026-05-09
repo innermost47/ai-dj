@@ -123,6 +123,7 @@ void MixerChannel::wireParameters()
 	registerSliderParam("Pitch", pitchKnob);
 	registerSliderParam("Fine", fineKnob);
 	registerSliderParam("Pan", panKnob);
+	registerSliderParam("DelaySend", sendDelayKnob);
 
 	subscribeToParam("Play");
 
@@ -136,7 +137,9 @@ void MixerChannel::wireParameters()
 	registerMidiLearn("Mute", &muteButton);
 	registerMidiLearn("Solo", &soloButton);
 	registerMidiLearn("Play", &playButton);
+	registerMidiLearn("DelaySend", &sendDelayKnob);
 
+	sendDelayKnob.setDoubleClickReturnValue(true, 0.0);
 	volumeSlider.setDoubleClickReturnValue(true, 0.8);
 	pitchKnob.setDoubleClickReturnValue(true, 0.0);
 	fineKnob.setDoubleClickReturnValue(true, 0.0);
@@ -232,6 +235,7 @@ void MixerChannel::updateModelUI()
 	pitchKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	fineKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	panKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	sendDelayKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 
 	repaint();
 }
@@ -315,13 +319,14 @@ void MixerChannel::resized()
 
 	vuMeter.setBounds(sliderBounds.getRight() + 3, customY, meterTotalWidth, customHeight);
 
-	const int knobSectionH = 46;
+	const int knobSectionH = ObsidianSizes::MIXER_CHANNEL_KNOB;
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label &label, juce::Slider &knob)
 	{
 		label.setBounds(secArea.removeFromTop(6));
 		knob.setBounds(secArea.reduced(1));
 	};
 	knobsColumn.removeFromTop(5);
+	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), sendDelayLabel, sendDelayKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), pitchLabel, pitchKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), fineLabel, fineKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), panLabel, panKnob);
@@ -430,6 +435,21 @@ void MixerChannel::setupUI()
 	panLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	panLabel.setJustificationType(juce::Justification::centred);
 	panLabel.setFont(juce::FontOptions(9.0f));
+
+	addAndMakeVisible(sendDelayKnob);
+	sendDelayKnob.setRange(0.0, 1.0, 0.001);
+	sendDelayKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+	sendDelayKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+	sendDelayKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+	sendDelayKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	sendDelayKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	sendDelayKnob.setTooltip("Delay send level (post-fader)");
+
+	addAndMakeVisible(sendDelayLabel);
+	sendDelayLabel.setText("DLY", juce::dontSendNotification);
+	sendDelayLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	sendDelayLabel.setJustificationType(juce::Justification::centred);
+	sendDelayLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(vuMeter);
 
@@ -618,4 +638,8 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 		track->isSolo = newValue > 0.5f;
 	else if (paramSuffix == "Play")
 		applyPlayState(newValue > 0.5f);
+	else if (paramSuffix == "DelaySend")
+	{
+		track->delaySend = newValue;
+	}
 }

@@ -16,6 +16,7 @@ inline constexpr int MIN_SMALL_BTN_HEIGHT = 24;
 inline constexpr int CORNER = 6;
 static constexpr int SAMPLE_DETAIL_HEIGHT = 86;
 static constexpr int SAMPLE_ROW_HEIGHT = 50;
+static constexpr int MIXER_CHANNEL_KNOB = 36;
 
 static constexpr int TRACK_BASE_HEIGHT = 80;
 static constexpr int WAVEFORM_HEIGHT = 45;

@@ -369,7 +369,7 @@ void TrackComponent::resized()
 		                        selectorsArea.getWidth(), selectorHeight);
 	}
 
-	headerArea.removeFromLeft(ObsidianSizes::GAP_4);
+	headerArea.removeFromLeft(ObsidianSizes::SPACER_SM);
 
 	{
 		const int createButtonWidth = 34;
@@ -378,22 +378,22 @@ void TrackComponent::resized()
 
 		drawButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
-	headerArea.removeFromRight(ObsidianSizes::GAP_4);
+	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 
 	{
 		const int labelledButtonWidth = 36;
 		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
-		headerArea.removeFromRight(ObsidianSizes::GAP_4);
+		headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 	}
-	headerArea.removeFromRight(ObsidianSizes::GAP_4);
+	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 
 	const int iconBtnWidth = 34;
 	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(ObsidianSizes::GAP_4);
+	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 
 	randomDurationToggle.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(ObsidianSizes::GAP_4);
+	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 
 	{
 		auto knobArea = headerArea.removeFromRight(38);
@@ -407,7 +407,7 @@ void TrackComponent::resized()
 		                        labelHeight);
 	}
 
-	headerArea.removeFromLeft(ObsidianSizes::GAP_4);
+	headerArea.removeFromLeft(ObsidianSizes::SPACER_SM);
 	{
 		const int adsrKnobDiam = 32;
 		const int adsrLabelH = 8;

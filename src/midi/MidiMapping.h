@@ -134,4 +134,9 @@ struct MidiMapping
 			return 0;
 		return juce::jlimit(0, 127, (idx * 127) / (total - 1));
 	}
+
+	static int ccFeedbackDelaySend(int slot)
+	{
+		return 40 + slot;
+	}
 };

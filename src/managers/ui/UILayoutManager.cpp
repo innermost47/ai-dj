@@ -156,7 +156,7 @@ void MainContainer::resized()
 
 	Grid grid;
 
-	grid.templateRows = {Track(Fr(3)), Track(Fr(1))};
+	grid.templateRows = {Track(Fr(8)), Track(Fr(3))};
 	grid.templateColumns = {Track(Fr(1))};
 	grid.columnGap = GridPx(ObsidianSizes::GAP);
 

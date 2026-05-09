@@ -66,6 +66,8 @@ void MidiManager::sendFullStateFeedback()
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slot),
 		                 MidiMapping::adsrToMidi(pm.getRelease(slotIdx), 0.001f, 4.0f),
 		                 MidiMapping::feedbackChannelShaping);
+		sendMidiFeedback(MidiMapping::ccFeedbackDelaySend(slot), MidiMapping::volumeToMidi(pm.getDelaySend(slotIdx)),
+		                 MidiMapping::feedbackChannelSends);
 	}
 
 	for (int p = 0; p < 4; ++p)

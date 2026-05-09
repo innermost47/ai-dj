@@ -103,7 +103,6 @@ class ParameterManager
 	{
 		return safeLoad(pairCrossfaderParams[pair]);
 	}
-	std::atomic<float> *getRawSlotParam(const juce::String &paramId);
 
 	const juce::StringArray &getFloatParamIds() const
 	{
@@ -162,6 +161,11 @@ class ParameterManager
 		return delayFeedbackParam ? delayFeedbackParam->load() : 0.0f;
 	}
 
+	float getDelaySend(int slot) const
+	{
+		return safeLoadIndexed(slotDelaySendParams, slot);
+	}
+
 	static constexpr int MAX_SLOTS = 8;
 	static constexpr int MAX_PAIRS = 4;
 
@@ -199,6 +203,7 @@ class ParameterManager
 	std::atomic<float> *slotAdsrDecayParams[MAX_SLOTS] = {};
 	std::atomic<float> *slotAdsrSustainParams[MAX_SLOTS] = {};
 	std::atomic<float> *slotAdsrReleaseParams[MAX_SLOTS] = {};
+	std::atomic<float> *slotDelaySendParams[MAX_SLOTS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[MAX_PAIRS] = {};
@@ -253,6 +258,14 @@ class ParameterManager
 	                                         "slot8Pitch",
 	                                         "slot8Fine",
 	                                         "slot8BpmOffset",
+	                                         "slot1DelaySend",
+	                                         "slot2DelaySend",
+	                                         "slot3DelaySend",
+	                                         "slot4DelaySend",
+	                                         "slot5DelaySend",
+	                                         "slot6DelaySend",
+	                                         "slot7DelaySend",
+	                                         "slot8DelaySend",
 	                                         "globalCrossfader",
 	                                         "pairCrossfader1",
 	                                         "pairCrossfader2",

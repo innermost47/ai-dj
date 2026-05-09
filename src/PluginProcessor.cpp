@@ -13,6 +13,7 @@ DjIaVstProcessor::DjIaVstProcessor()
       autoLoadEnabled(true)
 {
 	midiLearnManager.setProcessor(this);
+	parameterManager.resolveParameters(this);
 	projectId = "legacy";
 	loadGlobalConfig();
 	promptBank = std::make_unique<PromptBank>();
@@ -28,7 +29,6 @@ DjIaVstProcessor::DjIaVstProcessor()
 	sharedFormatManager.registerBasicFormats();
 	obsidianEngine->initialize();
 
-	parameterManager.resolveParameters(this);
 	midiLearnManager.loadDefaultMappings(this);
 	audioManager.initDummySynth();
 	audioManager.initBuffers(audioManager.MAX_SLOTS);
@@ -670,6 +670,7 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 	bool isMuted = pm.getMute(slot);
 	float paramRandomRetrigger = pm.getRandomRetrigger(slot);
 	float paramRetriggerInterval = pm.getRetriggerInterval(slot);
+	float paramDelaySend = pm.getDelaySend(slot);
 	int slotNumber = slot + 1;
 	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
 	int retriggerInterval = juce::jlimit(1, 10, (int)juce::roundToInt(paramRetriggerInterval));
@@ -745,6 +746,15 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 				track->beatRepeatEndPosition.store(maxSamples);
 		}
 	}
+	if (std::abs(track->lastFeedbackDelaySend.load() - paramDelaySend) > 0.001f)
+	{
+		track->lastFeedbackDelaySend = paramDelaySend;
+		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackDelaySend(slotNumber),
+		                             MidiMapping::volumeToMidi(paramDelaySend), MidiMapping::feedbackChannelSends);
+	}
+
+	if (std::abs(track->delaySend.load() - paramDelaySend) > 0.001f)
+		track->delaySend = paramDelaySend;
 }
 
 void DjIaVstProcessor::handleSendsParams()

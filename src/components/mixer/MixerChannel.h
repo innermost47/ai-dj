@@ -73,6 +73,8 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	juce::Label pitchLabel;
 	MidiLearnableSlider fineKnob;
 	juce::Label fineLabel;
+	MidiLearnableSlider sendDelayKnob;
+	juce::Label sendDelayLabel;
 
 	MidiLearnableSlider panKnob;
 	juce::Label panLabel;

@@ -152,6 +152,8 @@ struct TrackData
 	std::atomic<bool> isVersionSwitch{false};
 	std::atomic<bool> preservedLoopLocked{false};
 
+	std::atomic<float> lastFeedbackDelaySend{-1.0f};
+
 	int slotIndex = -1;
 
 	enum class DeckSide
