@@ -2,18 +2,18 @@
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 
-CrossfaderComponent::CrossfaderComponent(DjIaVstProcessor &processor) : audioProcessor(processor)
+CrossfaderComponent::CrossfaderComponent(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(processor)
 {
 	setupUI();
 	setupCurveButtons();
-	setupMidiLearn();
-	setupCurveButtonsMidiLearn();
+	wireParameters();
 	refreshFromProcessor();
 	startTimerHz(30);
 }
 
 CrossfaderComponent::~CrossfaderComponent()
 {
+	markForDestruction();
 	setVisible(false);
 	stopTimer();
 }
@@ -31,6 +31,32 @@ void CrossfaderComponent::timerCallback()
 	}
 }
 
+void CrossfaderComponent::wireParameters()
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		const juce::String paramId = "pairCrossfader" + juce::String(i + 1);
+		registerSliderParam(paramId, pairSliders[i]);
+		registerMidiLearn(paramId, &pairSliders[i]);
+	}
+
+	registerSliderParam("globalCrossfader", globalSlider);
+	registerMidiLearn("globalCrossfader", &globalSlider);
+
+	auto curveCallback = [this](int targetMode)
+	{
+		return [this, targetMode](float value)
+		{
+			if (value > 0.5f)
+				juce::MessageManager::callAsync([this, targetMode]() { selectCurveMode(targetMode); });
+		};
+	};
+
+	registerMidiLearn("crossfaderCurveMode", &curveLinearButton, curveCallback(0));
+	registerMidiLearn("crossfaderCurveMode", &curveEqualPowerButton, curveCallback(1));
+	registerMidiLearn("crossfaderCurveMode", &curveDjButton, curveCallback(2));
+}
+
 void CrossfaderComponent::setupUI()
 {
 	for (int i = 0; i < 4; ++i)
@@ -40,20 +66,11 @@ void CrossfaderComponent::setupUI()
 		                                " (Right-click for MIDI learn)");
 
 		pairSliders[i].getProperties().set(CustomLookAndFeel::getDrawTicksPropertyId(), 9);
-
-		const int pairIdx = i;
-		pairSliders[i].onValueChange = [this, pairIdx]()
-		{
-			audioProcessor.setPairCrossfaderValue(pairIdx, static_cast<float>(pairSliders[pairIdx].getValue()));
-			updateSliderColour(pairSliders[pairIdx], pairIdx);
-		};
 	}
 
 	addAndMakeVisible(globalSlider);
 	setupSlider(globalSlider, "Global Crossfader DECK A <-> DECK B (Right-click for MIDI learn)");
 	globalSlider.setColour(juce::Slider::thumbColourId, ColourPalette::textPrimary);
-	globalSlider.onValueChange = [this]()
-	{ audioProcessor.setGlobalCrossfaderValue(static_cast<float>(globalSlider.getValue())); };
 }
 
 void CrossfaderComponent::setupCurveButtons()
@@ -113,6 +130,27 @@ void CrossfaderComponent::setupSlider(MidiLearnableSlider &slider, const juce::S
 	slider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
 }
 
+void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, float /*normalizedValue*/)
+{
+	if (paramSuffix.startsWith("pairCrossfader"))
+	{
+		int idx = paramSuffix.getTrailingIntValue() - 1;
+		if (idx >= 0 && idx < 4)
+		{
+			audioProcessor.setPairCrossfaderValue(idx, (float)pairSliders[idx].getValue());
+			updateSliderColour(pairSliders[idx], idx);
+		}
+	}
+	else if (paramSuffix == "globalCrossfader")
+	{
+		audioProcessor.setGlobalCrossfaderValue((float)globalSlider.getValue());
+	}
+	else if (paramSuffix == "crossfaderCurveMode")
+	{
+		refreshCurveButtons();
+	}
+}
+
 static TrackData *getTrackBySlot(DjIaVstProcessor &processor, int slotIndex)
 {
 	for (const auto &id : processor.getAllTrackIds())
@@ -157,99 +195,9 @@ void CrossfaderComponent::updatePairColours()
 	repaint();
 }
 
-void CrossfaderComponent::setupMidiLearn()
-{
-	for (int i = 0; i < 4; ++i)
-	{
-		const int pairIdx = i;
-		const juce::String paramId = "pairCrossfader" + juce::String(pairIdx + 1);
-		const juce::String displayName =
-		    "Crossfader " + juce::String(pairIdx + 1) + " <-> " + juce::String(pairIdx + 5);
-
-		pairSliders[pairIdx].onMidiLearn = [this, pairIdx, paramId, displayName]()
-		{
-			if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			{
-				editor->statusLabel.setText("Learning MIDI for " + displayName + "...", juce::dontSendNotification);
-				editor->uiStatusManager->updateLCD();
-			}
-			audioProcessor.getMidiLearnManager().startLearning(
-			    paramId, &audioProcessor,
-			    [this, pairIdx](float value)
-			    {
-				    juce::MessageManager::callAsync([this, pairIdx, value]()
-				                                    { pairSliders[pairIdx].setValue(value, juce::sendNotification); });
-			    },
-			    displayName, &pairSliders[pairIdx]);
-		};
-
-		pairSliders[pairIdx].onMidiRemove = [this, paramId]()
-		{ audioProcessor.getMidiLearnManager().removeMappingForParameter(paramId); };
-	}
-
-	const juce::String globalParamId = "globalCrossfader";
-	globalSlider.onMidiLearn = [this, globalParamId]()
-	{
-		if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-		{
-			editor->statusLabel.setText("Learning MIDI for Global Crossfader...", juce::dontSendNotification);
-			editor->uiStatusManager->updateLCD();
-		}
-		audioProcessor.getMidiLearnManager().startLearning(
-		    globalParamId, &audioProcessor,
-		    [this](float value)
-		    {
-			    juce::MessageManager::callAsync([this, value]()
-			                                    { globalSlider.setValue(value, juce::sendNotification); });
-		    },
-		    "Global Crossfader", &globalSlider);
-	};
-
-	globalSlider.onMidiRemove = [this, globalParamId]()
-	{ audioProcessor.getMidiLearnManager().removeMappingForParameter(globalParamId); };
-}
-
-void CrossfaderComponent::setupCurveButtonsMidiLearn()
-{
-	auto setupCurveBtn = [this](IconButton &btn, int mode, const juce::String &displayName)
-	{
-		const juce::String paramId = "crossfaderCurveMode";
-
-		btn.onMidiLearn = [this, &btn, mode, paramId, displayName]()
-		{
-			if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			{
-				editor->statusLabel.setText("Learning MIDI for " + displayName + "...", juce::dontSendNotification);
-				editor->uiStatusManager->updateLCD();
-			}
-			audioProcessor.getMidiLearnManager().startLearning(
-			    paramId, &audioProcessor,
-			    [this, mode](float value)
-			    {
-				    if (value > 0.5f)
-				    {
-					    juce::MessageManager::callAsync([this, mode]() { selectCurveMode(mode); });
-				    }
-			    },
-			    displayName, &btn);
-		};
-
-		btn.onMidiRemove = [this, paramId]()
-		{ audioProcessor.getMidiLearnManager().removeMappingForParameter(paramId); };
-	};
-
-	setupCurveBtn(curveLinearButton, 0, "Curve Linear");
-	setupCurveBtn(curveEqualPowerButton, 1, "Curve Equal Power");
-	setupCurveBtn(curveDjButton, 2, "Curve DJ");
-}
-
 void CrossfaderComponent::refreshFromProcessor()
 {
-	for (int i = 0; i < 4; ++i)
-		pairSliders[i].setValue(audioProcessor.getPairCrossfaderValue(i), juce::dontSendNotification);
-
-	globalSlider.setValue(audioProcessor.getGlobalCrossfaderValue(), juce::dontSendNotification);
-
+	syncBindingsFromParameters();
 	refreshCurveButtons();
 	updatePairColours();
 	repaint();

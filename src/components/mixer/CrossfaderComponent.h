@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include "MidiLearnableComponents.h"
-#include "ObsidianBase.h"
+#include "ObsidianBaseMidiComponent.h"
 #include <JuceHeader.h>
 
 class DjIaVstProcessor;
 
-class CrossfaderComponent : public ObsidianComponent, public juce::Timer
+class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 {
   public:
 	CrossfaderComponent(DjIaVstProcessor &processor);
@@ -25,8 +25,6 @@ class CrossfaderComponent : public ObsidianComponent, public juce::Timer
 	void refreshCurveButtons();
 
   private:
-	DjIaVstProcessor &audioProcessor;
-
 	MidiLearnableSlider pairSliders[4];
 	MidiLearnableSlider globalSlider;
 
@@ -49,14 +47,21 @@ class CrossfaderComponent : public ObsidianComponent, public juce::Timer
 	void setupUI();
 	void setupCurveButtons();
 	void setupSlider(MidiLearnableSlider &slider, const juce::String &tooltip);
-	void setupMidiLearn();
-	void setupCurveButtonsMidiLearn();
 	void drawHardwareLED(juce::Graphics &g, juce::Rectangle<float> bounds, juce::Colour colour, float intensity,
 	                     bool playing) const;
 	void drawSegmentedCurveBackground(juce::Graphics &g) const;
 	void updateSliderColour(MidiLearnableSlider &slider, int pairIdx);
 	void selectCurveMode(int mode);
 	void paintOverChildren(juce::Graphics &g) override;
+	void wireParameters();
+
+  protected:
+	juce::String getMidiLearnDescriptionPrefix() const override
+	{
+		return {};
+	}
+
+	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossfaderComponent)
 };

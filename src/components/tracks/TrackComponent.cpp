@@ -14,6 +14,7 @@ TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &pr
 TrackComponent::~TrackComponent()
 {
 	setVisible(false);
+	markForDestruction();
 	stopTimer();
 
 	for (int i = 0; i < 4; ++i)
