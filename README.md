@@ -10,7 +10,7 @@
 | [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                   |
 | **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3/AU plugin (client)                      |
 
-## 🎵 AI music generation VST3 plugin designed for live performance
+## AI music generation VST3 plugin designed for live performance
 
 <div align="center">
   <img src="assets/screenshot.png" alt="OBSIDIAN-Neural Interface" width="800"/>
@@ -24,7 +24,7 @@
 > **— Moteka, Electronic Music Producer**
 > [SoundCloud](https://soundcloud.com/moteka) · [Instagram](https://www.instagram.com/pmoteka/)
 
-## 🔥 What's New — April 2026: The Multi-Model Era
+## The Multi-Model Era
 
 OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks, each optimized for specific tempos and styles:
 
@@ -122,67 +122,6 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 | Starter | €11.99/month | 300 samples   |
 | Pro     | €14.99/month | 500 samples   |
 
-### 🔵 Self-Hosted (Advanced)
-
-Best for privacy, customization, and unlimited generations.
-
-1. Get [Stability AI access](https://huggingface.co/stabilityai/stable-audio-open-1.0)
-2. Follow [INSTALLATION.md](INSTALLATION.md)
-3. Run `python server_interface.py` → point the plugin to `http://localhost:8000`
-
-**Windows:** `install-win.bat` · **macOS:** `./install-mac.sh` · **Linux:** `./install-lnx.sh`
-
-### 🟢 Local Models (Offline — Windows only)
-
-Runs completely offline. No GPU required, 16GB+ RAM.
-
-1. Get [Stability AI access](https://huggingface.co/stabilityai/stable-audio-open-small)
-2. Download models from [innermost47/stable-audio-open-small-tflite](https://huggingface.co/innermost47/stable-audio-open-small-tflite)
-3. Copy to `%APPDATA%\OBSIDIAN-Neural\stable-audio\` → choose "Local Model" in plugin
-
-_Note: Fixed 10s generation, higher RAM usage, some timing limitations._
-
----
-
-## Which option should I choose?
-
-| Feature           | Cloud API    | Self-Hosted      | Local Models  |
-| ----------------- | ------------ | ---------------- | ------------- |
-| Setup             | ⭐ Easy      | ⭐⭐⭐ Advanced  | ⭐⭐ Moderate |
-| Hardware          | None         | GPU + CUDA/Metal | 16GB+ RAM     |
-| Quality           | ⭐⭐⭐ Best  | ⭐⭐ Good        | ⭐ Basic      |
-| Variable duration | ✅ Up to 30s | ✅ Yes           | ❌ Fixed 10s  |
-| Cost              | Subscription | Free after setup | Free          |
-| Internet          | Required     | Not required     | Not required  |
-
----
-
-## 🌍 Press Coverage
-
-Featured in **8 countries** and **6 languages**:
-
-- 🇺🇸 **[Synthtopia](https://www.synthtopia.com/content/2025/12/22/obsidian-neural-brings-ai-generated-samples-to-your-daw/)** — "Brings AI-Generated Samples To Your DAW"
-- 🇨🇳 **[MIDIFAN](https://www.midifan.com/modulenews-detailview-57259.htm)** — Leading Chinese music tech publication
-- 🇳🇱 **[Rekkerd](https://rekkerd.org/obsidian-neural-real-time-ai-music-generation-vst3/)** — "Real-time AI music generation VST3"
-- 🇫🇷 **[Audiofanzine](https://fr.audiofanzine.com/sequenceur-divers/obsidian-neural/obsidian-neural/news/a.play,n.78783.html)** — Major French music tech publication
-- 🇪🇸 **[FutureMusic](https://www.futuremusic-es.com/obsidian-neural-vst3-ia-generativa/)** — Spanish coverage
-- 🇰🇷 **[S1 Forum](https://s1forum.kr/news/innermost47%EC%97%90%EC%84%9C-obsidian-neural-%EA%B3%B5%EA%B0%9C/)** — Korean music production community
-- 🇯🇵 **[DTM Plugin Sale](https://projectofnapskint.com/obsidian-2/)** — Japanese music production community
-- 🇺🇸 **[Bedroom Producers Blog](https://bedroomproducersblog.com/2025/06/06/obsidian-neural-sound-engine/)** — "FREE AI-powered jam partner"
-
-> _"Too many AI projects focus on the things AI can save you from doing rather than how AI can help you get better at what you do."_  
-> **— James Nugent, Bedroom Producers Blog**
-
-**[See all press coverage →](PRESS.md)**
-
----
-
-## 🎉 200 Stars Milestone — Giveaway Completed!
-
-We hit **200 stars**! 🌟 Huge thanks to the entire community.
-
-The winner of the 1-year Starter Pack (€143.88 value) was randomly drawn from all stargazers: congratulations **@mxmilkiib**!
-
 ---
 
 ## Download
@@ -195,15 +134,6 @@ The winner of the 1-year Starter Pack (€143.88 value) was randomly drawn from 
 | Linux      | `~/.vst3/`                             |
 
 → **[Download from Releases](https://github.com/innermost47/ai-dj/releases)**
-
----
-
-## 📚 Documentation
-
-- **[Installation Guide](INSTALLATION.md)**
-- **[Video Tutorial](https://youtu.be/-qdFo_PcKoY)** — French + English subtitles
-- **[Online Documentation](https://obsidian-neural.com/documentation.html)**
-- **[Press Coverage](PRESS.md)**
 
 ---
 
