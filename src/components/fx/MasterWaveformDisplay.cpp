@@ -58,9 +58,9 @@ void MasterWaveformDisplay::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(bounds, 4.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.6f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 0.8f);
+	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
 
 	auto inner = bounds.reduced(4.0f, 3.0f);
 	int w = (int)inner.getWidth();

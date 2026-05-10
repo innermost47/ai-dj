@@ -1,4 +1,5 @@
 #include "IconButton.h"
+#include "Sizes.h"
 
 std::unique_ptr<juce::Drawable> IconButtonBase::loadSVG(const char *data, size_t size)
 {
@@ -13,7 +14,7 @@ std::unique_ptr<juce::Drawable> IconButtonBase::loadSVG(const char *data, size_t
 void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool isMouseOver, bool isButtonDown)
 {
 	auto fullBounds = btn.getLocalBounds().toFloat();
-	const float cornerSize = 4.0f;
+	const float cornerSize = ObsidianSizes::CORNER;
 	bool toggled = btn.getToggleState();
 	bool enabled = btn.isEnabled();
 

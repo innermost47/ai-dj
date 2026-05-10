@@ -1,12 +1,9 @@
 #pragma once
-#include "BinaryData.h"
-#include "ColourPalette.h"
-#include "CustomLookAndFeel.h"
-#include "IconButton.h"
+#include "ObsidianBase.h"
 #include "StandaloneTransport.h"
 #include <JuceHeader.h>
 
-class StandaloneTransportComponent : public juce::Component, private juce::Timer
+class StandaloneTransportComponent : public ObsidianComponent, private juce::Timer
 {
   public:
 	StandaloneTransportComponent(StandaloneTransport &transport);

@@ -14,7 +14,7 @@ ObsidianSvgButton::ObsidianSvgButton(const juce::String &name, const juce::Strin
 void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
 	auto bounds = getLocalBounds().toFloat().reduced(0.5f);
-	const float corner = 5.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	juce::Colour bgColour = colour;
 	if (shouldDrawButtonAsDown)

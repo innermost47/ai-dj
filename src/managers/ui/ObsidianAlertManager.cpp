@@ -46,10 +46,10 @@ class ModelCard : public juce::Component
 		    selected ? colour.withAlpha(0.25f)
 		             : (hovered ? ColourPalette::backgroundDeep.brighter(0.05f) : ColourPalette::backgroundDeep);
 		g.setColour(bg);
-		g.fillRoundedRectangle(bounds, 4.0f);
+		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 
 		g.setColour(selected ? colour : ColourPalette::backgroundLight.withAlpha(0.4f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, selected ? 2.0f : 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, selected ? 2.0f : 1.0f);
 
 		const float dotSize = 8.0f;
 		auto dotRect = juce::Rectangle<float>(8.0f, bounds.getCentreY() - dotSize * 0.5f, dotSize, dotSize);
@@ -104,10 +104,10 @@ class ExampleCard : public juce::Component
 		auto bounds = getLocalBounds().toFloat();
 
 		g.setColour(hovered ? ColourPalette::backgroundDeep.brighter(0.08f) : ColourPalette::backgroundDeep);
-		g.fillRoundedRectangle(bounds, 4.0f);
+		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 
 		g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
 
 		g.setColour(ColourPalette::textPrimary);
 		g.setFont(juce::FontOptions(12.0f, juce::Font::plain));

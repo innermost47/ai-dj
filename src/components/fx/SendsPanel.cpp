@@ -208,9 +208,9 @@ void SendsPanel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.8f));
-	g.fillRoundedRectangle(bounds, 6.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.0f);
+	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
 
 	int y = getHeight() / 2;
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));

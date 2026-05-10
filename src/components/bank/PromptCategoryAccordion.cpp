@@ -39,7 +39,7 @@ void PromptCategoryAccordion::paint(juce::Graphics &g)
 	auto headerBounds = bounds.removeFromTop(HEADER_HEIGHT);
 
 	g.setColour(ColourPalette::backgroundDeep.brighter(0.05f));
-	g.fillRoundedRectangle(headerBounds.toFloat(), 4.0f);
+	g.fillRoundedRectangle(headerBounds.toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 
 	g.setColour(categoryColour);
 	g.fillRect(0, headerBounds.getY(), 4, headerBounds.getHeight());

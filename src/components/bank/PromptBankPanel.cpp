@@ -327,7 +327,7 @@ void PromptBankPanel::paint(juce::Graphics &g)
 	g.fillRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::CORNER, 1);
+	g.drawRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE, 1);
 }
 
 void PromptBankPanel::updateFromProcessor()

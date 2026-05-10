@@ -16,9 +16,9 @@ class CustomInfoLabelLookAndFeel : public juce::LookAndFeel_V4
 	{
 		auto bounds = label.getLocalBounds().toFloat();
 		g.setColour(ColourPalette::backgroundDeep);
-		g.fillRoundedRectangle(bounds, 4.0f);
+		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 		g.setColour(ColourPalette::textAccent.withAlpha(0.4f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), 4.0f, 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
 		g.setColour(ColourPalette::textAccent);
 		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 10.0f, juce::Font::plain));
 		g.drawText(label.getText(), bounds.reduced(8, 2), juce::Justification::centredLeft, false);
@@ -146,7 +146,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 			if (fillBg)
 			{
 				g.setColour(bgColour);
-				g.fillRoundedRectangle(bounds, 6.0f);
+				g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 			}
 
 			juce::Colour borderColour;

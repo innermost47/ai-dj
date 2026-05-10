@@ -533,7 +533,7 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 	g.restoreState();
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
-	g.drawRoundedRectangle(waveformBounds.toFloat(), 3.0f, 0.5f);
+	g.drawRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER, 0.5f);
 }
 
 void DetailPanel::resized()

@@ -9,9 +9,9 @@ void TrackEffectsPanel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
 	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(bounds, 6.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.0f);
+	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::LIST_PANEL_CORNER_SIZE, 1.0f);
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.5f));
 	g.setFont(juce::FontOptions(13.0f, juce::Font::italic));

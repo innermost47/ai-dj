@@ -24,10 +24,10 @@ void LCDScreen::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(juce::Colours::black.withAlpha(0.35f));
-	g.fillRoundedRectangle(bounds.reduced(2.0f), 3.0f);
+	g.fillRoundedRectangle(bounds.reduced(2.0f), ObsidianSizes::CORNER);
 
 	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(bounds.reduced(1.0f), 4.0f, 1.0f);
+	g.drawRoundedRectangle(bounds.reduced(1.0f), ObsidianSizes::CORNER, 1.0f);
 
 	g.setColour(juce::Colour::fromRGBA(0, 0, 0, 20));
 	for (int y = (int)bounds.getY(); y < (int)bounds.getBottom(); y += 2)

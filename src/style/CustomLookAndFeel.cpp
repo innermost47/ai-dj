@@ -1,4 +1,6 @@
 #include "CustomLookAndFeel.h"
+#include "Shades.h"
+#include "Sizes.h"
 
 CustomLookAndFeel::CustomLookAndFeel()
 {
@@ -66,9 +68,9 @@ void CustomLookAndFeel::drawTooltip(juce::Graphics &g, const juce::String &text,
 {
 	juce::Rectangle<float> bounds(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
 	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds, 4.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 	g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
-	g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
+	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1.0f);
 	layoutTooltipText(text, ColourPalette::textPrimary).draw(g, bounds.reduced(8.0f, 4.0f));
 }
 
@@ -87,14 +89,14 @@ void CustomLookAndFeel::drawButtonBackground(juce::Graphics &g, juce::Button &bu
 	if (!shouldDrawButtonAsDown)
 	{
 		g.setColour(juce::Colours::black.withAlpha(0.3f));
-		g.fillRoundedRectangle(bounds.translated(0, 1.5f), 4.0f);
+		g.fillRoundedRectangle(bounds.translated(0, 1.5f), ObsidianSizes::CORNER);
 	}
 
 	g.setColour(baseColour);
-	g.fillRoundedRectangle(bounds, 4.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 
 	g.setColour(baseColour.brighter(0.2f).withAlpha(0.4f));
-	g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
+	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 0.8f);
 }
 
 void CustomLookAndFeel::drawButtonText(juce::Graphics &g, juce::TextButton &button,
@@ -129,21 +131,21 @@ void CustomLookAndFeel::drawToggleButton(juce::Graphics &g, juce::ToggleButton &
 	if (!shouldDrawButtonAsDown)
 	{
 		g.setColour(juce::Colours::black.withAlpha(0.3f));
-		g.fillRoundedRectangle(bounds.translated(0, 1.5f), 4.0f);
+		g.fillRoundedRectangle(bounds.translated(0, 1.5f), ObsidianSizes::CORNER);
 	}
 
 	g.setColour(bgColour);
-	g.fillRoundedRectangle(bounds, 4.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 
 	if (!shouldDrawButtonAsDown)
 	{
 		g.setColour(juce::Colours::white.withAlpha(0.05f));
 		auto topBounds = bounds.withHeight(bounds.getHeight() * 0.4f);
-		g.fillRoundedRectangle(topBounds, 4.0f);
+		g.fillRoundedRectangle(topBounds, ObsidianSizes::CORNER);
 	}
 
 	g.setColour(bgColour.brighter(0.2f).withAlpha(0.4f));
-	g.drawRoundedRectangle(bounds, 4.0f, 0.8f);
+	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 0.8f);
 
 	auto textColour = button.findColour(button.getToggleState() ? juce::TextButton::textColourOnId
 	                                                            : juce::TextButton::textColourOffId);
@@ -178,7 +180,7 @@ void CustomLookAndFeel::drawAlertBox(juce::Graphics &g, juce::AlertWindow &alert
 	g.fillAll(ColourPalette::backgroundDark);
 
 	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
-	g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1.0f), 4.0f, 1.5f);
+	g.drawRoundedRectangle(alert.getLocalBounds().toFloat().reduced(1.0f), ObsidianSizes::CORNER, 1.5f);
 
 	auto titleBar = alert.getLocalBounds().removeFromTop(42).toFloat();
 	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.2f));
@@ -210,7 +212,7 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
                                      int buttonY, int buttonW, int buttonH, juce::ComboBox &box)
 {
 	auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
-	const float corner = 4.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	if (!isButtonDown)
 	{
@@ -298,9 +300,9 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 	{
 		auto bounds = label.getLocalBounds().toFloat();
 		g.setColour(ColourPalette::backgroundDark);
-		g.fillRoundedRectangle(bounds, 3.0f);
+		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 		g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), 3.0f, 0.8f);
+		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
 
 		if (!label.isBeingEdited())
 		{
@@ -589,7 +591,7 @@ void CustomLookAndFeel::drawScrollbar(juce::Graphics &g, juce::ScrollBar &scroll
 		thumbColour = thumbColour.brighter(0.1f);
 
 	g.setColour(thumbColour);
-	g.fillRoundedRectangle(thumbBounds, 4.0f);
+	g.fillRoundedRectangle(thumbBounds, ObsidianSizes::CORNER);
 }
 
 void CustomLookAndFeel::drawPopupMenuBackground(juce::Graphics &g, int width, int height)
@@ -640,7 +642,7 @@ void CustomLookAndFeel::drawPopupMenuItem(juce::Graphics &g, const juce::Rectang
 void CustomLookAndFeel::fillTextEditorBackground(juce::Graphics &g, int width, int height, juce::TextEditor &textEditor)
 {
 	auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
-	const float corner = 4.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	if (!textEditor.isEnabled())
 	{
@@ -662,7 +664,7 @@ void CustomLookAndFeel::drawTextEditorOutline(juce::Graphics &g, int width, int 
 		return;
 
 	auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
-	const float corner = 4.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	if (textEditor.hasKeyboardFocus(true))
 	{

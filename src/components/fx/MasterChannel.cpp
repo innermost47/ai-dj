@@ -112,7 +112,7 @@ void MasterChannel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds();
 	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds.toFloat(), 8.0f);
+	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
 }
 
 void MasterChannel::resized()

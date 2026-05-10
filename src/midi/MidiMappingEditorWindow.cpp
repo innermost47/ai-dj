@@ -37,7 +37,7 @@ MidiMappingRow::~MidiMappingRow()
 void MidiMappingRow::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	const float corner = 6.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	bool isEven = (getY() / juce::jmax(1, getHeight())) % 2 == 0;
 
@@ -74,9 +74,9 @@ void MidiMappingRow::paint(juce::Graphics &g)
 	if (!badgeBounds.isEmpty())
 	{
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.18f));
-		g.fillRoundedRectangle(badgeBounds, 3.0f);
+		g.fillRoundedRectangle(badgeBounds, ObsidianSizes::CORNER);
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
-		g.drawRoundedRectangle(badgeBounds, 3.0f, 0.6f);
+		g.drawRoundedRectangle(badgeBounds, ObsidianSizes::CORNER, 0.6f);
 
 		g.setColour(ColourPalette::textAccent);
 		g.setFont(juce::FontOptions("Courier New", 10.5f, juce::Font::bold));
@@ -231,7 +231,7 @@ void MidiMappingEditorWindow::timerCallback()
 void MidiMappingEditorWindow::paint(juce::Graphics &g)
 {
 	auto headerF = headerBounds.toFloat();
-	const float corner = 8.0f;
+	const float corner = ObsidianSizes::CORNER;
 	juce::ColourGradient headerGradient(ColourPalette::backgroundDeep.brighter(0.04f), headerF.getX(), headerF.getY(),
 	                                    ColourPalette::backgroundDeep.darker(0.02f), headerF.getX(),
 	                                    headerF.getBottom(), false);

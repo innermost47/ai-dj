@@ -281,10 +281,10 @@ void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics &g) const
 	auto track = curveButtonsRowBounds.toFloat();
 
 	g.setColour(juce::Colours::black.withAlpha(0.4f));
-	g.fillRoundedRectangle(track, 5.0f);
+	g.fillRoundedRectangle(track, ObsidianSizes::CORNER);
 
 	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(track.reduced(0.5f), 5.0f, 0.8f);
+	g.drawRoundedRectangle(track.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
 
 	int activeMode = audioProcessor.getCrossfaderCurveMode();
 	juce::Rectangle<int> activeBounds;
@@ -300,19 +300,19 @@ void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics &g) const
 		auto active = activeBounds.toFloat().reduced(2.0f);
 
 		g.setColour(juce::Colours::black.withAlpha(0.4f));
-		g.fillRoundedRectangle(active.translated(0, 1.0f), 4.0f);
+		g.fillRoundedRectangle(active.translated(0, 1.0f), ObsidianSizes::CORNER);
 
 		juce::ColourGradient bodyGrad(ColourPalette::trackSelected.withAlpha(0.45f), active.getX(), active.getY(),
 		                              ColourPalette::trackSelected.withAlpha(0.20f), active.getX(), active.getBottom(),
 		                              false);
 		g.setGradientFill(bodyGrad);
-		g.fillRoundedRectangle(active, 4.0f);
+		g.fillRoundedRectangle(active, ObsidianSizes::CORNER);
 
 		g.setColour(juce::Colours::white.withAlpha(0.06f));
-		g.fillRoundedRectangle(active.withHeight(active.getHeight() * 0.45f), 4.0f);
+		g.fillRoundedRectangle(active.withHeight(active.getHeight() * 0.45f), ObsidianSizes::CORNER);
 
 		g.setColour(ColourPalette::trackSelected.withAlpha(0.7f));
-		g.drawRoundedRectangle(active.reduced(0.5f), 4.0f, 1.0f);
+		g.drawRoundedRectangle(active.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
 	}
 }
 

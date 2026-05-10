@@ -22,9 +22,9 @@ void TrackRecapPanel::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(bounds, 6.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), 6.0f, 1.0f);
+	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::LIST_PANEL_CORNER_SIZE, 1.0f);
 
 	auto titleArea = getLocalBounds().reduced(8, 4).removeFromTop(18);
 	g.setColour(ColourPalette::textAccent);
@@ -83,7 +83,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 
 	auto bgRect = bounds.toFloat();
 	g.setColour(ColourPalette::backgroundDark.withAlpha(0.5f));
-	g.fillRoundedRectangle(bgRect, 4.0f);
+	g.fillRoundedRectangle(bgRect, ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 
 	g.setColour(modelColour);
 	g.fillRect(bounds.getX(), bounds.getY(), 3, bounds.getHeight());

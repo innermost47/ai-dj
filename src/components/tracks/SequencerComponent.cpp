@@ -131,7 +131,7 @@ void SequencerComponent::setupSequenceButtons()
 		sequenceButtons[i].setTooltip("Select sequence " + juce::String(i + 1) +
 		                              " - Each page has 8 independent sequences you can switch between");
 
-		sequenceButtons[i].setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
+		sequenceButtons[i].setColour(juce::TextButton::buttonColourId, accentColour.withAlpha(0.2f));
 		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, accentColour);
 		sequenceButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		sequenceButtons[i].setColour(juce::TextButton::textColourOnId,
@@ -226,7 +226,7 @@ void SequencerComponent::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds();
 
 	g.setColour(accentColour.withAlpha(0.08f));
-	g.fillRoundedRectangle(bounds.toFloat(), 6.0f);
+	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
 
 	juce::Colour beatColour = ColourPalette::sequencerBeat;
 	juce::Colour subBeatColour = ColourPalette::sequencerSubBeat;
@@ -362,7 +362,10 @@ void SequencerComponent::setAccentColour(juce::Colour colour)
 	accentColour = colour;
 
 	for (int i = 0; i < 8; ++i)
-		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, colour.brighter(0.8f));
+	{
+		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, colour);
+		sequenceButtons[i].setColour(juce::TextButton::buttonColourId, colour.withAlpha(0.1f));
+	}
 
 	prevMeasureButton.setColour(juce::TextButton::textColourOffId, colour);
 	nextMeasureButton.setColour(juce::TextButton::textColourOffId, colour);
@@ -467,6 +470,7 @@ void SequencerComponent::resized()
 {
 	auto bounds = getLocalBounds();
 	bounds.removeFromLeft(13);
+	bounds.removeFromRight(11);
 
 	auto controlsArea = bounds.removeFromBottom(22);
 	controlsArea.removeFromBottom(2);

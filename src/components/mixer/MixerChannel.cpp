@@ -250,7 +250,7 @@ void MixerChannel::paint(juce::Graphics &g)
 	if (hasSamplePending && !isGenerating)
 	{
 		g.setColour(ColourPalette::samplePending.withAlpha(0.15f));
-		g.fillRoundedRectangle(bounds.toFloat(), 8.0f);
+		g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
 	}
 
 	juce::Colour borderColour;
@@ -284,9 +284,8 @@ void MixerChannel::resized()
 	const int width = area.getWidth();
 
 	trackNameLabel.setBounds(area.removeFromTop(16));
-	area.removeFromTop(3);
 
-	auto bottomRow2 = area.removeFromBottom(24);
+	auto bottomRow2 = area.removeFromBottom(22);
 	int btnW = width / 2 - 2;
 	int totalW = btnW * 2 + 2;
 	int offsetX = (width - totalW) / 2;
@@ -295,7 +294,7 @@ void MixerChannel::resized()
 	bottomRow2.removeFromLeft(1);
 	soloButton.setBounds(bottomRow2.removeFromLeft(btnW).reduced(1));
 
-	auto bottomRow1 = area.removeFromBottom(24);
+	auto bottomRow1 = area.removeFromBottom(22);
 	bottomRow1.removeFromLeft(offsetX);
 	playButton.setBounds(bottomRow1.removeFromLeft(btnW).reduced(1));
 	bottomRow1.removeFromLeft(1);

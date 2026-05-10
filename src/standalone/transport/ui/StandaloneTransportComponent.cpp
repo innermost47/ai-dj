@@ -3,7 +3,7 @@
 void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	const float corner = 5.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	g.setColour(juce::Colours::black.withAlpha(0.4f));
 	g.fillRoundedRectangle(bounds.translated(0, 1.5f), corner);
@@ -141,7 +141,7 @@ StandaloneTransportComponent::BpmField::BpmField()
 void StandaloneTransportComponent::BpmField::resized()
 {
 	auto area = getLocalBounds();
-	editor.setBounds(area.reduced(2, 0));
+	editor.setBounds(area);
 }
 
 void StandaloneTransportComponent::BpmField::paint(juce::Graphics & /*g*/)
@@ -376,48 +376,36 @@ void StandaloneTransportComponent::udpatePlayButtonDisplay(bool isPlaying)
 void StandaloneTransportComponent::resized()
 {
 	auto area = getLocalBounds().reduced(4);
-	const int rowGap = 8;
 
-	const int lcdH = juce::jlimit(46, 68, (int)(area.getHeight() * 0.28f));
-	lcd.setBounds(area.removeFromTop(lcdH));
-	area.removeFromTop(rowGap);
-
+	const int lcdHeight = 68;
 	const int transportH = 26;
+
+	auto lcdRow = area.removeFromTop(lcdHeight);
+	auto lcdWidth = (lcdRow.getWidth() / 3) * 2;
+
+	lcd.setBounds(lcdRow.removeFromLeft(lcdWidth));
+	lcdRow.removeFromLeft(ObsidianSizes::GAP_4);
+	bpmField.setBounds(lcdRow.removeFromTop(juce::roundToInt(lcdHeight / 1.5f)));
+	lcdRow.removeFromTop(ObsidianSizes::GAP_4);
+	tapButton.setBounds(lcdRow);
+
+	area.removeFromTop(ObsidianSizes::GAP_4);
+
 	auto transportRow = area.removeFromTop(transportH);
-	const int btnGap = 6;
-	const int playW = (transportRow.getWidth() - btnGap) * 2 / 3;
-	playButton.setBounds(transportRow.removeFromLeft(playW));
+	auto transportWidth = (transportRow.getWidth() / 3) * 2;
+	auto numeratorsWidth = transportRow.getWidth() - transportWidth;
+
+	const int btnGap = ObsidianSizes::GAP_4;
+	const int transportBtnWidth = (transportWidth - btnGap) / 2;
+
+	playButton.setBounds(transportRow.removeFromLeft(transportBtnWidth));
 	transportRow.removeFromLeft(btnGap);
-	stopButton.setBounds(transportRow);
-	area.removeFromTop(rowGap);
+	stopButton.setBounds(transportRow.removeFromLeft(transportBtnWidth));
+	transportRow.removeFromLeft(btnGap);
 
-	const int bpmRowH = 26;
-	auto bpmRow = area.removeFromTop(bpmRowH);
-
-	const int sideBtnW = 22;
-	const int tapW = 38;
-	bpmDownButton.setBounds(bpmRow.removeFromLeft(sideBtnW));
-	bpmRow.removeFromLeft(3);
-	tapButton.setBounds(bpmRow.removeFromRight(tapW));
-	bpmRow.removeFromRight(4);
-	bpmUpButton.setBounds(bpmRow.removeFromRight(sideBtnW));
-	bpmRow.removeFromRight(3);
-	bpmField.setBounds(bpmRow);
-
-	area.removeFromTop(4);
-
-	auto sigRow = area;
-	auto sigLabelArea = sigRow.removeFromLeft(28);
-	timeSigLabel.setBounds(sigLabelArea.withSizeKeepingCentre(28, 12));
-
-	const int sigW = sigRow.getWidth();
-	const int comboW = (sigW - 14) / 2;
-	const int comboH = juce::jmin(sigRow.getHeight(), 22);
-	auto comboRow = sigRow.withSizeKeepingCentre(sigW, comboH);
-
-	timeSigNumerator.setBounds(comboRow.removeFromLeft(comboW));
-	timeSigSeparator.setBounds(comboRow.removeFromLeft(24));
-	timeSigDenominator.setBounds(comboRow.removeFromLeft(comboW));
+	timeSigNumerator.setBounds(transportRow.removeFromLeft((numeratorsWidth / 2) - btnGap));
+	transportRow.removeFromLeft(btnGap);
+	timeSigDenominator.setBounds(transportRow);
 }
 
 void StandaloneTransportComponent::paint(juce::Graphics & /*g*/)

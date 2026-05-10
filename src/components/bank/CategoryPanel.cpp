@@ -11,11 +11,11 @@ void CategoryTag::paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*
 	bool active = getToggleState();
 
 	g.setColour(active ? ColourPalette::buttonPrimary : ColourPalette::backgroundLight.withAlpha(0.4f));
-	g.fillRoundedRectangle(bounds, bounds.getHeight() / 2.0f);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 	if (isMouseOverButton && !active)
 	{
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.2f));
-		g.drawRoundedRectangle(bounds, bounds.getHeight() / 2.0f, 1.5f);
+		g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1.5f);
 	}
 	g.setColour(active ? juce::Colours::white : ColourPalette::textSecondary);
 	g.setFont(juce::FontOptions("Courier New", 14.0f, active ? juce::Font::bold : juce::Font::plain));

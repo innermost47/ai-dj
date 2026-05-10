@@ -27,17 +27,17 @@ void ColorSwatch::paintButton(juce::Graphics &g, bool /*shouldDrawButtonAsHighli
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(buttonColor);
-	g.fillRoundedRectangle(bounds.reduced(3), 2.0f);
+	g.fillRoundedRectangle(bounds.reduced(3), ObsidianSizes::CORNER);
 
 	if (getToggleState())
 	{
 		g.setColour(ColourPalette::buttonPrimary);
-		g.drawRoundedRectangle(bounds.reduced(1), 2.0f, 3.0f);
+		g.drawRoundedRectangle(bounds.reduced(1), ObsidianSizes::CORNER, 3.0f);
 	}
 	else
 	{
 		g.setColour(ColourPalette::backgroundLight);
-		g.drawRoundedRectangle(bounds.reduced(3), 2.0f, 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(3), ObsidianSizes::CORNER, 1.0f);
 	}
 }
 
@@ -98,7 +98,7 @@ void DrawingCanvas::setGenerating(bool generating)
 
 void DrawingCanvas::paint(juce::Graphics &g)
 {
-	const float corner = 8.0f;
+	const float corner = ObsidianSizes::CORNER;
 
 	auto canvasFrame = canvasAreaBounds.expanded(6).toFloat();
 
