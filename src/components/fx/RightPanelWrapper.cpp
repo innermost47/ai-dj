@@ -31,7 +31,7 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor) : audioProcess
 
 void RightPanelWrapper::paint(juce::Graphics &g)
 {
-	paintBaseBackground(g);
+	paintBaseBackgroundWithLeftBorder(g);
 }
 
 void RightPanelWrapper::resized()
@@ -58,7 +58,7 @@ void RightPanelWrapper::resized()
 
 	if (topComp != nullptr)
 		mainStack.items.add(
-		    FlexItem(*topComp).withFlex(0.4f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
+		    FlexItem(*topComp).withFlex(0.3f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
 
 	mainStack.items.add(
 	    FlexItem(*lcdScreen).withFlex(0.15f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));

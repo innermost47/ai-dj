@@ -71,7 +71,7 @@ void MasterChannel::setupUI()
 
 	addAndMakeVisible(masterLabel);
 	masterLabel.setText("MASTER", juce::dontSendNotification);
-	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	masterLabel.setJustificationType(juce::Justification::centred);
 	masterLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
 

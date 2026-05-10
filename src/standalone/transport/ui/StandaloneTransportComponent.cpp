@@ -133,7 +133,7 @@ StandaloneTransportComponent::BpmField::BpmField()
 	addAndMakeVisible(editor);
 	editor.setInputRestrictions(6, "0123456789.");
 	editor.setJustification(juce::Justification::centred);
-	editor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+	editor.setColour(juce::TextEditor::textColourId, ColourPalette::textAccent);
 	editor.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 16.0f, juce::Font::bold));
 	editor.setTooltip("BPM\nScroll: +/-1\nShift+Scroll: +/-5\nCmd+Scroll: +/-0.1\nDouble-clic: reset 120");
 }
@@ -178,6 +178,7 @@ double StandaloneTransportComponent::BpmField::getBpmValue() const
 StandaloneTransportComponent::StandaloneTransportComponent(StandaloneTransport &t) : transport(t)
 {
 	setupUI();
+	syncFromTransport();
 	startTimerHz(30);
 }
 
@@ -251,7 +252,11 @@ void StandaloneTransportComponent::setupUI()
 
 	addAndMakeVisible(bpmField);
 	bpmField.setBpmValue(transport.getBpm());
-	bpmField.editor.onReturnKey = [this]() { onBpmEditorChanged(); };
+	bpmField.editor.onReturnKey = [this]()
+	{
+		onBpmEditorChanged();
+		giveAwayKeyboardFocus();
+	};
 	bpmField.editor.onFocusLost = [this]() { onBpmEditorChanged(); };
 	bpmField.onValueChanged = [this](double bpm)
 	{
@@ -304,44 +309,24 @@ void StandaloneTransportComponent::setupUI()
 	tapButton.setTooltip("Tap Tempo - click at least 2 times in rhythm");
 	tapButton.onClick = [this]() { registerTapTempo(); };
 
-	addAndMakeVisible(timeSigLabel);
-	timeSigLabel.setText("SIG", juce::dontSendNotification);
-	timeSigLabel.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 9.0f, juce::Font::plain));
-	timeSigLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	timeSigLabel.setJustificationType(juce::Justification::centred);
+	addAndMakeVisible(timeSigEditor);
 
-	addAndMakeVisible(timeSigNumerator);
-	for (int i : {2, 3, 4, 5, 6, 7, 8, 9, 12})
-		timeSigNumerator.addItem(juce::String(i), i);
-	timeSigNumerator.setSelectedId(transport.getTimeSigNumerator(), juce::dontSendNotification);
-	timeSigNumerator.setTooltip("Numerator");
-	timeSigNumerator.onChange = [this]()
+	timeSigEditor.setJustification(juce::Justification::centred);
+	timeSigEditor.setIndents(0, 0);
+	timeSigEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
+	timeSigEditor.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+	timeSigEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+	timeSigEditor.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
+
+	timeSigEditor.setInputRestrictions(5, "0123456789/");
+
+	timeSigEditor.onReturnKey = [this]()
 	{
-		transport.setTimeSignature(timeSigNumerator.getSelectedId(), timeSigDenominator.getSelectedId());
-		lcd.setTimeSignature(timeSigNumerator.getSelectedId(), timeSigDenominator.getSelectedId());
-		if (onTimeSignatureChanged)
-			onTimeSignatureChanged(timeSigNumerator.getSelectedId(), timeSigDenominator.getSelectedId());
+		handleTimeSigChange();
+		giveAwayKeyboardFocus();
 	};
 
-	addAndMakeVisible(timeSigSeparator);
-	timeSigSeparator.setText("/", juce::dontSendNotification);
-	timeSigSeparator.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 14.0f, juce::Font::bold));
-	timeSigSeparator.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	timeSigSeparator.setJustificationType(juce::Justification::centred);
-	timeSigSeparator.setInterceptsMouseClicks(false, false);
-
-	addAndMakeVisible(timeSigDenominator);
-	for (int i : {2, 4, 8, 16})
-		timeSigDenominator.addItem(juce::String(i), i);
-	timeSigDenominator.setSelectedId(transport.getTimeSigDenominator(), juce::dontSendNotification);
-	timeSigDenominator.setTooltip("Denominator");
-	timeSigDenominator.onChange = [this]()
-	{
-		transport.setTimeSignature(timeSigNumerator.getSelectedId(), timeSigDenominator.getSelectedId());
-		lcd.setTimeSignature(timeSigNumerator.getSelectedId(), timeSigDenominator.getSelectedId());
-		if (onTimeSignatureChanged)
-			onTimeSignatureChanged(timeSigNumerator.getSelectedId(), timeSigDenominator.getSelectedId());
-	};
+	timeSigEditor.onFocusLost = [this]() { handleTimeSigChange(); };
 }
 
 void StandaloneTransportComponent::udpatePlayButtonDisplay(bool isPlaying)
@@ -373,11 +358,34 @@ void StandaloneTransportComponent::udpatePlayButtonDisplay(bool isPlaying)
 	}
 }
 
+void StandaloneTransportComponent::handleTimeSigChange()
+{
+	auto text = timeSigEditor.getText();
+	juce::StringArray tokens;
+	tokens.addTokens(text, "/", "");
+
+	if (tokens.size() == 2)
+	{
+		int num = tokens[0].trim().getIntValue();
+		int den = tokens[1].trim().getIntValue();
+
+		num = juce::jlimit(1, 32, num);
+		den = juce::jlimit(2, 32, den);
+
+		transport.setTimeSignature(num, den);
+		lcd.setTimeSignature(num, den);
+
+		if (onTimeSignatureChanged)
+			onTimeSignatureChanged();
+	}
+	syncFromTransport();
+}
+
 void StandaloneTransportComponent::resized()
 {
-	auto area = getLocalBounds().reduced(4);
+	auto area = getLocalBounds();
 
-	const int lcdHeight = 68;
+	const int lcdHeight = 60;
 	const int transportH = 26;
 
 	auto lcdRow = area.removeFromTop(lcdHeight);
@@ -393,7 +401,6 @@ void StandaloneTransportComponent::resized()
 
 	auto transportRow = area.removeFromTop(transportH);
 	auto transportWidth = (transportRow.getWidth() / 3) * 2;
-	auto numeratorsWidth = transportRow.getWidth() - transportWidth;
 
 	const int btnGap = ObsidianSizes::GAP_4;
 	const int transportBtnWidth = (transportWidth - btnGap) / 2;
@@ -402,10 +409,7 @@ void StandaloneTransportComponent::resized()
 	transportRow.removeFromLeft(btnGap);
 	stopButton.setBounds(transportRow.removeFromLeft(transportBtnWidth));
 	transportRow.removeFromLeft(btnGap);
-
-	timeSigNumerator.setBounds(transportRow.removeFromLeft((numeratorsWidth / 2) - btnGap));
-	transportRow.removeFromLeft(btnGap);
-	timeSigDenominator.setBounds(transportRow);
+	timeSigEditor.setBounds(transportRow);
 }
 
 void StandaloneTransportComponent::paint(juce::Graphics & /*g*/)
@@ -540,6 +544,9 @@ void StandaloneTransportComponent::registerTapTempo()
 void StandaloneTransportComponent::syncFromTransport()
 {
 	bpmField.setBpmValue(transport.getBpm());
-	timeSigNumerator.setSelectedId(transport.getTimeSigNumerator(), juce::dontSendNotification);
-	timeSigDenominator.setSelectedId(transport.getTimeSigDenominator(), juce::dontSendNotification);
+
+	juce::String sigText =
+	    juce::String(transport.getTimeSigNumerator()) + "/" + juce::String(transport.getTimeSigDenominator());
+
+	timeSigEditor.setText(sigText, juce::dontSendNotification);
 }

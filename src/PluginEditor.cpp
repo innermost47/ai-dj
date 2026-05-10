@@ -6,9 +6,8 @@
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
-#if JucePlugin_Build_Standalone
 #include "StandaloneTransport.h"
-#endif
+#include "StandaloneTransportComponent.h"
 
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
@@ -438,6 +437,17 @@ void DjIaVstEditor::addEventListeners()
 	openMidiEditorButton.onClick = [this] { uiModalManager->openMidiMappingEditor(); };
 
 	helpButton.onClick = [this]() { uiModalManager->showOnboardingStep(1); };
+
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		if (audioProcessor.getStandaloneTransport())
+		{
+			uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent()->onTimeSignatureChanged =
+			    [this]() { uiTrackManager->refreshTrackComponents(); };
+			uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent()->onBpmChanged =
+			    [this](double /*value*/) { uiTrackManager->refreshTrackComponents(); };
+		}
+	}
 }
 
 void DjIaVstEditor::addModal(std::unique_ptr<ObsidianModalOverlay> overlay)

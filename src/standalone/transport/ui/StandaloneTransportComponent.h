@@ -15,7 +15,7 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	void syncFromTransport();
 
 	std::function<void(double)> onBpmChanged;
-	std::function<void(int, int)> onTimeSignatureChanged;
+	std::function<void()> onTimeSignatureChanged;
 
   private:
 	void setupUI();
@@ -23,6 +23,7 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	void updateBeatDisplay();
 	void onBpmEditorChanged();
 	void registerTapTempo();
+	void handleTimeSigChange();
 
 	class BeatLcd : public juce::Component
 	{
@@ -73,10 +74,7 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	BeatLcd lcd;
 	BpmField bpmField;
 
-	juce::ComboBox timeSigNumerator;
-	juce::Label timeSigSeparator;
-	juce::ComboBox timeSigDenominator;
-	juce::Label timeSigLabel;
+	juce::TextEditor timeSigEditor;
 
 	int currentBeat = 0;
 	int currentSubBeat = 0;

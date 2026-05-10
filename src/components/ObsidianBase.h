@@ -31,4 +31,15 @@ class ObsidianComponent : public juce::Component
 		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
 		g.drawRect(bounds.toFloat(), 1);
 	}
+
+	void paintBaseBackgroundWithLeftBorder(juce::Graphics &g)
+	{
+		auto bounds = getLocalBounds().toFloat();
+
+		g.setColour(ColourPalette::backgroundDark);
+		g.fillRect(bounds);
+
+		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
+		g.drawLine(0.0f, 0.0f, 0.0f, bounds.getHeight(), ObsidianSizes::BORDER_WIDTH);
+	}
 };
