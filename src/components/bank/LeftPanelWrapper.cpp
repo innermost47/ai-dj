@@ -37,7 +37,7 @@ void LeftPanelWrapper::paint(juce::Graphics &g)
 
 void LeftPanelWrapper::resized()
 {
-	auto area = getLocalBounds().reduced(ObsidianSizes::MAIN_PADDING);
+	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
 
 	auto tabBar = area.removeFromTop(tabBarHeight);
 	const int tabW = tabBar.getWidth() / 2;

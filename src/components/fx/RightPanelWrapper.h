@@ -1,4 +1,5 @@
 #pragma once
+#include "LogoComponent.h"
 #include "ObsidianBase.h"
 #include <JuceHeader.h>
 
@@ -9,6 +10,7 @@ class StandaloneTransport;
 class MasterChannel;
 class LCDScreen;
 class TrackEffectsPanel;
+class LogoComponent;
 class SendsPanel;
 class TrackRecapPanel;
 
@@ -50,6 +52,7 @@ class RightPanelWrapper : public ObsidianComponent
 	std::unique_ptr<TrackRecapPanel> trackRecap;
 	std::unique_ptr<TrackEffectsPanel> trackEffects;
 	std::unique_ptr<SendsPanel> sendsPanel;
+	std::unique_ptr<LogoComponent> logoComponent;
 
 	MasterWaveformDisplay *masterWaveform = nullptr;
 

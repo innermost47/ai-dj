@@ -13,10 +13,11 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(
 		l.setText(txt, juce::dontSendNotification);
 		l.setFont(juce::FontOptions(9.0f, juce::Font::bold));
 		l.setColour(juce::Label::textColourId, ColourPalette::textSecondary.withAlpha(0.8f));
+		l.setJustificationType(juce::Justification::centred);
 	};
 
 	styleSubLbl(delayTimeLbl, "Time");
-	styleSubLbl(delayFeedbackLbl, "Feedback");
+	styleSubLbl(delayFeedbackLbl, "FB");
 	styleSubLbl(delayModeLbl, "Mode");
 	addAndMakeVisible(delayTimeLbl);
 	addAndMakeVisible(delayFeedbackLbl);
@@ -207,10 +208,10 @@ void SendsPanel::setupDelayModeButtons()
 void SendsPanel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.8f));
+	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::ALPHA_08));
 	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
+	g.setColour(ColourPalette::sliderTrack.withAlpha(ObsidianShades::ALPHA_03));
+	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
 
 	int y = getHeight() / 2;
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
@@ -219,18 +220,21 @@ void SendsPanel::paint(juce::Graphics &g)
 
 void SendsPanel::resized()
 {
-	auto area = getLocalBounds().reduced(8, 6);
+	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
 
 	int fxPart = area.getHeight() / 2;
 	auto delayArea = area.removeFromTop(fxPart);
 	auto reverbArea = area;
 
 	delayTitleLbl.setBounds(delayArea.removeFromTop(14));
-	delayArea.removeFromTop(4);
 	auto mainRow = delayArea.removeFromTop(80);
+	mainRow.removeFromTop(4);
 
-	auto fbCol = mainRow.removeFromLeft(45);
-	delayFeedbackKnob.setBounds(fbCol.reduced(2));
+	auto fbCol = mainRow.removeFromLeft(38);
+	auto fbRow = fbCol.removeFromTop(48);
+
+	delayFeedbackLbl.setBounds(fbRow.removeFromTop(10));
+	delayFeedbackKnob.setBounds(fbRow);
 
 	mainRow.removeFromLeft(15);
 	auto gridArea = mainRow;

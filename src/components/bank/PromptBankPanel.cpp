@@ -323,7 +323,7 @@ void PromptBankPanel::resized()
 void PromptBankPanel::paint(juce::Graphics &g)
 {
 	g.fillAll(ColourPalette::backgroundDark);
-	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::BACKGROUND_08));
+	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::ALPHA_08));
 	g.fillRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));

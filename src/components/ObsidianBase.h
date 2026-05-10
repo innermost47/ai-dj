@@ -19,15 +19,24 @@ class ObsidianComponent : public juce::Component
 	{
 		auto bounds = getLocalBounds().toFloat();
 		g.setColour(ColourPalette::backgroundDark);
-		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+		g.fillAll();
 		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
 		g.drawRect(getLocalBounds(), 1);
+	}
+
+	void paintBaseRoundedBackgroundMidWithAlpha06(juce::Graphics &g)
+	{
+		auto bounds = getLocalBounds().toFloat();
+		g.setColour(ColourPalette::backgroundMid.withAlpha(ObsidianShades::ALPHA_06));
+		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
+		g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
 	}
 
 	void paintBaseLocalBackground(juce::Graphics &g, juce::Rectangle<int> bounds)
 	{
 		g.setColour(ColourPalette::backgroundDark);
-		g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+		g.fillAll();
 		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
 		g.drawRect(bounds.toFloat(), 1);
 	}

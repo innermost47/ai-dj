@@ -1,5 +1,6 @@
 #include "RightPanelWrapper.h"
 #include "LCDScreen.h"
+#include "LogoComponent.h"
 #include "MasterChannel.h"
 #include "MasterWaveformDisplay.h"
 #include "PluginProcessor.h"
@@ -15,11 +16,13 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor) : audioProcess
 	trackRecap = std::make_unique<TrackRecapPanel>(processor);
 	trackEffects = std::make_unique<TrackEffectsPanel>(processor);
 	sendsPanel = std::make_unique<SendsPanel>(processor);
+	logoComponent = std::make_unique<LogoComponent>();
 
 	scrollContent.addAndMakeVisible(*trackRecap);
 	scrollContent.addAndMakeVisible(*trackEffects);
 
 	addAndMakeVisible(*masterChannel);
+	addAndMakeVisible(*logoComponent);
 
 	contentViewport.setViewedComponent(&scrollContent, false);
 	contentViewport.setScrollBarsShown(true, false);
@@ -43,10 +46,9 @@ void RightPanelWrapper::resized()
 	bottomRow.flexDirection = FlexBox::Direction::row;
 
 	if (masterChannel != nullptr)
-		bottomRow.items.add(
-		    FlexItem(*masterChannel).withFlex(0.4f).withMargin(FlexItem::Margin(0, ObsidianSizes::SPACER_XS, 0, 0)));
+		bottomRow.items.add(FlexItem(*masterChannel).withFlex(0.3f));
 
-	bottomRow.items.add(FlexItem(*sendsPanel).withFlex(0.6f));
+	bottomRow.items.add(FlexItem(*logoComponent).withFlex(0.4f));
 
 	FlexBox mainStack;
 	mainStack.flexDirection = FlexBox::Direction::column;
@@ -58,16 +60,20 @@ void RightPanelWrapper::resized()
 
 	if (topComp != nullptr)
 		mainStack.items.add(
-		    FlexItem(*topComp).withFlex(0.3f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
+		    FlexItem(*topComp).withFlex(0.4f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
 
 	mainStack.items.add(
-	    FlexItem(*lcdScreen).withFlex(0.15f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
+	    FlexItem(*lcdScreen).withFlex(0.2f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
 
-	mainStack.items.add(FlexItem(contentViewport).withFlex(1.54f));
+	mainStack.items.add(
+	    FlexItem(contentViewport).withFlex(1.25f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_8, 0)));
 
-	mainStack.items.add(FlexItem(bottomRow).withFlex(0.8f).withMargin(FlexItem::Margin(ObsidianSizes::GAP_8, 0, 0, 0)));
+	mainStack.items.add(
+	    FlexItem(*sendsPanel).withFlex(0.7f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
 
-	mainStack.performLayout(getLocalBounds().reduced(ObsidianSizes::MAIN_PADDING));
+	mainStack.items.add(FlexItem(bottomRow).withFlex(1.0f));
+
+	mainStack.performLayout(getLocalBounds().reduced(ObsidianSizes::PADDING));
 
 	const int viewportW = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
 	const int recapH = trackRecap->getPreferredHeight();

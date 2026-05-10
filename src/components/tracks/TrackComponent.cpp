@@ -249,7 +249,7 @@ float TrackComponent::calculateEffectiveBpm()
 void TrackComponent::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDark.withAlpha(ObsidianShades::BACKGROUND_08));
+	g.setColour(ColourPalette::backgroundDark.withAlpha(ObsidianShades::ALPHA_08));
 	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 }
 

@@ -72,7 +72,7 @@ void MasterChannel::setupUI()
 	addAndMakeVisible(masterLabel);
 	masterLabel.setText("MASTER", juce::dontSendNotification);
 	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
-	masterLabel.setJustificationType(juce::Justification::centred);
+	masterLabel.setJustificationType(juce::Justification::left);
 	masterLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
 
 	addAndMakeVisible(highLabel);
@@ -110,18 +110,15 @@ void MasterChannel::setupUI()
 
 void MasterChannel::paint(juce::Graphics &g)
 {
-	auto bounds = getLocalBounds();
-	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+	paintBaseRoundedBackgroundMidWithAlpha06(g);
 }
 
 void MasterChannel::resized()
 {
-	auto area = getLocalBounds().reduced(2);
+	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
 	int width = area.getWidth();
 
 	masterLabel.setBounds(area.removeFromTop(20));
-	area.removeFromTop(5);
 
 	const int colSpacing = 2;
 	const int knobColWidth = (width - colSpacing * 2) / 3;

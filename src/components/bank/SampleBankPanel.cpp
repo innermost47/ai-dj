@@ -469,7 +469,7 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 	clip.addRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER);
 	g.reduceClipRegion(clip);
 
-	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::BACKGROUND_08));
+	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::ALPHA_08));
 	g.fillRect(waveformBounds);
 
 	auto innerBounds = waveformBounds.reduced(6, 4);
