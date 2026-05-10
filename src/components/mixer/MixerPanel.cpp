@@ -123,7 +123,7 @@ void MixerPanel::paint(juce::Graphics & /*g*/)
 
 void MixerPanel::resized()
 {
-	auto bounds = getLocalBounds();
+	auto bounds = getLocalBounds().withTrimmedBottom(ObsidianSizes::GAP);
 
 	juce::Grid grid;
 	grid.templateRows = {juce::Grid::TrackInfo(juce::Grid::Fr(1))};

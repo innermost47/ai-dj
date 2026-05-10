@@ -7,7 +7,9 @@
 namespace ObsidianSizes
 {
 inline constexpr int GAP = 6;
+inline constexpr int GAP_8 = 8;
 inline constexpr int GAP_4 = 4;
+inline constexpr int GAP_XL = 12;
 inline constexpr int SPACER_XXS = 1;
 inline constexpr int SPACER_XS = 2;
 inline constexpr int SPACER_SM = 3;

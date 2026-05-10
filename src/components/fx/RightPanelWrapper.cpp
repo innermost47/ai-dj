@@ -44,7 +44,7 @@ void RightPanelWrapper::resized()
 
 	if (masterChannel != nullptr)
 		bottomRow.items.add(
-		    FlexItem(*masterChannel).withFlex(0.4f).withMargin(FlexItem::Margin(0, ObsidianSizes::GAP, 0, 0)));
+		    FlexItem(*masterChannel).withFlex(0.4f).withMargin(FlexItem::Margin(0, ObsidianSizes::SPACER_XS, 0, 0)));
 
 	bottomRow.items.add(FlexItem(*sendsPanel).withFlex(0.6f));
 
@@ -58,12 +58,14 @@ void RightPanelWrapper::resized()
 
 	if (topComp != nullptr)
 		mainStack.items.add(
-		    FlexItem(*topComp).withHeight(120.0f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP, 0)));
+		    FlexItem(*topComp).withFlex(0.4f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
 
 	mainStack.items.add(
-	    FlexItem(contentViewport).withFlex(1.0f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP, 0)));
+	    FlexItem(*lcdScreen).withFlex(0.15f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
 
-	mainStack.items.add(FlexItem(bottomRow).withHeight(225.0f));
+	mainStack.items.add(FlexItem(contentViewport).withFlex(1.54f));
+
+	mainStack.items.add(FlexItem(bottomRow).withFlex(0.8f).withMargin(FlexItem::Margin(ObsidianSizes::GAP_8, 0, 0, 0)));
 
 	mainStack.performLayout(getLocalBounds().reduced(ObsidianSizes::MAIN_PADDING));
 
