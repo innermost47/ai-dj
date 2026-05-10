@@ -23,4 +23,12 @@ class ObsidianComponent : public juce::Component
 		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
 		g.drawRect(getLocalBounds(), 1);
 	}
+
+	void paintBaseLocalBackground(juce::Graphics &g, juce::Rectangle<int> bounds)
+	{
+		g.setColour(ColourPalette::backgroundDark);
+		g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
+		g.drawRect(bounds.toFloat(), 1);
+	}
 };

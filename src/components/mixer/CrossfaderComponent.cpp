@@ -137,13 +137,8 @@ void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 		int idx = paramSuffix.getTrailingIntValue() - 1;
 		if (idx >= 0 && idx < 4)
 		{
-			audioProcessor.setPairCrossfaderValue(idx, (float)pairSliders[idx].getValue());
 			updateSliderColour(pairSliders[idx], idx);
 		}
-	}
-	else if (paramSuffix == "globalCrossfader")
-	{
-		audioProcessor.setGlobalCrossfaderValue((float)globalSlider.getValue());
 	}
 	else if (paramSuffix == "crossfaderCurveMode")
 	{
@@ -207,10 +202,11 @@ void CrossfaderComponent::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
 
-	auto borderBounds = bounds.reduced(0.0f, 2.0f);
-
 	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(borderBounds, 8.0f);
+	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+
+	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
+	g.drawRoundedRectangle(bounds.toFloat().reduced(1), ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
 
 	drawSegmentedCurveBackground(g);
 }

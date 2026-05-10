@@ -121,9 +121,11 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 		auto badgeArea = pageLine.removeFromLeft(14);
 		auto badgeRect = badgeArea.withSizeKeepingCentre(11, 11).toFloat();
 
+		juce::Colour modelColourForPage = AiModelDefinitions::getColourForModel(track->pages[p].selectedModel);
+
 		if (isActive)
 		{
-			g.setColour(modelColour);
+			g.setColour(modelColourForPage);
 			g.fillEllipse(badgeRect);
 			g.setColour(juce::Colours::white);
 		}
@@ -131,7 +133,9 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 		{
 			g.setColour(juce::Colours::transparentBlack);
 			g.fillEllipse(badgeRect);
-			g.setColour(ColourPalette::textSecondary.withAlpha(hasContent ? 0.6f : 0.3f));
+			juce::Colour colour =
+			    track->pages[p].numSamples > 0 ? modelColourForPage : ColourPalette::textSecondary.withAlpha(0.3f);
+			g.setColour(colour);
 			g.drawEllipse(badgeRect, 1.0f);
 		}
 

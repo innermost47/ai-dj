@@ -1,5 +1,6 @@
 #if JucePlugin_Build_Standalone
 #include "ObsidianStandaloneApp.h"
+#include "StandaloneTransportComponent.h"
 #include "config/version.h"
 #include <JuceHeader.h>
 

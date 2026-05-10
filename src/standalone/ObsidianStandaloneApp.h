@@ -1,6 +1,8 @@
 #pragma once
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "RightPanelWrapper.h"
+#include "StandaloneTransportComponent.h"
 #include "StateManager.h"
 #include <JuceHeader.h>
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -828,32 +830,36 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 		auto defaultFolder = StateManager::getDefaultSessionsFolder();
 		fileChooser = std::make_unique<juce::FileChooser>("Open Session", defaultFolder, "*.obsidian");
 
-		fileChooser->launchAsync(juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-		                         [this, processor](const juce::FileChooser &fc)
-		                         {
-			                         auto file = fc.getResult();
-			                         fileChooser.reset();
-			                         if (file == juce::File{})
-				                         return;
+		fileChooser->launchAsync(
+		    juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+		    [this, processor](const juce::FileChooser &fc)
+		    {
+			    auto file = fc.getResult();
+			    fileChooser.reset();
+			    if (file == juce::File{})
+				    return;
 
-			                         auto *editor = dynamic_cast<DjIaVstEditor *>(processor->getActiveEditor());
-			                         if (!editor)
-				                         return;
+			    auto *editor = dynamic_cast<DjIaVstEditor *>(processor->getActiveEditor());
+			    if (!editor)
+				    return;
 
-			                         editor->audioProcessor.suspendProcessing(true);
-			                         editor->uiTrackManager->forceFullRefresh();
-			                         if (editor->mixerPanel)
-				                         editor->mixerPanel->detachAllTracks();
+			    editor->audioProcessor.suspendProcessing(true);
+			    editor->uiTrackManager->forceFullRefresh();
+			    if (editor->mixerPanel)
+				    editor->mixerPanel->detachAllTracks();
 
-			                         processor->getStateManager().loadFromFile(file);
-			                         processor->suspendProcessing(false);
-			                         editor->uiTrackManager->refreshTrackComponents();
-			                         editor->updateUIFromProcessor();
-			                         editor->uiPresetManager->notifyTracksPromptUpdate();
-			                         if (editor->mixerPanel && editor->mixerPanel->getStandaloneTransportComponent())
-				                         editor->mixerPanel->getStandaloneTransportComponent()->syncFromTransport();
-			                         editor->uiStatusManager->setStatusWithTimeout("Session loaded!", 3000);
-		                         });
+			    processor->getStateManager().loadFromFile(file);
+			    processor->suspendProcessing(false);
+			    editor->uiTrackManager->refreshTrackComponents();
+			    editor->updateUIFromProcessor();
+			    editor->uiPresetManager->notifyTracksPromptUpdate();
+			    if (editor->mixerPanel &&
+			        editor->uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent())
+				    editor->uiLayoutManager->getRightPanelWrapper()
+				        ->getStandaloneTransportComponent()
+				        ->syncFromTransport();
+			    editor->uiStatusManager->setStatusWithTimeout("Session loaded!", 3000);
+		    });
 	}
 
 	static void menuCallback(int result, StandaloneFilterWindow *button)

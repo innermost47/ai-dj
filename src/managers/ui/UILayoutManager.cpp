@@ -117,32 +117,8 @@ void TracksContainer::resized()
 	grid.performLayout(getLocalBounds().reduced(0, ObsidianSizes::GAP));
 }
 
-TracksAndFXContainer::TracksAndFXContainer(TracksContainer &tc, RightPanelWrapper &rw)
-    : tracksContainer(tc), rightPanelWrapper(rw) {};
-
-void TracksAndFXContainer::resized()
-{
-	using Track = juce::Grid::TrackInfo;
-	using Fr = juce::Grid::Fr;
-	using GridItem = juce::GridItem;
-	using Grid = juce::Grid;
-	using GridPx = juce::Grid::Px;
-
-	Grid grid;
-
-	grid.templateRows = {Track(Fr(1))};
-	grid.templateColumns = {Track(Fr(15)), Track(Fr(4))};
-	grid.columnGap = GridPx(ObsidianSizes::GAP);
-
-	GridItem tracks(tracksContainer);
-	GridItem rightPanel(rightPanelWrapper);
-
-	grid.items = {tracks, rightPanel};
-	grid.performLayout(getBounds());
-}
-
-MainContainer::MainContainer(TracksAndFXContainer &tfc, MixerPanel &mp)
-    : tracksAndFXContainer(tfc), mixerPanel(mp) {
+MainContainer::MainContainer(TracksContainer &tc, MixerPanel &mp)
+    : tracksContainer(tc), mixerPanel(mp) {
 
       };
 
@@ -158,12 +134,11 @@ void MainContainer::resized()
 
 	grid.templateRows = {Track(Fr(8)), Track(Fr(3))};
 	grid.templateColumns = {Track(Fr(1))};
-	grid.columnGap = GridPx(ObsidianSizes::GAP);
 
-	GridItem top(tracksAndFXContainer);
+	GridItem tracks(tracksContainer);
 	GridItem mixer(mixerPanel);
 
-	grid.items = {top, mixer};
+	grid.items = {tracks, mixer};
 	grid.performLayout(getBounds());
 }
 
@@ -174,8 +149,7 @@ UILayoutManager::UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	leftContainer = std::make_unique<LeftContainer>(editor, *leftPanelWrapper);
 	tracksContainer = std::make_unique<TracksContainer>(editor);
 	rightPanelWrapper = std::make_unique<RightPanelWrapper>(audioProcessor);
-	tracksAndFXContainer = std::make_unique<TracksAndFXContainer>(*tracksContainer, *rightPanelWrapper);
-	mainContainer = std::make_unique<MainContainer>(*tracksAndFXContainer, mixerPanel);
+	mainContainer = std::make_unique<MainContainer>(*tracksContainer, mixerPanel);
 
 	editor.addAndMakeVisible(*leftContainer);
 	editor.addAndMakeVisible(*tracksContainer);
@@ -194,12 +168,13 @@ void UILayoutManager::resized()
 	Grid grid;
 
 	grid.templateRows = {Track(Fr(1))};
-	grid.templateColumns = {Track(Fr(1)), Track(Fr(5))};
+	grid.templateColumns = {Track(Fr(1)), Track(Fr(4)), Track(Fr(1))};
 	grid.columnGap = GridPx(ObsidianSizes::GAP);
 
 	GridItem leftPanel(leftContainer.get());
 	GridItem main(mainContainer.get());
+	GridItem rightPanel(rightPanelWrapper.get());
 
-	grid.items = {leftPanel, main};
+	grid.items = {leftPanel, main, rightPanel};
 	grid.performLayout(editor.getBounds());
 }

@@ -245,7 +245,7 @@ void MixerChannel::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds();
 
 	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds.toFloat(), 8.0f);
+	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
 
 	if (hasSamplePending && !isGenerating)
 	{
@@ -270,12 +270,12 @@ void MixerChannel::paint(juce::Graphics &g)
 	}
 	else
 	{
-		borderColour = ColourPalette::sliderTrack;
-		borderWidth = 1.0f;
+		borderColour = ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER);
+		borderWidth = ObsidianSizes::BORDER_WIDTH;
 	}
 
 	g.setColour(borderColour);
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), 8.0f, borderWidth);
+	g.drawRoundedRectangle(bounds.toFloat().reduced(1), ObsidianSizes::CORNER, borderWidth);
 }
 
 void MixerChannel::resized()

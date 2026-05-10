@@ -1,6 +1,8 @@
 #include "UIMidiManager.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "RightPanelWrapper.h"
+#include "StandaloneTransportComponent.h"
 #if JUCE_WINDOWS
 #include <windows.h>
 #include <winuser.h>
@@ -44,7 +46,7 @@ bool UIMidiManager::keyPressed(const juce::KeyPress &key)
 		if (editor.audioProcessor.getStandaloneTransport())
 		{
 			editor.audioProcessor.getStandaloneTransport()->togglePlayStop();
-			editor.mixerPanel->getStandaloneTransportComponent()->udpatePlayButtonDisplay(
+			editor.uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent()->udpatePlayButtonDisplay(
 			    editor.audioProcessor.getStandaloneTransport()->isPlaying());
 		}
 		return true;

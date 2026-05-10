@@ -283,10 +283,9 @@ void DjIaVstEditor::setupUI()
 	configButton.loadIcon(BinaryData::gear_svg, BinaryData::gear_svgSize);
 	configButton.setTooltip("Configure settings globally");
 
-#if JucePlugin_Build_Standalone
-	if (audioProcessor.getStandaloneTransport())
-		mixerPanel->setStandaloneTransport(audioProcessor.getStandaloneTransport());
-#endif
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+		if (audioProcessor.getStandaloneTransport())
+			uiLayoutManager->getRightPanelWrapper()->setStandaloneTransport(audioProcessor.getStandaloneTransport());
 
 	statusLabel.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDeep);
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
@@ -330,8 +329,8 @@ void DjIaVstEditor::setupUI()
 	addAndMakeVisible(lcdScreen.get());
 
 	addAndMakeVisible(masterWaveformDisplay.get());
-	mixerPanel->setMasterWaveform(masterWaveformDisplay.get());
-	mixerPanel->setLCDScreen(lcdScreen.get());
+	uiLayoutManager->getRightPanelWrapper()->setMasterWaveform(masterWaveformDisplay.get());
+	uiLayoutManager->getRightPanelWrapper()->setLCDScreen(lcdScreen.get());
 	audioProcessor.onMasterOutput = [this](const float *l, const float *r, int n, double ppq)
 	{
 		if (masterWaveformDisplay)

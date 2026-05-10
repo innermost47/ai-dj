@@ -8,9 +8,11 @@ namespace ObsidianSizes
 {
 inline constexpr int GAP = 6;
 inline constexpr int GAP_4 = 4;
+inline constexpr int SPACER_XXS = 1;
+inline constexpr int SPACER_XS = 2;
 inline constexpr int SPACER_SM = 3;
 inline constexpr int SPACER_MD = 6;
-inline constexpr int MAIN_PADDING = 9;
+inline constexpr int MAIN_PADDING = 6;
 inline constexpr int MIN_SMALL_BTN_WIDTH = 24;
 inline constexpr int MIN_SMALL_BTN_HEIGHT = 24;
 inline constexpr int CORNER = 6;
@@ -25,6 +27,7 @@ static constexpr int PAGE_BUTTON_SIZE = 16;
 
 static constexpr float LIST_PANEL_CORNER_SIZE = 4.0f;
 inline constexpr float HALF_CORNER = 3.0f;
+inline constexpr float BORDER_WIDTH = 1.0f;
 } // namespace ObsidianSizes
 
 #endif

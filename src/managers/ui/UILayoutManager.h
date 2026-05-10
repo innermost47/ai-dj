@@ -20,29 +20,16 @@ class TracksContainer : public ObsidianComponent
 	DjIaVstEditor &editor;
 };
 
-class TracksAndFXContainer : public ObsidianComponent
-{
-  public:
-	TracksAndFXContainer(TracksContainer &tracksContainer, RightPanelWrapper &rightPanelWrapper);
-	~TracksAndFXContainer() = default;
-
-	void resized() override;
-
-  private:
-	TracksContainer &tracksContainer;
-	RightPanelWrapper &rightPanelWrapper;
-};
-
 class MainContainer : public ObsidianComponent
 {
   public:
-	MainContainer(TracksAndFXContainer &tracksAndFXContainer, MixerPanel &mixerPanel);
+	MainContainer(TracksContainer &tracksontainer, MixerPanel &mixerPanel);
 	~MainContainer() = default;
 
 	void resized() override;
 
   private:
-	TracksAndFXContainer &tracksAndFXContainer;
+	TracksContainer &tracksContainer;
 	MixerPanel &mixerPanel;
 };
 
@@ -111,7 +98,6 @@ class UILayoutManager
 	MixerPanel &mixerPanel;
 	std::unique_ptr<TracksContainer> tracksContainer;
 	std::unique_ptr<RightPanelWrapper> rightPanelWrapper;
-	std::unique_ptr<TracksAndFXContainer> tracksAndFXContainer;
 	std::unique_ptr<LeftPanelWrapper> leftPanelWrapper;
 	std::unique_ptr<LeftContainer> leftContainer;
 	std::unique_ptr<MainContainer> mainContainer;

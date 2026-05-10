@@ -197,22 +197,22 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/bank/PromptModelDefinitions.cpp
     src/components/bank/SampleBank.cpp
     src/components/bank/SampleBankPanel.cpp
+    src/components/fx/LCDScreen.cpp
+    src/components/fx/MasterChannel.cpp
+    src/components/fx/MasterWaveformDisplay.cpp
     src/components/fx/RightPanelWrapper.cpp
     src/components/fx/SendsPanel.cpp
     src/components/fx/TrackEffectsPanel.cpp
     src/components/fx/TrackRecapPanel.cpp
     src/components/mixer/CrossfaderComponent.cpp
-    src/components/mixer/LCDScreen.cpp
-    src/components/mixer/MasterChannel.cpp
-    src/components/mixer/MasterWaveformDisplay.cpp
     src/components/mixer/MixerChannel.cpp
     src/components/mixer/MixerPanel.cpp
-    src/components/mixer/VuMeter.cpp
     src/components/ObsidianBaseMidiComponent.cpp
     src/components/shared/ColourPicker.cpp
     src/components/shared/IconButton.cpp
     src/components/shared/LedRadioButton.cpp
     src/components/shared/ObsidianModal.cpp
+    src/components/shared/VuMeter.cpp
     src/components/tracks/DrawingCanvas.cpp
     src/components/tracks/SequencerComponent.cpp
     src/components/tracks/TrackComponent.cpp
@@ -350,18 +350,6 @@ elseif(UNIX AND NOT APPLE)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
     target_link_libraries(ObsidianNeuralVST PRIVATE ${GTK3_LIBRARIES})
     target_include_directories(ObsidianNeuralVST PRIVATE ${GTK3_INCLUDE_DIRS})
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    if(MSVC)
-        # Pour Visual Studio (MSVC)
-        add_compile_options(/fsanitize=address)
-        add_link_options(/fsanitize=address)
-    else()
-        # Pour GCC ou Clang (macOS / Linux)
-        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-        add_link_options(-fsanitize=address)
-    endif()
 endif()
 
 message(STATUS "OBSIDIAN Neural Build Configuration:")

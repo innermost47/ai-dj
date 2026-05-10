@@ -373,10 +373,9 @@ bool DjIaVstProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
 
 void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midiMessages)
 {
-#if JucePlugin_Build_Standalone
-	if (standaloneTransport)
+	if (juce::JUCEApplicationBase::isStandaloneApp())
 		standaloneTransport->advance(buffer.getNumSamples(), getSampleRate());
-#endif
+
 	internalSampleCounter += buffer.getNumSamples();
 	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)

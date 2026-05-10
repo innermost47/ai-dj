@@ -2,6 +2,7 @@
 #include "AiModelDefinitions.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
 
 UITrackManager::UITrackManager(DjIaVstEditor &editor) : editor(editor)
@@ -260,6 +261,10 @@ void UITrackManager::updateUIComponents()
 	if (editor.mixerPanel)
 	{
 		editor.mixerPanel->updateAllMixerComponents();
+	}
+	if (editor.uiLayoutManager)
+	{
+		editor.uiLayoutManager->getRightPanelWrapper()->updateComponents();
 	}
 
 	if (!editor.lastMidiNote.isEmpty())

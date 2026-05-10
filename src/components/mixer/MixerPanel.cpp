@@ -5,9 +5,6 @@
 
 MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
-	masterChannel = std::make_unique<MasterChannel>(audioProcessor);
-	addAndMakeVisible(*masterChannel);
-
 	addAndMakeVisible(deckAViewport);
 	deckAViewport.setViewedComponent(&deckAContainer, false);
 	deckAViewport.setScrollBarsShown(false, false);
@@ -28,9 +25,6 @@ MixerPanel::~MixerPanel()
 		if (channel)
 			channel->setVisible(false);
 	mixerChannels.clear();
-
-	if (masterChannel)
-		masterChannel->setVisible(false);
 }
 
 void MixerPanel::updateTrackName(const juce::String &trackId, const juce::String &newName)
@@ -65,26 +59,6 @@ void MixerPanel::updateAllMixerComponents()
 	{
 		channel->updateVUMeters();
 	}
-	calculateMasterLevel();
-	masterChannel->updateMasterLevels();
-}
-
-void MixerPanel::calculateMasterLevel()
-{
-	auto linearToDb = [](float linear) -> float
-	{
-		if (linear <= 0.00001f)
-			return -100.0f;
-		return 20.0f * ::log10f(linear);
-	};
-
-	auto dbToNormalized = [](float db) -> float { return juce::jlimit(0.0f, 1.0f, (db + 60.0f) / 60.0f); };
-
-	float linearLeft = audioProcessor.getAudioManager().getPeakLevelLeft();
-	float linearRight = audioProcessor.getAudioManager().getPeakLevelRight();
-
-	masterChannel->setRealAudioLevelStereo(dbToNormalized(linearToDb(linearLeft)),
-	                                       dbToNormalized(linearToDb(linearRight)));
 }
 
 void MixerPanel::refreshMixerChannels()
@@ -143,145 +117,59 @@ void MixerPanel::refreshMixerChannels()
 	resized();
 }
 
-void MixerPanel::paint(juce::Graphics &g)
+void MixerPanel::paint(juce::Graphics & /*g*/)
 {
-	juce::Component *centerComp = standaloneTransport ? static_cast<juce::Component *>(standaloneTransport.get())
-	                                                  : static_cast<juce::Component *>(masterWaveform);
-
-	if (crossfader)
-	{
-		auto crossfaderBg = crossfader->getBounds().expanded(4, 2);
-		g.setColour(ColourPalette::backgroundDeep.brighter(0.04f));
-		g.fillRoundedRectangle(crossfaderBg.toFloat(), 6.0f);
-		g.setColour(ColourPalette::sliderTrack);
-		g.drawRoundedRectangle(crossfaderBg.toFloat().reduced(0.5f), 6.0f, 1.0f);
-	}
-
-	if (masterChannel && centerComp && lcdScreen)
-	{
-		auto rightBg = centerComp->getBounds()
-		                   .getUnion(lcdScreen->getBounds())
-		                   .getUnion(masterChannel->getBounds())
-		                   .expanded(4, 2);
-		g.setColour(ColourPalette::backgroundDeep.brighter(0.04f));
-		g.fillRoundedRectangle(rightBg.toFloat(), 6.0f);
-		g.setColour(ColourPalette::sliderTrack);
-		g.drawRoundedRectangle(rightBg.toFloat().reduced(0.5f), 6.0f, 1.0f);
-	}
-}
-
-void MixerPanel::setStandaloneTransport(StandaloneTransport *transport)
-{
-	if (transport)
-	{
-		standaloneTransport = std::make_unique<StandaloneTransportComponent>(*transport);
-		addAndMakeVisible(*standaloneTransport);
-		if (masterWaveform)
-			masterWaveform->setVisible(false);
-		resized();
-	}
-}
-
-void MixerPanel::setMasterWaveform(MasterWaveformDisplay *wf)
-{
-	masterWaveform = wf;
-	if (masterWaveform != nullptr)
-		addAndMakeVisible(*masterWaveform);
-	resized();
-}
-
-void MixerPanel::setLCDScreen(LCDScreen *lcd)
-{
-	lcdScreen = lcd;
-	if (lcdScreen != nullptr)
-		addAndMakeVisible(*lcdScreen);
-	resized();
 }
 
 void MixerPanel::resized()
 {
-	auto area = getLocalBounds();
-	const int channelH = getHeight();
-	const int spacing = 4;
-	const int crossfaderWidth = 220;
-	const int masterChannelWidth = 100;
-	const int centerInternalPad = 8;
-	const int centerOuterMargin = 2;
+	auto bounds = getLocalBounds();
 
-	const int rightBlockWidth = 300;
-	const int rightBlockFootprint = rightBlockWidth + centerOuterMargin;
+	juce::Grid grid;
+	grid.templateRows = {juce::Grid::TrackInfo(juce::Grid::Fr(1))};
+	grid.templateColumns = {juce::Grid::TrackInfo(juce::Grid::Fr(6)), juce::Grid::TrackInfo(juce::Grid::Fr(3)),
+	                        juce::Grid::TrackInfo(juce::Grid::Fr(6))};
+	grid.columnGap = juce::Grid::Px(ObsidianSizes::GAP);
 
-	const int centerBlockWidth = crossfaderWidth + centerInternalPad;
-	const int centerBlockFootprint = centerBlockWidth + centerOuterMargin;
+	grid.items.add(juce::GridItem(deckAViewport));
+	if (crossfader)
+		grid.items.add(juce::GridItem(*crossfader));
+	grid.items.add(juce::GridItem(deckBViewport));
 
-	const int sideWidth = (area.getWidth() - centerBlockFootprint - rightBlockFootprint) / 2;
-	const int channelWidth = juce::jlimit(40, 100, (sideWidth - spacing * 3) / 4);
+	grid.performLayout(bounds);
 
-	auto deckAArea = area.removeFromLeft(channelWidth * 4 + spacing * 3);
-	area.removeFromLeft(centerOuterMargin);
-	auto centerBlock = area.removeFromLeft(centerBlockWidth);
-	area.removeFromLeft(centerOuterMargin);
-
-	auto rightBlock = area.removeFromRight(rightBlockWidth);
-	area.removeFromRight(centerOuterMargin);
-
-	auto deckBArea = area;
-
-	centerBlock.reduce(centerInternalPad, 3);
-	crossfader->setBounds(centerBlock);
-
-	rightBlock.reduce(centerInternalPad, 3);
-	auto mcArea = rightBlock.removeFromLeft(masterChannelWidth);
-	rightBlock.removeFromLeft(centerInternalPad);
-	auto centerStack = rightBlock;
-
-	masterChannel->setBounds(mcArea);
-
-	if (lcdScreen && (masterWaveform || standaloneTransport))
+	auto layoutWithFlex = [&](juce::Viewport &viewport, juce::Component &container, TrackData::DeckSide side)
 	{
-		centerStack.removeFromTop(6);
-		centerStack.removeFromBottom(6);
-		const int lcdHeight = juce::jmin(48, centerStack.getHeight() / 3);
-		auto lcdArea = centerStack.removeFromBottom(lcdHeight);
-		centerStack.removeFromBottom(6);
+		juce::FlexBox fb;
+		fb.flexDirection = juce::FlexBox::Direction::row;
+		fb.flexWrap = juce::FlexBox::Wrap::noWrap;
+		fb.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
+		fb.alignContent = juce::FlexBox::AlignContent::stretch;
 
-		if (standaloneTransport)
-			standaloneTransport->setBounds(centerStack);
-		else if (masterWaveform)
-			masterWaveform->setBounds(centerStack);
-		lcdScreen->setBounds(lcdArea);
-	}
-	else if (standaloneTransport)
-	{
-		standaloneTransport->setBounds(centerStack);
-	}
-	else if (masterWaveform)
-	{
-		masterWaveform->setBounds(centerStack);
-	}
-
-	deckAViewport.setBounds(deckAArea);
-	deckAContainer.setSize(channelWidth * 4 + spacing * 3, channelH);
-	deckBViewport.setBounds(deckBArea);
-	deckBContainer.setSize(channelWidth * 4 + spacing * 3, channelH);
-
-	int xA = 0, xB = 0;
-	for (auto &ch : mixerChannels)
-	{
-		TrackData *track = audioProcessor.getTrack(ch->getTrackId());
-		if (!track)
-			continue;
-		if (track->getDeckSide() == TrackData::DeckSide::A)
+		int trackCount = 0;
+		for (auto &ch : mixerChannels)
 		{
-			ch->setBounds(xA, 0, channelWidth, channelH);
-			xA += channelWidth + spacing;
+			TrackData *track = audioProcessor.getTrack(ch->getTrackId());
+			if (track && track->getDeckSide() == side)
+			{
+				fb.items.add(
+				    juce::FlexItem(*ch).withMinWidth(100.0f).withHeight(static_cast<float>(viewport.getHeight())));
+				trackCount++;
+			}
 		}
-		else
+
+		if (trackCount > 0)
 		{
-			ch->setBounds(xB, 0, channelWidth, channelH);
-			xB += channelWidth + spacing;
+			int minTotalWidth = trackCount * 100;
+			int finalWidth = std::max(viewport.getWidth(), minTotalWidth);
+
+			container.setBounds(0, 0, finalWidth, viewport.getHeight());
+			fb.performLayout(container.getLocalBounds());
 		}
-	}
+	};
+
+	layoutWithFlex(deckAViewport, deckAContainer, TrackData::DeckSide::A);
+	layoutWithFlex(deckBViewport, deckBContainer, TrackData::DeckSide::B);
 }
 
 void MixerPanel::refreshAllChannels()
