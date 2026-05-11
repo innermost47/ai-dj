@@ -34,6 +34,8 @@ class CustomLookAndFeel : public juce::LookAndFeel_V4
 	void drawAlertBox(juce::Graphics &g, juce::AlertWindow &alert, const juce::Rectangle<int> &textArea,
 	                  juce::TextLayout &textLayout) override;
 
+	juce::Typeface::Ptr getTypefaceForFont(const juce::Font &f) override;
+
 	int getAlertWindowButtonHeight() override
 	{
 		return 32;

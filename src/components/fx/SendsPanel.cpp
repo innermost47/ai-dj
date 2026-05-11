@@ -4,14 +4,14 @@
 SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(processor)
 {
 	delayTitleLbl.setText("DELAY", juce::dontSendNotification);
-	delayTitleLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+	delayTitleLbl.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_INFO));
 	delayTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	addAndMakeVisible(delayTitleLbl);
 
 	auto styleSubLbl = [](juce::Label &l, const juce::String &txt)
 	{
 		l.setText(txt, juce::dontSendNotification);
-		l.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+		l.setFont(juce::FontOptions(ObsidianSizes::SEND_KNOB_LABEL, juce::Font::bold));
 		l.setColour(juce::Label::textColourId, ColourPalette::textSecondary.withAlpha(0.8f));
 		l.setJustificationType(juce::Justification::centred);
 	};
@@ -32,7 +32,7 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(
 	addAndMakeVisible(delayFeedbackKnob);
 
 	reverbTitleLbl.setText("REVERB", juce::dontSendNotification);
-	reverbTitleLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+	reverbTitleLbl.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_INFO));
 	reverbTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	addAndMakeVisible(reverbTitleLbl);
 

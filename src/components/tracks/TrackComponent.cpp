@@ -1036,15 +1036,16 @@ void TrackComponent::setupUI()
 	addAndMakeVisible(infoLabel);
 	infoLabel.setText("Empty track - Generate your sample!", juce::dontSendNotification);
 	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	infoLabel.setFont(juce::FontOptions(12.0f));
+	infoLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
 
-	promptPresetSelector.setTooltip("Select prompt for this track");
+	promptPresetSelector.setTooltip("Select prompt for this page");
 	promptPresetSelector.onChange = [this]() { onTrackPresetSelected(); };
 
 	modelSelector.clear();
 
 	addAndMakeVisible(promptPresetSelector);
 	addAndMakeVisible(modelSelector);
+	modelSelector.setTooltip("Select model for this page");
 
 	auto &models = AiModelDefinitions::getAvailableModels();
 	for (int i = 0; i < models.size(); ++i)

@@ -68,8 +68,8 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 
 	auto drawLabelValue = [&](juce::Rectangle<float> col, const juce::String &lbl, const juce::String &val, bool isHero)
 	{
-		g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
-		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 9.0f, juce::Font::plain));
+		g.setColour(ColourPalette::textPrimary.withAlpha(0.8f));
+		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO, juce::Font::plain));
 		auto labelArea = col.removeFromLeft(col.getWidth() * 0.4f);
 		g.drawFittedText(lbl, labelArea.toNearestInt(), juce::Justification::centredRight, 1);
 
@@ -80,8 +80,9 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 			valueColour = valueColour.brighter(pulse * 0.45f);
 
 		g.setColour(valueColour);
-		const float valSize = isHero ? juce::jmin(h * 0.95f, 18.0f) : juce::jmin(h * 0.8f, 14.0f);
-		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), valSize, juce::Font::bold));
+		const float valSize =
+		    isHero ? juce::jmin(h * 0.95f, ObsidianSizes::TEXT_XXL) : juce::jmin(h * 0.8f, ObsidianSizes::TEXT_XL);
+		g.setFont(juce::FontOptions(valSize, juce::Font::bold));
 		g.drawFittedText(val, col.toNearestInt(), juce::Justification::centredLeft, 1);
 	};
 
@@ -134,7 +135,7 @@ StandaloneTransportComponent::BpmField::BpmField()
 	editor.setInputRestrictions(6, "0123456789.");
 	editor.setJustification(juce::Justification::centred);
 	editor.setColour(juce::TextEditor::textColourId, ColourPalette::textAccent);
-	editor.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 16.0f, juce::Font::bold));
+	editor.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XXL));
 	editor.setTooltip("BPM\nScroll: +/-1\nShift+Scroll: +/-5\nCmd+Scroll: +/-0.1\nDouble-clic: reset 120");
 }
 
@@ -316,7 +317,7 @@ void StandaloneTransportComponent::setupUI()
 	timeSigEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
 	timeSigEditor.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
 	timeSigEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-	timeSigEditor.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 12.0f, juce::Font::bold));
+	timeSigEditor.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 
 	timeSigEditor.setInputRestrictions(5, "0123456789/");
 

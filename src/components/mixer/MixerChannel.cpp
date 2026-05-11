@@ -351,7 +351,7 @@ void MixerChannel::setupUI()
 	trackNameLabel.setText("Track", juce::dontSendNotification);
 	trackNameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	trackNameLabel.setJustificationType(juce::Justification::centred);
-	trackNameLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+	trackNameLabel.setFont(juce::FontOptions(ObsidianSizes::MIXER_LABEL_NAME, juce::Font::bold));
 	trackNameLabel.setEditable(false, true);
 
 	addAndMakeVisible(playButton);
@@ -405,7 +405,6 @@ void MixerChannel::setupUI()
 	pitchLabel.setText("PITCH", juce::dontSendNotification);
 	pitchLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	pitchLabel.setJustificationType(juce::Justification::centred);
-	pitchLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(fineKnob);
 	fineKnob.setRange(-50.0, 50.0, 1.0);
@@ -419,7 +418,6 @@ void MixerChannel::setupUI()
 	fineLabel.setText("FINE", juce::dontSendNotification);
 	fineLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	fineLabel.setJustificationType(juce::Justification::centred);
-	fineLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(panKnob);
 	panKnob.setRange(-1.0, 1.0, 0.01);
@@ -433,7 +431,6 @@ void MixerChannel::setupUI()
 	panLabel.setText("PAN", juce::dontSendNotification);
 	panLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	panLabel.setJustificationType(juce::Justification::centred);
-	panLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(sendDelayKnob);
 	sendDelayKnob.setRange(0.0, 1.0, 0.001);
@@ -448,7 +445,11 @@ void MixerChannel::setupUI()
 	sendDelayLabel.setText("DLY", juce::dontSendNotification);
 	sendDelayLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	sendDelayLabel.setJustificationType(juce::Justification::centred);
-	sendDelayLabel.setFont(juce::FontOptions(9.0f));
+
+	ObsidianFonts::applyFontSize(pitchLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(sendDelayLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(panLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(fineLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 
 	addAndMakeVisible(vuMeter);
 

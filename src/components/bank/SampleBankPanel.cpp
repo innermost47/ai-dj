@@ -51,7 +51,7 @@ void SampleBankItem::paint(juce::Graphics &g)
 		attr.setJustification(juce::Justification::centredLeft);
 
 		juce::String prompt = sampleEntry->originalPrompt;
-		juce::Font font(juce::FontOptions(13.0f, juce::Font::bold));
+		juce::Font font(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 		float maxWidth = (float)nameArea.getWidth();
 
 		juce::GlyphArrangement ga;
@@ -71,23 +71,23 @@ void SampleBankItem::paint(juce::Graphics &g)
 			prompt += "...";
 		}
 
-		attr.append(prompt, juce::FontOptions(13.0f, juce::Font::bold), ColourPalette::textPrimary);
+		attr.append(prompt, juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold),
+		            ColourPalette::textPrimary);
 
 		attr.draw(g, nameArea.toFloat());
 	}
 
-	auto modelArea = bounds.removeFromTop(12).withTrimmedLeft(12).withTrimmedRight(48);
+	auto modelArea = bounds.removeFromTop(18).withTrimmedLeft(12).withTrimmedRight(48);
 
-	auto circleArea = modelArea.removeFromLeft(18);
-	circleArea = circleArea.withSizeKeepingCentre(6, 6);
+	juce::Colour modelColour = AiModelDefinitions::getColourForModel(sampleEntry->modelName);
+	drawCircleWithEllipse(g, modelArea, modelColour);
 
-	g.setColour(ColourPalette::textPrimary.withAlpha(0.6f));
-	g.fillEllipse(circleArea.toFloat());
+	modelArea.removeFromLeft(14);
 
 	juce::String displayName = sampleEntry->modelName.isNotEmpty() ? sampleEntry->modelName : "Unknown model";
 
-	g.setFont(juce::FontOptions(11.5f, juce::Font::italic));
-	g.setColour(ColourPalette::textPrimary);
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL, juce::Font::italic));
+	g.setColour(ColourPalette::textSecondary);
 	g.drawText(displayName, modelArea, juce::Justification::centredLeft, true);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
@@ -121,14 +121,14 @@ void SampleBankItem::paint(juce::Graphics &g)
 		parts.add(juce::String(usageCount) + " project(s)");
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.75f));
-	g.setFont(juce::FontOptions(10.5f));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL));
 	g.drawText(parts.joinIntoString(" - "), metaArea, juce::Justification::centredLeft, true);
 
 	if (sampleEntry->description.isNotEmpty())
 	{
 		auto descArea = bounds.removeFromBottom(14).withTrimmedLeft(12).withTrimmedRight(4);
 		g.setColour(ColourPalette::textSecondary.withAlpha(0.5f));
-		g.setFont(juce::FontOptions(10.0f));
+		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL));
 		g.drawText(sampleEntry->description, descArea, juce::Justification::centredLeft, true);
 	}
 }
@@ -255,11 +255,11 @@ DetailPanel::DetailPanel()
 {
 	addAndMakeVisible(nameLabel);
 	nameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	nameLabel.setFont(juce::FontOptions(13.0f));
+	nameLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
 
 	addAndMakeVisible(metaLabel);
 	metaLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	metaLabel.setFont(juce::FontOptions(11.0f));
+	metaLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
 
 	addAndMakeVisible(playButton);
 	playButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
@@ -452,7 +452,7 @@ void DetailPanel::paint(juce::Graphics &g)
 	{
 		auto nameArea = juce::Rectangle<int>(20, 6, getWidth() - 80, 18);
 		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 		g.drawText(entry->originalPrompt, nameArea, juce::Justification::centredLeft, true);
 	}
 
@@ -687,14 +687,14 @@ SampleBankPanel::~SampleBankPanel()
 void SampleBankPanel::setupUI()
 {
 	addAndMakeVisible(titleLabel);
-	titleLabel.setText("Sample Bank", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(18.0f, juce::Font::bold));
+	titleLabel.setText("SAMPLE BANK", juce::dontSendNotification);
+	titleLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_TITLE));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 
 	addAndMakeVisible(infoLabel);
 	infoLabel.setText("Preview: ch.9 | Drag: drop on track | Ctrl+Drag: drop in DAW | Right-click: categories",
 	                  juce::dontSendNotification);
-	infoLabel.setFont(juce::FontOptions(11.0f));
+	infoLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
 	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	infoLabel.setJustificationType(juce::Justification::centredLeft);
 
@@ -966,7 +966,7 @@ void SampleBankPanel::drawLoader(juce::Graphics &g)
 	g.strokePath(arc, juce::PathStrokeType(t, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
 	g.setColour(ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(14.0f));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE));
 	g.drawText("Loading samples...", b.withSizeKeepingCentre(200, 30).translated(0, r + 30),
 	           juce::Justification::centred);
 }
@@ -978,9 +978,9 @@ void SampleBankPanel::drawEmptyState(juce::Graphics &g)
 	g.setFont(juce::FontOptions(48.0f));
 	g.drawText(juce::String::fromUTF8("\xE2\x99\xAA"), b.withSizeKeepingCentre(60, 60), juce::Justification::centred);
 	g.setColour(ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(15.0f, juce::Font::bold));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE, juce::Font::bold));
 	g.drawText("No samples yet", b.withSizeKeepingCentre(300, 28).translated(0, 55), juce::Justification::centred);
-	g.setFont(juce::FontOptions(12.0f));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
 	g.drawText("Generate some loops to populate your bank!", b.withSizeKeepingCentre(300, 28).translated(0, 80),
 	           juce::Justification::centred);
 }

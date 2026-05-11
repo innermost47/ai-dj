@@ -51,7 +51,5 @@ class LeftPanelWrapper : public ObsidianComponent
 
 	Tab activeTab = Tab::Prompt;
 
-	static constexpr int tabBarHeight = 32;
-
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LeftPanelWrapper)
 };

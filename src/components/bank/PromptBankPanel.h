@@ -75,8 +75,6 @@ class PromptBankPanel : public juce::Component
 	DjIaVstEditor &editor;
 	std::unique_ptr<ScaleAndDurationPanel> scaleAndDurationPanel;
 
-	static constexpr int SCALE_AND_DURATION_HEIGHT = 86;
-
 	juce::Label titleLabel;
 	juce::Label helpLabel;
 

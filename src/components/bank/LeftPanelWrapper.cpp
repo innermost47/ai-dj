@@ -39,7 +39,7 @@ void LeftPanelWrapper::resized()
 {
 	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
 
-	auto tabBar = area.removeFromTop(tabBarHeight);
+	auto tabBar = area.removeFromTop(ObsidianSizes::TAB_BAR_HEIGHT);
 	const int tabW = tabBar.getWidth() / 2;
 	promptTabButton.setBounds(tabBar.removeFromLeft(tabW));
 	tabBar.removeFromLeft(ObsidianSizes::SPACER_MD);

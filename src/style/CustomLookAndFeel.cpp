@@ -1,4 +1,6 @@
 #include "CustomLookAndFeel.h"
+#include "BinaryData.h"
+#include "Fonts.h"
 #include "Shades.h"
 #include "Sizes.h"
 
@@ -34,6 +36,29 @@ CustomLookAndFeel::CustomLookAndFeel()
 	setColour(juce::CaretComponent::caretColourId, ColourPalette::lightGrey);
 }
 
+juce::Typeface::Ptr CustomLookAndFeel::getTypefaceForFont(const juce::Font &f)
+{
+	auto requestedName = f.getTypefaceName();
+
+	if (requestedName == ObsidianFonts::MICHROMA->getName())
+	{
+		return ObsidianFonts::MICHROMA;
+	}
+
+	static auto reg =
+	    juce::Typeface::createSystemTypefaceFor(BinaryData::notoregular_ttf, BinaryData::notoregular_ttfSize);
+	static auto bold = juce::Typeface::createSystemTypefaceFor(BinaryData::notobold_ttf, BinaryData::notobold_ttfSize);
+	static auto ital =
+	    juce::Typeface::createSystemTypefaceFor(BinaryData::notoitalic_ttf, BinaryData::notoitalic_ttfSize);
+
+	if (f.isBold())
+		return bold;
+	if (f.isItalic())
+		return ital;
+
+	return reg;
+}
+
 juce::Colour CustomLookAndFeel::soften(const juce::Colour &colour)
 {
 	return colour.withSaturation(colour.getSaturation() * 0.85f).brighter(0.05f);
@@ -46,7 +71,8 @@ juce::TextLayout CustomLookAndFeel::layoutTooltipText(const juce::String &text, 
 
 	juce::AttributedString s;
 	s.setJustification(juce::Justification::centredLeft);
-	s.append(text, juce::Font(juce::FontOptions("Courier New", tooltipFontSize, juce::Font::plain)), colour);
+
+	s.append(text, juce::Font(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(tooltipFontSize)), colour);
 
 	juce::TextLayout tl;
 	tl.createLayoutWithBalancedLineLengths(s, (float)maxToolTipWidth);
@@ -109,7 +135,7 @@ void CustomLookAndFeel::drawButtonText(juce::Graphics &g, juce::TextButton &butt
 		textColour = textColour.withAlpha(0.5f);
 
 	g.setColour(textColour);
-	g.setFont(juce::FontOptions(14.0f));
+	g.setFont(juce::Font(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_REGULAR)));
 
 	g.drawFittedText(button.getButtonText(), button.getLocalBounds(), juce::Justification::centred, 2, 0.8f);
 }
@@ -154,7 +180,7 @@ void CustomLookAndFeel::drawToggleButton(juce::Graphics &g, juce::ToggleButton &
 		textColour = textColour.withAlpha(0.5f);
 
 	g.setColour(textColour);
-	g.setFont(juce::FontOptions(14.0f));
+	g.setFont(juce::Font(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR)));
 	g.drawText(button.getButtonText(), bounds, juce::Justification::centred);
 }
 
@@ -195,17 +221,17 @@ void CustomLookAndFeel::drawAlertBox(juce::Graphics &g, juce::AlertWindow &alert
 
 juce::Font CustomLookAndFeel::getAlertWindowTitleFont()
 {
-	return juce::Font(juce::FontOptions("Courier New", 16.0f, juce::Font::bold));
+	return juce::Font(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_SUBTITLE));
 }
 
 juce::Font CustomLookAndFeel::getAlertWindowMessageFont()
 {
-	return juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+	return juce::Font(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_REGULAR));
 }
 
 juce::Font CustomLookAndFeel::getAlertWindowFont()
 {
-	return juce::Font(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+	return juce::Font(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
 }
 
 void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, bool isButtonDown, int buttonX,
@@ -260,12 +286,10 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
 	g.strokePath(chevron, juce::PathStrokeType(1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 }
 
-juce::Font CustomLookAndFeel::getComboBoxFont(juce::ComboBox &box)
+juce::Font CustomLookAndFeel::getComboBoxFont(juce::ComboBox & /*box*/)
 {
-	auto height = (float)box.getHeight();
-	auto fontSize = juce::jlimit(11.0f, 18.0f, height * 0.45f);
-
-	return juce::Font(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), fontSize, juce::Font::plain));
+	auto fontSize = ObsidianSizes::TEXT_REGULAR;
+	return juce::Font(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(fontSize));
 }
 
 void CustomLookAndFeel::positionComboBoxText(juce::ComboBox &box, juce::Label &label)
@@ -276,6 +300,7 @@ void CustomLookAndFeel::positionComboBoxText(juce::ComboBox &box, juce::Label &l
 
 	label.setFont(getComboBoxFont(box));
 	label.setJustificationType(juce::Justification::centredLeft);
+	label.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 }
 
 juce::PopupMenu::Options CustomLookAndFeel::getOptionsForComboBoxPopupMenu(juce::ComboBox &box, juce::Label &label)
@@ -293,6 +318,26 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 {
 	bool isSliderTextBox = (dynamic_cast<juce::Slider *>(label.getParentComponent()) != nullptr);
 
+	float currentSize = label.getFont().getHeight();
+	auto currentFont = label.getFont();
+	auto fontName = currentFont.getTypefaceName();
+
+	if (fontName == ObsidianFonts::MICHROMA->getName())
+	{
+		g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(currentSize));
+	}
+	else
+	{
+		if (label.getFont().isBold())
+		{
+			g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(currentSize));
+		}
+		else
+		{
+			g.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(currentSize));
+		}
+	}
+
 	if (isSliderTextBox)
 	{
 		auto bounds = label.getLocalBounds().toFloat();
@@ -305,7 +350,6 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 		{
 			auto alpha = label.isEnabled() ? 1.0f : 0.5f;
 			g.setColour(label.findColour(juce::Label::textColourId).withMultipliedAlpha(alpha));
-			g.setFont(label.getFont());
 			auto textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
 			g.drawFittedText(label.getText(), textArea, label.getJustificationType(),
 			                 juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())), 1.0f);
@@ -319,7 +363,6 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 		auto alpha = label.isEnabled() ? 1.0f : 0.5f;
 		auto textColour = label.findColour(juce::Label::textColourId).withMultipliedAlpha(alpha);
 		g.setColour(textColour);
-		g.setFont(label.getFont());
 		auto textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
 		g.drawFittedText(label.getText(), textArea, label.getJustificationType(),
 		                 juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())), 1.0f);
@@ -621,8 +664,7 @@ void CustomLookAndFeel::drawPopupMenuItem(juce::Graphics &g, const juce::Rectang
 	auto textColour = (textColourToUse != nullptr) ? *textColourToUse : ColourPalette::textPrimary;
 	if (!isActive)
 		textColour = textColour.withAlpha(0.4f);
-
-	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 13.0f, juce::Font::plain));
+	g.setFont(juce::Font(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR)));
 
 	auto r = area.reduced(10, 0);
 	if (isTicked)

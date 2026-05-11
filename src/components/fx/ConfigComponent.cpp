@@ -132,21 +132,22 @@ void ConfigComponent::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat().reduced(ObsidianSizes::PADDING);
 
-	auto imageArea = bounds.removeFromTop(bounds.getHeight() * 0.65f);
+	auto imageArea = bounds.removeFromTop(bounds.getHeight() * 0.6f);
 
 	g.drawImageWithin(logoImage, (int)imageArea.getX(), (int)imageArea.getY(), (int)imageArea.getWidth(),
 	                  (int)imageArea.getHeight(),
 	                  juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize, false);
 
 	float valSize = 14.0f;
-	g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), valSize, juce::Font::bold));
+
+	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(valSize));
 
 	g.setColour(ColourPalette::textPrimary);
 	g.drawText("OBSIDIAN Neural", bounds, juce::Justification::centredTop);
 
-	bounds.removeFromTop(14.0f);
+	bounds.removeFromTop(15.0f);
 
-	g.setFont(juce::FontOptions(juce::Font::getSystemUIFontName(), valSize, juce::Font::italic));
+	g.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(12.0f));
 	g.setColour(ColourPalette::textAccent);
 	g.drawText("Sound Engine - " + Version::VERSION, bounds, juce::Justification::centredTop);
 }

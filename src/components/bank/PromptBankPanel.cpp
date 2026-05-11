@@ -129,14 +129,14 @@ ScaleAndDurationPanel::ScaleAndDurationPanel(DjIaVstProcessor &processor) : audi
 
 	addAndMakeVisible(titleLabel);
 	titleLabel.setText("Choose your key and duration", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+	titleLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_REGULAR));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	titleLabel.setJustificationType(juce::Justification::centredLeft);
 
 	addAndMakeVisible(helpLabel);
 	helpLabel.setText("These settings apply to every generation.\nThey will be saved with the project.",
 	                  juce::dontSendNotification);
-	helpLabel.setFont(juce::FontOptions(10.5f));
+	helpLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
 	helpLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	helpLabel.setJustificationType(juce::Justification::topLeft);
 
@@ -168,7 +168,7 @@ void ScaleAndDurationPanel::resized()
 	area.removeFromBottom(6);
 	titleLabel.setBounds(area.removeFromTop(22));
 	area.removeFromTop(2);
-	helpLabel.setBounds(area.removeFromTop(22));
+	helpLabel.setBounds(area.removeFromTop(32));
 	area.removeFromTop(8);
 
 	int selectorWidth = (int)(area.getWidth() * 0.65);
@@ -209,14 +209,14 @@ PromptBankPanel::~PromptBankPanel()
 void PromptBankPanel::setupUI()
 {
 	addAndMakeVisible(titleLabel);
-	titleLabel.setText("Prompt Bank", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(18.0f, juce::Font::bold));
+	titleLabel.setText("PROMPT BANK", juce::dontSendNotification);
+	titleLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_TITLE));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 
 	addAndMakeVisible(helpLabel);
 	helpLabel.setText("Drag a prompt onto a track to assign both the prompt and its model.",
 	                  juce::dontSendNotification);
-	helpLabel.setFont(juce::FontOptions(11.0f));
+	helpLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
 	helpLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	helpLabel.setJustificationType(juce::Justification::topLeft);
 
@@ -274,7 +274,7 @@ void PromptBankPanel::resized()
 {
 	auto area = getLocalBounds();
 
-	scaleAndDurationPanel->setBounds(area.removeFromBottom(SCALE_AND_DURATION_HEIGHT));
+	scaleAndDurationPanel->setBounds(area.removeFromBottom(ObsidianSizes::SCALE_AND_DURATION_HEIGHT));
 
 	titleLabel.setBounds(area.removeFromTop(28));
 	area.removeFromTop(4);

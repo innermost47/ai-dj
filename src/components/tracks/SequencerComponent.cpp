@@ -36,7 +36,7 @@ void SequencerComponent::setupUI()
 	{
 		measureButtons[i].setButtonText(juce::String(i + 1));
 		measureButtons[i].setClickingTogglesState(false);
-		measureButtons[i].setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
+		measureButtons[i].setColour(juce::TextButton::buttonColourId, accentColour.withAlpha(0.1f));
 		measureButtons[i].setColour(juce::TextButton::buttonOnColourId, accentColour);
 		measureButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		measureButtons[i].setColour(juce::TextButton::textColourOnId, juce::Colours::white);
@@ -105,7 +105,7 @@ void SequencerComponent::updateMeasureButtonsDisplay()
 	{
 		bool active = (i + 1 == numMeasures);
 		measureButtons[i].setColour(juce::TextButton::buttonColourId,
-		                            active ? accentColour : ColourPalette::backgroundDeep);
+		                            active ? accentColour : accentColour.withAlpha(0.1f));
 		measureButtons[i].setColour(
 		    juce::TextButton::textColourOffId,
 		    active ? (accentColour.getBrightness() > 0.5f ? juce::Colours::black : juce::Colours::white)
@@ -301,34 +301,28 @@ void SequencerComponent::paint(juce::Graphics &g)
 		}
 
 		juce::Colour stepColour;
-		juce::Colour borderColour;
 
 		if (!isVisible)
 		{
 			stepColour = ColourPalette::backgroundDeep;
-			borderColour = ColourPalette::backgroundMid;
 		}
 		else if (seqData.steps[safeMeasure][i])
 		{
 			stepColour = accentColour;
-			borderColour = accentColour.brighter(0.4f);
 		}
 		else
 		{
 			if (isStrongBeat)
 			{
 				stepColour = ColourPalette::backgroundLight;
-				borderColour = ColourPalette::backgroundLight.brighter(0.3f);
 			}
 			else if (isBeat)
 			{
 				stepColour = ColourPalette::sequencerBeat;
-				borderColour = ColourPalette::backgroundLight.withAlpha(0.5f);
 			}
 			else
 			{
 				stepColour = ColourPalette::sequencerSubBeat;
-				borderColour = ColourPalette::backgroundMid.withAlpha(0.8f);
 			}
 		}
 
@@ -338,22 +332,16 @@ void SequencerComponent::paint(juce::Graphics &g)
 
 			if (seqData.steps[safeMeasure][i])
 			{
-				stepColour = accentColour.brighter(0.6f).withAlpha(pulseIntensity);
-				borderColour = accentColour.brighter(0.9f);
+				stepColour = accentColour.overlaidWith(juce::Colours::white.withAlpha(0.5f * pulseIntensity));
 			}
 			else
 			{
-				stepColour = accentColour.withAlpha(0.35f * pulseIntensity);
-				borderColour = accentColour.withAlpha(0.7f);
+				stepColour = accentColour.withAlpha(0.6f * pulseIntensity);
 			}
 		}
 
 		g.setColour(stepColour);
-
-		const float pillRadius = stepBounds.toFloat().getHeight() * 0.5f;
-		g.fillRoundedRectangle(stepBounds.toFloat(), pillRadius);
-		g.setColour(borderColour);
-		g.drawRoundedRectangle(stepBounds.toFloat(), pillRadius, isVisible ? 0.8f : 0.4f);
+		g.fillRoundedRectangle(stepBounds.toFloat(), ObsidianSizes::CORNER);
 	}
 }
 

@@ -2,6 +2,7 @@
 #include "AiModelDefinitions.h"
 #include "BinaryData.h"
 #include "ColourPalette.h"
+#include "Fonts.h"
 #include "IconButton.h"
 #include "Shades.h"
 #include "Sizes.h"
@@ -61,5 +62,17 @@ class ObsidianComponent : public juce::Component
 
 		g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
 		g.drawLine(bounds.getWidth(), 0.0f, bounds.getWidth(), bounds.getHeight(), ObsidianSizes::BORDER_WIDTH);
+	}
+
+	void drawCircleWithEllipse(juce::Graphics &g, juce::Rectangle<int> area, juce::Colour colour)
+	{
+		auto circleArea = area.removeFromLeft(14);
+		auto circleRect = circleArea.withSizeKeepingCentre(7, 7).toFloat();
+
+		g.setColour(colour);
+		g.fillEllipse(circleRect);
+
+		g.setColour(colour.withAlpha(0.3f));
+		g.drawEllipse(circleRect.expanded(1.5f), 1.0f);
 	}
 };

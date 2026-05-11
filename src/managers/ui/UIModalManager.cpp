@@ -1,4 +1,5 @@
 #include "UIModalManager.h"
+#include "Fonts.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "config/version.h"
@@ -150,7 +151,7 @@ void UIModalManager::showOnboardingStep(int step)
 
 	auto modal = std::make_unique<ObsidianModalWindow>(info.title);
 
-	class OnboardingContent : public juce::Component
+	class OnboardingContent : public ObsidianComponent
 	{
 	  public:
 		juce::Label textLabel;
@@ -159,7 +160,7 @@ void UIModalManager::showOnboardingStep(int step)
 		OnboardingContent(const juce::String &text, const juce::String &svgData)
 		{
 			textLabel.setText(text, juce::dontSendNotification);
-			textLabel.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+			textLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(14.0f));
 			textLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 			textLabel.setJustificationType(juce::Justification::topLeft);
 			addAndMakeVisible(textLabel);

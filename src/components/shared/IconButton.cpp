@@ -165,7 +165,8 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 		                                : btn.findColour(juce::TextButton::textColourOffId);
 		g.setColour(enabled ? labelCol : labelCol.withAlpha(0.3f));
 
-		const float fontSize = hasIcon ? (isCompact ? 6.5f : 8.5f) : (isCompact ? 9.0f : 11.0f);
+		const float fontSize =
+		    hasIcon ? (isCompact ? 6.5f : 8.5f) : (isCompact ? ObsidianSizes::TEXT_INFO : ObsidianSizes::TEXT_REGULAR);
 
 		g.setFont(juce::FontOptions(fontSize, juce::Font::bold));
 		g.drawText(labelText, labelArea.toNearestInt(), juce::Justification::centred, false);

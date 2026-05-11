@@ -5,27 +5,28 @@
 MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *manager)
     : mapping(mapping), midiLearnManager(manager)
 {
+
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
 	parameterLabel.setJustificationType(juce::Justification::centredLeft);
 	parameterLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	parameterLabel.setFont(juce::FontOptions("Courier New", 13.5f, juce::Font::bold));
+	parameterLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(13.5f));
 	addAndMakeVisible(parameterLabel);
 
 	midiInfoLabel.setText(getMidiInfoString(), juce::dontSendNotification);
 	midiInfoLabel.setJustificationType(juce::Justification::centredLeft);
 	midiInfoLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
-	midiInfoLabel.setFont(juce::FontOptions("Courier New", 12.0f, juce::Font::plain));
+	midiInfoLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(12.0f));
 	addAndMakeVisible(midiInfoLabel);
 
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-	deleteButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteButton.addListener(this);
 	addAndMakeVisible(deleteButton);
 
 	learnButton.loadIcon(BinaryData::broadcast_svg, BinaryData::broadcast_svgSize);
 	learnButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonSuccess);
-	learnButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	learnButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	learnButton.addListener(this);
 	addAndMakeVisible(learnButton);
 }
@@ -79,7 +80,7 @@ void MidiMappingRow::paint(juce::Graphics &g)
 		g.drawRoundedRectangle(badgeBounds, ObsidianSizes::CORNER, 0.6f);
 
 		g.setColour(ColourPalette::textAccent);
-		g.setFont(juce::FontOptions("Courier New", 10.5f, juce::Font::bold));
+		g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(10.5f));
 		g.drawText(getMidiTypeShort(), badgeBounds, juce::Justification::centred);
 	}
 }
@@ -177,12 +178,12 @@ juce::String MidiMappingRow::getMidiTypeShort() const
 MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager) : midiLearnManager(manager)
 {
 	subtitleLabel.setText("Manage mappings or ReLearn to reassign.", juce::dontSendNotification);
-	subtitleLabel.setFont(juce::FontOptions("Courier New", 12.5f, juce::Font::plain));
+	subtitleLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(12.5f));
 	subtitleLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	subtitleLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(subtitleLabel);
 
-	countLabel.setFont(juce::FontOptions("Courier New", 11.0f, juce::Font::bold));
+	countLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(11.0f));
 	countLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	countLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(countLabel);
@@ -252,7 +253,8 @@ void MidiMappingEditorWindow::paint(juce::Graphics &g)
 	if (mappingRows.isEmpty())
 	{
 		g.setColour(ColourPalette::textSecondary.withAlpha(0.5f));
-		g.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+
+		g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(13.0f));
 		g.drawText("No MIDI mappings yet — use MIDI learn from any control.", listF, juce::Justification::centred,
 		           true);
 	}

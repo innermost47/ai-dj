@@ -73,31 +73,32 @@ void MasterChannel::setupUI()
 	masterLabel.setText("MASTER", juce::dontSendNotification);
 	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	masterLabel.setJustificationType(juce::Justification::left);
-	masterLabel.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+	masterLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_SUBTITLE));
 
 	addAndMakeVisible(highLabel);
 	highLabel.setText("HIGH", juce::dontSendNotification);
 	highLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	highLabel.setJustificationType(juce::Justification::centred);
-	highLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(midLabel);
 	midLabel.setText("MID", juce::dontSendNotification);
 	midLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	midLabel.setJustificationType(juce::Justification::centred);
-	midLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(lowLabel);
 	lowLabel.setText("LOW", juce::dontSendNotification);
 	lowLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	lowLabel.setJustificationType(juce::Justification::centred);
-	lowLabel.setFont(juce::FontOptions(9.0f));
 
 	addAndMakeVisible(panLabel);
 	panLabel.setText("PAN", juce::dontSendNotification);
 	panLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	panLabel.setJustificationType(juce::Justification::centred);
-	panLabel.setFont(juce::FontOptions(9.0f));
+
+	ObsidianFonts::applyFontSize(panLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(lowLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(midLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(highLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 
 	addAndMakeVisible(vuMeter);
 

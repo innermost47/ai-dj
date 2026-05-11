@@ -184,6 +184,10 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/wind.svg
         src/assets/icons/x.svg
         src/assets/icons/zap.svg
+        src/assets/fonts/michroma.ttf
+        src/assets/fonts/noto-bold.ttf
+        src/assets/fonts/noto-italic.ttf
+        src/assets/fonts/noto-regular.ttf
         src/assets/logo.png   
 )
 

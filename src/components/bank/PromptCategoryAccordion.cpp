@@ -7,7 +7,7 @@ PromptCategoryAccordion::PromptCategoryAccordion(const juce::String &name, juce:
 
 	editButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
 	editButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
-	editButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	editButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	editButton.setCompactMode(true);
 	editButton.setTooltip("Edit category");
 	editButton.onClick = [this]()
@@ -18,7 +18,7 @@ PromptCategoryAccordion::PromptCategoryAccordion(const juce::String &name, juce:
 
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-	deleteButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteButton.setCompactMode(true);
 	deleteButton.setTooltip("Delete category");
 	deleteButton.onClick = [this]()
@@ -72,11 +72,11 @@ void PromptCategoryAccordion::paint(juce::Graphics &g)
 
 	auto textArea = headerBounds.withTrimmedLeft(12);
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 	g.drawText(categoryName, textArea, juce::Justification::centredLeft, true);
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
-	g.setFont(juce::FontOptions(11.0f));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
 	g.drawText("(" + juce::String((int)items.size()) + ")", textArea, juce::Justification::centredRight, true);
 }
 

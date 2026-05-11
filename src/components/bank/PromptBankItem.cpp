@@ -84,7 +84,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 	auto textArea = bounds.withTrimmedLeft(12).withTrimmedRight(buttonsZoneWidth + 4).withTrimmedTop(6);
 	auto promptArea = textArea.removeFromTop(bounds.getHeight() - 30);
 
-	const float fontSize = 12.0f;
+	const float fontSize = ObsidianSizes::TEXT_REGULAR;
 	juce::Font promptFont(juce::FontOptions(fontSize, juce::Font::plain));
 	const float lineHeight = promptFont.getHeight();
 	const int maxLines = MAX_LINES;
@@ -146,15 +146,10 @@ void PromptBankItem::paint(juce::Graphics &g)
 	}
 
 	auto metaArea = bounds.withTrimmedLeft(12).withTrimmedRight(buttonsZoneWidth + 4).removeFromBottom(20);
-
-	auto circleArea = metaArea.removeFromLeft(14);
-	auto circleRect = circleArea.withSizeKeepingCentre(7, 7).toFloat();
 	juce::Colour modelColour = AiModelDefinitions::getColourForModel(entry->modelName);
-	g.setColour(modelColour);
-	g.fillEllipse(circleRect);
+	drawCircleWithEllipse(g, metaArea, modelColour);
 
-	g.setColour(modelColour.withAlpha(0.3f));
-	g.drawEllipse(circleRect.expanded(1.5f), 1.0f);
+	metaArea.removeFromLeft(14);
 
 	juce::StringArray parts;
 	parts.add(entry->modelName.isNotEmpty() ? entry->modelName : "unknown model");
@@ -175,7 +170,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 		parts.add(juce::String(days / 365) + " years ago");
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.75f));
-	g.setFont(juce::FontOptions(10.5f, juce::Font::italic));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL, juce::Font::italic));
 	g.drawText(parts.joinIntoString(" - "), metaArea, juce::Justification::centredLeft, true);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
@@ -188,7 +183,7 @@ int PromptBankItem::getPreferredHeight(int width) const
 	if (!entry)
 		return MIN_HEIGHT;
 
-	const float fontSize = 12.0f;
+	const float fontSize = ObsidianSizes::TEXT_REGULAR;
 	juce::Font promptFont(juce::FontOptions(fontSize, juce::Font::plain));
 	const float maxWidth = (float)(width);
 

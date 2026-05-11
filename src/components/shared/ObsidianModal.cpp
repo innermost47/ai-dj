@@ -1,4 +1,5 @@
 #include "ObsidianModal.h"
+#include "Fonts.h"
 
 ObsidianSvgButton::ObsidianSvgButton(const juce::String &name, const juce::String &svgData, juce::Colour baseColour)
     : juce::Button(name), colour(baseColour)
@@ -54,7 +55,7 @@ void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHi
 	}
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::bold));
+	g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(13.0f));
 	g.drawText(getButtonText(), contentBounds, juce::Justification::centredLeft, true);
 }
 
@@ -107,7 +108,7 @@ void ObsidianModalWindow::paint(juce::Graphics &g)
 	auto titleBounds =
 	    juce::Rectangle<float>(bounds.getX() + 30.0f, bounds.getY(), bounds.getWidth() - 60.0f, titleHeight);
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions("Courier New", 17.0f, juce::Font::bold));
+	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(17.0f));
 	g.drawText(title, titleBounds, juce::Justification::centredLeft, true);
 
 	float lineY = bounds.getY() + titleHeight;
