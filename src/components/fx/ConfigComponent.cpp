@@ -60,8 +60,8 @@ void ConfigComponent::setupUI()
 	{
 		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
 		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
-		btn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-		btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
+		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+		btn.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 		btn.setHasAccentBar(hasAccentBar);
 		btn.setShowBackground(false);
 		btn.setShowBorder(false);
@@ -73,13 +73,6 @@ void ConfigComponent::setupUI()
 	setupControlBtn(configButton, false);
 	setupControlBtn(helpButton, false);
 	setupControlBtn(bypassLLMButton);
-
-	juce::String version = Version::VERSION + " - " + Version::BUILD;
-	versionLabel.setText(version, juce::dontSendNotification);
-	versionLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	versionLabel.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 7.0f, juce::Font::plain));
-	versionLabel.setJustificationType(juce::Justification::right);
-	addAndMakeVisible(versionLabel);
 
 	addEventListeners();
 }
@@ -139,10 +132,6 @@ void ConfigComponent::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat().reduced(ObsidianSizes::PADDING);
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawLine(bounds.getTopLeft().getX(), 38.0f, bounds.getTopRight().getX(), 38.0f, ObsidianSizes::BORDER_WIDTH);
-
-	bounds.removeFromTop(48);
 	auto imageArea = bounds.removeFromTop(bounds.getHeight() * 0.65f);
 
 	g.drawImageWithin(logoImage, (int)imageArea.getX(), (int)imageArea.getY(), (int)imageArea.getWidth(),
@@ -159,12 +148,12 @@ void ConfigComponent::paint(juce::Graphics &g)
 
 	g.setFont(juce::FontOptions(juce::Font::getSystemUIFontName(), valSize, juce::Font::italic));
 	g.setColour(ColourPalette::textAccent);
-	g.drawText("Sound Engine", bounds, juce::Justification::centredTop);
+	g.drawText("Sound Engine - " + Version::VERSION, bounds, juce::Justification::centredTop);
 }
 
 void ConfigComponent::resized()
 {
-	auto area = getLocalBounds();
+	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
 
 	juce::FlexBox firstBox;
 	firstBox.flexDirection = juce::FlexBox::Direction::row;
@@ -172,10 +161,14 @@ void ConfigComponent::resized()
 	firstBox.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
 	firstBox.alignItems = juce::FlexBox::AlignItems::center;
 
-	firstBox.items.add(juce::FlexItem(bypassSequencerButton)
-	                       .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                       .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
-	                       .withFlex(1));
+	if (!juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		firstBox.items.add(juce::FlexItem(bypassSequencerButton)
+		                       .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
+		                       .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
+		                       .withFlex(1));
+	}
+
 	firstBox.items.add(juce::FlexItem(bypassLLMButton)
 	                       .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
 	                       .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
@@ -193,9 +186,7 @@ void ConfigComponent::resized()
 	                       .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
 	                       .withFlex(1));
 
-	firstBox.performLayout(area.removeFromTop(ObsidianSizes::MIN_SMALL_BTN_HEIGHT).reduced(ObsidianSizes::PADDING));
-
-	versionLabel.setBounds(area.removeFromBottom(12));
+	firstBox.performLayout(area.removeFromBottom(ObsidianSizes::MIN_SMALL_BTN_HEIGHT));
 }
 
 void ConfigComponent::updateFromProcessor()

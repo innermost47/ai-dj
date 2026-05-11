@@ -27,7 +27,6 @@ class ConfigComponent : public ObsidianComponent
 	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
 
 	juce::Image logoImage;
-	juce::Label versionLabel;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ConfigComponent)
 };
