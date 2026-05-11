@@ -355,14 +355,15 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("formatVersion", 1, nullptr);
 	state.setProperty("appVersion", juce::String(Version::FULL), nullptr);
 
-#if JucePlugin_Build_Standalone
-	if (auto *standaloneTransport = audioProcessor.getStandaloneTransport())
+	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
-		state.setProperty("standaloneBpm", standaloneTransport->getBpm(), nullptr);
-		state.setProperty("standaloneTimeSigNum", standaloneTransport->getTimeSigNumerator(), nullptr);
-		state.setProperty("standaloneTimeSigDenom", standaloneTransport->getTimeSigDenominator(), nullptr);
+		if (auto *standaloneTransport = audioProcessor.getStandaloneTransport())
+		{
+			state.setProperty("standaloneBpm", standaloneTransport->getBpm(), nullptr);
+			state.setProperty("standaloneTimeSigNum", standaloneTransport->getTimeSigNumerator(), nullptr);
+			state.setProperty("standaloneTimeSigDenom", standaloneTransport->getTimeSigDenominator(), nullptr);
+		}
 	}
-#endif
 
 	state.setProperty("projectId", audioProcessor.getProjectId(), nullptr);
 	state.setProperty("lastPrompt", audioProcessor.getLastPrompt(), nullptr);
@@ -445,14 +446,15 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	}
 	juce::ValueTree state = juce::ValueTree::fromXml(*xml);
 
-#if JucePlugin_Build_Standalone
-	if (auto *standaloneTransport = audioProcessor.getStandaloneTransport())
+	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
-		standaloneTransport->setBpm(state.getProperty("standaloneBpm", 120.0));
-		standaloneTransport->setTimeSignature(state.getProperty("standaloneTimeSigNum", 4),
-		                                      state.getProperty("standaloneTimeSigDenom", 4));
+		if (auto *standaloneTransport = audioProcessor.getStandaloneTransport())
+		{
+			standaloneTransport->setBpm(state.getProperty("standaloneBpm", 120.0));
+			standaloneTransport->setTimeSignature(state.getProperty("standaloneTimeSigNum", 4),
+			                                      state.getProperty("standaloneTimeSigDenom", 4));
+		}
 	}
-#endif
 
 	audioProcessor.setProjectId(state.getProperty("projectId", "legacy").toString());
 	audioProcessor.setLastPrompt(state.getProperty("lastPrompt", "").toString());

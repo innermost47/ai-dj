@@ -46,11 +46,11 @@ DjIaVstProcessor::DjIaVstProcessor()
 
 	startTimerHz(30);
 	autoLoadEnabled.store(true);
-
-#if JucePlugin_Build_Standalone
-	standaloneTransport = std::make_unique<StandaloneTransport>();
-	setPlayHead(standaloneTransport.get());
-#endif
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		standaloneTransport = std::make_unique<StandaloneTransport>();
+		setPlayHead(standaloneTransport.get());
+	}
 
 	juce::Timer::callAfterDelay(500,
 	                            [this]()
@@ -83,10 +83,13 @@ juce::AudioProcessorEditor *DjIaVstProcessor::createEditor()
 void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
 	audioManager.prepareToPlay(sampleRate, samplesPerBlock);
-#if JucePlugin_Build_Standalone
-	if (standaloneTransport)
-		setPlayHead(standaloneTransport.get());
-#endif
+
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		if (standaloneTransport)
+			setPlayHead(standaloneTransport.get());
+	}
+
 	masterConsoleBuss.prepare(sampleRate);
 	delaySend.prepare(sampleRate, samplesPerBlock);
 	delaySendBuffer.setSize(2, samplesPerBlock, false, false, true);

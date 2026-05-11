@@ -32,10 +32,9 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	lcdScreen = std::make_unique<LCDScreen>();
 	masterWaveformDisplay = std::make_unique<MasterWaveformDisplay>();
 	uiLayoutManager = std::make_unique<UILayoutManager>(audioProcessor, *this, *mixerPanel);
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+		lcdScreen->setTwoLineMode(true);
 
-#if JucePlugin_Build_Standalone
-	lcdScreen->setTwoLineMode(true);
-#endif
 	audioProcessor.setGenerationListener(uiGenerationManager.get());
 	if (audioProcessor.isStateReady())
 	{

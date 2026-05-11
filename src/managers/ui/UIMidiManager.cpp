@@ -40,18 +40,20 @@ bool UIMidiManager::keyPressed(const juce::KeyPress &key)
 
 	std::vector<std::vector<juce::KeyPress>> layoutKeys(8);
 
-#if JucePlugin_Build_Standalone
-	if (key == juce::KeyPress::spaceKey)
+	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
-		if (editor.audioProcessor.getStandaloneTransport())
+		if (key == juce::KeyPress::spaceKey)
 		{
-			editor.audioProcessor.getStandaloneTransport()->togglePlayStop();
-			editor.uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent()->udpatePlayButtonDisplay(
-			    editor.audioProcessor.getStandaloneTransport()->isPlaying());
+			if (editor.audioProcessor.getStandaloneTransport())
+			{
+				editor.audioProcessor.getStandaloneTransport()->togglePlayStop();
+				editor.uiLayoutManager->getRightPanelWrapper()
+				    ->getStandaloneTransportComponent()
+				    ->udpatePlayButtonDisplay(editor.audioProcessor.getStandaloneTransport()->isPlaying());
+			}
+			return true;
 		}
-		return true;
 	}
-#endif
 
 	switch (layout)
 	{
