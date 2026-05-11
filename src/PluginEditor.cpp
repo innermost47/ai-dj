@@ -1,6 +1,7 @@
 ﻿#include "PluginEditor.h"
 #include "BinaryData.h"
 #include "ColourPalette.h"
+#include "ConfigComponent.h"
 #include "LeftPanelWrapper.h"
 #include "ObsidianAlertManager.h"
 #include "PluginProcessor.h"
@@ -277,9 +278,6 @@ void DjIaVstEditor::timerCallback()
 
 void DjIaVstEditor::setupUI()
 {
-	addAndMakeVisible(configButton);
-	configButton.loadIcon(BinaryData::gear_svg, BinaryData::gear_svgSize);
-	configButton.setTooltip("Configure settings globally");
 
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 		if (audioProcessor.getStandaloneTransport())
@@ -287,42 +285,6 @@ void DjIaVstEditor::setupUI()
 
 	statusLabel.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDeep);
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
-
-	addAndMakeVisible(bypassSequencerButton);
-	bypassSequencerButton.setClickingTogglesState(true);
-	bypassSequencerButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
-	if (audioProcessor.getBypassSequencer())
-	{
-		bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
-	}
-	else
-	{
-		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
-	}
-	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
-
-	addAndMakeVisible(bypassLLMButton);
-	bypassLLMButton.setClickingTogglesState(true);
-	bypassLLMButton.setToggleState(audioProcessor.getBypassLLM(), juce::dontSendNotification);
-	if (audioProcessor.getBypassLLM())
-	{
-		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-	}
-	else
-	{
-		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
-	}
-
-	bypassLLMButton.setTooltip("Disables prompt enhancement for faster, raw generation");
-	configButton.setTooltip("Configure API settings and generation mode");
-
-	addAndMakeVisible(openMidiEditorButton);
-	openMidiEditorButton.loadIcon(BinaryData::piano_svg, BinaryData::piano_svgSize);
-	openMidiEditorButton.setTooltip("Open MIDI mappings editor");
-
-	addAndMakeVisible(helpButton);
-	helpButton.loadIcon(BinaryData::info_svg, BinaryData::info_svgSize);
-	helpButton.setTooltip("Open the Quick Start tour");
 
 	addAndMakeVisible(lcdScreen.get());
 
@@ -337,22 +299,6 @@ void DjIaVstEditor::setupUI()
 			masterWaveformDisplay->setPositionInBeats(ppq);
 		}
 	};
-
-	auto setupControlBtn = [](IconButtonSimple &btn, bool hasAccentBar = true)
-	{
-		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
-		btn.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-		btn.setColour(juce::TextButton::textColourOnId, juce::Colours::white);
-		btn.setHasAccentBar(hasAccentBar);
-		btn.setShowBorder(true);
-	};
-
-	setupControlBtn(bypassSequencerButton);
-	setupControlBtn(openMidiEditorButton, false);
-	setupControlBtn(configButton, false);
-	setupControlBtn(helpButton, false);
-	setupControlBtn(bypassLLMButton);
 
 	setSize(audioProcessor.getSavedWindowWidth(), audioProcessor.getSavedWindowHeight());
 
@@ -370,7 +316,6 @@ void DjIaVstEditor::setupUI()
 
 void DjIaVstEditor::addEventListeners()
 {
-	configButton.onClick = [this]() { uiModalManager->showConfigDialog(); };
 
 	mixerPanel->onTrackRenamedFromMixer = [this](const juce::String &trackId, const juce::String &newName)
 	{
@@ -384,58 +329,12 @@ void DjIaVstEditor::addEventListeners()
 		}
 	};
 
-	bypassSequencerButton.onClick = [this]()
-	{
-		bool isBypassed = bypassSequencerButton.getToggleState();
-		audioProcessor.setBypassSequencer(isBypassed);
-
-		if (isBypassed)
-		{
-			bypassSequencerButton.setButtonText("Composition Mode");
-			bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
-			statusLabel.setText("Composition mode - Direct MIDI playback", juce::dontSendNotification);
-			uiStatusManager->updateLCD();
-		}
-		else
-		{
-			bypassSequencerButton.setButtonText("Sequencer Mode");
-			bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
-			statusLabel.setText("Sequencer mode - Armed playback", juce::dontSendNotification);
-			uiStatusManager->updateLCD();
-		}
-	};
-
-	bypassLLMButton.onClick = [this]()
-	{
-		bool isBypassed = bypassLLMButton.getToggleState();
-		audioProcessor.setBypassLLM(isBypassed);
-
-		if (isBypassed)
-		{
-			bypassLLMButton.setButtonText("Direct Mode");
-			bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-			statusLabel.setText("Direct Mode: Raw input, direct generation", juce::dontSendNotification);
-			uiStatusManager->updateLCD();
-		}
-		else
-		{
-			bypassLLMButton.setButtonText("Enhanced Mode");
-			bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
-			statusLabel.setText("Enhanced Mode: AI-optimized prompt routing", juce::dontSendNotification);
-			uiStatusManager->updateLCD();
-		}
-	};
-
 	uiLayoutManager->getLeftPanelWrapper()->getSampleBankPanel()->onSampleDroppedToTrack =
 	    [this](const juce::String &sampleId, const juce::String &trackId)
 	{
 		audioProcessor.getAudioManager().loadSampleFromBank(sampleId, trackId);
 		uiStatusManager->setStatusWithTimeout("Sample loaded from bank: " + sampleId.substring(0, 8) + "...", 3000);
 	};
-
-	openMidiEditorButton.onClick = [this] { uiModalManager->openMidiMappingEditor(); };
-
-	helpButton.onClick = [this]() { uiModalManager->showOnboardingStep(1); };
 
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
@@ -461,35 +360,7 @@ void DjIaVstEditor::removeModal(ObsidianModalOverlay *overlay)
 
 void DjIaVstEditor::updateUIFromProcessor()
 {
-
-	bool bypassOn = audioProcessor.getBypassSequencer();
-	bypassSequencerButton.setToggleState(bypassOn, juce::dontSendNotification);
-
-	if (bypassOn)
-	{
-		bypassSequencerButton.setButtonText("Composition Mode");
-		bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
-	}
-	else
-	{
-		bypassSequencerButton.setButtonText("Sequencer Mode");
-		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
-	}
-
-	bool bypassLLMOn = audioProcessor.getBypassLLM();
-	bypassLLMButton.setToggleState(bypassLLMOn, juce::dontSendNotification);
-
-	if (bypassLLMOn)
-	{
-		bypassLLMButton.setButtonText("Direct Mode");
-		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-	}
-	else
-	{
-		bypassLLMButton.setButtonText("Enhanced Mode");
-		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
-	}
-
+	uiLayoutManager->getRightPanelWrapper()->getConfigComponent()->updateFromProcessor();
 	uiTrackManager->refreshTrackComponents();
 }
 

@@ -86,12 +86,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
 
-	IconButtonSimple bypassSequencerButton{"BypassSeq", ""};
-	IconButtonSimple configButton{"Config", ""};
-	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
-	IconButtonSimple helpButton{"Help", ""};
-	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
-
 	juce::Typeface::Ptr customFont;
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;

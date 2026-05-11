@@ -7,4 +7,6 @@
 namespace Version
 {
     static const std::string FULL = "v@PROJECT_VERSION@ (build @BUILD_NUMBER@)";
+    static const std::string VERSION = "v@PROJECT_VERSION@";
+    static const std::string BUILD = "build @BUILD_NUMBER@";
 }

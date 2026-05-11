@@ -1,5 +1,4 @@
 #pragma once
-#include "LogoComponent.h"
 #include "ObsidianBase.h"
 #include <JuceHeader.h>
 
@@ -10,14 +9,15 @@ class StandaloneTransport;
 class MasterChannel;
 class LCDScreen;
 class TrackEffectsPanel;
-class LogoComponent;
+class ConfigComponent;
 class SendsPanel;
 class TrackRecapPanel;
+class DjIaVstEditor;
 
 class RightPanelWrapper : public ObsidianComponent
 {
   public:
-	RightPanelWrapper(DjIaVstProcessor &processor);
+	RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &editor);
 	~RightPanelWrapper() override = default;
 
 	void paint(juce::Graphics &g) override;
@@ -45,14 +45,19 @@ class RightPanelWrapper : public ObsidianComponent
 	{
 		return sendsPanel.get();
 	}
+	ConfigComponent *getConfigComponent()
+	{
+		return configComponent.get();
+	}
 
   private:
 	DjIaVstProcessor &audioProcessor;
+	DjIaVstEditor &editor;
 
 	std::unique_ptr<TrackRecapPanel> trackRecap;
 	std::unique_ptr<TrackEffectsPanel> trackEffects;
 	std::unique_ptr<SendsPanel> sendsPanel;
-	std::unique_ptr<LogoComponent> logoComponent;
+	std::unique_ptr<ConfigComponent> configComponent;
 
 	MasterWaveformDisplay *masterWaveform = nullptr;
 

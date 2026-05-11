@@ -1,8 +1,9 @@
 #include "RightPanelWrapper.h"
+#include "ConfigComponent.h"
 #include "LCDScreen.h"
-#include "LogoComponent.h"
 #include "MasterChannel.h"
 #include "MasterWaveformDisplay.h"
+#include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "SendsPanel.h"
 #include "StandaloneTransport.h"
@@ -10,19 +11,20 @@
 #include "TrackEffectsPanel.h"
 #include "TrackRecapPanel.h"
 
-RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor) : audioProcessor(processor)
+RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &editor)
+    : audioProcessor(processor), editor(editor)
 {
 	masterChannel = std::make_unique<MasterChannel>(processor);
 	trackRecap = std::make_unique<TrackRecapPanel>(processor);
 	trackEffects = std::make_unique<TrackEffectsPanel>(processor);
 	sendsPanel = std::make_unique<SendsPanel>(processor);
-	logoComponent = std::make_unique<LogoComponent>();
+	configComponent = std::make_unique<ConfigComponent>(processor, editor);
 
 	scrollContent.addAndMakeVisible(*trackRecap);
 	scrollContent.addAndMakeVisible(*trackEffects);
 
 	addAndMakeVisible(*masterChannel);
-	addAndMakeVisible(*logoComponent);
+	addAndMakeVisible(*configComponent);
 
 	contentViewport.setViewedComponent(&scrollContent, false);
 	contentViewport.setScrollBarsShown(true, false);
@@ -48,7 +50,7 @@ void RightPanelWrapper::resized()
 	if (masterChannel != nullptr)
 		bottomRow.items.add(FlexItem(*masterChannel).withFlex(0.3f));
 
-	bottomRow.items.add(FlexItem(*logoComponent).withFlex(0.4f));
+	bottomRow.items.add(FlexItem(*configComponent).withFlex(0.4f));
 
 	FlexBox mainStack;
 	mainStack.flexDirection = FlexBox::Direction::column;

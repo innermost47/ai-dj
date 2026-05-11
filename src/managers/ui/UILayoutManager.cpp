@@ -11,39 +11,6 @@ ConfigContainer::ConfigContainer(DjIaVstEditor &editor) : editor(editor) {};
 
 void ConfigContainer::resized()
 {
-	juce::FlexBox box;
-	box.flexDirection = juce::FlexBox::Direction::row;
-	box.flexWrap = juce::FlexBox::Wrap::wrap;
-	box.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
-	box.alignItems = juce::FlexBox::AlignItems::center;
-
-	box.items.add(juce::FlexItem(editor.configButton)
-	                  .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                  .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
-	                  .withFlex(1)
-	                  .withMargin(ObsidianSizes::SPACER_SM));
-	box.items.add(juce::FlexItem(editor.helpButton)
-	                  .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                  .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
-	                  .withFlex(1)
-	                  .withMargin(ObsidianSizes::SPACER_SM));
-	box.items.add(juce::FlexItem(editor.openMidiEditorButton)
-	                  .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                  .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
-	                  .withFlex(1)
-	                  .withMargin(ObsidianSizes::SPACER_SM));
-	box.items.add(juce::FlexItem(editor.bypassSequencerButton)
-	                  .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                  .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
-	                  .withFlex(1)
-	                  .withMargin(ObsidianSizes::SPACER_SM));
-	box.items.add(juce::FlexItem(editor.bypassLLMButton)
-	                  .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                  .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
-	                  .withFlex(1)
-	                  .withMargin(ObsidianSizes::SPACER_SM));
-
-	box.performLayout(getLocalBounds());
 }
 
 LeftContainer::LeftContainer(DjIaVstEditor &editor, LeftPanelWrapper &leftPanelWrapper)
@@ -147,7 +114,7 @@ UILayoutManager::UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	leftPanelWrapper = std::make_unique<LeftPanelWrapper>(audioProcessor, editor);
 	leftContainer = std::make_unique<LeftContainer>(editor, *leftPanelWrapper);
 	tracksContainer = std::make_unique<TracksContainer>(editor);
-	rightPanelWrapper = std::make_unique<RightPanelWrapper>(audioProcessor);
+	rightPanelWrapper = std::make_unique<RightPanelWrapper>(audioProcessor, editor);
 	mainContainer = std::make_unique<MainContainer>(*tracksContainer, mixerPanel);
 
 	editor.addAndMakeVisible(*leftContainer);

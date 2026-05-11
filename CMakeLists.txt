@@ -197,8 +197,8 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/bank/PromptModelDefinitions.cpp
     src/components/bank/SampleBank.cpp
     src/components/bank/SampleBankPanel.cpp
+    src/components/fx/ConfigComponent.cpp
     src/components/fx/LCDScreen.cpp
-    src/components/fx/LogoComponent.cpp
     src/components/fx/MasterChannel.cpp
     src/components/fx/MasterWaveformDisplay.cpp
     src/components/fx/RightPanelWrapper.cpp
