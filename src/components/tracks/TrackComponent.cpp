@@ -55,13 +55,28 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 	{
 		if (newValue > 0.5f && audioProcessor.getIsGenerating())
 			return;
+		if (onGenerateForTrack)
+		{
+			if (track)
+			{
+				auto &currentPage = track->getCurrentPage();
+				currentPage.selectedPrompt = promptPresetSelector.getText();
+				currentPage.generationBpm = audioProcessor.getGlobalBpm();
+				currentPage.generationKey = audioProcessor.getGlobalKey();
+				currentPage.generationDuration = audioProcessor.getGlobalDuration();
+			}
+			onGenerateForTrack(trackId);
+			return;
+		}
 	}
 	else if (paramSuffix == "RandomRetrigger")
 	{
 		if (track)
 		{
-			track->randomRetriggerEnabled = newValue > 0.5f;
+			bool isEnabled = newValue > 0.5f;
+			track->randomRetriggerEnabled = isEnabled;
 			updateRandomRetriggerButtonColor();
+			statusCallback("Beat Repeat " + juce::String(isEnabled ? "ON" : "OFF"));
 		}
 	}
 	else if (paramSuffix == "RetriggerInterval")
@@ -153,8 +168,6 @@ void TrackComponent::updateFromTrackData()
 	updatePagesDisplay();
 
 	randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(), juce::dontSendNotification);
-
-	drawButton.setEnabled(!audioProcessor.getUseLocalModel());
 
 	bool hasOriginal = false;
 	bool useOriginal = false;
@@ -354,7 +367,7 @@ void TrackComponent::resized()
 	layoutPagesButtons(pagesArea);
 
 	{
-		const int selectorsWidth = 82;
+		const int selectorsWidth = 120;
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 		selectorsArea.removeFromTop(2);
 		const int selectorHeight = 16;
@@ -374,11 +387,8 @@ void TrackComponent::resized()
 	{
 		const int createButtonWidth = 34;
 		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
-		headerArea.removeFromRight(6);
-
-		drawButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
-	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
+	headerArea.removeFromRight(ObsidianSizes::SPACER_MD);
 
 	{
 		const int labelledButtonWidth = 36;
@@ -1108,33 +1118,11 @@ void TrackComponent::setupIconButtons()
 		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonPrimary);
 	};
 
-	addAndMakeVisible(drawButton);
-	drawButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
-	drawButton.setShowBackground(false);
-	setupActionButton(drawButton);
-	drawButton.setTooltip("Draw a visual prompt to guide AI generation (server mode only)");
-	drawButton.onClick = [this]() { openDrawingCanvas(); };
-
 	addAndMakeVisible(generateButton);
 	generateButton.loadIcon(BinaryData::zap_svg, BinaryData::zap_svgSize);
 	generateButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonPrimary);
 	generateButton.setColour(juce::TextButton::textColourOffId, ColourPalette::backgroundDeep);
 	generateButton.setTooltip("Generate AI audio with current prompt for this track");
-	generateButton.onClick = [this]()
-	{
-		if (onGenerateForTrack)
-		{
-			if (track)
-			{
-				auto &currentPage = track->getCurrentPage();
-				currentPage.selectedPrompt = promptPresetSelector.getText();
-				currentPage.generationBpm = audioProcessor.getGlobalBpm();
-				currentPage.generationKey = audioProcessor.getGlobalKey();
-				currentPage.generationDuration = audioProcessor.getGlobalDuration();
-			}
-			onGenerateForTrack(trackId);
-		}
-	};
 
 	addAndMakeVisible(previewButton);
 	previewButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
@@ -1172,7 +1160,6 @@ void TrackComponent::setupIconButtons()
 	randomRetriggerButton.setShowBackground(false);
 	setupToggleButton(randomRetriggerButton);
 	randomRetriggerButton.setTooltip("Beat repeat - re-trigger current section at interval while ON");
-	randomRetriggerButton.onClick = [this]() { onRandomRetriggerToggled(); };
 
 	addAndMakeVisible(randomDurationToggle);
 	randomDurationToggle.loadIcon(BinaryData::shuffle_svg, BinaryData::shuffle_svgSize);
@@ -1316,11 +1303,6 @@ void TrackComponent::statusCallback(const juce::String &message)
 	if (onStatusMessage)
 	{
 		onStatusMessage(message);
-	}
-	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-	{
-		editor->statusLabel.setText(message, juce::dontSendNotification);
-		editor->uiStatusManager->updateLCD();
 	}
 }
 
@@ -1665,7 +1647,6 @@ void TrackComponent::updateModelUI()
 	setupToggleColours(originalSyncButton);
 	setupToggleColours(randomRetriggerButton);
 	setupToggleColours(randomDurationToggle);
-	setupToggleColours(drawButton);
 
 	if (sequencer)
 		sequencer->setAccentColour(modelColour);

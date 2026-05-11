@@ -203,6 +203,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/fx/MasterWaveformDisplay.cpp
     src/components/fx/RightPanelWrapper.cpp
     src/components/fx/SendsPanel.cpp
+    src/components/fx/StandaloneTransportComponent.cpp
     src/components/fx/TrackEffectsPanel.cpp
     src/components/fx/TrackRecapPanel.cpp
     src/components/mixer/CrossfaderComponent.cpp
@@ -248,7 +249,6 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/standalone/core/StandaloneTransport.cpp
     src/standalone/ObsidianStandaloneApp.cpp
-    src/standalone/transport/ui/StandaloneTransportComponent.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
 )

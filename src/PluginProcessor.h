@@ -755,7 +755,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> waitingForMidiToLoad{false};
 	std::atomic<bool> correctMidiNoteReceived{false};
 	std::atomic<bool> stateLoaded{false};
-	std::atomic<bool> bypassLLM{false};
+	std::atomic<bool> bypassLLM{true};
 	std::atomic<bool> isLoadingFromBank{false};
 	std::atomic<float> pendingDetectedBpm{-1.0f};
 
