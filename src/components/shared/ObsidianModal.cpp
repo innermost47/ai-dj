@@ -111,9 +111,9 @@ void ObsidianModalWindow::paint(juce::Graphics &g)
 	g.drawText(title, titleBounds, juce::Justification::centredLeft, true);
 
 	float lineY = bounds.getY() + titleHeight;
-	juce::ColourGradient lineGradient(ColourPalette::trackSelected.withAlpha(0.0f), bounds.getX(), lineY,
-	                                  ColourPalette::trackSelected.withAlpha(0.0f), bounds.getRight(), lineY, false);
-	lineGradient.addColour(0.5, ColourPalette::trackSelected.withAlpha(0.6f));
+	juce::ColourGradient lineGradient(ColourPalette::lightGrey.withAlpha(0.0f), bounds.getX(), lineY,
+	                                  ColourPalette::lightGrey.withAlpha(0.0f), bounds.getRight(), lineY, false);
+	lineGradient.addColour(0.5, ColourPalette::lightGrey.withAlpha(0.6f));
 	g.setGradientFill(lineGradient);
 	g.fillRect(bounds.getX(), lineY, bounds.getWidth(), 1.0f);
 

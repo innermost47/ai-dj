@@ -27,11 +27,11 @@ CustomLookAndFeel::CustomLookAndFeel()
 	setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
 	setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
 	setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
-	setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::trackSelected);
-	setColour(juce::TextEditor::highlightColourId, ColourPalette::trackSelected.withAlpha(0.3f));
+	setColour(juce::TextEditor::focusedOutlineColourId, ColourPalette::lightGrey);
+	setColour(juce::TextEditor::highlightColourId, ColourPalette::lightGrey.withAlpha(0.3f));
 	setColour(juce::TextEditor::highlightedTextColourId, ColourPalette::textPrimary);
 	setColour(juce::TextEditor::shadowColourId, juce::Colours::transparentBlack);
-	setColour(juce::CaretComponent::caretColourId, ColourPalette::trackSelected);
+	setColour(juce::CaretComponent::caretColourId, ColourPalette::lightGrey);
 }
 
 juce::Colour CustomLookAndFeel::soften(const juce::Colour &colour)
@@ -69,7 +69,7 @@ void CustomLookAndFeel::drawTooltip(juce::Graphics &g, const juce::String &text,
 	juce::Rectangle<float> bounds(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-	g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
+	g.setColour(ColourPalette::lightGrey.withAlpha(0.5f));
 	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1.0f);
 	layoutTooltipText(text, ColourPalette::textPrimary).draw(g, bounds.reduced(8.0f, 4.0f));
 }
@@ -96,7 +96,7 @@ void CustomLookAndFeel::drawButtonBackground(juce::Graphics &g, juce::Button &bu
 	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 
 	g.setColour(baseColour.brighter(0.2f).withAlpha(0.4f));
-	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 0.8f);
+	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, ObsidianShades::LIGHT_BORDER);
 }
 
 void CustomLookAndFeel::drawButtonText(juce::Graphics &g, juce::TextButton &button,
@@ -145,7 +145,7 @@ void CustomLookAndFeel::drawToggleButton(juce::Graphics &g, juce::ToggleButton &
 	}
 
 	g.setColour(bgColour.brighter(0.2f).withAlpha(0.4f));
-	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 0.8f);
+	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
 
 	auto textColour = button.findColour(button.getToggleState() ? juce::TextButton::textColourOnId
 	                                                            : juce::TextButton::textColourOffId);
@@ -223,26 +223,22 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
 	g.setColour(ColourPalette::backgroundMid);
 	g.fillRoundedRectangle(bounds, corner);
 
-	auto borderColour = ColourPalette::trackSelected.withAlpha(0.4f);
-	float borderThickness = 0.8f;
+	auto borderColour = ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_04);
+	float borderThickness = ObsidianSizes::BORDER_WIDTH_SM;
 
 	if (box.hasKeyboardFocus(false))
 	{
-		borderColour = ColourPalette::trackSelected.withAlpha(0.7f);
-		borderThickness = 1.4f;
+		borderColour = ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_08);
+		borderThickness = ObsidianSizes::BORDER_WIDTH_XL;
 	}
 	else if (box.isMouseOver())
 	{
-		borderColour = ColourPalette::trackSelected.withAlpha(0.5f);
-		borderThickness = 1.0f;
+		borderColour = ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_06);
+		borderThickness = ObsidianSizes::BORDER_WIDTH;
 	}
 
 	g.setColour(borderColour);
 	g.drawRoundedRectangle(bounds, corner, borderThickness);
-
-	auto separatorX = (float)buttonX;
-	g.setColour(ColourPalette::backgroundLight.withAlpha(0.4f));
-	g.drawLine(separatorX, bounds.getY() + 6.0f, separatorX, bounds.getBottom() - 6.0f, 0.8f);
 
 	auto arrowZone = juce::Rectangle<float>((float)buttonX, (float)buttonY, (float)buttonW, (float)buttonH);
 
@@ -256,8 +252,9 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
 	chevron.lineTo(cx, cy + chevronHeight * 0.5f);
 	chevron.lineTo(cx + chevronWidth, cy - chevronHeight * 0.5f);
 
-	auto chevronColour =
-	    box.isMouseOver() || box.hasKeyboardFocus(false) ? ColourPalette::trackSelected : ColourPalette::textSecondary;
+	auto chevronColour = box.isMouseOver() || box.hasKeyboardFocus(false)
+	                         ? ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_08)
+	                         : ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_06);
 
 	g.setColour(chevronColour);
 	g.strokePath(chevron, juce::PathStrokeType(1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
@@ -301,7 +298,7 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 		auto bounds = label.getLocalBounds().toFloat();
 		g.setColour(ColourPalette::backgroundDark);
 		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-		g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
+		g.setColour(ColourPalette::lightGrey.withAlpha(0.4f));
 		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
 
 		if (!label.isBeingEdited())
@@ -598,7 +595,7 @@ void CustomLookAndFeel::drawPopupMenuBackground(juce::Graphics &g, int width, in
 {
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRect(0, 0, width, height);
-	g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
+	g.setColour(ColourPalette::lightGrey.withAlpha(0.5f));
 	g.drawRect(0, 0, width, height, 1);
 }
 
@@ -617,7 +614,7 @@ void CustomLookAndFeel::drawPopupMenuItem(juce::Graphics &g, const juce::Rectang
 
 	if (isHighlighted && isActive)
 	{
-		g.setColour(ColourPalette::trackSelected.withAlpha(0.15f));
+		g.setColour(ColourPalette::lightGrey.withAlpha(0.15f));
 		g.fillRect(area);
 	}
 
@@ -631,7 +628,7 @@ void CustomLookAndFeel::drawPopupMenuItem(juce::Graphics &g, const juce::Rectang
 	if (isTicked)
 	{
 		auto tickArea = r.removeFromLeft(15).toFloat();
-		g.setColour(ColourPalette::trackSelected);
+		g.setColour(ColourPalette::lightGrey);
 		g.fillEllipse(tickArea.withSizeKeepingCentre(6, 6));
 	}
 
@@ -668,20 +665,20 @@ void CustomLookAndFeel::drawTextEditorOutline(juce::Graphics &g, int width, int 
 
 	if (textEditor.hasKeyboardFocus(true))
 	{
-		g.setColour(ColourPalette::trackSelected.withAlpha(0.15f));
+		g.setColour(ColourPalette::lightGrey.withAlpha(0.15f));
 		g.drawRoundedRectangle(bounds.expanded(1.5f), corner + 1.5f, 1.5f);
 
-		g.setColour(ColourPalette::trackSelected);
+		g.setColour(ColourPalette::lightGrey);
 		g.drawRoundedRectangle(bounds, corner, 1.5f);
 	}
 	else if (textEditor.isMouseOver(true))
 	{
-		g.setColour(ColourPalette::trackSelected.withAlpha(0.5f));
+		g.setColour(ColourPalette::lightGrey.withAlpha(0.5f));
 		g.drawRoundedRectangle(bounds, corner, 1.0f);
 	}
 	else
 	{
-		g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
+		g.setColour(ColourPalette::lightGrey.withAlpha(0.4f));
 		g.drawRoundedRectangle(bounds, corner, 0.8f);
 	}
 }
@@ -689,6 +686,6 @@ void CustomLookAndFeel::drawTextEditorOutline(juce::Graphics &g, int width, int 
 juce::CaretComponent *CustomLookAndFeel::createCaretComponent(juce::Component *keyFocusOwner)
 {
 	auto *caret = new juce::CaretComponent(keyFocusOwner);
-	caret->setColour(juce::CaretComponent::caretColourId, ColourPalette::trackSelected);
+	caret->setColour(juce::CaretComponent::caretColourId, ColourPalette::lightGrey);
 	return caret;
 }

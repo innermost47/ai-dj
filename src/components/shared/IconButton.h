@@ -74,7 +74,7 @@ struct IconButtonBase
 	juce::Colour customIconColourToggled;
 	bool hasCustomIconColour = false;
 	bool hasCustomIconColourToggled = false;
-	juce::Colour borderColour = ColourPalette::trackSelected.withAlpha(0.4f);
+	juce::Colour borderColour = ColourPalette::lightGrey.withAlpha(0.4f);
 
 	static std::unique_ptr<juce::Drawable> loadSVG(const char *data, size_t size);
 

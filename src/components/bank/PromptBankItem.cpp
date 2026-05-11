@@ -13,7 +13,7 @@ PromptBankItem::PromptBankItem(PromptBankEntry *entryIn) : entry(entryIn)
 
 	addAndMakeVisible(editButton);
 	editButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
-	editButton.setColour(juce::TextButton::buttonColourId, ColourPalette::amber);
+	editButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
 	editButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	editButton.setCompactMode(true);
 	editButton.setTooltip("Edit prompt");
@@ -75,7 +75,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 	}
 	else if (selected)
 	{
-		g.setColour(ColourPalette::trackSelected);
+		g.setColour(ColourPalette::lightGrey);
 		g.fillRect(0.0f, 0.0f, 4.0f, (float)bounds.getHeight());
 	}
 

@@ -17,7 +17,7 @@ inline constexpr int SPACER_MD = 6;
 inline constexpr int PADDING = 6;
 inline constexpr int MIN_SMALL_BTN_WIDTH = 24;
 inline constexpr int MIN_SMALL_BTN_HEIGHT = 24;
-inline constexpr int CORNER = 4;
+inline constexpr int CORNER = 3;
 static constexpr int SAMPLE_DETAIL_HEIGHT = 86;
 static constexpr int SAMPLE_ROW_HEIGHT = 50;
 static constexpr int MIXER_CHANNEL_KNOB = 36;
@@ -30,6 +30,8 @@ static constexpr int PAGE_BUTTON_SIZE = 16;
 static constexpr float LIST_PANEL_CORNER_SIZE = 4.0f;
 inline constexpr float HALF_CORNER = 3.0f;
 inline constexpr float BORDER_WIDTH = 1.0f;
+inline constexpr float BORDER_WIDTH_XL = 1.2f;
+inline constexpr float BORDER_WIDTH_SM = 0.6f;
 } // namespace ObsidianSizes
 
 #endif

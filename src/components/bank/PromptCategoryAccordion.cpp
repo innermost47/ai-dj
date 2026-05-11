@@ -6,7 +6,7 @@ PromptCategoryAccordion::PromptCategoryAccordion(const juce::String &name, juce:
 	setSize(100, HEADER_HEIGHT);
 
 	editButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
-	editButton.setColour(juce::TextButton::buttonColourId, ColourPalette::amber);
+	editButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
 	editButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	editButton.setCompactMode(true);
 	editButton.setTooltip("Edit category");

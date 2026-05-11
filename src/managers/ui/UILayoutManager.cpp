@@ -64,15 +64,14 @@ void LeftContainer::resized()
 
 	Grid grid;
 
-	grid.templateRows = {Track(Fr(1)), Track(Fr(32))};
+	grid.templateRows = {Track(Fr(1))};
 	grid.templateColumns = {Track(Fr(1))};
 	grid.columnGap = GridPx(ObsidianSizes::GAP);
 	grid.rowGap = GridPx(ObsidianSizes::GAP);
 
-	GridItem configRow(configContainer.get());
 	GridItem bankPanel(leftPanelWrapper);
 
-	grid.items = {configRow, bankPanel};
+	grid.items = {bankPanel};
 	grid.performLayout(getBounds());
 }
 
@@ -152,6 +151,7 @@ UILayoutManager::UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	mainContainer = std::make_unique<MainContainer>(*tracksContainer, mixerPanel);
 
 	editor.addAndMakeVisible(*leftContainer);
+	editor.addAndMakeVisible(*leftPanelWrapper);
 	editor.addAndMakeVisible(*tracksContainer);
 	editor.addAndMakeVisible(*rightPanelWrapper);
 	editor.addAndMakeVisible(mixerPanel);
@@ -171,7 +171,7 @@ void UILayoutManager::resized()
 	grid.templateColumns = {Track(Fr(1)), Track(Fr(4)), Track(Fr(1))};
 	grid.columnGap = GridPx(ObsidianSizes::GAP);
 
-	GridItem leftPanel(leftContainer.get());
+	GridItem leftPanel(leftPanelWrapper.get());
 	GridItem main(mainContainer.get());
 	GridItem rightPanel(rightPanelWrapper.get());
 

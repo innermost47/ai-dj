@@ -40,7 +40,7 @@ void SampleBankItem::paint(juce::Graphics &g)
 	}
 	else if (selected)
 	{
-		g.setColour(ColourPalette::trackSelected);
+		g.setColour(ColourPalette::lightGrey);
 		g.fillRect(0.0f, 0.0f, 4.0f, (float)bounds.getHeight());
 	}
 
@@ -749,7 +749,7 @@ void SampleBankPanel::setupUI()
 
 	addAndMakeVisible(editCategoryButton);
 	editCategoryButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
-	editCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::amber);
+	editCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
 	editCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	editCategoryButton.onClick = [this]() { editCategory(); };
 	editCategoryButton.setEnabled(false);

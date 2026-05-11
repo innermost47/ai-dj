@@ -89,7 +89,7 @@ void SequencerComponent::setupUI()
 	addAndMakeVisible(currentPlayingMeasureLabel);
 	currentPlayingMeasureLabel.setText("M 1", juce::dontSendNotification);
 	currentPlayingMeasureLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	currentPlayingMeasureLabel.setColour(juce::Label::backgroundColourId, ColourPalette::trackSelected.withAlpha(0.1f));
+	currentPlayingMeasureLabel.setColour(juce::Label::backgroundColourId, ColourPalette::lightGrey.withAlpha(0.1f));
 	currentPlayingMeasureLabel.setJustificationType(juce::Justification::centred);
 	currentPlayingMeasureLabel.setFont(juce::FontOptions(11.0f, juce::Font::bold));
 

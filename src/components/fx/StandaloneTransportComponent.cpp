@@ -14,7 +14,7 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 	g.setGradientFill(lcdGradient);
 	g.fillRoundedRectangle(bounds, corner);
 
-	auto borderColour = ColourPalette::trackSelected.withAlpha(0.6f);
+	auto borderColour = ColourPalette::lightGrey.withAlpha(0.6f);
 	g.setColour(borderColour);
 	g.drawRoundedRectangle(bounds.reduced(0.5f), corner, 0.8f);
 

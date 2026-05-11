@@ -66,7 +66,7 @@ void MidiMappingRow::paint(juce::Graphics &g)
 	auto accentBar =
 	    juce::Rectangle<float>(rowBounds.getX() + 4.0f, rowBounds.getY() + 8.0f, 3.0f, rowBounds.getHeight() - 16.0f);
 
-	auto accentColour = isLearning ? ColourPalette::playArmed : ColourPalette::trackSelected;
+	auto accentColour = isLearning ? ColourPalette::playArmed : ColourPalette::lightGrey;
 	g.setColour(accentColour.withAlpha(0.9f));
 	g.fillRoundedRectangle(accentBar, 1.5f);
 

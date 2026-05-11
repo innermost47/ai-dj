@@ -165,7 +165,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 			}
 			else if (isSelected)
 			{
-				borderColour = ColourPalette::trackSelected;
+				borderColour = ColourPalette::lightGrey;
 				borderWidth = 2.0f;
 			}
 			else

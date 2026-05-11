@@ -1,9 +1,9 @@
 #include "ColourPalette.h"
 
-constexpr auto OBSIDIAN = 0xff1A1A1C;
-constexpr auto CHARCOAL_DARK = 0xff222225;
-constexpr auto CHARCOAL = 0xff2B2B2F;
-constexpr auto CHARCOAL_LIGHT = 0xff3A3A3F;
+constexpr auto OBSIDIAN = 0xff0D0D0E;
+constexpr auto CHARCOAL_DARK = 0xff141416;
+constexpr auto CHARCOAL = 0xff1C1C1E;
+constexpr auto CHARCOAL_LIGHT = 0xff28282B;
 
 constexpr auto WARM_WHITE = 0xffE8E6E1;
 constexpr auto MEDIUM_GREY = 0xff9A9A9E;
@@ -83,7 +83,7 @@ const juce::Colour ColourPalette::soloActive(AMBER_WARM);
 const juce::Colour ColourPalette::stopActive(TERRACOTTA);
 const juce::Colour ColourPalette::soloText(WARM_WHITE);
 const juce::Colour ColourPalette::buttonInactive(DARK_GREY);
-const juce::Colour ColourPalette::trackSelected(STEEL_GREY);
+const juce::Colour ColourPalette::lightGrey(STEEL_GREY);
 
 const juce::Colour ColourPalette::sequencerAccent(TERRACOTTA);
 const juce::Colour ColourPalette::sequencerBeat(SEQUENCER_BEAT);

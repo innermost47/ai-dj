@@ -117,7 +117,7 @@ void DrawingCanvas::paint(juce::Graphics &g)
 		g.drawImageAt(canvas, canvasAreaBounds.getX(), canvasAreaBounds.getY());
 	}
 
-	g.setColour(ColourPalette::trackSelected.withAlpha(0.4f));
+	g.setColour(ColourPalette::lightGrey.withAlpha(0.4f));
 	g.drawRect(canvasAreaBounds.toFloat(), 1.0f);
 
 	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.3f));
@@ -137,7 +137,7 @@ void DrawingCanvas::paint(juce::Graphics &g)
 		g.drawRoundedRectangle(kwFrame, corner, 0.8f);
 
 		auto accentBar = juce::Rectangle<float>(kwFrame.getX() + 8.0f, kwFrame.getY() + 14.0f, 3.0f, 18.0f);
-		g.setColour(ColourPalette::trackSelected);
+		g.setColour(ColourPalette::lightGrey);
 		g.fillRoundedRectangle(accentBar, 1.5f);
 	}
 

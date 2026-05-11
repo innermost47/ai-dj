@@ -15,7 +15,7 @@ LeftPanelWrapper::LeftPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &e
 		btn.setClickingTogglesState(true);
 		btn.setRadioGroupId(0xCAFE);
 		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
-		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::trackSelected.withAlpha(0.3f));
+		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::lightGrey.withAlpha(0.3f));
 		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 		btn.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 		btn.onClick = [this, tab]() { setActiveTab(tab); };
@@ -32,7 +32,7 @@ LeftPanelWrapper::~LeftPanelWrapper() = default;
 
 void LeftPanelWrapper::paint(juce::Graphics &g)
 {
-	paintBaseBackground(g);
+	paintBaseBackgroundWithRightBorder(g);
 }
 
 void LeftPanelWrapper::resized()

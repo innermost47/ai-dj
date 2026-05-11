@@ -51,7 +51,7 @@ class ColourPalette
 	static const juce::Colour stopActive;
 	static const juce::Colour buttonInactive;
 
-	static const juce::Colour trackSelected;
+	static const juce::Colour lightGrey;
 
 	static const juce::Colour sequencerAccent;
 	static const juce::Colour sequencerBeat;
