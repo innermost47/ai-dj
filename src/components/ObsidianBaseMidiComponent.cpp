@@ -110,7 +110,9 @@ void ObsidianBaseMidiComponent::pushSliderToParam(Binding &b)
 void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, juce::String paramId)
 {
 	auto range = audioProcessor.getParameterTreeState().getParameterRange(paramId);
+	auto value = audioProcessor.getParameterTreeState().getParameter(paramId)->getValue();
 	s.setRange(range.start, range.end, range.interval);
+	s.setValue(value);
 }
 
 void ObsidianBaseMidiComponent::pushButtonToParam(Binding &b)

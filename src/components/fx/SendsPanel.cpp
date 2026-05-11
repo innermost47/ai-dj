@@ -48,22 +48,29 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(
 
 	wireParameters();
 
-	auto setupKnob = [&](MidiLearnableSlider &s, juce::String paramId)
+	auto setupKnob = [&](MidiLearnableSlider &s)
 	{
 		s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 		s.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 		styleKnob(s, ColourPalette::teal);
-		syncSliderRange(s, paramId);
 		addAndMakeVisible(s);
 	};
 
-	setupKnob(reverbSizeKnob, "reverbSize");
-	setupKnob(reverbDampingKnob, "reverbDamping");
-	setupKnob(reverbWidthKnob, "reverbWidth");
-	setupKnob(reverbMixKnob, "reverbMix");
+	setupKnob(reverbSizeKnob);
+	setupKnob(reverbDampingKnob);
+	setupKnob(reverbWidthKnob);
+	setupKnob(reverbMixKnob);
 
+	syncParams();
+}
+
+void SendsPanel::syncParams()
+{
 	syncSliderRange(delayFeedbackKnob, "delayFeedback");
-
+	syncSliderRange(reverbSizeKnob, "reverbSize");
+	syncSliderRange(reverbDampingKnob, "reverbDamping");
+	syncSliderRange(reverbWidthKnob, "reverbWidth");
+	syncSliderRange(reverbMixKnob, "reverbMix");
 	refreshRadioButtonsForParam("delayDivision");
 	refreshRadioButtonsForParam("delayMode");
 }

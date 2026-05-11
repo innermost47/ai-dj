@@ -15,6 +15,7 @@ class SendsPanel : public ObsidianBaseMidiComponent
 	~SendsPanel() override = default;
 
 	void paint(juce::Graphics &g) override;
+	void syncParams();
 	void resized() override;
 
   protected:

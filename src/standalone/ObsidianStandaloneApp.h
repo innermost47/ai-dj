@@ -2,6 +2,7 @@
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
+#include "SendsPanel.h"
 #include "StandaloneTransportComponent.h"
 #include "StateManager.h"
 #include <JuceHeader.h>
@@ -853,6 +854,7 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 			    editor->uiTrackManager->refreshTrackComponents();
 			    editor->updateUIFromProcessor();
 			    editor->uiPresetManager->notifyTracksPromptUpdate();
+			    editor->uiLayoutManager->getRightPanelWrapper()->getSendsPanel()->syncParams();
 			    if (editor->mixerPanel &&
 			        editor->uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent())
 				    editor->uiLayoutManager->getRightPanelWrapper()

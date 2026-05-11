@@ -213,6 +213,11 @@ class ParameterManager
 	std::atomic<float> *prevTrackParam = nullptr;
 
 	const juce::StringArray floatParamIds = {"bpm",
+	                                         "delayFeedback",
+	                                         "reverbSize",
+	                                         "reverbDamping",
+	                                         "reverbWidth",
+	                                         "reverbMix",
 	                                         "masterVolume",
 	                                         "masterPan",
 	                                         "masterHigh",
@@ -271,6 +276,8 @@ class ParameterManager
 	                                         "pairCrossfader2",
 	                                         "pairCrossfader3",
 	                                         "pairCrossfader4",
+	                                         "delayDivision",
+	                                         "delayMode",
 	                                         "crossfaderCurveMode"};
 
 	const juce::StringArray booleanParamIds = {"generate",      "play",

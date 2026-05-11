@@ -60,6 +60,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	bool keyStateChanged(bool isKeyDown) override;
 	void addModal(std::unique_ptr<ObsidianModalOverlay> overlay) override;
 	void removeModal(ObsidianModalOverlay *overlay) override;
+
 	MixerPanel *getMixerPanel()
 	{
 		return mixerPanel.get();
@@ -67,9 +68,6 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 
 	DjIaVstProcessor &audioProcessor;
 	std::unique_ptr<juce::TooltipWindow> tooltipWindow;
-	static constexpr int TRACK_CELL_H = 140;
-	static constexpr int TRACK_ROWS = 4;
-	static constexpr int TRACK_COLS = 2;
 
 	void visibilityChanged() override;
 	void openMidiMappingEditor();
