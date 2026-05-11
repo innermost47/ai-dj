@@ -376,7 +376,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 		standaloneTransport->advance(buffer.getNumSamples(), getSampleRate());
 
-	internalSampleCounter += buffer.getNumSamples();
+	sequencerManager.internalSampleCounter += buffer.getNumSamples();
 	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
 		buffer.clear(i, 0, buffer.getNumSamples());

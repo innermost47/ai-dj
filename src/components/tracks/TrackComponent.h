@@ -231,7 +231,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	IconButton originalSyncButton{"OriginalSyncBtn", "ORIG"};
 	IconButton previewButton{"PreviewBtn", "PREVIEW"};
 
-	IconButton randomRetriggerButton{"RandomRetriggerBtn", "REPEAT"};
+	IconButton beatRepeatButton{"RandomRetriggerBtn", "REPEAT"};
 	IconButton randomDurationToggle{"RandomDurationBtn", "RND"};
 
 	MidiLearnableSlider intervalKnob;
@@ -275,9 +275,8 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void onTrackPresetSelected();
 	void toggleOriginalSync();
 	void statusCallback(const juce::String &message);
-	void onRandomRetriggerToggled();
 	void onIntervalChanged();
-	void updateRandomRetriggerButtonColor();
+	void updateBeatRepeatButtonColor();
 	void updateRandomDurationButtonColor();
 	void openDrawingCanvas();
 	void updatePreviewButton();

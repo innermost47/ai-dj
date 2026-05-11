@@ -35,6 +35,7 @@ class SequencerManager
 
 	std::function<void(const juce::String &trackId, int pageIndex)> onPageChanged;
 	std::function<void(const juce::String &trackId)> onSequencerUpdateNeeded;
+	std::atomic<int64_t> internalSampleCounter{0};
 
   private:
 	DjIaVstProcessor &audioProcessor;
@@ -44,7 +45,6 @@ class SequencerManager
 	juce::CriticalSection sequencerMidiLock;
 
 	std::atomic<bool> bypassSequencer{false};
-	std::atomic<int64_t> internalSampleCounter{0};
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SequencerManager)
 };

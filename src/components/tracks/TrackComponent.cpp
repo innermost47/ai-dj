@@ -75,7 +75,15 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 		{
 			bool isEnabled = newValue > 0.5f;
 			track->randomRetriggerEnabled = isEnabled;
-			updateRandomRetriggerButtonColor();
+			if (isEnabled)
+			{
+				track->beatRepeatPending.store(true);
+			}
+			else
+			{
+				track->beatRepeatStopPending.store(true);
+			}
+			updateBeatRepeatButtonColor();
 			statusCallback("Beat Repeat " + juce::String(isEnabled ? "ON" : "OFF"));
 		}
 	}
@@ -83,9 +91,7 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 	{
 		if (track)
 		{
-			int interval = (int)intervalKnob.getValue();
-			track->randomRetriggerInterval = interval;
-			intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
+			onIntervalChanged();
 		}
 	}
 	else if (paramSuffix == "AdsrAttack" || paramSuffix == "AdsrDecay" || paramSuffix == "AdsrSustain" ||
@@ -209,7 +215,7 @@ void TrackComponent::updateFromTrackData()
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
 
-	updateRandomRetriggerButtonColor();
+	updateBeatRepeatButtonColor();
 	updateRandomDurationButtonColor();
 
 	updateButtonsEnabledState();
@@ -399,7 +405,7 @@ void TrackComponent::resized()
 	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 
 	const int iconBtnWidth = 34;
-	randomRetriggerButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
+	beatRepeatButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
 	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
 
 	randomDurationToggle.setBounds(headerArea.removeFromRight(iconBtnWidth));
@@ -1155,11 +1161,11 @@ void TrackComponent::setupIconButtons()
 	    "Play original file (bypass time-stretching). Disabled when no original version exists.");
 	originalSyncButton.onClick = [this]() { toggleOriginalSync(); };
 
-	addAndMakeVisible(randomRetriggerButton);
-	randomRetriggerButton.loadIcon(BinaryData::repeat_svg, BinaryData::repeat_svgSize);
-	randomRetriggerButton.setShowBackground(false);
-	setupToggleButton(randomRetriggerButton);
-	randomRetriggerButton.setTooltip("Beat repeat - re-trigger current section at interval while ON");
+	addAndMakeVisible(beatRepeatButton);
+	beatRepeatButton.loadIcon(BinaryData::repeat_svg, BinaryData::repeat_svgSize);
+	beatRepeatButton.setShowBackground(false);
+	setupToggleButton(beatRepeatButton);
+	beatRepeatButton.setTooltip("Beat repeat - re-trigger current section at interval while ON");
 
 	addAndMakeVisible(randomDurationToggle);
 	randomDurationToggle.loadIcon(BinaryData::shuffle_svg, BinaryData::shuffle_svgSize);
@@ -1189,7 +1195,7 @@ void TrackComponent::updateButtonsEnabledState()
 	}
 
 	previewButton.setEnabled(hasAudio);
-	randomRetriggerButton.setEnabled(hasAudio);
+	beatRepeatButton.setEnabled(hasAudio);
 
 	originalSyncButton.setEnabled(hasAudio && hasOriginal);
 
@@ -1199,11 +1205,11 @@ void TrackComponent::updateButtonsEnabledState()
 	intervalLabel.setEnabled(hasAudio);
 }
 
-void TrackComponent::updateRandomRetriggerButtonColor()
+void TrackComponent::updateBeatRepeatButtonColor()
 {
 	if (!track)
 		return;
-	randomRetriggerButton.setToggleState(track->randomRetriggerEnabled.load(), juce::dontSendNotification);
+	beatRepeatButton.setToggleState(track->randomRetriggerEnabled.load(), juce::dontSendNotification);
 }
 
 void TrackComponent::updateRandomDurationButtonColor()
@@ -1211,27 +1217,6 @@ void TrackComponent::updateRandomDurationButtonColor()
 	if (!track)
 		return;
 	randomDurationToggle.setToggleState(track->randomRetriggerDurationEnabled.load(), juce::dontSendNotification);
-}
-
-void TrackComponent::onRandomRetriggerToggled()
-{
-	if (!track)
-		return;
-
-	bool isEnabled = !track->randomRetriggerEnabled.load();
-	track->randomRetriggerEnabled = isEnabled;
-
-	if (isEnabled)
-	{
-		track->beatRepeatPending.store(true);
-	}
-	else
-	{
-		track->beatRepeatStopPending.store(true);
-	}
-
-	updateRandomRetriggerButtonColor();
-	statusCallback("Beat Repeat " + juce::String(isEnabled ? "ON" : "OFF"));
 }
 
 void TrackComponent::onIntervalChanged()
@@ -1645,7 +1630,7 @@ void TrackComponent::updateModelUI()
 
 	setupToggleColours(previewButton);
 	setupToggleColours(originalSyncButton);
-	setupToggleColours(randomRetriggerButton);
+	setupToggleColours(beatRepeatButton);
 	setupToggleColours(randomDurationToggle);
 
 	if (sequencer)
@@ -1720,7 +1705,7 @@ void TrackComponent::wireParameters()
 	registerSliderParam("AdsrRelease", adsrReleaseKnob);
 
 	registerSliderParam("RetriggerInterval", intervalKnob);
-	registerButtonParam("RandomRetrigger", randomRetriggerButton);
+	registerButtonParam("RandomRetrigger", beatRepeatButton);
 	registerButtonParam("Generate", generateButton, true);
 
 	registerMidiLearn("AdsrAttack", &adsrAttackKnob);
@@ -1728,7 +1713,7 @@ void TrackComponent::wireParameters()
 	registerMidiLearn("AdsrSustain", &adsrSustainKnob);
 	registerMidiLearn("AdsrRelease", &adsrReleaseKnob);
 	registerMidiLearn("RetriggerInterval", &intervalKnob);
-	registerMidiLearn("RandomRetrigger", &randomRetriggerButton);
+	registerMidiLearn("RandomRetrigger", &beatRepeatButton);
 	registerMidiLearn("Generate", &generateButton);
 
 	auto promptCallback = [this](float value)

@@ -88,16 +88,6 @@ void MidiLearnManager::timerCallback()
 					    editor->statusLabel.setText("MIDI Learn timeout - no controller received",
 					                                juce::dontSendNotification);
 					    editor->uiStatusManager->updateLCD();
-					    juce::Timer::callAfterDelay(2000,
-					                                [editor]()
-					                                {
-						                                if (editor)
-						                                {
-							                                editor->statusLabel.setText("Ready",
-							                                                            juce::dontSendNotification);
-							                                editor->uiStatusManager->updateLCD();
-						                                }
-					                                });
 				    }
 			    }
 		    });
@@ -523,16 +513,6 @@ bool MidiLearnManager::removeMappingForParameter(const juce::String &parameterNa
 		    {
 			    editor->statusLabel.setText(statusMessage, juce::dontSendNotification);
 			    editor->uiStatusManager->updateLCD();
-			    juce::Timer::callAfterDelay(2000,
-			                                [processor]()
-			                                {
-				                                if (auto *editor =
-				                                        dynamic_cast<DjIaVstEditor *>(processor->getActiveEditor()))
-				                                {
-					                                editor->statusLabel.setText("Ready", juce::dontSendNotification);
-					                                editor->uiStatusManager->updateLCD();
-				                                }
-			                                });
 		    }
 	    });
 

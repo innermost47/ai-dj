@@ -794,7 +794,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<int> currentNoteNumber{-1};
 	std::atomic<bool> isNotePlaying{false};
 	std::atomic<bool> canLoad{false};
-	std::atomic<int64_t> internalSampleCounter{0};
 	std::atomic<double> lastHostBpmForQuantization{120.0};
 	std::atomic<double> cachedHostBpm{126.0};
 
