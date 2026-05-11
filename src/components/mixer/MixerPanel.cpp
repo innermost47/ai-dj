@@ -39,6 +39,18 @@ void MixerPanel::updateTrackName(const juce::String &trackId, const juce::String
 	}
 }
 
+void MixerPanel::refreshChannel(const juce::String &trackId)
+{
+	for (auto &channel : mixerChannels)
+	{
+		if (channel->getTrackId() == trackId)
+		{
+			channel->updateFromTrackData();
+			break;
+		}
+	}
+}
+
 void MixerPanel::updateModelUI(const juce::String &trackId)
 {
 	for (auto &channel : mixerChannels)

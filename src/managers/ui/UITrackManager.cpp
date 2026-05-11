@@ -98,6 +98,14 @@ void UITrackManager::refreshTrackComponents()
 			}
 		};
 
+		trackComp->onSampleDropped = [this](const juce::String &id)
+		{
+			if (editor.mixerPanel)
+			{
+				editor.mixerPanel->refreshChannel(id);
+			}
+		};
+
 		trackComp->onGenerateForTrack = [this](const juce::String &id)
 		{ editor.uiGenerationManager->generateFromTrackComponent(id); };
 

@@ -1569,7 +1569,8 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		resetParam(s + "Pitch", 0.0f);
 		resetParam(s + "Fine", 0.0f);
 	}
-
+	if (onSampleDropped)
+		onSampleDropped(trackId);
 	if (onStatusMessage)
 		onStatusMessage("Sample loaded from bank!");
 }

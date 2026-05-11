@@ -518,7 +518,10 @@ void MixerChannel::applyPlayState(bool shouldArm)
 
 	auto &currentPage = track->getCurrentPage();
 	if (currentPage.numSamples <= 0)
+	{
+		playButton.setToggleState(false, juce::dontSendNotification);
 		return;
+	}
 
 	const bool isPlaying = track->isCurrentlyPlaying.load();
 	const bool emptySeq = allSequencerStepsAreFalse();

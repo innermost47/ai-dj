@@ -17,6 +17,7 @@ class MixerPanel : public ObsidianComponent
 	void calculateMasterLevel();
 	void refreshMixerChannels();
 	void refreshAllChannels();
+	void refreshChannel(const juce::String &trackId);
 	void updateModelUI(const juce::String &trackId);
 	void paint(juce::Graphics &g) override;
 	void resized() override;

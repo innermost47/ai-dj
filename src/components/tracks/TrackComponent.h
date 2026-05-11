@@ -43,6 +43,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	std::function<void(const juce::String &, const juce::String &, const juce::StringArray &)> onGenerateWithImage;
 	std::function<void(const juce::String &)> onStopPreview;
 	std::function<void(const juce::String &trackId)> onModelChanged;
+	std::function<void(const juce::String &trackId)> onSampleDropped;
 
 	bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
 	void itemDragEnter(const SourceDetails &dragSourceDetails) override;
