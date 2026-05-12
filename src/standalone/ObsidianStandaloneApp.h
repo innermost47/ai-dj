@@ -1164,3 +1164,20 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StandaloneFilterWindow)
 };
 } // namespace juce
+
+class ObsidianStandaloneApp : public juce::JUCEApplication
+{
+  public:
+	const juce::String getApplicationName() override;
+	const juce::String getApplicationVersion() override;
+	bool moreThanOneInstanceAllowed() override;
+	void initialise(const juce::String &) override;
+	void shutdown() override;
+	void systemRequestedQuit() override;
+
+	static juce::AudioDeviceManager *getSharedDeviceManager();
+
+  private:
+	static ObsidianStandaloneApp *instance;
+	std::unique_ptr<juce::StandaloneFilterWindow> mainWindow;
+};

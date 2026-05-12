@@ -853,7 +853,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	void calculateOutputTime(const double sample_rate, const int buffer_size);
 	ableton::Link::SessionState processSessionState(const EngineData &engine_data);
-
 	EngineData pull_engine_data();
 #endif
 

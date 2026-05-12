@@ -91,6 +91,18 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ---
 
+### Windows: low-latency audio
+
+For best performance and sync accuracy with Ableton Link, select 
+**"Windows Audio (Exclusive Mode)"** in the audio settings, then your 
+audio interface. The default shared mode adds 20-50ms of latency.
+
+If you have ASIO drivers from your audio interface vendor, those will 
+work even better — but require a separate build with the Steinberg 
+ASIO SDK (not redistributable).
+
+---   
+
 ## How it works — The Distributed GPU Network
 
 OBSIDIAN Neural runs on a **distributed GPU provider network**. When you generate a loop, the request is routed to an available community provider. If none is available, the system falls back to a cloud inference service.

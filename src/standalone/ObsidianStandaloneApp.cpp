@@ -2,45 +2,50 @@
 #include "ObsidianStandaloneApp.h"
 #include "StandaloneTransportComponent.h"
 #include "config/version.h"
-#include <JuceHeader.h>
 
-using juce::StandaloneFilterWindow;
+ObsidianStandaloneApp *ObsidianStandaloneApp::instance = nullptr;
 
-class ObsidianStandaloneApp : public juce::JUCEApplication
+const juce::String ObsidianStandaloneApp::getApplicationName()
 {
-  public:
-	const juce::String getApplicationName() override
-	{
-		return "OBSIDIAN Neural";
-	}
-	const juce::String getApplicationVersion() override
-	{
-		return Version::FULL;
-	}
-	bool moreThanOneInstanceAllowed() override
-	{
-		return false;
-	}
+	return "OBSIDIAN Neural";
+}
 
-	void initialise(const juce::String &) override
-	{
-		mainWindow =
-		    std::make_unique<StandaloneFilterWindow>(getApplicationName(), juce::Colours::black, nullptr, true);
-		mainWindow->setVisible(true);
-	}
+const juce::String ObsidianStandaloneApp::getApplicationVersion()
+{
+	return Version::FULL;
+}
 
-	void shutdown() override
-	{
-		mainWindow = nullptr;
-	}
-	void systemRequestedQuit() override
-	{
-		quit();
-	}
+bool ObsidianStandaloneApp::moreThanOneInstanceAllowed()
+{
+	return false;
+}
 
-  private:
-	std::unique_ptr<StandaloneFilterWindow> mainWindow;
-};
+void ObsidianStandaloneApp::initialise(const juce::String &)
+{
+	instance = this;
+	mainWindow =
+	    std::make_unique<juce::StandaloneFilterWindow>(getApplicationName(), juce::Colours::black, nullptr, true);
+	mainWindow->setVisible(true);
+}
+
+void ObsidianStandaloneApp::shutdown()
+{
+	mainWindow = nullptr;
+	instance = nullptr;
+}
+
+void ObsidianStandaloneApp::systemRequestedQuit()
+{
+	quit();
+}
+
+juce::AudioDeviceManager *ObsidianStandaloneApp::getSharedDeviceManager()
+{
+	if (instance && instance->mainWindow)
+		if (auto *holder = instance->mainWindow->getPluginHolder())
+			return &holder->deviceManager;
+	return nullptr;
+}
 
 START_JUCE_APPLICATION(ObsidianStandaloneApp)
 #endif

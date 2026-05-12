@@ -296,6 +296,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/managers/core
     src/managers/ui
     src/midi
+    src/standalone
     src/standalone/core
     src/standalone/transport/ui
     src/style
@@ -315,6 +316,8 @@ target_compile_definitions(ObsidianNeuralVST
         JUCE_SUPPORT_RETINA=1           
         JUCE_USE_DIRECTWRITE=1
         JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
+        JUCE_WASAPI=1
+        JUCE_WASAPI_EXCLUSIVE=1
         
     PUBLIC
         JUCE_WEB_BROWSER=0
