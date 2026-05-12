@@ -428,7 +428,8 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	int curveMode = parameterManager.getCrossfaderCurveMode();
 
 	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, hostBpm, pairPrev,
-	                             pairCurrent, globalPrev, globalCurrent, curveMode);
+	                             pairCurrent, globalPrev, globalCurrent, curveMode, timeSignatureNumerator.load(),
+	                             timeSignatureDenominator.load());
 
 	delaySendBuffer.setSize(2, buffer.getNumSamples(), false, false, true);
 	delaySendBuffer.clear();

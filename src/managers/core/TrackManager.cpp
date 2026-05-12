@@ -1,4 +1,5 @@
 ﻿#include "TrackManager.h"
+#include "TrackData.h"
 
 juce::String TrackManager::createTrack(const juce::String &name)
 {
@@ -55,7 +56,8 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    std::vector<juce::AudioBuffer<float>> &individualOutputs,
                                    juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
-                                   const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode)
+                                   const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
+                                   int timeSignatureNumerator, int timeSignatureDenominator)
 {
 	const int numSamples = outputBuffer.getNumSamples();
 	bool anyTrackSolo = false;
@@ -89,7 +91,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			tempMixBuffer.clear();
 			tempIndividualBuffer.clear();
 			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, previewOutput, numSamples, bufferIndex,
-			                  hostBpm);
+			                  hostBpm, timeSignatureNumerator, timeSignatureDenominator);
 
 			track->consoleChannel.process(tempIndividualBuffer, 0, numSamples);
 
@@ -316,8 +318,10 @@ int TrackManager::findFreeSlot()
 void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
                                      juce::AudioBuffer<float> &individualOutput,
                                      juce::AudioBuffer<float> & /* previewOutput */, int numSamples,
-                                     int /* trackIndex */, double hostBpm) const
+                                     int /* trackIndex */, double hostBpm, int timeSignatureNumerator,
+                                     int timeSignatureDenominator) const
 {
+
 	auto *safeCallback = parameterUpdateCallback.load();
 	if (safeCallback != nullptr && *safeCallback)
 	{
@@ -431,12 +435,23 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	const int bufferSize = bufferToUse->getNumSamples();
 
-	const double fadeStartPosition = endSample - 64.0;
-	const float fadeRcpLength = 1.0f / 64.0f;
-
 	const bool beatRepeatActive = track.beatRepeatActive.load();
 	const double beatRepeatStart = beatRepeatActive ? track.beatRepeatStartPosition.load() : 0.0;
 	const double beatRepeatEnd = beatRepeatActive ? track.beatRepeatEndPosition.load() : 0.0;
+
+	SequencerData seqData = currentPage.getCurrentSequence();
+
+	const int numMeasures = seqData.numMeasures;
+
+	const double beatsPerMeasure = (double)timeSignatureNumerator * (4.0 / timeSignatureDenominator);
+
+	double samplesPerBeat = (60.0 / hostBpm) * sampleRateToUse;
+
+	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
+	const double totalSamplesBeforeFadeOut = juce::jmin((samplesPerMeasure * numMeasures) + startSample, endSample);
+
+	const double fadeLength = 64.0;
+	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
 
 	for (int i = 0; i < numSamples; ++i)
 	{
@@ -519,14 +534,20 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			adsrGain = juce::jlimit(0.0f, 1.0f, adsrGain);
 		}
 
-		float fadeGain = 1.0f;
-		if (absolutePosition > fadeStartPosition)
+		float safetyFade = 1.0f;
+
+		if (absolutePosition < startSample + numSamples)
 		{
-			fadeGain = static_cast<float>(endSample - absolutePosition) * fadeRcpLength;
-			fadeGain = juce::jlimit(0.0f, 1.0f, fadeGain);
+			safetyFade = static_cast<float>(absolutePosition) * fadeRcp;
+		}
+		else if (absolutePosition > (totalSamplesBeforeFadeOut - numSamples))
+		{
+			safetyFade = static_cast<float>(totalSamplesBeforeFadeOut - absolutePosition) * fadeRcp;
 		}
 
-		float totalGain = adsrGain * fadeGain;
+		safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
+
+		float totalGain = adsrGain * safetyFade;
 
 		float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
 		float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
