@@ -1606,7 +1606,8 @@ void TrackComponent::updateModelUI()
 
 	cachedModelColour = modelColour;
 
-	auto textColour = juce::Colours::black;
+	bool darkText = modelColour.getBrightness() > 0.6f;
+	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
 
 	intervalKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	intervalKnob.setColour(juce::Slider::thumbColourId, modelColour);

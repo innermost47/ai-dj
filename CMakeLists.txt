@@ -146,6 +146,7 @@ juce_add_plugin(ObsidianNeuralVST
     BUNDLE_ID "com.innermost47.obsidian-neural-vst" 
     FORMATS VST3 AU Standalone
     PRODUCT_NAME "OBSIDIAN-Neural"
+    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/src/assets/logo.png" 
     IS_SYNTH TRUE
     WANTS_MIDI_INPUT TRUE
     PRODUCES_MIDI_OUTPUT TRUE
@@ -370,7 +371,9 @@ elseif(UNIX AND NOT APPLE)
     target_link_libraries(ObsidianNeuralVST PRIVATE 
         pthread 
         dl 
-        asound  
+        asound
+        rt
+        atomic 
     )
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
