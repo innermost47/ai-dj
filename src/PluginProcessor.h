@@ -15,6 +15,8 @@
 #include "TrackManager.h"
 #if JucePlugin_Build_Standalone
 #include "StandaloneTransport.h"
+#include <ableton/Link.hpp>
+#include <ableton/link/HostTimeFilter.hpp>
 #endif
 #include <JuceHeader.h>
 #include <atomic>
@@ -51,6 +53,32 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::ThreadPool threadPool{1};
 
 	std::atomic<bool> isShuttingDown{false};
+
+#if JucePlugin_Build_Standalone
+	bool getIsLinkActive() const
+	{
+		if (link)
+		{
+			return link->isEnabled();
+		}
+		return false;
+	}
+	void setLinkActive(bool active)
+	{
+		if (link)
+		{
+			link->enable(active);
+			link->enableStartStopSync(active);
+		}
+	}
+	void requestLinkStart();
+
+	void requestLinkStop();
+
+	void setLinkTempo(double bpm);
+
+	void setLinkQuantum(double q);
+#endif
 
 	PromptBank *getPromptBank()
 	{
@@ -798,6 +826,36 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> canLoad{false};
 	std::atomic<double> lastHostBpmForQuantization{120.0};
 	std::atomic<double> cachedHostBpm{126.0};
+	std::uint64_t sample_time = 0;
+
+#if JucePlugin_Build_Standalone
+	struct EngineData
+	{
+		double requested_bpm;
+		bool request_start;
+		bool request_stop;
+		double quantum = 4.0;
+		bool startstop_sync;
+		JUCE_LEAK_DETECTOR(EngineData)
+	};
+
+	EngineData shared_engine_data, lock_free_engine_data;
+	std::mutex engine_data_guard;
+	std::unique_ptr<ableton::Link> link;
+	ableton::link::HostTimeFilter<ableton::link::platform::Clock> host_time_filter;
+	std::unique_ptr<ableton::Link::SessionState> session;
+	std::chrono::microseconds output_time;
+
+	std::atomic<double> currentBpm{120.0};
+	std::atomic<bool> isLinkActive{false};
+	std::atomic<bool> isEnableStartStopSync{true};
+	std::atomic<bool> isLinkPlaying{false};
+
+	void calculateOutputTime(const double sample_rate, const int buffer_size);
+	ableton::Link::SessionState processSessionState(const EngineData &engine_data);
+
+	EngineData pull_engine_data();
+#endif
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DjIaVstProcessor)
 };

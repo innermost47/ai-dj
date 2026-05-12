@@ -4,6 +4,10 @@
 #include "ObsidianAlertManager.h"
 #include "PluginEditor.h"
 #include "SequencerComponent.h"
+#if JucePlugin_Build_Standalone
+#include <ableton/Link.hpp>
+#include <ableton/link/HostTimeFilter.hpp>
+#endif
 
 DjIaVstProcessor::DjIaVstProcessor()
     : AudioProcessor(createBusLayout()), apiClient("", "http://localhost:8000"), parameterManager(*this),
@@ -46,6 +50,13 @@ DjIaVstProcessor::DjIaVstProcessor()
 
 	startTimerHz(30);
 	autoLoadEnabled.store(true);
+#if JucePlugin_Build_Standalone
+	link.reset(new ableton::Link{120});
+	link->setTempoCallback([this](const double p) { currentBpm.store(p); });
+	link->enable(false);
+	link->enableStartStopSync(false);
+#endif
+
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
 		standaloneTransport = std::make_unique<StandaloneTransport>();
@@ -76,7 +87,10 @@ DjIaVstProcessor::~DjIaVstProcessor()
 void DjIaVstProcessor::cleanProcessor()
 {
 	isShuttingDown.store(true);
-
+#if JucePlugin_Build_Standalone
+	if (link->isEnabled())
+		link->enable(false);
+#endif
 	threadPool.removeAllJobs(true, 5000);
 
 	parameterManager.removeAllListeners(this);
@@ -118,6 +132,15 @@ void DjIaVstProcessor::releaseResources()
 {
 	audioManager.releaseResources();
 }
+
+#if JucePlugin_Build_Standalone
+void DjIaVstProcessor::calculateOutputTime(const double sample_rate, const int buffer_size)
+{
+	const auto host_time = host_time_filter.sampleTimeToHostTime(static_cast<double>(sample_time));
+	const auto output_latency = std::chrono::microseconds{std::llround(1.0e6 * buffer_size / sample_rate)};
+	output_time = output_latency + host_time;
+}
+#endif
 
 juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 {
@@ -376,10 +399,114 @@ bool DjIaVstProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
 	return true;
 }
 
+#if JucePlugin_Build_Standalone
+ableton::Link::SessionState DjIaVstProcessor::processSessionState(const EngineData &engine_data)
+{
+	auto sessionState = link->captureAudioSessionState();
+
+	if (engine_data.request_start)
+	{
+		sessionState.setIsPlaying(true, output_time);
+	}
+	if (engine_data.request_stop)
+	{
+		sessionState.setIsPlaying(false, output_time);
+	}
+
+	if (!isLinkPlaying.load() && sessionState.isPlaying())
+	{
+		sessionState.requestBeatAtTime(0., output_time, engine_data.quantum);
+		isLinkPlaying.store(true);
+	}
+	else if (isLinkPlaying.load() && !sessionState.isPlaying())
+	{
+		isLinkPlaying.store(false);
+	}
+
+	if (engine_data.requested_bpm > 0)
+	{
+		sessionState.setTempo(engine_data.requested_bpm, output_time);
+	}
+
+	link->commitAudioSessionState(sessionState);
+	return sessionState;
+}
+
+DjIaVstProcessor::EngineData DjIaVstProcessor::pull_engine_data()
+{
+	auto engine_data = EngineData{};
+	if (engine_data_guard.try_lock())
+	{
+		engine_data.requested_bpm = shared_engine_data.requested_bpm;
+		shared_engine_data.requested_bpm = 0;
+
+		engine_data.request_start = shared_engine_data.request_start;
+		shared_engine_data.request_start = false;
+
+		engine_data.request_stop = shared_engine_data.request_stop;
+		shared_engine_data.request_stop = false;
+
+		lock_free_engine_data.quantum = shared_engine_data.quantum;
+		lock_free_engine_data.startstop_sync = shared_engine_data.startstop_sync;
+
+		engine_data_guard.unlock();
+	}
+
+	engine_data.quantum = lock_free_engine_data.quantum;
+	return engine_data;
+}
+
+void DjIaVstProcessor::requestLinkStart()
+{
+	std::lock_guard<std::mutex> lock(engine_data_guard);
+	shared_engine_data.request_start = true;
+}
+
+void DjIaVstProcessor::requestLinkStop()
+{
+	std::lock_guard<std::mutex> lock(engine_data_guard);
+	shared_engine_data.request_stop = true;
+}
+
+void DjIaVstProcessor::setLinkQuantum(double q)
+{
+	std::lock_guard<std::mutex> lock(engine_data_guard);
+	shared_engine_data.quantum = q;
+}
+
+void DjIaVstProcessor::setLinkTempo(double bpm)
+{
+	std::lock_guard<std::mutex> lock(engine_data_guard);
+	shared_engine_data.requested_bpm = bpm;
+}
+#endif
+
 void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midiMessages)
 {
+#if JucePlugin_Build_Standalone
 	if (juce::JUCEApplicationBase::isStandaloneApp())
-		standaloneTransport->advance(buffer.getNumSamples(), getSampleRate());
+		if (link->isEnabled())
+		{
+			calculateOutputTime(getSampleRate(), buffer.getNumSamples());
+			const auto engine_data = pull_engine_data();
+			const auto localSession = processSessionState(engine_data);
+
+			const bool linkIsPlaying = localSession.isPlaying();
+			const double linkBpm = localSession.tempo();
+			const double linkBeat = std::max(0.0, localSession.beatAtTime(output_time, engine_data.quantum));
+
+			if (standaloneTransport)
+			{
+				standaloneTransport->setPlaying(linkIsPlaying);
+				standaloneTransport->setBpm(linkBpm);
+				standaloneTransport->setPpqPosition(linkBeat);
+			}
+		}
+		else
+		{
+			standaloneTransport->advance(buffer.getNumSamples(), getSampleRate());
+		}
+#endif
 
 	sequencerManager.internalSampleCounter += buffer.getNumSamples();
 	audioManager.checkAndSwapStagingBuffers();
@@ -494,6 +621,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	}
 	audioManager.computeAndSetPeakLevels(buffer);
 	checkIfUIUpdateNeeded(midiMessages);
+	sample_time += buffer.getNumSamples();
 }
 
 void DjIaVstProcessor::setPairCrossfaderValue(int pairIdx, float value)

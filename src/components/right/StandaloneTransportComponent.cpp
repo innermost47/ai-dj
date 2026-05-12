@@ -1,4 +1,5 @@
 ﻿#include "StandaloneTransportComponent.h"
+#include "PluginProcessor.h"
 
 void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 {
@@ -176,7 +177,8 @@ double StandaloneTransportComponent::BpmField::getBpmValue() const
 	return editor.getText().getDoubleValue();
 }
 
-StandaloneTransportComponent::StandaloneTransportComponent(StandaloneTransport &t) : transport(t)
+StandaloneTransportComponent::StandaloneTransportComponent(StandaloneTransport &t, DjIaVstProcessor &processor)
+    : transport(t), audioProcessor(processor)
 {
 	setupUI();
 	syncFromTransport();
@@ -207,16 +209,22 @@ void StandaloneTransportComponent::setupUI()
 	playButton.setTooltip("Play / Pause");
 	playButton.onClick = [this]()
 	{
-		if (playButton.getToggleState())
-		{
+		const bool wantPlay = playButton.getToggleState();
+
+		if (wantPlay)
 			transport.play();
-			udpatePlayButtonDisplay(true);
-		}
 		else
+			transport.stop();
+
+		if (audioProcessor.getIsLinkActive())
 		{
-			transport.pause();
-			udpatePlayButtonDisplay(false);
+			if (wantPlay)
+				audioProcessor.requestLinkStart();
+			else
+				audioProcessor.requestLinkStop();
 		}
+
+		udpatePlayButtonDisplay(wantPlay);
 	};
 
 	addAndMakeVisible(stopButton);
@@ -249,6 +257,11 @@ void StandaloneTransportComponent::setupUI()
 		playButton.repaint();
 		stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
 		stopButton.repaint();
+
+		if (audioProcessor.getIsLinkActive())
+		{
+			audioProcessor.requestLinkStop();
+		}
 	};
 
 	addAndMakeVisible(bpmField);
@@ -273,42 +286,26 @@ void StandaloneTransportComponent::setupUI()
 			onBpmChanged(transport.getBpm());
 	};
 
-	addAndMakeVisible(bpmDownButton);
-	bpmDownButton.setShowBorder(true);
-	bpmDownButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-	bpmDownButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	bpmDownButton.setTooltip("BPM -1");
-	bpmDownButton.onClick = [this]()
+	addAndMakeVisible(linkButton);
+	linkButton.setShowBorder(true);
+	linkButton.setClickingTogglesState(true);
+	linkButton.setToggleState(audioProcessor.getIsLinkActive(), juce::dontSendNotification);
+	linkButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
+	linkButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
+	linkButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
+	linkButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textAccent);
+	linkButton.setTooltip("Ableton Link - sync tempo and start/stop with other Link-enabled apps on your network");
+	linkButton.onClick = [this]()
 	{
-		double newBpm = juce::jlimit(20.0, 999.0, transport.getBpm() - 1.0);
-		transport.setBpm(newBpm);
-		bpmField.setBpmValue(transport.getBpm());
-		if (onBpmChanged)
-			onBpmChanged(transport.getBpm());
+		audioProcessor.setLinkActive(linkButton.getToggleState());
+		juce::Component::SafePointer<StandaloneTransportComponent> safeThis(this);
+		juce::Timer::callAfterDelay(500,
+		                            [safeThis]()
+		                            {
+			                            if (safeThis != nullptr)
+				                            safeThis->syncFromTransport();
+		                            });
 	};
-
-	addAndMakeVisible(bpmUpButton);
-	bpmUpButton.setShowBorder(true);
-	bpmUpButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-	bpmUpButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	bpmUpButton.setTooltip("BPM +1");
-	bpmUpButton.onClick = [this]()
-	{
-		double newBpm = juce::jlimit(20.0, 999.0, transport.getBpm() + 1.0);
-		transport.setBpm(newBpm);
-		bpmField.setBpmValue(transport.getBpm());
-		if (onBpmChanged)
-			onBpmChanged(transport.getBpm());
-	};
-
-	addAndMakeVisible(tapButton);
-	tapButton.setShowBorder(true);
-	tapButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-	tapButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
-	tapButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
-	tapButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textAccent);
-	tapButton.setTooltip("Tap Tempo - click at least 2 times in rhythm");
-	tapButton.onClick = [this]() { registerTapTempo(); };
 
 	addAndMakeVisible(timeSigEditor);
 
@@ -376,6 +373,9 @@ void StandaloneTransportComponent::handleTimeSigChange()
 		transport.setTimeSignature(num, den);
 		lcd.setTimeSignature(num, den);
 
+		if (audioProcessor.getIsLinkActive())
+			audioProcessor.setLinkQuantum(static_cast<double>(num));
+
 		if (onTimeSignatureChanged)
 			onTimeSignatureChanged();
 	}
@@ -396,7 +396,7 @@ void StandaloneTransportComponent::resized()
 	lcdRow.removeFromLeft(ObsidianSizes::GAP_4);
 	bpmField.setBounds(lcdRow.removeFromTop(juce::roundToInt(lcdHeight / 1.5f)));
 	lcdRow.removeFromTop(ObsidianSizes::GAP_4);
-	tapButton.setBounds(lcdRow);
+	linkButton.setBounds(lcdRow);
 
 	area.removeFromTop(ObsidianSizes::GAP_4);
 
@@ -502,44 +502,9 @@ void StandaloneTransportComponent::onBpmEditorChanged()
 		bpmField.setBpmValue(transport.getBpm());
 		if (onBpmChanged)
 			onBpmChanged(transport.getBpm());
+		if (audioProcessor.getIsLinkActive())
+			audioProcessor.setLinkTempo(newBpm);
 	}
-}
-
-void StandaloneTransportComponent::registerTapTempo()
-{
-	const auto now = juce::Time::currentTimeMillis();
-
-	if (!tapTimes.isEmpty() && (now - tapTimes.getLast()) > 2000)
-		tapTimes.clearQuick();
-
-	tapTimes.add(now);
-
-	while (tapTimes.size() > 4)
-		tapTimes.remove(0);
-
-	if (tapTimes.size() >= 2)
-	{
-		double avgIntervalMs = 0.0;
-		for (int i = 1; i < tapTimes.size(); ++i)
-			avgIntervalMs += (double)(tapTimes[i] - tapTimes[i - 1]);
-		avgIntervalMs /= (double)(tapTimes.size() - 1);
-
-		double newBpm = 60000.0 / avgIntervalMs;
-		newBpm = juce::jlimit(20.0, 999.0, newBpm);
-
-		transport.setBpm(newBpm);
-		bpmField.setBpmValue(transport.getBpm());
-		if (onBpmChanged)
-			onBpmChanged(transport.getBpm());
-	}
-
-	tapButton.setToggleState(true, juce::dontSendNotification);
-	juce::Timer::callAfterDelay(80,
-	                            [safeBtn = juce::Component::SafePointer<IconButton>(&tapButton)]()
-	                            {
-		                            if (safeBtn != nullptr)
-			                            safeBtn->setToggleState(false, juce::dontSendNotification);
-	                            });
 }
 
 void StandaloneTransportComponent::syncFromTransport()

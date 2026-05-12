@@ -11,6 +11,10 @@ endif()
 project(OBSIDIAN-Neural VERSION 2.1.1)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(LINK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(LINK_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(MSVC)
 
@@ -26,6 +30,7 @@ if(MSVC)
         /fp:fast     
         /Qpar          
         /arch:AVX2  
+        /WX-
     )
     
     message(STATUS "MSVC optimizations enabled for Release builds")
@@ -78,9 +83,6 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(STATUS "GCC optimizations enabled for Release builds")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 find_package(JUCE QUIET)
 if(NOT JUCE_FOUND)
     include(FetchContent)
@@ -109,6 +111,20 @@ if(NOT nlohmann_json_FOUND)
         GIT_TAG v3.12.0
     )
     FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+find_package(Ableton QUIET)
+include(FetchContent)
+FetchContent_Declare(
+    AbletonLink
+    GIT_REPOSITORY https://github.com/Ableton/link.git
+    GIT_TAG Link-4.0.0b4
+)
+
+FetchContent_GetProperties(AbletonLink)
+if(NOT abletonlink_POPULATED)
+    FetchContent_Populate(AbletonLink)
+    include(${abletonlink_SOURCE_DIR}/AbletonLinkConfig.cmake)
 endif()
 
 if(DEFINED GITHUB_BUILD_NUMBER)
@@ -314,6 +330,7 @@ target_link_libraries(ObsidianNeuralVST
         juce::juce_gui_extra
         SoundTouch
         nlohmann_json::nlohmann_json
+        Ableton::Link
     
     PUBLIC
         juce::juce_recommended_config_flags

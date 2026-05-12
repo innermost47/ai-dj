@@ -120,7 +120,7 @@ void RightPanelWrapper::setStandaloneTransport(StandaloneTransport *transport)
 {
 	if (transport)
 	{
-		standaloneTransport = std::make_unique<StandaloneTransportComponent>(*transport);
+		standaloneTransport = std::make_unique<StandaloneTransportComponent>(*transport, audioProcessor);
 		addAndMakeVisible(*standaloneTransport);
 		if (masterWaveform)
 			masterWaveform->setVisible(false);

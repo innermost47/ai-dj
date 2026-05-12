@@ -18,6 +18,14 @@ class StandaloneTransport : public juce::AudioPlayHead
 	}
 
 	void setBpm(double newBpm);
+	void setPlaying(bool v)
+	{
+		playing.store(v);
+	}
+	void setPpqPosition(double pos)
+	{
+		currentPpq.store(pos);
+	}
 	double getBpm() const
 	{
 		return bpm.load();

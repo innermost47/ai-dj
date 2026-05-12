@@ -3,10 +3,12 @@
 #include "StandaloneTransport.h"
 #include <JuceHeader.h>
 
+class DjIaVstProcessor;
+
 class StandaloneTransportComponent : public ObsidianComponent, private juce::Timer
 {
   public:
-	StandaloneTransportComponent(StandaloneTransport &transport);
+	StandaloneTransportComponent(StandaloneTransport &transport, DjIaVstProcessor &processor);
 	~StandaloneTransportComponent() override;
 
 	void resized() override;
@@ -22,7 +24,6 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	void timerCallback() override;
 	void updateBeatDisplay();
 	void onBpmEditorChanged();
-	void registerTapTempo();
 	void handleTimeSigChange();
 
 	class BeatLcd : public juce::Component
@@ -64,12 +65,11 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	};
 
 	StandaloneTransport &transport;
+	DjIaVstProcessor &audioProcessor;
 
 	IconButton playButton{"play"};
 	IconButton stopButton{"stop"};
-	IconButton tapButton{"tap", "TAP"};
-	IconButtonRepeat bpmDownButton{"bpmDown", "-"};
-	IconButtonRepeat bpmUpButton{"bpmUp", "+"};
+	IconButton linkButton{"link", "ABLETON LINK"};
 
 	BeatLcd lcd;
 	BpmField bpmField;
