@@ -46,6 +46,7 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, con
 
 void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, const juce::String &trackId)
 {
+
 	auto response = audioProcessor.getApiClient().generateLoop(
 	    request, audioProcessor.getHostSampleRate(), audioProcessor.getRequestTimeout(), audioProcessor.getBypassLLM());
 

@@ -53,7 +53,7 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 {
 	if (paramSuffix == "Generate")
 	{
-		if (newValue > 0.5f && audioProcessor.getIsGenerating())
+		if (newValue > 0.5f && audioProcessor.getIsGenerating() || newValue < 0.5f)
 			return;
 		if (onGenerateForTrack)
 		{
