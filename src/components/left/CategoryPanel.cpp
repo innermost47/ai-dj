@@ -18,7 +18,7 @@ void CategoryTag::paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*
 		g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1.5f);
 	}
 	g.setColour(active ? juce::Colours::white : ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions("Courier New", 14.0f, active ? juce::Font::bold : juce::Font::plain));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, active ? juce::Font::bold : juce::Font::plain));
 	g.drawText(getButtonText(), bounds, juce::Justification::centred, true);
 }
 
@@ -67,7 +67,7 @@ void CategoryPanel::resized()
 	fb.justifyContent = juce::FlexBox::JustifyContent::flexStart;
 	fb.alignContent = juce::FlexBox::AlignContent::flexStart;
 
-	juce::FontOptions fontOptions("Courier New", 14.0f, juce::Font::plain);
+	juce::FontOptions fontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain);
 	juce::Font tagFont(fontOptions);
 
 	for (auto *tag : tags)

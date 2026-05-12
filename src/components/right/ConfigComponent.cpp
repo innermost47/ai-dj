@@ -35,7 +35,7 @@ void ConfigComponent::setupUI()
 	buildLabel.setText(Version::BUILD, juce::dontSendNotification);
 	buildLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	buildLabel.setJustificationType(juce::Justification::right);
-	buildLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_XS));
+	buildLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_XXS));
 
 	addAndMakeVisible(bypassSequencerButton);
 	bypassSequencerButton.setClickingTogglesState(true);
@@ -151,15 +151,8 @@ void ConfigComponent::addEventListeners()
 	helpButton.onClick = [this]() { editor.uiModalManager->showOnboardingStep(1); };
 }
 
-void ConfigComponent::paint(juce::Graphics &g)
+void ConfigComponent::paint(juce::Graphics & /*g*/)
 {
-	// auto bounds = getLocalBounds().toFloat().reduced(ObsidianSizes::PADDING);
-
-	// auto imageArea = bounds.removeFromTop(bounds.getHeight() * 0.6f);
-
-	// g.drawImageWithin(logoImage, (int)imageArea.getX(), (int)imageArea.getY(), (int)imageArea.getWidth(),
-	//                   (int)imageArea.getHeight(),
-	//                   juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize, false);
 }
 
 void ConfigComponent::resized()

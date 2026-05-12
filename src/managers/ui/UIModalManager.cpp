@@ -100,13 +100,13 @@ void UIModalManager::showOnboardingStep(int step)
 	};
 
 	juce::String lightningSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>)";
+	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#6b8299" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>)";
 	juce::String diskSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>)";
+	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#6b8299" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>)";
 	juce::String playSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>)";
+	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#6b8299" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>)";
 	juce::String mapSvg =
-	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#D96850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>)";
+	    R"(<svg viewBox="0 0 24 24" fill="none" stroke="#6b8299" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>)";
 
 	std::vector<StepInfo> steps = {
 	    {"OBSIDIAN Neural  -  1 of 5  -  Welcome",
@@ -160,7 +160,7 @@ void UIModalManager::showOnboardingStep(int step)
 		OnboardingContent(const juce::String &text, const juce::String &svgData)
 		{
 			textLabel.setText(text, juce::dontSendNotification);
-			textLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(14.0f));
+			textLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
 			textLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 			textLabel.setJustificationType(juce::Justification::topLeft);
 			addAndMakeVisible(textLabel);
@@ -212,7 +212,7 @@ void UIModalManager::showOnboardingStep(int step)
 	                                });
 
 	overlay->modalWindow->addButton(
-	    info.buttonNext, arrowSvg, ColourPalette::buttonPrimary,
+	    info.buttonNext, arrowSvg, ColourPalette::slate,
 	    [this, overlay, step, isLastStep]()
 	    {
 		    overlay->close();

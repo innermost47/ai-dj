@@ -1,5 +1,6 @@
 #include "ObsidianAlertManager.h"
 #include "AiModelDefinitions.h"
+#include "ObsidianBase.h"
 #include "PromptModelDefinitions.h"
 
 struct GroupLabelInfo
@@ -8,7 +9,7 @@ struct GroupLabelInfo
 	juce::Rectangle<int> bounds;
 };
 
-class ModelCard : public juce::Component
+class ModelCard : public ObsidianComponent
 {
   public:
 	ModelCard(const juce::String &name, juce::Colour col) : modelName(name), colour(col)
@@ -57,7 +58,7 @@ class ModelCard : public juce::Component
 		g.fillEllipse(dotRect);
 		auto textArea = bounds.withTrimmedLeft(22).reduced(4, 0);
 		g.setColour(selected ? ColourPalette::textPrimary : ColourPalette::textSecondary);
-		g.setFont(juce::FontOptions(11.5f, selected ? juce::Font::bold : juce::Font::plain));
+		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, selected ? juce::Font::bold : juce::Font::plain));
 		g.drawText(modelName, textArea.toNearestInt(), juce::Justification::centredLeft, true);
 	}
 
@@ -74,7 +75,7 @@ class ModelCard : public juce::Component
 	bool selected = false;
 	bool hovered = false;
 };
-class ExampleCard : public juce::Component
+class ExampleCard : public ObsidianComponent
 {
   public:
 	ExampleCard(const juce::String &textIn) : text(textIn)
@@ -110,10 +111,11 @@ class ExampleCard : public juce::Component
 		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
 
 		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions(12.0f, juce::Font::plain));
+		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 
 		juce::AttributedString attr;
-		attr.append(text, juce::FontOptions(12.0f, juce::Font::plain), ColourPalette::textPrimary);
+		attr.append(text, juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain),
+		            ColourPalette::textPrimary);
 		attr.setWordWrap(juce::AttributedString::byWord);
 		attr.setJustification(juce::Justification::centredLeft);
 		attr.draw(g, bounds.reduced(10, 6));
@@ -121,7 +123,7 @@ class ExampleCard : public juce::Component
 
 	int getPreferredHeight(int width) const
 	{
-		juce::Font f(juce::FontOptions(12.0f, juce::Font::plain));
+		juce::Font f(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 		juce::AttributedString attr;
 		attr.append(text, f);
 		attr.setWordWrap(juce::AttributedString::byWord);
@@ -136,7 +138,7 @@ class ExampleCard : public juce::Component
 	juce::String text;
 	bool hovered = false;
 };
-class KeywordsContainerComponent : public juce::Component
+class KeywordsContainerComponent : public ObsidianComponent
 {
   public:
 	std::vector<GroupLabelInfo> *groupLabels = nullptr;
@@ -146,37 +148,31 @@ class KeywordsContainerComponent : public juce::Component
 		if (!groupLabels)
 			return;
 
+		auto bounds = getLocalBounds().toFloat();
+		paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
+
 		for (const auto &gl : *groupLabels)
 		{
 			float y = (float)gl.bounds.getCentreY();
 			float lineY = y - 1;
 
-			g.setColour(ColourPalette::backgroundLight.withAlpha(0.15f));
+			g.setColour(ColourPalette::backgroundDeep.withAlpha(0.15f));
 			g.drawLine(0.0f, lineY, (float)gl.bounds.getWidth(), lineY, 0.5f);
 
-			juce::Font labelFont(juce::FontOptions(11.5f, juce::Font::bold));
+			juce::Font labelFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 			g.setFont(labelFont);
 
-			juce::GlyphArrangement ga;
-			ga.addLineOfText(labelFont, gl.label, 0.0f, 0.0f);
-			float textW = ga.getBoundingBox(0, -1, true).getWidth();
-			float textX = (gl.bounds.getWidth() - textW) * 0.5f;
-			float padding = 8.0f;
-
-			g.setColour(ColourPalette::backgroundDeep);
-			g.fillRect(juce::Rectangle<float>(textX - padding, lineY - 6.0f, textW + 2 * padding, 12.0f));
-
-			g.setColour(ColourPalette::textAccent.withAlpha(0.9f));
-			g.drawText(gl.label, gl.bounds, juce::Justification::centred, false);
+			g.setColour(ColourPalette::cyan);
+			g.drawText(gl.label, gl.bounds, juce::Justification::left, false);
 		}
 	}
 };
-class PromptEditorContent : public juce::Component
+class PromptEditorContent : public ObsidianComponent
 {
   public:
 	juce::Label categoryLbl, promptLbl, examplesLbl, keywordsLbl, descLbl;
 	juce::ComboBox categoryCombo;
-	juce::TextEditor promptEditor;
+	EscapableTextEditor promptEditor;
 	juce::Viewport examplesViewport, keywordsViewport;
 	juce::Component examplesContainer;
 	KeywordsContainerComponent keywordsContainer;
@@ -193,7 +189,8 @@ class PromptEditorContent : public juce::Component
 	    : currentModel(model)
 	{
 		categoryLbl.setText("Category:", juce::dontSendNotification);
-		categoryLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		categoryLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+		categoryLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(categoryLbl);
 
 		categoryCombo.addItem("Uncategorized", 1);
@@ -226,31 +223,32 @@ class PromptEditorContent : public juce::Component
 			modelCards.push_back(std::move(card));
 		}
 
-		descLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary.withAlpha(0.8f));
-		descLbl.setFont(juce::FontOptions(11.0f, juce::Font::italic));
+		descLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+		descLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::italic));
 		addAndMakeVisible(descLbl);
 
 		promptLbl.setText("Prompt:", juce::dontSendNotification);
-		promptLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		promptLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+		promptLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(promptLbl);
 
 		promptEditor.setText(text);
 		promptEditor.setMultiLine(true);
 		promptEditor.setReturnKeyStartsNewLine(true);
-		promptEditor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-		promptEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-		promptEditor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
-		promptEditor.applyFontToAllText(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+		promptEditor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
+		promptEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+		promptEditor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
+		promptEditor.applyFontToAllText(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 		addAndMakeVisible(promptEditor);
 
 		examplesLbl.setText("Examples (click to use):", juce::dontSendNotification);
-		examplesLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-		examplesLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+		examplesLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+		examplesLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(examplesLbl);
 
 		keywordsLbl.setText("Keywords (click to insert):", juce::dontSendNotification);
-		keywordsLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-		keywordsLbl.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+		keywordsLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+		keywordsLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(keywordsLbl);
 
 		examplesViewport.setViewedComponent(&examplesContainer, false);
@@ -310,14 +308,16 @@ class PromptEditorContent : public juce::Component
 
 		if (info)
 		{
-			int containerW = keywordsViewport.getWidth() - 12;
-			int y = 0;
+			const int padding = ObsidianSizes::PADDING;
+			int containerW = keywordsViewport.getWidth();
+			int y = padding;
 			const int kwH = 26;
 			const int kwSpacing = 6;
 			const int groupTopSpacing = 18;
 			const int groupBottomSpacing = 8;
 			const int groupLabelH = 22;
-
+			const int startX = padding;
+			const int availableW = containerW - (2 * padding);
 			bool isFirstGroup = true;
 
 			for (const auto &group : info->keywordGroups)
@@ -328,13 +328,14 @@ class PromptEditorContent : public juce::Component
 
 				GroupLabelInfo gl;
 				gl.label = group.label;
-				gl.bounds = juce::Rectangle<int>(0, y, containerW, groupLabelH);
+				gl.bounds = juce::Rectangle<int>(0, y, containerW, groupLabelH).reduced(ObsidianSizes::PADDING);
 				groupLabels.push_back(gl);
 
 				y += groupLabelH + groupBottomSpacing;
 
-				int x = 0;
-				juce::Font kwFont(juce::FontOptions(11.5f, juce::Font::plain));
+				int x = startX;
+
+				juce::Font kwFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 				for (const auto &kw : group.keywords)
 				{
 					juce::GlyphArrangement ga;
@@ -342,20 +343,20 @@ class PromptEditorContent : public juce::Component
 					int textW = (int)ga.getBoundingBox(0, -1, true).getWidth();
 					int w = textW + 28;
 
-					bool isOversized = (w > containerW);
+					bool isOversized = (w > availableW);
 
 					if (isOversized)
 					{
 						if (x > 0)
 						{
-							x = 0;
+							x = startX;
 							y += kwH + kwSpacing;
 						}
-						w = containerW;
+						w = availableW;
 					}
-					else if (x + w > containerW)
+					else if (x + w > availableW + startX)
 					{
-						x = 0;
+						x = startX;
 						y += kwH + kwSpacing;
 					}
 					auto btn = std::make_unique<juce::TextButton>(kw);
@@ -377,7 +378,7 @@ class PromptEditorContent : public juce::Component
 
 					if (isOversized)
 					{
-						x = 0;
+						x = startX;
 						y += kwH + kwSpacing;
 					}
 					else
@@ -462,21 +463,21 @@ class PromptEditorContent : public juce::Component
 		auto rightCol = area;
 
 		categoryLbl.setBounds(leftCol.removeFromTop(16));
-		leftCol.removeFromTop(2);
+		leftCol.removeFromTop(ObsidianSizes::GAP_4);
 		categoryCombo.setBounds(leftCol.removeFromTop(28));
 		leftCol.removeFromTop(12);
 
 		promptLbl.setBounds(leftCol.removeFromTop(16));
-		leftCol.removeFromTop(2);
+		leftCol.removeFromTop(ObsidianSizes::GAP_4);
 		promptEditor.setBounds(leftCol.removeFromTop(140));
 		leftCol.removeFromTop(12);
 
 		examplesLbl.setBounds(leftCol.removeFromTop(16));
-		leftCol.removeFromTop(2);
+		leftCol.removeFromTop(ObsidianSizes::GAP_4);
 		examplesViewport.setBounds(leftCol);
 
 		keywordsLbl.setBounds(rightCol.removeFromTop(16));
-		rightCol.removeFromTop(2);
+		rightCol.removeFromTop(ObsidianSizes::GAP_4);
 		keywordsViewport.setBounds(rightCol);
 
 		rebuildModelContent();
@@ -519,28 +520,30 @@ ObsidianModalOverlay *ObsidianAlertManager::createAndAttachOverlay(juce::Compone
 void ObsidianAlertManager::showAddCategoryDialog(
     juce::Component *parent, std::function<void(const juce::String &name, juce::Colour colour)> onAdd)
 {
-	class CategoryDialogContent : public juce::Component
+	class CategoryDialogContent : public ObsidianComponent
 	{
 	  public:
-		juce::TextEditor nameEditor;
+		EscapableTextEditor nameEditor;
 		juce::Label nameLbl, colourLbl;
 		ColourPicker colourPicker;
 
 		CategoryDialogContent(const juce::String &initialName, juce::Colour initialColour)
 		{
 			nameLbl.setText("Name:", juce::dontSendNotification);
-			nameLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+			nameLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			nameLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(nameLbl);
 
 			nameEditor.setText(initialName);
 			nameEditor.setTextToShowWhenEmpty("Category name...", ColourPalette::textSecondary);
-			nameEditor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-			nameEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-			nameEditor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+			nameEditor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
+			nameEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+			nameEditor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
 			addAndMakeVisible(nameEditor);
 
 			colourLbl.setText("Colour:", juce::dontSendNotification);
-			colourLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+			colourLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			colourLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(colourLbl);
 
 			colourPicker.setSelectedColour(initialColour);
@@ -577,7 +580,7 @@ void ObsidianAlertManager::showAddCategoryDialog(
 	overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
 	                                [overlay]() { overlay->close(); });
 
-	overlay->modalWindow->addButton("Add", checkSvg, ColourPalette::emerald,
+	overlay->modalWindow->addButton("Add", checkSvg, ColourPalette::slate,
 	                                [overlay, contentPtr, onAdd, parent]()
 	                                {
 		                                juce::String name = contentPtr->nameEditor.getText().trim();
@@ -597,27 +600,29 @@ void ObsidianAlertManager::showEditCategoryDialog(
     std::function<void(const juce::String &newName, juce::Colour newColour)> onSave)
 {
 
-	class CategoryDialogContent : public juce::Component
+	class CategoryDialogContent : public ObsidianComponent
 	{
 	  public:
-		juce::TextEditor nameEditor;
+		EscapableTextEditor nameEditor;
 		juce::Label nameLbl, colourLbl;
 		ColourPicker colourPicker;
 
 		CategoryDialogContent(const juce::String &initialName, juce::Colour initialColour)
 		{
 			nameLbl.setText("Name:", juce::dontSendNotification);
-			nameLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+			nameLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			nameLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(nameLbl);
 
 			nameEditor.setText(initialName);
-			nameEditor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-			nameEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-			nameEditor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
+			nameEditor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
+			nameEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+			nameEditor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
 			addAndMakeVisible(nameEditor);
 
 			colourLbl.setText("Colour:", juce::dontSendNotification);
-			colourLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+			colourLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			colourLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(colourLbl);
 
 			colourPicker.setSelectedColour(initialColour);
@@ -654,7 +659,7 @@ void ObsidianAlertManager::showEditCategoryDialog(
 	overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
 	                                [overlay]() { overlay->close(); });
 
-	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::amber,
+	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::slate,
 	                                [overlay, contentPtr, onSave, parent]()
 	                                {
 		                                juce::String name = contentPtr->nameEditor.getText().trim();
@@ -697,7 +702,7 @@ void ObsidianAlertManager::showError(juce::Component *parent, const juce::String
 	if (overlay == nullptr)
 		return;
 
-	overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDanger, [overlay]() { overlay->close(); });
+	overlay->modalWindow->addButton("OK", crossSvg, ColourPalette::buttonDangerDark, [overlay]() { overlay->close(); });
 }
 
 void ObsidianAlertManager::showConfirm(juce::Component *parent, const juce::String &title, const juce::String &message,
@@ -719,7 +724,7 @@ void ObsidianAlertManager::showConfirm(juce::Component *parent, const juce::Stri
 		                                overlay->close();
 	                                });
 
-	overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::buttonDanger,
+	overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::buttonDangerDark,
 	                                [overlay, callback]()
 	                                {
 		                                if (callback)
@@ -735,23 +740,23 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 {
 	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 420);
 
-	class ConfigContent : public juce::Component
+	class ConfigContent : public ObsidianComponent
 	{
 	  public:
 		juce::ComboBox modeCombo, timeoutCombo;
-		juce::TextEditor urlEditor, keyEditor;
+		EscapableTextEditor urlEditor, keyEditor;
 		juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
 
 		ConfigContent(bool useLocal, const juce::String &url, const juce::String & /*key */, int timeout,
 		              bool firstTime)
 		{
-			auto styleEditor = [](juce::TextEditor &te, const juce::String &text)
+			auto styleEditor = [](EscapableTextEditor &te, const juce::String &text)
 			{
 				te.setText(text);
-				te.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-				te.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-				te.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
-				te.applyFontToAllText(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+				te.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
+				te.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+				te.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
+				te.applyFontToAllText(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 			};
 
 			auto styleCombo = [](juce::ComboBox &cb)
@@ -765,8 +770,8 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			auto styleLabel = [this](juce::Label &lbl, const juce::String &text)
 			{
 				lbl.setText(text, juce::dontSendNotification);
-				lbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-				lbl.setFont(juce::FontOptions("Courier New", 13.0f, juce::Font::plain));
+				lbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+				lbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 				addAndMakeVisible(lbl);
 			};
 
@@ -845,7 +850,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 		                                overlay->close();
 	                                });
 
-	overlay->modalWindow->addButton(isFirstTime ? "Save & Continue" : "Update", checkSvg, ColourPalette::buttonPrimary,
+	overlay->modalWindow->addButton(isFirstTime ? "Save & Continue" : "Update", checkSvg, ColourPalette::slate,
 	                                [overlay, formPtr, callback]()
 	                                {
 		                                ConfigDialogResult res;
@@ -887,7 +892,7 @@ void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juc
 	overlay->modalWindow->addButton("Clear All", crossSvg, ColourPalette::buttonInactive,
 	                                [panelPtr]() { panelPtr->clearAll(); });
 
-	overlay->modalWindow->addButton("Done", checkSvg, ColourPalette::buttonPrimary,
+	overlay->modalWindow->addButton("Done", checkSvg, ColourPalette::slate,
 	                                [overlay, panelPtr, onSave]()
 	                                {
 		                                if (onSave)
@@ -899,19 +904,19 @@ void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juc
 void ObsidianAlertManager::showEditPrompt(juce::Component *parent, const juce::String &currentPrompt,
                                           std::function<void(const juce::String &newPrompt)> callback)
 {
-	class EditPromptContent : public juce::Component
+	class EditPromptContent : public ObsidianComponent
 	{
 	  public:
-		juce::TextEditor editor;
+		EscapableTextEditor editor;
 		EditPromptContent(const juce::String &text)
 		{
 			editor.setText(text);
 			editor.setMultiLine(true);
 			editor.setReturnKeyStartsNewLine(true);
-			editor.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDark);
-			editor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-			editor.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundLight);
-			editor.applyFontToAllText(juce::FontOptions("Courier New", 14.0f, juce::Font::plain));
+			editor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
+			editor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+			editor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
+			editor.applyFontToAllText(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 			addAndMakeVisible(editor);
 		}
 		void resized() override
@@ -938,7 +943,7 @@ void ObsidianAlertManager::showEditPrompt(juce::Component *parent, const juce::S
 		                                overlay->close();
 	                                });
 
-	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary,
+	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::slate,
 	                                [overlay, editorPtr, callback]()
 	                                {
 		                                juce::String resultStr = editorPtr->getText();
@@ -1003,7 +1008,7 @@ void ObsidianAlertManager::showPromptEditor(juce::Component *parent, const juce:
 		                                overlay->close();
 	                                });
 
-	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::buttonPrimary,
+	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::slate,
 	                                [overlay, contentPtr, parent, callback]()
 	                                {
 		                                juce::String txt = contentPtr->getPrompt();

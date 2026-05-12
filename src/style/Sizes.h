@@ -56,6 +56,7 @@ inline constexpr float TEXT_INFO = 13.0f;
 inline constexpr float TEXT_SMALL = 12.0f;
 inline constexpr float TEXT_XS = 11.0f;
 inline constexpr float TEXT_XXS = 10.0f;
+inline constexpr float TEXT_XXXS = 8.0f;
 } // namespace ObsidianSizes
 
 #endif

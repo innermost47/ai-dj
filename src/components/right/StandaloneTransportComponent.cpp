@@ -134,7 +134,7 @@ StandaloneTransportComponent::BpmField::BpmField()
 	addAndMakeVisible(editor);
 	editor.setInputRestrictions(6, "0123456789.");
 	editor.setJustification(juce::Justification::centred);
-	editor.setColour(juce::TextEditor::textColourId, ColourPalette::textAccent);
+	editor.setColour(EscapableTextEditor::textColourId, ColourPalette::textAccent);
 	editor.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XXL));
 	editor.setTooltip("BPM\nScroll: +/-1\nShift+Scroll: +/-5\nCmd+Scroll: +/-0.1\nDouble-clic: reset 120");
 }
@@ -314,9 +314,9 @@ void StandaloneTransportComponent::setupUI()
 
 	timeSigEditor.setJustification(juce::Justification::centred);
 	timeSigEditor.setIndents(0, 0);
-	timeSigEditor.setColour(juce::TextEditor::backgroundColourId, juce::Colours::transparentBlack);
-	timeSigEditor.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
-	timeSigEditor.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
+	timeSigEditor.setColour(EscapableTextEditor::backgroundColourId, juce::Colours::transparentBlack);
+	timeSigEditor.setColour(EscapableTextEditor::outlineColourId, juce::Colours::transparentBlack);
+	timeSigEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
 	timeSigEditor.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 
 	timeSigEditor.setInputRestrictions(5, "0123456789/");

@@ -2,6 +2,7 @@
 #include "AiModelDefinitions.h"
 #include "BinaryData.h"
 #include "ColourPalette.h"
+#include "EscapableTextEditor.h"
 #include "Fonts.h"
 #include "IconButton.h"
 #include "Shades.h"
@@ -13,7 +14,7 @@ class ObsidianComponent : public juce::Component
   public:
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
 
-	void paintBaseBackground(juce::Graphics &g);
+	void paintBaseRoundedBackground(juce::Graphics &g, juce::Colour colour);
 
 	void paintBaseRoundedBackgroundMidWithAlpha06(juce::Graphics &g);
 

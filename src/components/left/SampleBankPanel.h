@@ -80,7 +80,7 @@ struct CategoryInfo
 	juce::Colour colour{juce::Colour(0)};
 };
 
-class DetailPanel : public juce::Component, public juce::Timer
+class DetailPanel : public ObsidianComponent, public juce::Timer
 {
   public:
 	DetailPanel();
@@ -161,7 +161,8 @@ class SampleBankPanel : public juce::Component, public juce::Timer, public juce:
 	juce::ComboBox sortMenu;
 
 	juce::ComboBox categoryFilter;
-	juce::TextEditor categoryInput;
+
+	EscapableTextEditor categoryInput;
 	IconButtonSimple addCategoryButton{"AddCategory", ""};
 	IconButtonSimple editCategoryButton{"EditCategory", ""};
 	IconButtonSimple deleteCategoryButton{"DeleteCategory", ""};

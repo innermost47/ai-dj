@@ -57,7 +57,7 @@ void PromptBankPanel::setupUI()
 	};
 
 	addAndMakeVisible(addCategoryButton);
-	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::mossGreen);
+	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::slate);
 	addCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	addCategoryButton.onClick = [this]() { addCategoryDialog(); };
 

@@ -120,7 +120,7 @@ class DrawingCanvas : public ObsidianComponent, private juce::Timer
 	juce::StringArray selectedKeywords;
 	juce::StringArray availableKeywords;
 
-	juce::TextEditor keywordInput;
+	EscapableTextEditor keywordInput;
 	juce::Label keywordsLabel;
 
 	juce::OwnedArray<KeywordBadge> keywordBadges;

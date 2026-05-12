@@ -19,7 +19,7 @@ MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *man
 	addAndMakeVisible(midiInfoLabel);
 
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteButton.addListener(this);
 	addAndMakeVisible(deleteButton);
@@ -46,9 +46,7 @@ void MidiMappingRow::paint(juce::Graphics &g)
 
 	auto rowBounds = bounds.reduced(4.0f, 3.0f);
 
-	juce::ColourGradient bgGradient(baseColour.brighter(0.02f), rowBounds.getX(), rowBounds.getY(),
-	                                baseColour.darker(0.02f), rowBounds.getX(), rowBounds.getBottom(), false);
-	g.setGradientFill(bgGradient);
+	g.setColour(baseColour.brighter(0.02f));
 	g.fillRoundedRectangle(rowBounds, corner);
 
 	if (isLearning && blinkState)
@@ -90,10 +88,10 @@ void MidiMappingRow::resized()
 	auto bounds = getLocalBounds().reduced(8, 5);
 	bounds.removeFromLeft(10);
 
-	auto buttonArea = bounds.removeFromRight(96);
-	deleteButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(34, 34));
-	buttonArea.removeFromRight(4);
-	learnButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(34, 34));
+	auto buttonArea = bounds.removeFromRight(56);
+	deleteButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(26, 26));
+	buttonArea.removeFromRight(ObsidianSizes::SPACER_XS);
+	learnButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(26, 26));
 
 	bounds.removeFromRight(8);
 
@@ -178,25 +176,27 @@ juce::String MidiMappingRow::getMidiTypeShort() const
 MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager) : midiLearnManager(manager)
 {
 	subtitleLabel.setText("Manage mappings or ReLearn to reassign.", juce::dontSendNotification);
-	subtitleLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(12.5f));
+	subtitleLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
 	subtitleLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	subtitleLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(subtitleLabel);
 
-	countLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(11.0f));
+	countLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_INFO));
 	countLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	countLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(countLabel);
 
 	clearAllButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	clearAllButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-	clearAllButton.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonDanger);
+	clearAllButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
+	clearAllButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	clearAllButton.setCompactMode(true);
 	clearAllButton.addListener(this);
 	addAndMakeVisible(clearAllButton);
 
 	reloadDefaultsButton.loadIcon(BinaryData::refresh_svg, BinaryData::refresh_svgSize);
-	reloadDefaultsButton.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
-	reloadDefaultsButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
+	reloadDefaultsButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
+	reloadDefaultsButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	reloadDefaultsButton.setCompactMode(true);
 	reloadDefaultsButton.addListener(this);
 	addAndMakeVisible(reloadDefaultsButton);
 
@@ -231,55 +231,34 @@ void MidiMappingEditorWindow::timerCallback()
 
 void MidiMappingEditorWindow::paint(juce::Graphics &g)
 {
-	auto headerF = headerBounds.toFloat();
-	const float corner = ObsidianSizes::CORNER;
-	juce::ColourGradient headerGradient(ColourPalette::backgroundDeep.brighter(0.04f), headerF.getX(), headerF.getY(),
-	                                    ColourPalette::backgroundDeep.darker(0.02f), headerF.getX(),
-	                                    headerF.getBottom(), false);
-	g.setGradientFill(headerGradient);
-	g.fillRoundedRectangle(headerF, corner);
-	g.setColour(juce::Colours::white.withAlpha(0.03f));
-	auto topHighlight = headerF.withHeight(headerF.getHeight() * 0.45f);
-	g.fillRoundedRectangle(topHighlight, corner);
-	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.35f));
-	g.drawRoundedRectangle(headerF.reduced(0.5f), corner, 0.8f);
 	auto listF = listBackgroundBounds.toFloat();
-	g.setColour(juce::Colours::black.withAlpha(0.2f));
-	g.fillRoundedRectangle(listF, corner);
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.4f));
-	g.fillRoundedRectangle(listF.reduced(0.5f), corner);
-	g.setColour(ColourPalette::backgroundLight.withAlpha(0.25f));
-	g.drawRoundedRectangle(listF.reduced(0.5f), corner, 0.6f);
-	if (mappingRows.isEmpty())
-	{
-		g.setColour(ColourPalette::textSecondary.withAlpha(0.5f));
-
-		g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(13.0f));
-		g.drawText("No MIDI mappings yet — use MIDI learn from any control.", listF, juce::Justification::centred,
-		           true);
-	}
+	g.fillRoundedRectangle(listF, ObsidianSizes::CORNER);
+	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.4f));
+	g.fillRoundedRectangle(listF.reduced(0.5f), ObsidianSizes::CORNER);
 }
 
 void MidiMappingEditorWindow::resized()
 {
-	auto bounds = getLocalBounds().reduced(10);
+	auto bounds = getLocalBounds();
 
-	headerBounds = bounds.removeFromTop(56);
-	auto headerContent = headerBounds.reduced(14, 0);
+	headerBounds = bounds.removeFromTop(48);
+	auto headerContent = headerBounds;
 
-	auto buttonsArea = headerContent.removeFromRight(86);
-	reloadDefaultsButton.setBounds(buttonsArea.removeFromRight(36).withSizeKeepingCentre(36, 36));
-	buttonsArea.removeFromRight(8);
-	clearAllButton.setBounds(buttonsArea.removeFromRight(36).withSizeKeepingCentre(36, 36));
+	int buttonHeight = 26;
+	int buttonWidth = 26;
+	auto buttonsArea = headerContent.removeFromRight(buttonWidth * 2 + ObsidianSizes::SPACER_XS);
 
-	headerContent.removeFromRight(14);
+	buttonsArea.removeFromTop(headerContent.getHeight() / 2 - buttonHeight / 2);
+	reloadDefaultsButton.setBounds(buttonsArea.removeFromRight(buttonWidth).removeFromTop(buttonHeight));
+	buttonsArea.removeFromRight(ObsidianSizes::SPACER_XS);
+	clearAllButton.setBounds(buttonsArea.removeFromRight(buttonWidth).removeFromTop(buttonHeight));
 
-	headerContent = headerContent.reduced(0, 8);
 	auto subtitleArea = headerContent.removeFromTop(headerContent.getHeight() / 2 + 2);
 	subtitleLabel.setBounds(subtitleArea);
 	countLabel.setBounds(headerContent);
 
-	bounds.removeFromTop(10);
+	bounds.removeFromTop(ObsidianSizes::GAP);
 
 	listBackgroundBounds = bounds;
 	mappingsViewport.setBounds(bounds.reduced(2));
@@ -287,7 +266,7 @@ void MidiMappingEditorWindow::resized()
 	int scrollBarWidth =
 	    mappingsViewport.getVerticalScrollBar().isVisible() ? mappingsViewport.getScrollBarThickness() : 0;
 	int rowWidth = mappingsViewport.getWidth() - scrollBarWidth;
-	int rowHeight = 54;
+	int rowHeight = 42;
 
 	mappingsContainer.setSize(rowWidth, mappingRows.size() * rowHeight);
 

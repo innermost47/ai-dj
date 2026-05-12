@@ -60,7 +60,7 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 		void setBpmValue(double bpm);
 		double getBpmValue() const;
 
-		juce::TextEditor editor;
+		EscapableTextEditor editor;
 	};
 
 	StandaloneTransport &transport;
@@ -74,7 +74,7 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	BeatLcd lcd;
 	BpmField bpmField;
 
-	juce::TextEditor timeSigEditor;
+	EscapableTextEditor timeSigEditor;
 
 	int currentBeat = 0;
 	int currentSubBeat = 0;

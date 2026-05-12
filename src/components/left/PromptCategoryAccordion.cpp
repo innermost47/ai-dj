@@ -17,7 +17,7 @@ PromptCategoryAccordion::PromptCategoryAccordion(const juce::String &name, juce:
 	};
 
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteButton.setCompactMode(true);
 	deleteButton.setTooltip("Delete category");

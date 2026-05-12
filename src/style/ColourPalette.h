@@ -83,6 +83,8 @@ class ColourPalette
 
 	static const juce::Colour samplePending;
 
+	static const juce::Colour modalHeader;
+
 	static const juce::Colour lime;
 	static const juce::Colour cyan;
 	static const juce::Colour loopLocked;

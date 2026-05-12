@@ -25,8 +25,8 @@ PromptBankItem::PromptBankItem(PromptBankEntry *entryIn) : entry(entryIn)
 
 	addAndMakeVisible(deleteButton);
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-	deleteButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
+	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteButton.setCompactMode(true);
 	deleteButton.setTooltip("Delete prompt");
 	deleteButton.onClick = [this]()

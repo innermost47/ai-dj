@@ -13,13 +13,13 @@ std::unique_ptr<juce::AccessibilityHandler> ObsidianComponent::createAccessibili
 	return createIgnoredAccessibilityHandler(*this);
 }
 
-void ObsidianComponent::paintBaseBackground(juce::Graphics &g)
+void ObsidianComponent::paintBaseRoundedBackground(juce::Graphics &g, juce::Colour colour)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDark);
-	g.fillAll();
+	g.setColour(colour);
+	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRect(getLocalBounds(), 1);
+	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
 }
 
 void ObsidianComponent::paintBaseRoundedBackgroundMidWithAlpha06(juce::Graphics &g)

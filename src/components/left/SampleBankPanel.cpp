@@ -285,7 +285,7 @@ DetailPanel::DetailPanel()
 
 	addAndMakeVisible(deleteButton);
 	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	deleteButton.onClick = [this]()
 	{
 		if (entry && onDeleteRequested)
@@ -603,7 +603,7 @@ void DetailPanel::updatePlayButton()
 	if (isPlaying)
 	{
 		playButton.setToggleState(true, juce::dontSendNotification);
-		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	}
 	else
 	{
@@ -699,8 +699,8 @@ void SampleBankPanel::setupUI()
 	infoLabel.setJustificationType(juce::Justification::centredLeft);
 
 	addAndMakeVisible(cleanupButton);
-	cleanupButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-	cleanupButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	cleanupButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
+	cleanupButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	cleanupButton.onClick = [this]() { cleanupUnusedSamples(); };
 
 	addAndMakeVisible(sortMenu);
@@ -741,22 +741,22 @@ void SampleBankPanel::setupUI()
 
 	addAndMakeVisible(addCategoryButton);
 	addCategoryButton.loadIcon(BinaryData::plus_svg, BinaryData::plus_svgSize);
-	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::mossGreen);
-	addCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::slate);
+	addCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 
 	addCategoryButton.onClick = [this]() { addCategory(); };
 
 	addAndMakeVisible(editCategoryButton);
 	editCategoryButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
 	editCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
-	editCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	editCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	editCategoryButton.onClick = [this]() { editCategory(); };
 	editCategoryButton.setEnabled(false);
 
 	addAndMakeVisible(deleteCategoryButton);
 	deleteCategoryButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
-	deleteCategoryButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+	deleteCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
+	deleteCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteCategoryButton.onClick = [this]() { deleteCategory(); };
 	deleteCategoryButton.setEnabled(false);
 

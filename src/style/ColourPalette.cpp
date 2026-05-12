@@ -37,6 +37,8 @@ constexpr auto SAMPLE_PENDING = 0x40aaaaaa;
 constexpr auto MUTED_STEEL = 0xff5A6770;
 constexpr auto MOSS_GREEN = 0xff7B8A5E;
 
+constexpr auto DEEP_SLATE = 0xff2D3640;
+
 const juce::Colour ColourPalette::track1(TERRACOTTA);
 const juce::Colour ColourPalette::track2(TEAL);
 const juce::Colour ColourPalette::track3(MAUVE);
@@ -115,6 +117,8 @@ const juce::Colour ColourPalette::modelInstrumental(EMERALD);
 const juce::Colour ColourPalette::modelBeats(INDIGO);
 const juce::Colour ColourPalette::modelGluten(ROSE);
 const juce::Colour ColourPalette::modelStableAudioTflite(CYAN);
+
+const juce::Colour ColourPalette::modalHeader(DEEP_SLATE);
 
 juce::Colour ColourPalette::getTrackColour(int trackIndex)
 {

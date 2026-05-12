@@ -23,23 +23,8 @@ void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHi
 	else if (shouldDrawButtonAsHighlighted)
 		bgColour = colour.brighter(0.12f);
 
-	if (!shouldDrawButtonAsDown)
-	{
-		g.setColour(juce::Colours::black.withAlpha(0.35f));
-		g.fillRoundedRectangle(bounds.translated(0, 1.5f), corner);
-	}
-
-	juce::ColourGradient bgGradient(bgColour.brighter(0.08f), bounds.getX(), bounds.getY(), bgColour.darker(0.08f),
-	                                bounds.getX(), bounds.getBottom(), false);
-	g.setGradientFill(bgGradient);
+	g.setColour(bgColour);
 	g.fillRoundedRectangle(bounds, corner);
-
-	if (!shouldDrawButtonAsDown)
-	{
-		g.setColour(juce::Colours::white.withAlpha(0.08f));
-		auto topHighlight = bounds.withHeight(bounds.getHeight() * 0.45f);
-		g.fillRoundedRectangle(topHighlight, corner);
-	}
 
 	g.setColour(bgColour.brighter(0.25f).withAlpha(0.5f));
 	g.drawRoundedRectangle(bounds, corner, 0.8f);
@@ -55,7 +40,7 @@ void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHi
 	}
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(13.0f));
+	g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_REGULAR));
 	g.drawText(getButtonText(), contentBounds, juce::Justification::centredLeft, true);
 }
 
@@ -83,58 +68,37 @@ void ObsidianModalWindow::addButton(const juce::String &text, const juce::String
 void ObsidianModalWindow::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	const float corner = 10.0f;
-	const float titleHeight = 56.0f;
+	const float corner = ObsidianSizes::CORNER;
+	const float titleHeight = 38.0f;
 
-	juce::DropShadow shadow(juce::Colours::black.withAlpha(0.7f), 24, juce::Point<int>(0, 8));
-	shadow.drawForRectangle(g, bounds.toNearestInt());
-
-	juce::ColourGradient bgGradient(ColourPalette::backgroundDeep.brighter(0.03f), bounds.getX(), bounds.getY(),
-	                                ColourPalette::backgroundDeep.darker(0.05f), bounds.getX(), bounds.getBottom(),
-	                                false);
-	g.setGradientFill(bgGradient);
+	g.setColour(ColourPalette::backgroundDark);
 	g.fillRoundedRectangle(bounds, corner);
 
 	juce::Path titleBarPath;
 	titleBarPath.addRoundedRectangle(bounds.getX(), bounds.getY(), bounds.getWidth(), titleHeight, corner, corner, true,
 	                                 true, false, false);
 
-	juce::ColourGradient titleGradient(ColourPalette::buttonPrimary.withAlpha(0.18f), bounds.getX(), bounds.getY(),
-	                                   ColourPalette::buttonPrimary.withAlpha(0.05f), bounds.getX(),
-	                                   bounds.getY() + titleHeight, false);
-	g.setGradientFill(titleGradient);
+	g.setColour(ColourPalette::modalHeader);
 	g.fillPath(titleBarPath);
 
 	auto titleBounds =
 	    juce::Rectangle<float>(bounds.getX() + 30.0f, bounds.getY(), bounds.getWidth() - 60.0f, titleHeight);
+
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(17.0f));
+	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XL));
 	g.drawText(title, titleBounds, juce::Justification::centredLeft, true);
 
 	float lineY = bounds.getY() + titleHeight;
-	juce::ColourGradient lineGradient(ColourPalette::lightGrey.withAlpha(0.0f), bounds.getX(), lineY,
-	                                  ColourPalette::lightGrey.withAlpha(0.0f), bounds.getRight(), lineY, false);
-	lineGradient.addColour(0.5, ColourPalette::lightGrey.withAlpha(0.6f));
-	g.setGradientFill(lineGradient);
+	g.setColour(ColourPalette::modalHeader.withAlpha(ObsidianShades::ALPHA_04));
 	g.fillRect(bounds.getX(), lineY, bounds.getWidth(), 1.0f);
-
-	g.setColour(ColourPalette::buttonPrimary.withAlpha(0.4f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), corner, 1.0f);
-
-	g.setColour(juce::Colours::white.withAlpha(0.03f));
-	auto topHighlight = juce::Rectangle<float>(bounds.getX(), bounds.getY(), bounds.getWidth(), titleHeight * 0.5f);
-	juce::Path highlightPath;
-	highlightPath.addRoundedRectangle(topHighlight.getX(), topHighlight.getY(), topHighlight.getWidth(),
-	                                  topHighlight.getHeight(), corner, corner, true, true, false, false);
-	g.fillPath(highlightPath);
 }
 
 void ObsidianModalWindow::resized()
 {
-	const int titleHeight = 56;
-	const int padding = 24;
-	const int buttonAreaHeight = 48;
-	const int buttonAreaPadding = 16;
+	const int titleHeight = 32;
+	const int padding = 12;
+	const int buttonAreaHeight = 32;
+	const int buttonAreaPadding = 18;
 
 	auto bounds = getLocalBounds();
 	bounds.removeFromTop(titleHeight);
@@ -147,7 +111,7 @@ void ObsidianModalWindow::resized()
 		content->setBounds(bounds);
 
 	const int btnWidth = 170;
-	const int btnHeight = 38;
+	const int btnHeight = 32;
 	const int spacing = 10;
 
 	juce::FlexBox fb;

@@ -111,7 +111,7 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 		if (customIconSize > 0.0f)
 			side = customIconSize;
 		else if (isCompact)
-			side = std::min(side, 9.0f);
+			side = std::min(side, 10.0f);
 
 		juce::Rectangle<float> square(iconBounds.getCentreX() - side * 0.5f, iconBounds.getCentreY() - side * 0.5f,
 		                              side, side);

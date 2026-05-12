@@ -296,11 +296,12 @@ void CustomLookAndFeel::positionComboBoxText(juce::ComboBox &box, juce::Label &l
 {
 	auto buttonWidth = juce::jmin(box.getHeight(), 24);
 
-	label.setBounds(2, 1, box.getWidth() - buttonWidth - 12, box.getHeight() - 2);
+	label.setBounds(0, 0, box.getWidth() - buttonWidth, box.getHeight());
 
 	label.setFont(getComboBoxFont(box));
-	label.setJustificationType(juce::Justification::centredLeft);
+	label.setJustificationType(juce::Justification::left);
 	label.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+	label.setBorderSize(juce::BorderSize<int>(0, 0, 0, 0));
 }
 
 juce::PopupMenu::Options CustomLookAndFeel::getOptionsForComboBoxPopupMenu(juce::ComboBox &box, juce::Label &label)

@@ -56,7 +56,7 @@ class PromptBankPanel : public juce::Component
 	juce::Label titleLabel;
 	juce::Label helpLabel;
 
-	juce::TextEditor searchInput;
+	EscapableTextEditor searchInput;
 	juce::ComboBox sortMenu;
 
 	IconButton addCategoryButton{"add-cat", "New Category"};

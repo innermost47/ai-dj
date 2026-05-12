@@ -607,13 +607,13 @@ void DrawingCanvas::setupKeywordsUI()
 	addAndMakeVisible(keywordsLabel);
 	keywordsLabel.setText("Keywords", juce::dontSendNotification);
 	keywordsLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	keywordsLabel.setFont(juce::FontOptions("Courier New", 14.0f, juce::Font::bold));
+	keywordsLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 
 	addAndMakeVisible(keywordInput);
-	keywordInput.setFont(juce::FontOptions(13.0f));
-	keywordInput.setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundLight);
-	keywordInput.setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
-	keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep);
+	keywordInput.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	keywordInput.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundLight);
+	keywordInput.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+	keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundDeep);
 	keywordInput.setTextToShowWhenEmpty("Add keyword...", ColourPalette::textSecondary);
 	keywordInput.onReturnKey = [this]() { addCustomKeyword(); };
 
@@ -797,19 +797,19 @@ void DrawingCanvas::addCustomKeyword()
 
 	if (!isKeywordValid(newKeyword))
 	{
-		keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonDanger);
+		keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::buttonDangerDark);
 		juce::Timer::callAfterDelay(
 		    500,
-		    [this]() { keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
+		    [this]() { keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundDeep); });
 		return;
 	}
 
 	if (availableKeywords.contains(newKeyword))
 	{
-		keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonWarning);
+		keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::buttonWarning);
 		juce::Timer::callAfterDelay(
 		    500,
-		    [this]() { keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
+		    [this]() { keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundDeep); });
 		keywordInput.clear();
 		return;
 	}
@@ -821,9 +821,9 @@ void DrawingCanvas::addCustomKeyword()
 
 	keywordInput.clear();
 
-	keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::buttonSuccess);
+	keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::buttonSuccess);
 	juce::Timer::callAfterDelay(
-	    500, [this]() { keywordInput.setColour(juce::TextEditor::outlineColourId, ColourPalette::backgroundDeep); });
+	    500, [this]() { keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundDeep); });
 }
 
 void DrawingCanvas::updateColorSwatchSelection()
@@ -967,7 +967,7 @@ void DrawingCanvas::setupUI()
 
 	addAndMakeVisible(clearButton);
 	clearButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	clearButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
+	clearButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	clearButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	clearButton.onClick = [this] { clearCanvasWithConfirmation(); };
 
