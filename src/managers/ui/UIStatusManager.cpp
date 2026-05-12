@@ -34,9 +34,10 @@ void UIStatusManager::refreshCredits()
 
 void UIStatusManager::refreshCreditsAsync()
 {
-	juce::String currentApiKey = editor.audioProcessor.getApiKey();
-	juce::String currentServerUrl = editor.audioProcessor.getServerUrl();
-	int timeout = editor.audioProcessor.getRequestTimeout();
+	auto &processor = editor.audioProcessor;
+	juce::String currentApiKey = processor.getApiKey();
+	juce::String currentServerUrl = processor.getServerUrl();
+	int timeout = processor.getRequestTimeout();
 
 	if (currentApiKey.isEmpty())
 	{
@@ -52,22 +53,21 @@ void UIStatusManager::refreshCreditsAsync()
 
 	editor.creditsLabel.setText("Credits: Loading...", juce::dontSendNotification);
 
-	editor.audioProcessor.getApiClient().setApiKey(currentApiKey);
-	editor.audioProcessor.getApiClient().setBaseUrl(currentServerUrl);
+	processor.getApiClient().setApiKey(currentApiKey);
+	processor.getApiClient().setBaseUrl(currentServerUrl);
 
-	juce::Thread::launch(
-	    [timeout, safeEditor = juce::Component::SafePointer<DjIaVstEditor>(&editor)]()
+	juce::Component::SafePointer<DjIaVstEditor> safeEditor(&editor);
+
+	processor.threadPool.addJob(
+	    [&processor, safeEditor, timeout]() mutable
 	    {
-		    auto *e = safeEditor.getComponent();
-		    if (!e)
+		    if (safeEditor == nullptr)
 			    return;
-		    if (e->audioProcessor.isShuttingDown.load())
-			    return;
-		    auto creditsInfo = e->audioProcessor.getApiClient().checkCredits(timeout);
+		    auto creditsInfo = processor.getApiClient().checkCredits(timeout);
 		    juce::MessageManager::callAsync(
 		        [safeEditor, creditsInfo]()
 		        {
-			        if (auto *editor = safeEditor.getComponent())
+			        if (auto *e = safeEditor.getComponent())
 			        {
 				        if (creditsInfo.success)
 				        {

@@ -4,6 +4,7 @@
 
 class DjIaVstProcessor;
 class DjIaVstEditor;
+class ScaleAndDurationPanel;
 
 class ConfigComponent : public ObsidianComponent
 {
@@ -20,6 +21,8 @@ class ConfigComponent : public ObsidianComponent
 	DjIaVstProcessor &audioProcessor;
 	DjIaVstEditor &editor;
 
+	std::unique_ptr<ScaleAndDurationPanel> scaleAndDurationPanel;
+
 	IconButtonSimple bypassSequencerButton{"BypassSeq", ""};
 	IconButtonSimple configButton{"Config", ""};
 	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
@@ -27,6 +30,10 @@ class ConfigComponent : public ObsidianComponent
 	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
 
 	juce::Image logoImage;
+
+	juce::Label configLabel;
+	juce::Label versionLabel;
+	juce::Label buildLabel;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ConfigComponent)
 };

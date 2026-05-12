@@ -156,7 +156,7 @@ class SampleBankPanel : public juce::Component, public juce::Timer, public juce:
 	DjIaVstProcessor &audioProcessor;
 
 	juce::Label titleLabel;
-	IconButtonSimple cleanupButton{"Cleanup", ""};
+	IconButtonSimple cleanupButton{"Cleanup", "Clean unused samples"};
 	juce::Label infoLabel;
 	juce::ComboBox sortMenu;
 

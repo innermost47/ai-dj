@@ -699,7 +699,6 @@ void SampleBankPanel::setupUI()
 	infoLabel.setJustificationType(juce::Justification::centredLeft);
 
 	addAndMakeVisible(cleanupButton);
-	cleanupButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
 	cleanupButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDanger);
 	cleanupButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
 	cleanupButton.onClick = [this]() { cleanupUnusedSamples(); };
@@ -787,26 +786,28 @@ void SampleBankPanel::resized()
 	auto detailPanelArea = area.removeFromBottom(ObsidianSizes::SAMPLE_DETAIL_HEIGHT);
 	detailPanel.setBounds(detailPanelArea);
 
-	auto hdr = area.removeFromTop(28);
+	auto hdr = area.removeFromTop(ObsidianSizes::TITLE_PANEL_HEIGHT);
 	titleLabel.setBounds(hdr.removeFromLeft(160));
-	cleanupButton.setBounds(hdr.removeFromRight(34).reduced(2));
-	infoLabel.setBounds(area.removeFromTop(30));
-	area.removeFromTop(4);
+	infoLabel.setBounds(area.removeFromTop(ObsidianSizes::INFO_PANEL_HEIGHT));
+	area.removeFromTop(ObsidianSizes::GAP_8);
 
-	sortMenu.setBounds(area.removeFromTop(24).reduced(0, 2));
-	area.removeFromTop(4);
-	categoryFilter.setBounds(area.removeFromTop(24).reduced(0, 2));
-	area.removeFromTop(4);
+	sortMenu.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
+	area.removeFromTop(ObsidianSizes::GAP_4);
+	categoryFilter.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
+	area.removeFromTop(ObsidianSizes::GAP_4);
 
-	auto btnRow = area.removeFromTop(24);
-	addCategoryButton.setBounds(btnRow.removeFromRight(28).reduced(2));
+	auto btnRow = area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT);
+	addCategoryButton.setBounds(btnRow.removeFromRight(28));
 	btnRow.removeFromRight(2);
-	deleteCategoryButton.setBounds(btnRow.removeFromRight(28).reduced(2));
+	deleteCategoryButton.setBounds(btnRow.removeFromRight(28));
 	btnRow.removeFromRight(2);
-	editCategoryButton.setBounds(btnRow.removeFromRight(28).reduced(2));
+	editCategoryButton.setBounds(btnRow.removeFromRight(28));
 	btnRow.removeFromRight(4);
-	categoryInput.setBounds(btnRow.reduced(0, 2));
-	area.removeFromTop(8);
+	categoryInput.setBounds(btnRow);
+	area.removeFromTop(ObsidianSizes::GAP_4);
+
+	cleanupButton.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
+	area.removeFromTop(ObsidianSizes::GAP);
 
 	sampleListBox.setBounds(area);
 }

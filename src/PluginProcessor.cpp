@@ -73,6 +73,25 @@ DjIaVstProcessor::~DjIaVstProcessor()
 	}
 }
 
+void DjIaVstProcessor::cleanProcessor()
+{
+	isShuttingDown.store(true);
+
+	threadPool.removeAllJobs(true, 5000);
+
+	parameterManager.removeAllListeners(this);
+
+	isNotePlaying = false;
+	hasPendingAudioData = false;
+	hasUnloadedSample = false;
+
+	midiManager.setMidiIndicatorCallback(nullptr);
+	trackManager.parameterUpdateCallback.store(nullptr);
+
+	audioManager.releaseResources();
+	obsidianEngine.reset();
+}
+
 juce::AudioProcessorEditor *DjIaVstProcessor::createEditor()
 {
 	currentEditor = new DjIaVstEditor(*this);
@@ -98,23 +117,6 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 void DjIaVstProcessor::releaseResources()
 {
 	audioManager.releaseResources();
-}
-
-void DjIaVstProcessor::cleanProcessor()
-{
-	isShuttingDown.store(true);
-
-	parameterManager.removeAllListeners(this);
-
-	isNotePlaying = false;
-	hasPendingAudioData = false;
-	hasUnloadedSample = false;
-
-	midiManager.setMidiIndicatorCallback(nullptr);
-	trackManager.parameterUpdateCallback.store(nullptr);
-
-	audioManager.releaseResources();
-	obsidianEngine.reset();
 }
 
 juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()

@@ -48,6 +48,8 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::function<void(const float *l, const float *r, int n, double ppq)> onMasterOutput;
 	std::function<void(const juce::String &)> midiIndicatorCallback;
 
+	juce::ThreadPool threadPool{1};
+
 	std::atomic<bool> isShuttingDown{false};
 
 	PromptBank *getPromptBank()

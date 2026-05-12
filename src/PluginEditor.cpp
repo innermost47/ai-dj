@@ -286,6 +286,8 @@ void DjIaVstEditor::setupUI()
 	statusLabel.setColour(juce::Label::backgroundColourId, ColourPalette::backgroundDeep);
 	statusLabel.setColour(juce::Label::textColourId, ColourPalette::violet);
 
+	creditsLabel.setText("Loading...", juce::dontSendNotification);
+
 	addAndMakeVisible(lcdScreen.get());
 
 	addAndMakeVisible(masterWaveformDisplay.get());

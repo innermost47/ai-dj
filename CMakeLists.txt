@@ -139,12 +139,17 @@ juce_add_plugin(ObsidianNeuralVST
 
 juce_add_binary_data(ObsidianBinaryData
     SOURCES
+        src/assets/fonts/michroma.ttf
+        src/assets/fonts/noto-bold.ttf
+        src/assets/fonts/noto-italic.ttf
+        src/assets/fonts/noto-regular.ttf
         src/assets/icons/activity.svg
         src/assets/icons/anchor.svg
         src/assets/icons/branch.svg
         src/assets/icons/broadcast.svg
         src/assets/icons/brush.svg
         src/assets/icons/bucket.svg
+        src/assets/icons/chat-text.svg
         src/assets/icons/collapse.svg
         src/assets/icons/cpu.svg
         src/assets/icons/cpuregular.svg
@@ -153,6 +158,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/eq.svg
         src/assets/icons/eraser.svg
         src/assets/icons/expand.svg
+        src/assets/icons/file-audio.svg
         src/assets/icons/folder.svg
         src/assets/icons/gear.svg
         src/assets/icons/grid.svg
@@ -184,49 +190,45 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/wind.svg
         src/assets/icons/x.svg
         src/assets/icons/zap.svg
-        src/assets/icons/file-audio.svg
-        src/assets/icons/chat-text.svg
-        src/assets/fonts/michroma.ttf
-        src/assets/fonts/noto-bold.ttf
-        src/assets/fonts/noto-italic.ttf
-        src/assets/fonts/noto-regular.ttf
         src/assets/logo.png   
 )
 
 target_sources(ObsidianNeuralVST PRIVATE
-    src/components/bank/CategoryPanel.cpp
-    src/components/bank/LeftPanelWrapper.cpp
-    src/components/bank/PromptBank.cpp
-    src/components/bank/PromptBankItem.cpp
-    src/components/bank/PromptBankPanel.cpp
-    src/components/bank/PromptCategoryAccordion.cpp
-    src/components/bank/PromptModelDefinitions.cpp
-    src/components/bank/SampleBank.cpp
-    src/components/bank/SampleBankPanel.cpp
-    src/components/fx/ConfigComponent.cpp
-    src/components/fx/LCDScreen.cpp
-    src/components/fx/MasterChannel.cpp
-    src/components/fx/MasterWaveformDisplay.cpp
-    src/components/fx/RightPanelWrapper.cpp
-    src/components/fx/SendsPanel.cpp
-    src/components/fx/StandaloneTransportComponent.cpp
-    src/components/fx/TrackEffectsPanel.cpp
-    src/components/fx/TrackRecapPanel.cpp
-    src/components/mixer/CrossfaderComponent.cpp
-    src/components/mixer/MixerChannel.cpp
-    src/components/mixer/MixerPanel.cpp
-    src/components/ObsidianBaseMidiComponent.cpp
+    src/components/center/mixer/CrossfaderComponent.cpp
+    src/components/center/mixer/MixerChannel.cpp
+    src/components/center/mixer/MixerPanel.cpp
+    src/components/center/tracks/DrawingCanvas.cpp
+    src/components/center/tracks/SequencerComponent.cpp
+    src/components/center/tracks/TrackComponent.cpp
+    src/components/center/tracks/WaveformDisplay.cpp
+    src/components/left/CategoryPanel.cpp
+    src/components/left/LeftPanelWrapper.cpp
+    src/components/left/PromptBank.cpp
+    src/components/left/PromptBankItem.cpp
+    src/components/left/PromptBankPanel.cpp
+    src/components/left/PromptCategoryAccordion.cpp
+    src/components/left/PromptModelDefinitions.cpp
+    src/components/left/SampleBank.cpp
+    src/components/left/SampleBankPanel.cpp
+    src/components/right/ConfigComponent.cpp
+    src/components/right/LCDScreen.cpp
+    src/components/right/MasterChannel.cpp
+    src/components/right/MasterWaveformDisplay.cpp
+    src/components/right/RightPanelWrapper.cpp
+    src/components/right/ScaleAndDuration.cpp
+    src/components/right/SendsPanel.cpp
+    src/components/right/StandaloneTransportComponent.cpp
+    src/components/right/TrackEffectsPanel.cpp
+    src/components/right/TrackRecapPanel.cpp
     src/components/shared/ColourPicker.cpp
     src/components/shared/IconButton.cpp
     src/components/shared/LedRadioButton.cpp
+    src/components/shared/ObsidianBase.cpp
+    src/components/shared/ObsidianBaseMidiComponent.cpp
     src/components/shared/ObsidianModal.cpp
     src/components/shared/VuMeter.cpp
-    src/components/tracks/DrawingCanvas.cpp
-    src/components/tracks/SequencerComponent.cpp
-    src/components/tracks/TrackComponent.cpp
-    src/components/tracks/WaveformDisplay.cpp
-    src/dsp/airwindows/Console6Channel.cpp
     src/dsp/airwindows/Console6Bus.cpp
+    src/dsp/airwindows/Console6Channel.cpp
     src/dsp/AudioAnalyzer.cpp
     src/dsp/DelaySend.cpp
     src/dsp/SimpleEQ.cpp
@@ -261,13 +263,14 @@ target_sources(ObsidianNeuralVST PRIVATE
 
 target_include_directories(ObsidianNeuralVST PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${soundtouch_SOURCE_DIR}/include
     src
     src/components
-    src/components/bank
-    src/components/fx
-    src/components/mixer
+    src/components/center/mixer
+    src/components/center/tracks
+    src/components/left
+    src/components/right
     src/components/shared
-    src/components/tracks
     src/config
     src/data
     src/dsp
@@ -279,7 +282,6 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/standalone/core
     src/standalone/transport/ui
     src/style
-    ${soundtouch_SOURCE_DIR}/include
 )
 
 target_compile_definitions(ObsidianNeuralVST 

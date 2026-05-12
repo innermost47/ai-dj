@@ -9,26 +9,6 @@
 class DjIaVstProcessor;
 class DjIaVstEditor;
 
-class ScaleAndDurationPanel : public ObsidianComponent
-{
-  public:
-	ScaleAndDurationPanel(DjIaVstProcessor &processor);
-	~ScaleAndDurationPanel() = default;
-
-	void paint(juce::Graphics &g) override;
-	void resized() override;
-	void update();
-
-  private:
-	DjIaVstProcessor &audioProcessor;
-	juce::ComboBox keySelector;
-	juce::ComboBox durationSelector;
-	juce::Label titleLabel;
-	juce::Label helpLabel;
-
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ScaleAndDurationPanel)
-};
-
 class PromptBankPanel : public juce::Component
 {
   public:
@@ -45,7 +25,6 @@ class PromptBankPanel : public juce::Component
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void updateFromProcessor();
 	void refreshList();
 
 	juce::var saveUIState() const;
@@ -73,7 +52,6 @@ class PromptBankPanel : public juce::Component
 
 	DjIaVstProcessor &audioProcessor;
 	DjIaVstEditor &editor;
-	std::unique_ptr<ScaleAndDurationPanel> scaleAndDurationPanel;
 
 	juce::Label titleLabel;
 	juce::Label helpLabel;
