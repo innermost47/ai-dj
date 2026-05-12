@@ -25,6 +25,11 @@ LeftPanelWrapper::LeftPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &e
 	setupTab(promptTabButton, Tab::Prompt);
 	setupTab(sampleTabButton, Tab::Sample);
 
+	promptTabButton.loadIcon(BinaryData::chattext_svg, BinaryData::chattext_svgSize);
+	sampleTabButton.loadIcon(BinaryData::fileaudio_svg, BinaryData::fileaudio_svgSize);
+	promptTabButton.setCompactMode(true);
+	sampleTabButton.setCompactMode(true);
+
 	setActiveTab(Tab::Prompt);
 }
 
@@ -43,7 +48,7 @@ void LeftPanelWrapper::resized()
 	const int tabW = tabBar.getWidth() / 2;
 	promptTabButton.setBounds(tabBar.removeFromLeft(tabW));
 	tabBar.removeFromLeft(ObsidianSizes::SPACER_MD);
-	sampleTabButton.setBounds(tabBar);
+	sampleTabButton.setBounds(tabBar.removeFromLeft(tabW));
 
 	area.removeFromTop(4);
 

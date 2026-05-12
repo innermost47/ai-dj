@@ -26,7 +26,7 @@ static constexpr int TRACK_BASE_HEIGHT = 80;
 static constexpr int WAVEFORM_HEIGHT = 45;
 static constexpr int SEQUENCER_HEIGHT = 45;
 static constexpr int PAGE_BUTTON_SIZE = 16;
-static constexpr int TAB_BAR_HEIGHT = 18;
+static constexpr int TAB_BAR_HEIGHT = 20;
 
 static constexpr int SCALE_AND_DURATION_HEIGHT = 92;
 

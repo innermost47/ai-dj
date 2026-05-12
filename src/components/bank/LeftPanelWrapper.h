@@ -46,8 +46,8 @@ class LeftPanelWrapper : public ObsidianComponent
 	std::unique_ptr<SampleBankPanel> sampleBank;
 	std::unique_ptr<PromptBankPanel> promptBank;
 
-	juce::TextButton promptTabButton{"PROMPT"};
-	juce::TextButton sampleTabButton{"SAMPLE"};
+	IconButton promptTabButton{"prompt"};
+	IconButton sampleTabButton{"sample"};
 
 	Tab activeTab = Tab::Prompt;
 

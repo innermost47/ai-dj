@@ -50,7 +50,5 @@ class PromptBankItem : public ObsidianComponent
 	IconButton editButton{"prompt-edit"};
 	IconButton deleteButton{"prompt-delete"};
 
-	juce::String getElidedText(const juce::String &text, juce::Font &font, float maxWidth, int maxLines);
-
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PromptBankItem)
 };
