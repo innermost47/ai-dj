@@ -61,16 +61,31 @@ OBSIDIAN Neural now features **8 specialized AI engines** in a single interface.
 
 Type words → Get musical loops in ~30s. No stopping your creative flow.
 
+### Performance
 - **8-track sampler** with MIDI triggering (C3-B3)
 - **4 pages per track** (A/B/C/D) — Switch variations instantly
-- **Per-page ADSR envelope** — Shape the dynamics of each variation independently, editable directly on the waveform
 - **8 sequences per page** — 256 total patterns for complex live sets
 - **16-step sequencer** with multi-measure support
 - **Quantized page changes** — Seamless transitions locked to measure boundaries
-- **Draw-to-sound** — Sketch your ideas visually and let AI interpret them musically
-- **Perfect DAW sync** — Auto time-stretch to project tempo
-- **Non-blocking generation** — No pre-recorded samples, renders in background
 - **4 pair crossfaders** — Blend each deck A/B pair independently with model-aware color morphing
+- **Plug-and-play MIDI mapping** — Auto-configured for the [companion mobile controller](https://github.com/innermost47/obsidian-neural-controller), with bidirectional feedback (LED states, knob positions) on dedicated MIDI channels
+- **MIDI learn on every parameter** — Map any control to any hardware override, with persistent user mappings
+
+### Sound design
+- **Per-page ADSR envelope** — Shape the dynamics of each variation independently, editable directly on the waveform
+- **Tempo-synced delay send** — 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
+- **Airwindows Console6 master bus** — Analog-modeled saturation for cohesive mix glue
+
+### AI generation
+- **Prompt bank with editor** — Build, organize and reuse your prompts with model-aware keywords (genres, elements, moods, negatives)
+- **Drag-and-drop prompts** — Drop a prompt on a track to assign both prompt and AI model in one gesture
+- **LLM bypass mode** — Skip prompt enhancement for faster generation when you already know what you want
+- **Non-blocking generation** — No pre-recorded samples, renders in background
+
+### Sync
+- **Perfect DAW sync** — Auto time-stretch to project tempo
+- **Standalone version** — Run OBSIDIAN Neural without a DAW, with built-in transport and tempo control
+- **Ableton Link** (Standalone) — Bidirectional network sync of tempo and start/stop with any Link-enabled app
 
 **OBSIDIAN Neural is NOT a song generator** like Suno or Udio. It's a performance tool: you build your track loop by loop, you're the composer, AI is your loop generator.
 
@@ -105,7 +120,7 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 
 ## Quick Start
 
-### 🟣 Cloud API (Recommended)
+### 🟣 Cloud API 
 
 > ☁️ **No GPU required** — Generation runs on our servers. Any laptop can run the plugin.
 
@@ -161,7 +176,7 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 
 **Developed by InnerMost47 (Anthony Charretier)**
 
-Special thanks to **A.D** for the original draw-to-audio concept, **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
+Special thanks to **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
 
 ---
 
