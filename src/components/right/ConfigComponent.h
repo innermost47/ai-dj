@@ -10,6 +10,7 @@ class ConfigComponent : public ObsidianComponent
 {
   public:
 	ConfigComponent(DjIaVstProcessor &processor, DjIaVstEditor &editor);
+	~ConfigComponent() override;
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;

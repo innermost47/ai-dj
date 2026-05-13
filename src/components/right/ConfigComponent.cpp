@@ -17,6 +17,8 @@ ConfigComponent::ConfigComponent(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	setupUI();
 }
 
+ConfigComponent::~ConfigComponent() = default;
+
 void ConfigComponent::setupUI()
 {
 	addAndMakeVisible(configLabel);

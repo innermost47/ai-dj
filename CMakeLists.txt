@@ -88,7 +88,9 @@ if(NOT JUCE_FOUND)
     include(FetchContent)
     FetchContent_Declare(JUCE
         GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-        GIT_TAG 8.0.8  
+        GIT_TAG 8.0.8 
+        GIT_SHALLOW TRUE     
+        GIT_PROGRESS TRUE  
     )
     FetchContent_MakeAvailable(JUCE)
 endif()
@@ -99,6 +101,8 @@ if(NOT SoundTouch_FOUND)
     FetchContent_Declare(soundtouch
         GIT_REPOSITORY https://github.com/innermost47/soundtouch.git
         GIT_TAG 2.4.0
+        GIT_SHALLOW TRUE     
+        GIT_PROGRESS TRUE
     )
     FetchContent_MakeAvailable(soundtouch)
 endif()
@@ -109,6 +113,8 @@ if(NOT nlohmann_json_FOUND)
     FetchContent_Declare(nlohmann_json
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG v3.12.0
+        GIT_SHALLOW TRUE     
+        GIT_PROGRESS TRUE
     )
     FetchContent_MakeAvailable(nlohmann_json)
 endif()
@@ -119,6 +125,8 @@ FetchContent_Declare(
     AbletonLink
     GIT_REPOSITORY https://github.com/Ableton/link.git
     GIT_TAG Link-4.0.0b4
+    GIT_SHALLOW TRUE     
+    GIT_PROGRESS TRUE
 )
 
 FetchContent_GetProperties(AbletonLink)

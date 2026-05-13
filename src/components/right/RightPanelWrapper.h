@@ -18,7 +18,7 @@ class RightPanelWrapper : public ObsidianComponent
 {
   public:
 	RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &editor);
-	~RightPanelWrapper() override = default;
+	~RightPanelWrapper() override;
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;

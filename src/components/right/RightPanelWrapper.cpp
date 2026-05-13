@@ -34,6 +34,8 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor 
 	addAndMakeVisible(*sendsPanel);
 }
 
+RightPanelWrapper::~RightPanelWrapper() = default;
+
 void RightPanelWrapper::paint(juce::Graphics &g)
 {
 	paintBaseBackgroundWithLeftBorder(g);
