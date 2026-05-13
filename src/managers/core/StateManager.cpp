@@ -188,7 +188,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 				auto &page = track->pages[pageIndex];
 				page.audioFilePath = pageState.getProperty("audioFilePath", "").toString();
 				page.numSamples = pageState.getProperty("numSamples", 0);
-				page.sampleRate = pageState.getProperty("sampleRate", 48000.0);
+				page.sampleRate = pageState.getProperty("sampleRate", ObsidianDataConst::SAMPLERATE);
 				page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 				page.prompt = pageState.getProperty("prompt", "").toString();
 				page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();

@@ -125,8 +125,7 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	}
 
 	masterConsoleBuss.prepare(sampleRate);
-	delaySend.prepare(sampleRate, samplesPerBlock);
-	delaySendBuffer.setSize(2, samplesPerBlock, false, false, true);
+	trackManager.prepareDelays(sampleRate, samplesPerBlock);
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -559,44 +558,10 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	                             pairCurrent, globalPrev, globalCurrent, curveMode, timeSignatureNumerator.load(),
 	                             timeSignatureDenominator.load());
 
-	delaySendBuffer.setSize(2, buffer.getNumSamples(), false, false, true);
-	delaySendBuffer.clear();
-
-	const auto &individualBuffers = audioManager.getIndividualOutputBuffers();
-	for (size_t i = 0; i < individualBuffers.size(); ++i)
-	{
-		auto &trackBuffer = individualBuffers[i];
-		if (trackBuffer.getNumChannels() < 2)
-			continue;
-
-		TrackData *track = nullptr;
-		for (const auto &id : trackManager.getAllTrackIds())
-		{
-			auto *t = trackManager.getTrack(id);
-			if (t && t->slotIndex == (int)i)
-			{
-				track = t;
-				break;
-			}
-		}
-		if (!track)
-			continue;
-
-		float sendLevel = track->delaySend.load();
-		if (sendLevel < 0.001f)
-			continue;
-
-		for (int ch = 0; ch < 2; ++ch)
-			delaySendBuffer.addFrom(ch, 0, trackBuffer, ch, 0, buffer.getNumSamples(), sendLevel);
-	}
-
-	delaySend.setBpm(hostBpm);
-	delaySend.setTimeDivision(static_cast<DelaySend::TimeDivision>(parameterManager.getDelayDivisionIndex()));
-	delaySend.setFeedback(parameterManager.getFeedback());
-	delaySend.setMode(static_cast<DelaySend::Mode>(parameterManager.getDelayModeIndex()));
-	delaySend.process(delaySendBuffer);
-	for (int ch = 0; ch < std::min(2, mainOutput.getNumChannels()); ++ch)
-		mainOutput.addFrom(ch, 0, delaySendBuffer, ch, 0, buffer.getNumSamples());
+	trackManager.processPerTrackDelays(
+	    audioManager.getIndividualOutputBuffers(), mainOutput, hostBpm,
+	    static_cast<DelaySend::TimeDivision>(parameterManager.getDelayDivisionIndex()), parameterManager.getFeedback(),
+	    static_cast<DelaySend::Mode>(parameterManager.getDelayModeIndex()), buffer.getNumSamples());
 
 	audioManager.copyToIndividualOutputs(buffer);
 	audioManager.applyMasterEffects(mainOutput);

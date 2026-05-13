@@ -42,7 +42,7 @@ class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listen
 	std::vector<float> thumbnailRight;
 	double loopStart = 0.0;
 	double loopEnd = 4.0;
-	double sampleRate = 48000.0;
+	double sampleRate = ObsidianDataConst::SAMPLERATE;
 	double zoomFactor = 1.0;
 	double viewStartTime = 0.0;
 	double playbackPosition = 0.0;

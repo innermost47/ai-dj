@@ -10,7 +10,7 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData *trackDa
 	setAccessible(false);
 	zoomFactor = 1.0;
 	viewStartTime = 0.0;
-	sampleRate = 48000.0;
+	sampleRate = ObsidianDataConst::SAMPLERATE;
 	auto &currentPage = track->getCurrentPage();
 	loopPointsLocked = currentPage.loopPointsLocked.load();
 	horizontalScrollBar = std::make_unique<juce::ScrollBar>(false);

@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include <JuceHeader.h>
 #include <functional>
 #include <memory>
@@ -25,7 +26,8 @@ struct SampleBankEntry
 	int numChannels;
 	int numSamples;
 
-	SampleBankEntry() : duration(0.0f), bpm(126.0f), sampleRate(48000.0), numChannels(2), numSamples(0)
+	SampleBankEntry()
+	    : duration(0.0f), bpm(126.0f), sampleRate(ObsidianDataConst::SAMPLERATE), numChannels(2), numSamples(0)
 	{
 	}
 };

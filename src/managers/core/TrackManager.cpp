@@ -27,9 +27,24 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	{
 		usedSlots[track->slotIndex] = true;
 	}
+
+	if (audioPrepared)
+		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+
 	tracks[stdId] = std::move(track);
 	trackOrder.push_back(stdId);
 	return trackId;
+}
+
+void TrackManager::addTrack(const std::string &trackId, std::unique_ptr<TrackData> track)
+{
+	const juce::ScopedLock sl(tracksLock);
+
+	if (audioPrepared && track)
+		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+
+	tracks[trackId] = std::move(track);
+	trackOrder.push_back(trackId);
 }
 
 TrackData *TrackManager::getTrack(const juce::String &trackId)
@@ -51,6 +66,72 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 		}
 	}
 	return ids;
+}
+
+void TrackManager::prepareDelays(double sampleRate, int maxBlockSize)
+{
+	const juce::ScopedLock sl(tracksLock);
+	currentSampleRate = sampleRate;
+	currentMaxBlockSize = maxBlockSize;
+	audioPrepared = true;
+
+	perTrackDelayBuffer.setSize(2, maxBlockSize, false, false, true);
+	for (const auto &pair : tracks)
+	{
+		if (pair.second)
+			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
+	}
+}
+
+void TrackManager::processPerTrackDelays(std::vector<juce::AudioBuffer<float>> &individualOutputs,
+                                         juce::AudioBuffer<float> &mainOutput, double hostBpm,
+                                         DelaySend::TimeDivision division, float feedback, DelaySend::Mode mode,
+                                         int numSamples)
+{
+	if (!audioPrepared)
+		return;
+	if (perTrackDelayBuffer.getNumSamples() < numSamples)
+		perTrackDelayBuffer.setSize(2, numSamples, false, false, true);
+
+	const juce::ScopedLock sl(tracksLock);
+
+	for (const auto &id : trackOrder)
+	{
+		auto it = tracks.find(id);
+		if (it == tracks.end() || !it->second)
+			continue;
+
+		TrackData *track = it->second.get();
+		const int slot = track->slotIndex;
+		if (slot < 0 || slot >= (int)individualOutputs.size())
+			continue;
+
+		auto &trackBuffer = individualOutputs[slot];
+		if (trackBuffer.getNumChannels() < 2)
+			continue;
+
+		track->delaySendProcessor.setBpm(hostBpm);
+		track->delaySendProcessor.setTimeDivision(division);
+		track->delaySendProcessor.setFeedback(feedback);
+		track->delaySendProcessor.setMode(mode);
+
+		const float sendLevel = track->delaySend.load();
+
+		perTrackDelayBuffer.clear(0, numSamples);
+		if (sendLevel > 0.0001f)
+		{
+			for (int ch = 0; ch < 2; ++ch)
+				perTrackDelayBuffer.addFrom(ch, 0, trackBuffer, ch, 0, numSamples, sendLevel);
+		}
+
+		track->delaySendProcessor.process(perTrackDelayBuffer, 0, numSamples);
+
+		for (int ch = 0; ch < 2; ++ch)
+			trackBuffer.addFrom(ch, 0, perTrackDelayBuffer, ch, 0, numSamples);
+
+		for (int ch = 0; ch < std::min(2, mainOutput.getNumChannels()); ++ch)
+			mainOutput.addFrom(ch, 0, perTrackDelayBuffer, ch, 0, numSamples);
+	}
 }
 
 void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
@@ -229,13 +310,6 @@ size_t TrackManager::getNumTracks() const
 {
 	const juce::ScopedLock sl(tracksLock);
 	return tracks.size();
-}
-
-void TrackManager::addTrack(const std::string &trackId, std::unique_ptr<TrackData> track)
-{
-	const juce::ScopedLock sl(tracksLock);
-	tracks[trackId] = std::move(track);
-	trackOrder.push_back(trackId);
 }
 
 void TrackManager::clearAllTracks()

@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include <JuceHeader.h>
 
 class DelaySend
@@ -59,7 +60,7 @@ class DelaySend
   private:
 	void updateDelayTime();
 
-	double currentSampleRate = 48000.0;
+	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
 	double currentBpm = 120.0;
 	TimeDivision timeDivision = TimeDivision::Quarter;
 	float feedback = 0.4f;

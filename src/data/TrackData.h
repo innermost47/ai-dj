@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Console6Channel.h"
 #include "DataConst.h"
+#include "DelaySend.h"
 #include "DjIaClient.h"
 #include <JuceHeader.h>
 
@@ -42,7 +43,7 @@ struct TrackPage
 	int numSamples = 0;
 	int generationDuration = 6;
 
-	double sampleRate = 48000.0;
+	double sampleRate = ObsidianDataConst::SAMPLERATE;
 	double loopStart = 0.0;
 	double loopEnd = 4.0;
 
@@ -94,7 +95,7 @@ struct TrackPage
 		audioBuffer.setSize(0, 0);
 		audioFilePath.clear();
 		numSamples = 0;
-		sampleRate = 48000.0;
+		sampleRate = ObsidianDataConst::SAMPLERATE;
 		originalBpm = 126.0f;
 		prompt.clear();
 		selectedPrompt.clear();
@@ -140,6 +141,8 @@ struct TrackData
 	juce::AudioBuffer<float> originalStagingBuffer;
 
 	Console6Channel consoleChannel;
+
+	DelaySend delaySendProcessor;
 
 	juce::String trackId;
 	juce::String trackName;
@@ -226,7 +229,7 @@ struct TrackData
 	std::atomic<bool> previewEndPending{false};
 
 	std::atomic<double> cachedPlaybackRatio{1.0};
-	std::atomic<double> stagingSampleRate{48000.0};
+	std::atomic<double> stagingSampleRate{ObsidianDataConst::SAMPLERATE};
 	std::atomic<double> readPosition{0.0};
 	std::atomic<double> beatRepeatStartPosition{0.0};
 	std::atomic<double> beatRepeatEndPosition{0.0};

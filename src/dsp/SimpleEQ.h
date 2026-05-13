@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include <JuceHeader.h>
 
 class SimpleEQ
@@ -14,7 +15,7 @@ class SimpleEQ
 	void reset();
 
   private:
-	double sampleRate = 48000.0;
+	double sampleRate = ObsidianDataConst::SAMPLERATE;
 
 	float highGain = 0.0f;
 	float midGain = 0.0f;

@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include <JuceHeader.h>
 #include <cstdint>
 
@@ -43,7 +44,7 @@ class Console6Channel
 	}
 
   private:
-	double currentSampleRate = 48000.0;
+	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
 
 	uint32_t fpdL = 1;
 	uint32_t fpdR = 1;

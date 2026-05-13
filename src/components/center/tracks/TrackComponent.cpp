@@ -784,7 +784,7 @@ void TrackComponent::performPageChange(int pageIndex)
 		{
 			juce::AudioBuffer<float> emptyBuffer;
 			emptyBuffer.setSize(2, 0);
-			waveformDisplay->setAudioData(emptyBuffer, 48000.0);
+			waveformDisplay->setAudioData(emptyBuffer, ObsidianDataConst::SAMPLERATE);
 			waveformDisplay->setLoopPoints(0.0, 0.0);
 		}
 	}
@@ -1021,7 +1021,7 @@ void TrackComponent::refreshWaveformDisplay()
 	{
 		juce::AudioBuffer<float> emptyBuffer;
 		emptyBuffer.setSize(2, 0);
-		waveformDisplay->setAudioData(emptyBuffer, 48000.0);
+		waveformDisplay->setAudioData(emptyBuffer, ObsidianDataConst::SAMPLERATE);
 		waveformDisplay->setLoopPoints(0.0, 0.0);
 	}
 }

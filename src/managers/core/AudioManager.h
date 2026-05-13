@@ -86,7 +86,7 @@ class AudioManager
 	juce::Synthesiser synth;
 
 	double hostSampleRate = 44100.0;
-	int blockSize = 512;
+	int blockSize = ObsidianDataConst::MAX_BLOCK_SIZE;
 
 	std::atomic<bool> previewActive{false};
 	juce::AudioBuffer<float> previewBuffer;

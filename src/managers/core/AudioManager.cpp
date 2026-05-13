@@ -35,9 +35,9 @@ void AudioManager::initBuffers(int numTracks)
 {
 	individualOutputBuffers.resize(numTracks);
 	for (auto &buffer : individualOutputBuffers)
-		buffer.setSize(2, 512);
+		buffer.setSize(2, ObsidianDataConst::MAX_BLOCK_SIZE);
 
-	previewBuffer.setSize(2, 512);
+	previewBuffer.setSize(2, ObsidianDataConst::MAX_BLOCK_SIZE);
 }
 
 void AudioManager::initDummySynth()

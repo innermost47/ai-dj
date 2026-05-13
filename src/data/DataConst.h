@@ -12,6 +12,9 @@ static constexpr int MAX_PAGES = 4;
 static constexpr int MAX_TRACKS = 8;
 static constexpr int MAX_SEQUENCES = 8;
 static constexpr int MAX_CROSSFADER_PAIR = 4;
+static constexpr int MAX_BLOCK_SIZE = 512;
+
+static constexpr double SAMPLERATE = 48000.0;
 } // namespace ObsidianDataConst
 
 #endif
