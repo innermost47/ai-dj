@@ -254,7 +254,15 @@ void PromptBankPanel::rebuildAccordions()
 		}
 
 		juce::String catCopy = catName;
-		accordion->onExpansionChanged = [this, catCopy](bool expanded) { onAccordionExpanded(catCopy, expanded); };
+		ObsidianAccordion *accPtr = accordion.get();
+		accordion->onExpansionChanged = [this, catCopy, accPtr](bool expanded)
+		{
+			onAccordionExpanded(catCopy, expanded);
+			resized();
+
+			const int targetY = accPtr->getY();
+			accordionViewport.setViewPosition(0, targetY);
+		};
 
 		accordionContainer.addAndMakeVisible(*accordion);
 		accordions.push_back(std::move(accordion));

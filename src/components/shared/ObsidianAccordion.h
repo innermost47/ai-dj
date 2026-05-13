@@ -31,6 +31,10 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 	{
 		return isEditable;
 	}
+	void setShowCount(bool v)
+	{
+		showCount = v;
+	}
 
 	void setAccentColour(juce::Colour newColour);
 	juce::Colour getAccentColour() const
@@ -55,12 +59,6 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 	std::function<void(const juce::String &)> onRenameRequested;
 
   private:
-	static constexpr int HEADER_HEIGHT = 32;
-	static constexpr int ITEM_SPACING = 2;
-	static constexpr int ACCENT_BAR_WIDTH = 4;
-	static constexpr int CHEVRON_AREA_WIDTH = 24;
-	static constexpr int TEXT_LEFT_PADDING = 12;
-
 	void showContextMenu();
 	void startInlineRename();
 	void finishInlineRename(bool acceptChanges);
@@ -78,6 +76,7 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 
 	bool expanded{false};
 	bool isEditable{true};
+	bool showCount{true};
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ObsidianAccordion)
 };

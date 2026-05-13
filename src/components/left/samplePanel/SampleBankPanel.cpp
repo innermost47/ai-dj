@@ -8,144 +8,63 @@
 
 SampleBankPanel::SampleBankPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
-	categoryNames[SampleCategory::All] = "All Samples";
-	categoryNames[SampleCategory::Drums] = "Drums";
-	categoryNames[SampleCategory::Bass] = "Bass";
-	categoryNames[SampleCategory::Melody] = "Melody";
-	categoryNames[SampleCategory::Ambient] = "Ambient";
-	categoryNames[SampleCategory::Percussion] = "Percussion";
-	categoryNames[SampleCategory::Vocal] = "Vocal";
-	categoryNames[SampleCategory::FX] = "FX";
-	categoryNames[SampleCategory::Loop] = "Loops";
-	categoryNames[SampleCategory::OneShot] = "One-shots";
-	categoryNames[SampleCategory::House] = "House";
-	categoryNames[SampleCategory::Techno] = "Techno";
-	categoryNames[SampleCategory::HipHop] = "Hip-Hop";
-	categoryNames[SampleCategory::Jazz] = "Jazz";
-	categoryNames[SampleCategory::Rock] = "Rock";
-	categoryNames[SampleCategory::Electronic] = "Electronic";
-	categoryNames[SampleCategory::Piano] = "Piano";
-	categoryNames[SampleCategory::Guitar] = "Guitar";
-	categoryNames[SampleCategory::Synth] = "Synth";
-
-	loadCategoriesConfig();
 	setupUI();
 
 	if (auto *bank = audioProcessor.getSampleBank())
-	{
 		bank->onBankChanged = [this]() { juce::MessageManager::callAsync([this]() { refreshSampleList(); }); };
-
-		bank->onCheckCategoryExists = [this](const juce::String &name) -> bool
-		{
-			if (audioProcessor.getPromptBank() == nullptr)
-				return false;
-			for (const auto &c : audioProcessor.getPromptBank()->getCategories())
-				if (c.name.compareIgnoreCase(name) == 0)
-					return true;
-			return false;
-		};
-
-		bank->onMigrateLegacyCategory = [this](const juce::String &name, juce::Colour colour)
-		{
-			if (audioProcessor.getPromptBank() == nullptr)
-				return;
-			audioProcessor.getPromptBank()->addCategory(name, colour);
-		};
-
-		bank->runLegacyCategoriesMigration();
-	}
 }
 
 SampleBankPanel::~SampleBankPanel()
 {
 	stopTimer();
 	stopPreview();
-	sampleListBox.setVisible(false);
-	sampleListBox.setModel(nullptr);
 	if (auto *bank = audioProcessor.getSampleBank())
 		bank->onBankChanged = nullptr;
 }
 
 void SampleBankPanel::setupUI()
 {
-	addAndMakeVisible(titleLabel);
-	titleLabel.setText("SAMPLE BANK", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_TITLE));
-	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
+	addAndMakeVisible(header);
 
-	addAndMakeVisible(infoLabel);
-	infoLabel.setText("Preview: ch.9 | Drag: drop on track | Ctrl+Drag: drop in DAW | Right-click: categories",
-	                  juce::dontSendNotification);
-	infoLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
-	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	infoLabel.setJustificationType(juce::Justification::centredLeft);
+	header.setTitle("SAMPLE BANK");
+	header.setHelpText("Drag onto a track to assign. Ctrl+Drag to export to DAW.\n"
+	                   "Double-click or right-click to edit, move category, or delete.");
 
-	addAndMakeVisible(cleanupButton);
-	cleanupButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
-	cleanupButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	cleanupButton.onClick = [this]() { cleanupUnusedSamples(); };
+	header.setSearchEnabled(true);
+	header.setSearchPlaceholder("Search samples...");
 
-	addAndMakeVisible(sortMenu);
-	sortMenu.addItem("Sort: Recent", SortType::Time);
-	sortMenu.addItem("Sort: Prompt", SortType::Prompt);
-	sortMenu.addItem("Sort: Usage", SortType::Usage);
-	sortMenu.addItem("Sort: BPM", SortType::BPM);
-	sortMenu.addItem("Sort: Duration", SortType::Duration);
-	sortMenu.setSelectedId(SortType::Time);
-	sortMenu.onChange = [this]()
+	header.setSortOptions({{SortType::Time, "Sort: Recent"},
+	                       {SortType::Prompt, "Sort: Prompt"},
+	                       {SortType::Usage, "Sort: Usage"},
+	                       {SortType::BPM, "Sort: BPM"},
+	                       {SortType::Duration, "Sort: Duration"}},
+	                      SortType::Time);
+
+	header.addPrimaryButton("Clean unused", ColourPalette::buttonDangerDark, [this]() { cleanupUnusedSamples(); });
+
+	header.setShowExpandCollapseButtons(true);
+
+	header.onSearchChanged = [this](const juce::String &q)
 	{
-		currentSortType = static_cast<SortType>(sortMenu.getSelectedId());
-		refreshSampleList();
+		currentSearch = q;
+		applyFiltersAndSort();
+		rebuildAccordions();
 	};
 
-	addAndMakeVisible(sampleListBox);
-	sampleListBox.setModel(this);
-	sampleListBox.setRowHeight(ObsidianSizes::SAMPLE_ROW_HEIGHT);
-	sampleListBox.setOutlineThickness(0);
-	sampleListBox.getViewport()->setScrollBarsShown(true, false);
-	sampleListBox.setColour(juce::ListBox::backgroundColourId, juce::Colours::transparentBlack);
-
-	addAndMakeVisible(categoryFilter);
-	for (const auto &info : categoryInfos)
-		categoryFilter.addItem(info.name, info.id + 1);
-	categoryFilter.setSelectedId(1);
-	categoryFilter.onChange = [this]()
+	header.onSortChanged = [this](int id)
 	{
-		int sel = categoryFilter.getSelectedId();
-		currentCategoryId = sel > 0 ? sel - 1 : 0;
-		editCategoryButton.setEnabled(isCategoryEditable(currentCategoryId));
-		deleteCategoryButton.setEnabled(isCategoryEditable(currentCategoryId));
-		refreshSampleList();
+		currentSortType = static_cast<SortType>(id);
+		applyFiltersAndSort();
+		rebuildAccordions();
 	};
 
-	addAndMakeVisible(categoryInput);
-	categoryInput.setTextToShowWhenEmpty("New category name...", ColourPalette::textSecondary);
+	header.onExpandAllRequested = [this]() { expandAll(); };
+	header.onCollapseAllRequested = [this]() { collapseAll(); };
 
-	addAndMakeVisible(addCategoryButton);
-	addCategoryButton.loadIcon(BinaryData::plus_svg, BinaryData::plus_svgSize);
-	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::slate);
-	addCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-
-	addCategoryButton.onClick = [this]() { addCategory(); };
-
-	addAndMakeVisible(editCategoryButton);
-	editCategoryButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
-	editCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
-	editCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	editCategoryButton.onClick = [this]() { editCategory(); };
-	editCategoryButton.setEnabled(false);
-
-	addAndMakeVisible(deleteCategoryButton);
-	deleteCategoryButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
-	deleteCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	deleteCategoryButton.onClick = [this]() { deleteCategory(); };
-	deleteCategoryButton.setEnabled(false);
-
-	deleteCategoryButton.setCompactMode(true);
-	editCategoryButton.setCompactMode(true);
-	addCategoryButton.setCompactMode(true);
-	cleanupButton.setCompactMode(true);
+	addAndMakeVisible(accordionViewport);
+	accordionViewport.setViewedComponent(&accordionContainer, false);
+	accordionViewport.setScrollBarsShown(true, false);
+	accordionViewport.setColour(juce::ListBox::backgroundColourId, juce::Colours::transparentBlack);
 
 	addAndMakeVisible(detailPanel);
 
@@ -161,6 +80,227 @@ void SampleBankPanel::setupUI()
 	};
 }
 
+void SampleBankPanel::rebuildAccordions()
+{
+	auto *bank = audioProcessor.getSampleBank();
+	auto *promptBank = audioProcessor.getPromptBank();
+	if (bank == nullptr || promptBank == nullptr)
+		return;
+
+	accordionContainer.removeAllChildren();
+	accordions.clear();
+	samplesByCategory.clear();
+
+	for (auto *s : filteredSamples)
+	{
+		const juce::String cat = s->category.isEmpty() ? "Uncategorized" : s->category;
+		samplesByCategory[cat].push_back(s);
+	}
+	std::vector<juce::String> categoryOrder;
+	for (const auto &c : promptBank->getCategories())
+	{
+		categoryOrder.push_back(c.name);
+		if (samplesByCategory.find(c.name) == samplesByCategory.end())
+			samplesByCategory[c.name] = {};
+	}
+	for (const auto &pair : samplesByCategory)
+	{
+		const juce::String &catName = pair.first;
+		if (std::find(categoryOrder.begin(), categoryOrder.end(), catName) == categoryOrder.end())
+			categoryOrder.push_back(catName);
+	}
+
+	const bool autoExpandOnSearch = currentSearch.isNotEmpty();
+
+	for (const auto &catName : categoryOrder)
+	{
+		juce::Colour colour =
+		    (catName == "Uncategorized") ? ColourPalette::backgroundLight : resolveCategoryColour(catName);
+
+		auto accordion = std::make_unique<ObsidianAccordion>(catName, colour);
+
+		const bool shouldExpand = autoExpandOnSearch || (openCategories.count(catName) > 0);
+
+		bool editable = false;
+		if (catName != "Uncategorized")
+		{
+			for (const auto &c : promptBank->getCategories())
+			{
+				if (c.name == catName && !c.isBuiltIn)
+				{
+					editable = true;
+					break;
+				}
+				auto categories = promptBank->getCategories();
+				auto it = std::find_if(categories.begin(), categories.end(),
+				                       [&](const PromptCategoryInfo &info) { return info.name == catName; });
+
+				if (it == categories.end())
+				{
+					editable = true;
+					break;
+				}
+			}
+		}
+		accordion->setEditable(editable);
+		accordion->setShowCount(false);
+
+		if (editable)
+		{
+			juce::String catNameCopy = catName;
+			accordion->onRenameRequested = [this, catNameCopy](const juce::String &newName)
+			{
+				if (auto *pb = audioProcessor.getPromptBank())
+				{
+					pb->renameCategory(catNameCopy, newName, resolveCategoryColour(catNameCopy));
+					if (auto *bank = audioProcessor.getSampleBank())
+					{
+						for (auto *s : bank->getAllSamples())
+							if (s->category == catNameCopy)
+								s->category = newName;
+						bank->saveBankData();
+					}
+					if (openCategories.count(catNameCopy) > 0)
+					{
+						openCategories.erase(catNameCopy);
+						openCategories.insert(newName);
+					}
+					refreshSampleList();
+				}
+			};
+
+			accordion->onDeleteRequested = [this, catNameCopy]()
+			{
+				ObsidianAlertManager::showConfirm(
+				    this, "Delete Category", "Delete '" + catNameCopy + "'? Samples in it will become Uncategorized.",
+				    "Delete", "Cancel",
+				    [this, catNameCopy](bool ok)
+				    {
+					    if (!ok)
+						    return;
+					    if (auto *pb = audioProcessor.getPromptBank())
+						    pb->removeCategory(catNameCopy);
+					    if (auto *bank = audioProcessor.getSampleBank())
+					    {
+						    for (auto *s : bank->getAllSamples())
+							    if (s->category == catNameCopy)
+								    s->category.clear();
+						    bank->saveBankData();
+					    }
+					    openCategories.erase(catNameCopy);
+					    refreshSampleList();
+				    });
+			};
+		}
+
+		juce::String catCopy = catName;
+		ObsidianAccordion *accPtr = accordion.get();
+		accordion->onExpansionChanged = [this, catCopy, accPtr](bool expanded)
+		{
+			onAccordionExpanded(catCopy, expanded);
+			if (expanded)
+			{
+				ensureAccordionItemsCreated(accPtr, catCopy);
+				resized();
+				const int targetY = accPtr->getY();
+				accordionViewport.setViewPosition(0, targetY);
+			}
+		};
+
+		accordion->setExpanded(shouldExpand, false);
+
+		if (shouldExpand)
+			ensureAccordionItemsCreated(accordion.get(), catName);
+
+		accordionContainer.addAndMakeVisible(*accordion);
+		accordions.push_back(std::move(accordion));
+	}
+
+	resized();
+}
+
+void SampleBankPanel::ensureAccordionItemsCreated(ObsidianAccordion *accordion, const juce::String &categoryName)
+{
+	if (accordion == nullptr)
+		return;
+
+	if (!accordion->getItems().empty())
+		return;
+
+	auto it = samplesByCategory.find(categoryName);
+	if (it == samplesByCategory.end())
+		return;
+
+	std::vector<std::unique_ptr<AccordionItem>> items;
+	items.reserve(it->second.size());
+
+	for (auto *entry : it->second)
+	{
+		auto item = std::make_unique<SampleBankItem>(entry, audioProcessor);
+
+		item->setCategoryColourResolver([this](const juce::String &n) { return resolveCategoryColour(n); });
+
+		item->setSelected(selectedEntry == entry);
+
+		item->onItemClicked = [this, entry]() { onSampleClicked(entry); };
+		item->onItemDoubleClicked = [this, entry]() { showEditPromptDialog(entry); };
+
+		item->onPromptEditRequested = [this](SampleBankEntry *e) { showEditPromptDialog(e); };
+		item->onChangeCategoryRequested = [this](SampleBankEntry *e) { showChangeCategoryDialog(e); };
+		item->onSampleDeleteRequested = [this](SampleBankEntry *e) { onSampleDeleteRequested(e); };
+
+		items.emplace_back(std::unique_ptr<AccordionItem>(item.release()));
+	}
+
+	accordion->setItems(std::move(items));
+
+	resized();
+}
+
+void SampleBankPanel::onSampleDeleteRequested(SampleBankEntry *entry)
+{
+	if (entry != nullptr)
+		showDeleteConfirmation(entry->id, entry->originalPrompt);
+}
+
+void SampleBankPanel::onSampleClicked(SampleBankEntry *entry)
+{
+	if (selectedEntry == entry)
+		selectEntry(nullptr);
+	else
+		selectEntry(entry);
+}
+
+void SampleBankPanel::showChangeCategoryDialog(SampleBankEntry *entry)
+{
+	if (entry == nullptr)
+		return;
+
+	auto *promptBank = audioProcessor.getPromptBank();
+	if (promptBank == nullptr)
+		return;
+
+	std::vector<juce::String> available;
+	for (const auto &c : promptBank->getCategories())
+		available.push_back(c.name);
+
+	juce::String sampleId = entry->id;
+
+	ObsidianAlertManager::showCategoryEditor(this, entry->originalPrompt, entry->category, available,
+	                                         [this, sampleId](const juce::String &chosenCategory)
+	                                         {
+		                                         if (auto *bank = audioProcessor.getSampleBank())
+		                                         {
+			                                         if (auto *s = bank->getSample(sampleId))
+			                                         {
+				                                         s->category = chosenCategory;
+				                                         bank->saveBankData();
+				                                         refreshSampleListSilent();
+			                                         }
+		                                         }
+	                                         });
+}
+
 void SampleBankPanel::resized()
 {
 	auto area = getLocalBounds();
@@ -168,109 +308,73 @@ void SampleBankPanel::resized()
 	auto detailPanelArea = area.removeFromBottom(ObsidianSizes::SAMPLE_DETAIL_HEIGHT);
 	detailPanel.setBounds(detailPanelArea);
 
-	auto hdr = area.removeFromTop(ObsidianSizes::TITLE_PANEL_HEIGHT);
-	titleLabel.setBounds(hdr.removeFromLeft(160));
-	infoLabel.setBounds(area.removeFromTop(ObsidianSizes::INFO_PANEL_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_8);
-
-	sortMenu.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-	categoryFilter.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-
-	auto btnRow = area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT);
-	addCategoryButton.setBounds(btnRow.removeFromRight(28));
-	btnRow.removeFromRight(2);
-	deleteCategoryButton.setBounds(btnRow.removeFromRight(28));
-	btnRow.removeFromRight(2);
-	editCategoryButton.setBounds(btnRow.removeFromRight(28));
-	btnRow.removeFromRight(4);
-	categoryInput.setBounds(btnRow);
-	area.removeFromTop(ObsidianSizes::GAP_4);
-
-	cleanupButton.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
+	header.setBounds(area.removeFromTop(header.getPreferredHeight()));
 	area.removeFromTop(ObsidianSizes::GAP);
 
-	sampleListBox.setBounds(area);
+	accordionViewport.setBounds(area);
+
+	int containerWidth = accordionViewport.getWidth() - 12;
+	int totalHeight = 0;
+	for (auto &acc : accordions)
+		totalHeight += acc->getPreferredHeight() + ObsidianSizes::SPACER;
+
+	accordionContainer.setSize(containerWidth, juce::jmax(totalHeight, area.getHeight()));
+
+	int y = 0;
+	for (auto &acc : accordions)
+	{
+		int h = acc->getPreferredHeight();
+		acc->setBounds(0, y, containerWidth, h);
+		y += h + ObsidianSizes::SPACER;
+	}
 }
 
 void SampleBankPanel::selectEntry(SampleBankEntry *entry)
 {
 	if (currentPreviewEntry != nullptr)
 		stopPreview();
+
 	selectedEntry = entry;
-	sampleListBox.updateContent();
+
+	for (auto &acc : accordions)
+	{
+		for (const auto &item : acc->getItems())
+		{
+			if (auto *sampleItem = dynamic_cast<SampleBankItem *>(item.get()))
+				sampleItem->setSelected(sampleItem->getSampleEntry() == entry);
+		}
+	}
+
 	detailPanel.setEntry(entry);
 }
 
-int SampleBankPanel::getNumRows()
+void SampleBankPanel::expandAll()
 {
-	return (int)filteredSamples.size();
+	openCategories.clear();
+	for (auto &acc : accordions)
+	{
+		acc->setExpanded(true, false);
+		ensureAccordionItemsCreated(acc.get(), acc->getName());
+		openCategories.insert(acc->getName());
+	}
+	resized();
 }
 
-juce::Component *SampleBankPanel::refreshComponentForRow(int rowNumber, bool,
-                                                         juce::Component *existingComponentToUpdate)
+void SampleBankPanel::collapseAll()
 {
-	auto *wrapper = dynamic_cast<SampleBankItemWrapper *>(existingComponentToUpdate);
+	openCategories.clear();
+	for (auto &acc : accordions)
+		acc->setExpanded(false, false);
+	resized();
+}
 
-	if (rowNumber < 0 || rowNumber >= (int)filteredSamples.size())
-	{
-		delete wrapper;
-		return nullptr;
-	}
-
-	auto *entry = filteredSamples[rowNumber];
-	SampleBankItem *item = nullptr;
-
-	if (wrapper == nullptr || wrapper->getItem()->getSampleEntry() != entry)
-	{
-		delete wrapper;
-		item = new SampleBankItem(entry, audioProcessor);
-		wrapper = new SampleBankItemWrapper(item);
-	}
+void SampleBankPanel::onAccordionExpanded(const juce::String &categoryName, bool expanded)
+{
+	if (expanded)
+		openCategories.insert(categoryName);
 	else
-	{
-		item = wrapper->getItem();
-	}
-
-	item->setSelected(selectedEntry == entry);
-
-	item->onItemClicked = [this](SampleBankEntry *e)
-	{
-		if (selectedEntry == e)
-			selectEntry(nullptr);
-		else
-			selectEntry(e);
-	};
-
-	item->onCategoryChanged = [this](SampleBankEntry *, const juce::String &)
-	{
-		if (auto *bank = audioProcessor.getSampleBank())
-			bank->saveBankData();
-		refreshSampleListSilent();
-	};
-
-	item->getCategoriesList = [this]() -> std::vector<juce::String>
-	{
-		std::vector<juce::String> cats;
-		for (const auto &info : categoryInfos)
-			if (info.id > 0)
-				cats.push_back(info.name);
-		return cats;
-	};
-
-	item->categoryColourResolver = [this](const juce::String &name) -> juce::Colour
-	{ return resolveCategoryColour(name); };
-
-	item->onPromptEditRequested = [this](SampleBankEntry *e) { showEditPromptDialog(e); };
-
-	item->onDeleteRequested = [this](SampleBankEntry *e)
-	{
-		if (e)
-			showDeleteConfirmation(e->id, e->originalPrompt);
-	};
-
-	return wrapper;
+		openCategories.erase(categoryName);
+	resized();
 }
 
 void SampleBankPanel::playPreview(SampleBankEntry *entry)
@@ -297,18 +401,10 @@ void SampleBankPanel::stopPreview()
 
 void SampleBankPanel::timerCallback()
 {
-	if (isLoading.load())
-	{
-		loadingAngle += 0.15f;
-		if (loadingAngle >= juce::MathConstants<float>::twoPi)
-			loadingAngle -= juce::MathConstants<float>::twoPi;
-		repaint();
-	}
-
-	if (currentPreviewEntry && !audioProcessor.getAudioManager().isSamplePreviewing())
+	if (currentPreviewEntry != nullptr && !audioProcessor.getAudioManager().isSamplePreviewing())
 		stopPreview();
 
-	if (!isLoading.load() && !currentPreviewEntry)
+	if (currentPreviewEntry == nullptr)
 		stopTimer();
 }
 
@@ -318,7 +414,7 @@ void SampleBankPanel::paint(juce::Graphics &g)
 
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.8f));
 	juce::Path listBg;
-	auto lb = sampleListBox.getBounds().toFloat();
+	auto lb = accordionViewport.getBounds().toFloat();
 	listBg.addRoundedRectangle(lb.getX(), lb.getY(), lb.getWidth(), lb.getHeight(),
 	                           ObsidianSizes::LIST_PANEL_CORNER_SIZE);
 	g.fillPath(listBg);
@@ -326,91 +422,62 @@ void SampleBankPanel::paint(juce::Graphics &g)
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
 	g.drawRoundedRectangle(lb, ObsidianSizes::CORNER, 1);
 
-	if (isLoading.load())
-		drawLoader(g);
-	else if (filteredSamples.empty() && hasEverLoaded.load())
+	if (filteredSamples.empty() && hasEverLoaded.load())
 		drawEmptyState(g);
-}
-
-void SampleBankPanel::drawLoader(juce::Graphics &g)
-{
-	auto b = sampleListBox.getBounds().toFloat();
-	float cx = b.getCentreX(), cy = b.getCentreY();
-	const float r = 40.0f, t = 4.0f;
-
-	juce::Path bg;
-	bg.addCentredArc(cx, cy, r, r, 0.0f, 0.0f, juce::MathConstants<float>::twoPi, true);
-	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
-	g.strokePath(bg, juce::PathStrokeType(t));
-
-	juce::Path arc;
-	arc.addCentredArc(cx, cy, r, r, 0.0f, loadingAngle, loadingAngle + juce::MathConstants<float>::pi * 1.5f, true);
-	g.setColour(ColourPalette::violet);
-	g.strokePath(arc, juce::PathStrokeType(t, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-
-	g.setColour(ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE));
-	g.drawText("Loading samples...", b.withSizeKeepingCentre(200, 30).translated(0, r + 30),
-	           juce::Justification::centred);
 }
 
 void SampleBankPanel::drawEmptyState(juce::Graphics &g)
 {
-	auto b = sampleListBox.getBounds();
-	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
-	g.setFont(juce::FontOptions(48.0f));
-	g.drawText(juce::String::fromUTF8("\xE2\x99\xAA"), b.withSizeKeepingCentre(60, 60), juce::Justification::centred);
+	auto b = accordionViewport.getBounds();
+
+	auto iconBounds = b.withSizeKeepingCentre(64, 64).translated(0, -20);
+	auto iconSvg = juce::Drawable::createFromImageData(BinaryData::musicnotes_svg, BinaryData::musicnotes_svgSize);
+	if (iconSvg != nullptr)
+	{
+		iconSvg->replaceColour(juce::Colours::black, ColourPalette::textSecondary);
+		iconSvg->drawWithin(g, iconBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
+	}
+
 	g.setColour(ColourPalette::textSecondary);
 	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE, juce::Font::bold));
-	g.drawText("No samples yet", b.withSizeKeepingCentre(300, 28).translated(0, 55), juce::Justification::centred);
+	g.drawText("No samples yet", b.withSizeKeepingCentre(300, 28).translated(0, 35), juce::Justification::centred);
+
 	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
-	g.drawText("Generate some loops to populate your bank!", b.withSizeKeepingCentre(300, 28).translated(0, 80),
+	g.drawText("Generate some loops to populate your bank!", b.withSizeKeepingCentre(300, 28).translated(0, 60),
 	           juce::Justification::centred);
 }
 
 void SampleBankPanel::refreshSampleList()
 {
-	isLoading.store(true);
-	startTimer(30);
-	repaint();
-
 	auto *bank = audioProcessor.getSampleBank();
-	if (!bank)
+	if (bank == nullptr)
 	{
 		filteredSamples.clear();
-		isLoading.store(false);
+		samplesByCategory.clear();
+		rebuildAccordions();
 		hasEverLoaded.store(true);
-		sampleListBox.updateContent();
-		stopTimer();
 		repaint();
 		return;
 	}
 
 	applyFiltersAndSort();
+	rebuildAccordions();
 
-	juce::Timer::callAfterDelay(600,
-	                            [this, safe = juce::Component::SafePointer(this)]()
-	                            {
-		                            if (!safe)
-			                            return;
-		                            sampleListBox.updateContent();
-		                            isLoading.store(false);
-		                            hasEverLoaded.store(true);
-		                            if (selectedEntry == nullptr && !filteredSamples.empty())
-			                            selectEntry(filteredSamples[0]);
-		                            if (!currentPreviewEntry)
-			                            stopTimer();
-		                            repaint();
-	                            });
+	if (selectedEntry == nullptr && !filteredSamples.empty())
+		selectEntry(filteredSamples[0]);
+
+	hasEverLoaded.store(true);
+	repaint();
 }
 
 void SampleBankPanel::refreshSampleListSilent()
 {
 	auto *bank = audioProcessor.getSampleBank();
-	if (!bank)
+	if (bank == nullptr)
 	{
 		filteredSamples.clear();
-		sampleListBox.updateContent();
+		samplesByCategory.clear();
+		rebuildAccordions();
 		repaint();
 		return;
 	}
@@ -424,7 +491,7 @@ void SampleBankPanel::refreshSampleListSilent()
 			selectEntry(filteredSamples.empty() ? nullptr : filteredSamples[0]);
 	}
 
-	sampleListBox.updateContent();
+	rebuildAccordions();
 	hasEverLoaded.store(true);
 	repaint();
 }
@@ -432,7 +499,7 @@ void SampleBankPanel::refreshSampleListSilent()
 void SampleBankPanel::applyFiltersAndSort()
 {
 	auto *bank = audioProcessor.getSampleBank();
-	if (!bank)
+	if (bank == nullptr)
 	{
 		filteredSamples.clear();
 		return;
@@ -440,20 +507,19 @@ void SampleBankPanel::applyFiltersAndSort()
 
 	auto samples = bank->getAllSamples();
 
-	if (currentCategoryId != 0)
+	if (currentSearch.isNotEmpty())
 	{
-		juce::String catName;
-		for (const auto &info : categoryInfos)
-			if (info.id == currentCategoryId)
-			{
-				catName = info.name;
-				break;
-			}
-
-		if (!catName.isEmpty())
-			samples.erase(std::remove_if(samples.begin(), samples.end(),
-			                             [&catName](const SampleBankEntry *e) { return e->category == catName; }),
-			              samples.end());
+		auto needle = currentSearch.toLowerCase();
+		samples.erase(std::remove_if(samples.begin(), samples.end(),
+		                             [&needle](SampleBankEntry *e)
+		                             {
+			                             return !e->originalPrompt.toLowerCase().contains(needle) &&
+			                                    !e->modelName.toLowerCase().contains(needle) &&
+			                                    !e->category.toLowerCase().contains(needle) &&
+			                                    !e->description.toLowerCase().contains(needle) &&
+			                                    !e->key.toLowerCase().contains(needle);
+		                             }),
+		              samples.end());
 	}
 
 	switch (currentSortType)
@@ -486,38 +552,26 @@ void SampleBankPanel::setVisible(bool v)
 	if (v)
 	{
 		hasEverLoaded.store(false);
-		isLoading.store(true);
-		startTimer(30);
-		juce::Timer::callAfterDelay(100,
-		                            [this, safe = juce::Component::SafePointer(this)]()
-		                            {
-			                            if (safe)
-				                            refreshSampleList();
-		                            });
+		refreshSampleList();
 	}
 	else
 	{
 		stopPreview();
-		isLoading.store(false);
-		stopTimer();
 		filteredSamples.clear();
-		sampleListBox.updateContent();
+		samplesByCategory.clear();
 	}
 }
 
 void SampleBankPanel::deleteSample(const juce::String &id)
 {
-	if (currentPreviewEntry && currentPreviewEntry->id == id)
+	if (currentPreviewEntry != nullptr && currentPreviewEntry->id == id)
 		stopPreview();
 
-	if (selectedEntry && selectedEntry->id == id)
+	if (selectedEntry != nullptr && selectedEntry->id == id)
 	{
 		selectedEntry = nullptr;
 		detailPanel.setEntry(nullptr);
 	}
-
-	filteredSamples.clear();
-	sampleListBox.updateContent();
 
 	if (auto *bank = audioProcessor.getSampleBank())
 		if (bank->removeSample(id))
@@ -610,165 +664,73 @@ void SampleBankPanel::showDeleteConfirmation(const juce::String &id, const juce:
 	                                  });
 }
 
-void SampleBankPanel::addCategory()
-{
-	showAddCategoryDialog();
-}
-
-void SampleBankPanel::editCategory()
-{
-	if (!isCategoryEditable(currentCategoryId))
-	{
-		ObsidianAlertManager::showError(this, "Edit Category", "Cannot edit built-in categories.");
-		return;
-	}
-	showEditCategoryDialog();
-}
-
-void SampleBankPanel::showAddCategoryDialog()
-{
-	ObsidianAlertManager::showAddCategoryDialog(this,
-	                                            [this](const juce::String &name, juce::Colour colour)
-	                                            {
-		                                            for (const auto &info : categoryInfos)
-			                                            if (info.name.compareIgnoreCase(name) == 0)
-			                                            {
-				                                            ObsidianAlertManager::showError(this, "Add Category",
-				                                                                            "Already exists.");
-				                                            return;
-			                                            }
-		                                            int id = std::max(20, getNextCategoryId());
-		                                            categoryInfos.push_back({id, name, colour});
-		                                            rebuildCategoryFilter();
-		                                            categoryFilter.setSelectedId(id + 1);
-		                                            currentCategoryId = id;
-		                                            editCategoryButton.setEnabled(true);
-		                                            deleteCategoryButton.setEnabled(true);
-		                                            categoryInput.clear();
-		                                            saveCategoriesConfig();
-		                                            refreshSampleList();
-	                                            });
-}
-
-void SampleBankPanel::showEditCategoryDialog()
-{
-	auto it = std::find_if(categoryInfos.begin(), categoryInfos.end(),
-	                       [this](const CategoryInfo &i) { return i.id == currentCategoryId; });
-	if (it == categoryInfos.end())
-		return;
-
-	juce::String currentName = it->name;
-	juce::Colour currentColour = it->colour != juce::Colour(0) ? it->colour : resolveCategoryColour(currentName);
-	int editId = currentCategoryId;
-
-	ObsidianAlertManager::showEditCategoryDialog(
-	    this, currentName, currentColour,
-	    [this, editId](const juce::String &newName, juce::Colour newColour)
-	    {
-		    auto jt = std::find_if(categoryInfos.begin(), categoryInfos.end(),
-		                           [editId](const CategoryInfo &i) { return i.id == editId; });
-		    if (jt == categoryInfos.end())
-			    return;
-
-		    for (const auto &info : categoryInfos)
-			    if (info.id != editId && info.name.compareIgnoreCase(newName) == 0)
-			    {
-				    ObsidianAlertManager::showError(this, "Edit Category", "Already exists.");
-				    return;
-			    }
-
-		    juce::String oldName = jt->name;
-		    jt->name = newName;
-		    jt->colour = newColour;
-
-		    rebuildCategoryFilter();
-		    if (auto *bank = audioProcessor.getSampleBank())
-			    for (auto *s : bank->getAllSamples())
-				    if (s->category == oldName)
-					    s->category = newName;
-
-		    categoryInput.clear();
-		    saveCategoriesConfig();
-		    refreshSampleList();
-	    });
-}
-
-void SampleBankPanel::deleteCategory()
-{
-	if (!isCategoryEditable(currentCategoryId))
-	{
-		ObsidianAlertManager::showError(this, "Delete Category", "Cannot delete built-in categories.");
-		return;
-	}
-	auto it = std::find_if(categoryInfos.begin(), categoryInfos.end(),
-	                       [this](const CategoryInfo &i) { return i.id == currentCategoryId; });
-	if (it == categoryInfos.end())
-		return;
-	juce::String catName = it->name;
-	int catId = currentCategoryId;
-	ObsidianAlertManager::showConfirm(
-	    this, "Delete Category", "Delete '" + catName + "'? Samples won't be deleted.", "Delete", "Cancel",
-	    [this, catName, catId](bool ok)
-	    {
-		    if (!ok)
-			    return;
-		    if (auto *bank = audioProcessor.getSampleBank())
-		    {
-			    for (auto *s : bank->getAllSamples())
-				    s->category = "";
-			    bank->saveBankData();
-		    }
-		    categoryInfos.erase(std::remove_if(categoryInfos.begin(), categoryInfos.end(),
-		                                       [catId](const CategoryInfo &i) { return i.id == catId; }),
-		                        categoryInfos.end());
-		    rebuildCategoryFilter();
-		    categoryFilter.setSelectedId(1);
-		    currentCategoryId = 0;
-		    editCategoryButton.setEnabled(false);
-		    deleteCategoryButton.setEnabled(false);
-		    saveCategoriesConfig();
-		    refreshSampleList();
-	    });
-}
-
-bool SampleBankPanel::isCategoryEditable(int id) const
-{
-	return id >= 20;
-}
-
 juce::Colour SampleBankPanel::resolveCategoryColour(const juce::String &name) const
 {
-	for (const auto &info : categoryInfos)
+	auto *promptBank = audioProcessor.getPromptBank();
+	if (promptBank == nullptr)
+		return ColourPalette::backgroundLight;
+
+	for (const auto &c : promptBank->getCategories())
+		if (c.name == name)
+			return c.colour != juce::Colour(0) ? c.colour : ColourPalette::backgroundLight;
+
+	return ColourPalette::backgroundLight;
+}
+
+juce::var SampleBankPanel::saveUIState() const
+{
+	juce::DynamicObject::Ptr o = new juce::DynamicObject();
+
+	juce::Array<juce::var> openArr;
+	for (const auto &cat : openCategories)
+		openArr.add(juce::var(cat));
+	o->setProperty("openCategories", juce::var(openArr));
+
+	o->setProperty("sort", (int)currentSortType);
+	o->setProperty("search", currentSearch);
+
+	return juce::var(o.get());
+}
+
+void SampleBankPanel::restoreUIState(const juce::var &state)
+{
+	if (!state.isObject())
+		return;
+
+	auto *o = state.getDynamicObject();
+	if (o == nullptr)
+		return;
+
+	openCategories.clear();
+	auto arr = o->getProperty("openCategories");
+	if (arr.isArray())
+		for (int i = 0; i < arr.getArray()->size(); ++i)
+			openCategories.insert(arr.getArray()->getUnchecked(i).toString());
+
+	int s = (int)o->getProperty("sort");
+	if (s >= Time && s <= Duration)
 	{
-		if (info.name == name && info.colour != juce::Colour(0))
-			return info.colour;
+		currentSortType = (SortType)s;
+		header.setSelectedSortId(s, false);
 	}
 
-	static const std::map<juce::String, juce::Colour> defaults = {{"Drums", ColourPalette::indigo},
-	                                                              {"Bass", ColourPalette::teal},
-	                                                              {"Melody", ColourPalette::coral},
-	                                                              {"Ambient", ColourPalette::emerald},
-	                                                              {"Percussion", ColourPalette::slate},
-	                                                              {"Vocal", ColourPalette::amber},
-	                                                              {"FX", ColourPalette::backgroundLight},
-	                                                              {"Loops", ColourPalette::buttonSuccess},
-	                                                              {"One-shots", ColourPalette::buttonSecondary},
-	                                                              {"House", ColourPalette::buttonDangerDark},
-	                                                              {"Techno", ColourPalette::lime},
-	                                                              {"Hip-Hop", ColourPalette::violet},
-	                                                              {"Jazz", ColourPalette::amber},
-	                                                              {"Rock", ColourPalette::buttonDanger},
-	                                                              {"Electronic", ColourPalette::cyan},
-	                                                              {"Piano", ColourPalette::textSecondary},
-	                                                              {"Guitar", ColourPalette::textWarning},
-	                                                              {"Synth", ColourPalette::textSecondary}};
-	auto it = defaults.find(name);
-	return it != defaults.end() ? it->second : ColourPalette::backgroundLight;
+	juce::String savedSearch = o->getProperty("search").toString();
+	currentSearch = savedSearch;
+	header.setSearchText(savedSearch, false);
+
+	refreshSampleList();
+
+	juce::MessageManager::callAsync(
+	    [safe = juce::Component::SafePointer(this)]()
+	    {
+		    if (safe)
+			    safe->resized();
+	    });
 }
 
 void SampleBankPanel::showEditPromptDialog(SampleBankEntry *entry)
 {
-	if (!entry)
+	if (entry == nullptr)
 		return;
 
 	juce::String entryId = entry->id;
@@ -781,11 +743,11 @@ void SampleBankPanel::showEditPromptDialog(SampleBankEntry *entry)
 			                                     return;
 
 		                                     auto *bank = audioProcessor.getSampleBank();
-		                                     if (!bank)
+		                                     if (bank == nullptr)
 			                                     return;
 
 		                                     auto *e = bank->getSample(entryId);
-		                                     if (!e)
+		                                     if (e == nullptr)
 			                                     return;
 
 		                                     e->originalPrompt = newPrompt;
@@ -800,100 +762,6 @@ void SampleBankPanel::showEditPromptDialog(SampleBankEntry *entry)
 		                                     refreshSampleListSilent();
 
 		                                     selectedEntry = e;
-		                                     sampleListBox.updateContent();
-
-		                                     auto it = std::find(filteredSamples.begin(), filteredSamples.end(), e);
-		                                     if (it != filteredSamples.end())
-		                                     {
-			                                     int newRow = (int)std::distance(filteredSamples.begin(), it);
-			                                     sampleListBox.selectRow(newRow, true, true);
-			                                     const int rowHeight = sampleListBox.getRowHeight();
-			                                     sampleListBox.getViewport()->setViewPosition(0, newRow * rowHeight);
-		                                     }
-
 		                                     detailPanel.setEntry(e);
 	                                     });
-}
-
-int SampleBankPanel::getNextCategoryId()
-{
-	int mx = 19;
-	for (const auto &i : categoryInfos)
-		mx = std::max(mx, i.id);
-	return mx + 1;
-}
-
-void SampleBankPanel::saveCategoriesConfig()
-{
-	juce::File f = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                   .getChildFile("OBSIDIAN-Neural")
-	                   .getChildFile("categories.json");
-	juce::DynamicObject::Ptr cfg = new juce::DynamicObject();
-	juce::Array<juce::var> arr;
-	for (const auto &info : categoryInfos)
-		if (info.id > 0)
-		{
-			juce::DynamicObject::Ptr d = new juce::DynamicObject();
-			d->setProperty("id", info.id);
-			d->setProperty("name", info.name);
-			if (info.colour != juce::Colour(0))
-				d->setProperty("colour", (int)info.colour.getARGB());
-			arr.add(d.get());
-		}
-	cfg->setProperty("categories", arr);
-	f.getParentDirectory().createDirectory();
-	f.replaceWithText(juce::JSON::toString(juce::var(cfg.get())));
-}
-
-void SampleBankPanel::loadCategoriesConfig()
-{
-	juce::File f = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                   .getChildFile("OBSIDIAN-Neural")
-	                   .getChildFile("categories.json");
-	if (!f.exists())
-		return;
-	auto cfg = juce::JSON::parse(f);
-	if (!cfg.isObject())
-		return;
-	auto *obj = cfg.getDynamicObject();
-	if (!obj)
-		return;
-	auto av = obj->getProperty("categories");
-	if (!av.isArray())
-		return;
-	categoryInfos.erase(
-	    std::remove_if(categoryInfos.begin(), categoryInfos.end(), [](const CategoryInfo &i) { return i.id >= 20; }),
-	    categoryInfos.end());
-	for (int i = 0; i < av.getArray()->size(); ++i)
-	{
-		auto v = av.getArray()->getUnchecked(i);
-		if (!v.isObject())
-			continue;
-		auto *o = v.getDynamicObject();
-		if (!o)
-			continue;
-		int id = o->getProperty("id");
-		juce::String name = o->getProperty("name").toString();
-		if (id >= 20)
-		{
-			CategoryInfo info;
-			info.id = id;
-			info.name = name;
-			auto colourVar = o->getProperty("colour");
-			if (!colourVar.isVoid())
-				info.colour = juce::Colour((juce::uint32)(int)colourVar);
-			categoryInfos.push_back(info);
-		}
-	}
-}
-
-void SampleBankPanel::rebuildCategoryFilter()
-{
-	int cur = categoryFilter.getSelectedId();
-	categoryFilter.clear();
-	for (const auto &info : categoryInfos)
-		categoryFilter.addItem(info.name, info.id + 1);
-	bool found = std::any_of(categoryInfos.begin(), categoryInfos.end(),
-	                         [cur](const CategoryInfo &i) { return i.id == cur - 1; });
-	categoryFilter.setSelectedId(found ? cur : 1);
 }

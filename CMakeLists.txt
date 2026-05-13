@@ -194,6 +194,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/left.svg
         src/assets/icons/lin.svg
         src/assets/icons/lock-fill.svg
+        src/assets/icons/music-notes.svg
         src/assets/icons/mute.svg
         src/assets/icons/pause.svg
         src/assets/icons/pencil.svg

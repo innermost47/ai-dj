@@ -1,50 +1,51 @@
-#pragma once
-#include "ObsidianBase.h"
+﻿#pragma once
+#include "AccordionItem.h"
+#include "ObsidianListItem.h"
 #include "SampleBank.h"
-#include <JuceHeader.h>
 
 class DjIaVstProcessor;
 
-class SampleBankItem : public ObsidianComponent, public juce::DragAndDropContainer
+#if JUCE_MSVC
+#pragma warning(push)
+#pragma warning(disable : 4250)
+#endif
+
+class SampleBankItem : public AccordionItem, public ObsidianListItem
 {
   public:
 	SampleBankItem(SampleBankEntry *entry, DjIaVstProcessor &processor);
 	~SampleBankItem() override;
 
 	void paint(juce::Graphics &g) override;
-	void resized() override;
-	void mouseDown(const juce::MouseEvent &event) override;
-	void mouseDrag(const juce::MouseEvent &event) override;
-	void mouseUp(const juce::MouseEvent &event) override;
-	void mouseEnter(const juce::MouseEvent &event) override;
-	void mouseExit(const juce::MouseEvent &event) override;
+	int getPreferredHeight(int width) const override;
 
 	SampleBankEntry *getSampleEntry() const
 	{
 		return sampleEntry;
 	}
-	void setSelected(bool s)
+
+	void setCategoryColourResolver(std::function<juce::Colour(const juce::String &)> resolver)
 	{
-		selected = s;
-		repaint();
+		categoryColourResolver = std::move(resolver);
 	}
 
-	std::function<void(SampleBankEntry *)> onItemClicked;
-	std::function<void(SampleBankEntry *)> onDeleteRequested;
-	std::function<void(SampleBankEntry *, const juce::String &)> onCategoryChanged;
-	std::function<std::vector<juce::String>()> getCategoriesList;
 	std::function<void(SampleBankEntry *)> onPromptEditRequested;
-	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
+	std::function<void(SampleBankEntry *)> onSampleDeleteRequested;
+	std::function<void(SampleBankEntry *)> onChangeCategoryRequested;
+
+  protected:
+	void mouseDrag(const juce::MouseEvent &event) override;
 
   private:
-	SampleBankEntry *sampleEntry;
+	void buildSampleContextMenu();
+
+	SampleBankEntry *sampleEntry{nullptr};
 	DjIaVstProcessor &audioProcessor;
-
-	bool selected = false;
-	bool isDragging = false;
-
-	void showCategoryMenu();
-	juce::Colour getCategoryColor(const juce::String &category);
+	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBankItem)
 };
+
+#if JUCE_MSVC
+#pragma warning(pop)
+#endif

@@ -69,9 +69,12 @@ void ObsidianAccordion::paint(juce::Graphics &g)
 	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 	g.drawText(accordionName, textArea, juce::Justification::centredLeft, true);
 
-	g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
-	g.drawText("(" + juce::String((int)items.size()) + ")", textArea, juce::Justification::centredRight, true);
+	if (showCount)
+	{
+		g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
+		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
+		g.drawText("(" + juce::String((int)items.size()) + ")", textArea, juce::Justification::centredRight, true);
+	}
 }
 
 void ObsidianAccordion::resized()
