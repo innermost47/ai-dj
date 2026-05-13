@@ -124,6 +124,7 @@ void MixerChannel::wireParameters()
 	registerSliderParam("Fine", fineKnob);
 	registerSliderParam("Pan", panKnob);
 	registerSliderParam("DelaySend", sendDelayKnob);
+	registerSliderParam("ReverbSend", sendReverbKnob);
 
 	subscribeToParam("Play");
 
@@ -138,8 +139,10 @@ void MixerChannel::wireParameters()
 	registerMidiLearn("Solo", &soloButton);
 	registerMidiLearn("Play", &playButton);
 	registerMidiLearn("DelaySend", &sendDelayKnob);
+	registerMidiLearn("ReverbSend", &sendReverbKnob);
 
 	sendDelayKnob.setDoubleClickReturnValue(true, 0.0);
+	sendReverbKnob.setDoubleClickReturnValue(true, 0.0);
 	volumeSlider.setDoubleClickReturnValue(true, 0.8);
 	pitchKnob.setDoubleClickReturnValue(true, 0.0);
 	fineKnob.setDoubleClickReturnValue(true, 0.0);
@@ -236,6 +239,7 @@ void MixerChannel::updateModelUI()
 	fineKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	panKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	sendDelayKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	sendReverbKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 
 	repaint();
 }
@@ -244,7 +248,7 @@ void MixerChannel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds();
 
-	g.setColour(ColourPalette::backgroundDark);
+	g.setColour(ColourPalette::backgroundMid.withAlpha(ObsidianShades::ALPHA_06));
 	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
 
 	if (hasSamplePending && !isGenerating)
@@ -280,27 +284,26 @@ void MixerChannel::paint(juce::Graphics &g)
 
 void MixerChannel::resized()
 {
-	auto area = getLocalBounds().reduced(4);
+	auto area = getLocalBounds().reduced(2);
 	const int width = area.getWidth();
 
-	trackNameLabel.setBounds(area.removeFromTop(16));
+	area.removeFromTop(2);
+	trackNameLabel.setBounds(area.removeFromTop(12));
 
-	auto bottomRow2 = area.removeFromBottom(22);
+	auto bottomRow2 = area.removeFromBottom(18);
 	int btnW = width / 2 - 2;
 	int totalW = btnW * 2 + 2;
 	int offsetX = (width - totalW) / 2;
 	bottomRow2.removeFromLeft(offsetX);
-	muteButton.setBounds(bottomRow2.removeFromLeft(btnW).reduced(1));
+	muteButton.setBounds(bottomRow2.removeFromLeft(btnW));
 	bottomRow2.removeFromLeft(1);
-	soloButton.setBounds(bottomRow2.removeFromLeft(btnW).reduced(1));
+	soloButton.setBounds(bottomRow2.removeFromLeft(btnW));
 
-	auto bottomRow1 = area.removeFromBottom(22);
+	auto bottomRow1 = area.removeFromBottom(18);
 	bottomRow1.removeFromLeft(offsetX);
-	playButton.setBounds(bottomRow1.removeFromLeft(btnW).reduced(1));
+	playButton.setBounds(bottomRow1.removeFromLeft(btnW));
 	bottomRow1.removeFromLeft(1);
-	stopButton.setBounds(bottomRow1.removeFromLeft(btnW).reduced(1));
-
-	area.removeFromBottom(3);
+	stopButton.setBounds(bottomRow1.removeFromLeft(btnW));
 
 	const int knobColumnWidth = juce::jmin(60, width * 2 / 5);
 	auto knobsColumn = area.removeFromRight(knobColumnWidth);
@@ -322,10 +325,11 @@ void MixerChannel::resized()
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label &label, juce::Slider &knob)
 	{
 		label.setBounds(secArea.removeFromTop(6));
-		knob.setBounds(secArea.reduced(1));
+		knob.setBounds(secArea);
 	};
-	knobsColumn.removeFromTop(5);
+	knobsColumn.removeFromTop(4);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), sendDelayLabel, sendDelayKnob);
+	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), sendReverbLabel, sendReverbKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), pitchLabel, pitchKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), fineLabel, fineKnob);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), panLabel, panKnob);
@@ -441,13 +445,28 @@ void MixerChannel::setupUI()
 	sendDelayKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 	sendDelayKnob.setTooltip("Delay send level (post-fader)");
 
+	addAndMakeVisible(sendReverbKnob);
+	sendReverbKnob.setRange(0.0, 1.0, 0.001);
+	sendReverbKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+	sendReverbKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+	sendReverbKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+	sendReverbKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	sendReverbKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	sendReverbKnob.setTooltip("Reverb send level (post-fader)");
+
 	addAndMakeVisible(sendDelayLabel);
 	sendDelayLabel.setText("DLY", juce::dontSendNotification);
 	sendDelayLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	sendDelayLabel.setJustificationType(juce::Justification::centred);
 
+	addAndMakeVisible(sendReverbLabel);
+	sendReverbLabel.setText("RVB", juce::dontSendNotification);
+	sendReverbLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	sendReverbLabel.setJustificationType(juce::Justification::centred);
+
 	ObsidianFonts::applyFontSize(pitchLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 	ObsidianFonts::applyFontSize(sendDelayLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(sendReverbLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 	ObsidianFonts::applyFontSize(panLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 	ObsidianFonts::applyFontSize(fineLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 
@@ -644,5 +663,9 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 	else if (paramSuffix == "DelaySend")
 	{
 		track->delaySend = newValue;
+	}
+	else if (paramSuffix == "ReverbSend")
+	{
+		track->reverbSend = newValue;
 	}
 }

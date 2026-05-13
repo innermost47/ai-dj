@@ -167,6 +167,11 @@ class ParameterManager
 		return safeLoadIndexed(slotDelaySendParams, slot);
 	}
 
+	float getReverbSend(int slot) const
+	{
+		return safeLoadIndexed(slotReverbSendParams, slot);
+	}
+
   private:
 	juce::AudioProcessorValueTreeState apvts;
 
@@ -202,6 +207,7 @@ class ParameterManager
 	std::atomic<float> *slotAdsrSustainParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotAdsrReleaseParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotDelaySendParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotReverbSendParams[ObsidianDataConst::MAX_TRACKS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[ObsidianDataConst::MAX_CROSSFADER_PAIR] = {};
@@ -269,6 +275,14 @@ class ParameterManager
 	                                         "slot6DelaySend",
 	                                         "slot7DelaySend",
 	                                         "slot8DelaySend",
+	                                         "slot1ReverbSend",
+	                                         "slot2ReverbSend",
+	                                         "slot3ReverbSend",
+	                                         "slot4ReverbSend",
+	                                         "slot5ReverbSend",
+	                                         "slot6ReverbSend",
+	                                         "slot7ReverbSend",
+	                                         "slot8ReverbSend",
 	                                         "globalCrossfader",
 	                                         "pairCrossfader1",
 	                                         "pairCrossfader2",

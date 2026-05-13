@@ -174,6 +174,8 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/broadcast.svg
         src/assets/icons/brush.svg
         src/assets/icons/bucket.svg
+        src/assets/icons/caret-down.svg
+        src/assets/icons/caret-up.svg
         src/assets/icons/chat-text.svg
         src/assets/icons/collapse.svg
         src/assets/icons/cpu.svg
@@ -191,6 +193,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/info.svg
         src/assets/icons/left.svg
         src/assets/icons/lin.svg
+        src/assets/icons/lock-fill.svg
         src/assets/icons/mute.svg
         src/assets/icons/pause.svg
         src/assets/icons/pencil.svg
@@ -227,6 +230,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/center/tracks/TrackComponent.cpp
     src/components/center/tracks/WaveformDisplay.cpp
     src/components/left/CategoryPanel.cpp
+    src/components/left/DetailPanel.cpp
     src/components/left/LeftPanelWrapper.cpp
     src/components/left/PromptBank.cpp
     src/components/left/PromptBankItem.cpp
@@ -234,6 +238,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/left/PromptCategoryAccordion.cpp
     src/components/left/PromptModelDefinitions.cpp
     src/components/left/SampleBank.cpp
+    src/components/left/SampleBankItem.cpp
     src/components/left/SampleBankPanel.cpp
     src/components/right/ConfigComponent.cpp
     src/components/right/LCDScreen.cpp
@@ -248,14 +253,17 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/shared/ColourPicker.cpp
     src/components/shared/IconButton.cpp
     src/components/shared/LedRadioButton.cpp
+    src/components/shared/ObsidianAccordion.cpp
     src/components/shared/ObsidianBase.cpp
     src/components/shared/ObsidianBaseMidiComponent.cpp
+    src/components/shared/ObsidianListItem.cpp
     src/components/shared/ObsidianModal.cpp
     src/components/shared/VuMeter.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/AudioAnalyzer.cpp
     src/dsp/DelaySend.cpp
+    src/dsp/ReverbSend.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
     src/engines/ObsidianEngine.cpp

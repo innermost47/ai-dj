@@ -28,7 +28,8 @@ void PromptBankPanel::setupUI()
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 
 	addAndMakeVisible(helpLabel);
-	helpLabel.setText("Drag a prompt onto a track to assign both the prompt and its model.",
+	helpLabel.setText("Drag a prompt onto a track to assign it. Double-click or right-click to edit.\n"
+	                  "Locked items (with a lock icon) are factory presets and cannot be modified.",
 	                  juce::dontSendNotification);
 	helpLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
 	helpLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
@@ -90,8 +91,8 @@ void PromptBankPanel::resized()
 
 	titleLabel.setBounds(area.removeFromTop(ObsidianSizes::TITLE_PANEL_HEIGHT));
 	area.removeFromTop(ObsidianSizes::GAP_4);
-	helpLabel.setBounds(area.removeFromTop(ObsidianSizes::INFO_PANEL_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_8);
+	helpLabel.setBounds(area.removeFromTop(ObsidianSizes::INFO_PANEL_HEIGHT * 2));
+	area.removeFromTop(ObsidianSizes::GAP_4);
 
 	searchInput.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
 	area.removeFromTop(ObsidianSizes::GAP_4);
@@ -255,10 +256,17 @@ void PromptBankPanel::rebuildAccordions()
 		for (auto *entry : byCategory[catName])
 		{
 			auto item = std::make_unique<PromptBankItem>(entry);
-			item->categoryColourResolver = [this](const juce::String &n) { return resolveCategoryColour(n); };
-			item->onItemClicked = [this](PromptBankEntry *e) { onPromptClicked(e); };
-			item->onEditRequested = [this](PromptBankEntry *e) { onPromptEditRequested(e); };
-			item->onDeleteRequested = [this](PromptBankEntry *e) { onPromptDeleteRequested(e); };
+			item->setCategoryColourResolver([this](const juce::String &n) { return resolveCategoryColour(n); });
+
+			item->onItemClicked = [this, entry]() { onPromptClicked(entry); };
+			item->onItemDoubleClicked = [this, entry]() { onPromptEditRequested(entry); };
+
+			if (!entry->isBuiltIn)
+			{
+				item->onEditRequested = [this, entry]() { onPromptEditRequested(entry); };
+				item->onDeleteRequested = [this, entry]() { onPromptDeleteRequested(entry); };
+			}
+
 			items.push_back(std::move(item));
 		}
 		accordion->setItems(std::move(items));
@@ -311,7 +319,7 @@ void PromptBankPanel::onPromptClicked(PromptBankEntry *entry)
 	for (auto &acc : accordions)
 		for (int i = 0; i < acc->getNumChildComponents(); ++i)
 			if (auto *item = dynamic_cast<PromptBankItem *>(acc->getChildComponent(i)))
-				item->setSelected(item->getPromptEntry() == entry);
+				item->setSelected(item->getEntry() == entry);
 }
 
 void PromptBankPanel::onPromptEditRequested(PromptBankEntry *entry)
@@ -367,7 +375,7 @@ void PromptBankPanel::expandAll()
 	for (auto &acc : accordions)
 	{
 		acc->setExpanded(true, false);
-		openCategories.insert(acc->getCategoryName());
+		openCategories.insert(acc->getName());
 	}
 	resized();
 }

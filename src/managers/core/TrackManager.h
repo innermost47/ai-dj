@@ -42,13 +42,17 @@ class TrackManager
 	                           juce::AudioBuffer<float> &mainOutput, double hostBpm, DelaySend::TimeDivision division,
 	                           float feedback, DelaySend::Mode mode, int numSamples);
 
-	void prepareDelays(double sampleRate, int maxBlockSize);
+	void prepareSends(double sampleRate, int maxBlockSize);
+
+	void processPerTrackReverbs(std::vector<juce::AudioBuffer<float>> &individualOutputs,
+	                            juce::AudioBuffer<float> &mainOutput, float size, float damping, float width, float mix,
+	                            int numSamples);
 
   private:
 	mutable juce::CriticalSection tracksLock;
 	std::map<std::string, std::unique_ptr<TrackData>> tracks;
 	std::vector<std::string> trackOrder;
-	juce::AudioBuffer<float> perTrackDelayBuffer;
+	juce::AudioBuffer<float> perTrackFxBuffer;
 
 	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
 	int currentMaxBlockSize = ObsidianDataConst::MAX_BLOCK_SIZE;

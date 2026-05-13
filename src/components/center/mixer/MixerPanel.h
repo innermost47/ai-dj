@@ -22,7 +22,7 @@ class MixerPanel : public ObsidianComponent
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void startGeneratingAnimationForTrack(const juce::String &trackId);
-	void stopGeneratingAnimationForTrack(const juce::String &trackId);
+	void stopGeneratingAnimationForTrack(const juce::String &trackId, bool pending);
 	void clearSamplePending(const juce::String &trackId);
 	void detachAllTracks();
 

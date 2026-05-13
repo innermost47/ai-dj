@@ -139,4 +139,9 @@ struct MidiMapping
 	{
 		return 40 + slot;
 	}
+
+	static int ccFeedbackReverbSend(int slot)
+	{
+		return 50 + slot;
+	}
 };

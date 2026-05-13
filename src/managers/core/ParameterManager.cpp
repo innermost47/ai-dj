@@ -57,6 +57,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotAdsrSustainParams[i] = apvts.getRawParameterValue(s + "AdsrSustain");
 		slotAdsrReleaseParams[i] = apvts.getRawParameterValue(s + "AdsrRelease");
 		slotDelaySendParams[i] = apvts.getRawParameterValue(s + "DelaySend");
+		slotReverbSendParams[i] = apvts.getRawParameterValue(s + "ReverbSend");
 
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
@@ -66,6 +67,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "AdsrSustain", listener);
 		apvts.addParameterListener(s + "AdsrRelease", listener);
 		apvts.addParameterListener(s + "DelaySend", listener);
+		apvts.addParameterListener(s + "ReverbSend", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -122,6 +124,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "AdsrSustain", listener);
 		apvts.removeParameterListener(s + "AdsrRelease", listener);
 		apvts.removeParameterListener(s + "DelaySend", listener);
+		apvts.removeParameterListener(s + "ReverbSend", listener);
 
 		for (int seq = 1; seq <= 8; ++seq)
 			apvts.removeParameterListener(s + "Seq" + juce::String(seq), listener);
@@ -203,6 +206,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		                                                juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "DelaySend", slotName + " Delay Send",
+		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "ReverbSend", slotName + " Reverb Send",
 		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));

@@ -29,7 +29,10 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	}
 
 	if (audioPrepared)
+	{
 		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+		track->reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+	}
 
 	tracks[stdId] = std::move(track);
 	trackOrder.push_back(stdId);
@@ -68,18 +71,21 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 	return ids;
 }
 
-void TrackManager::prepareDelays(double sampleRate, int maxBlockSize)
+void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 {
 	const juce::ScopedLock sl(tracksLock);
 	currentSampleRate = sampleRate;
 	currentMaxBlockSize = maxBlockSize;
 	audioPrepared = true;
 
-	perTrackDelayBuffer.setSize(2, maxBlockSize, false, false, true);
+	perTrackFxBuffer.setSize(2, maxBlockSize, false, false, true);
 	for (const auto &pair : tracks)
 	{
 		if (pair.second)
+		{
 			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
+			pair.second->reverbSendProcessor.prepare(sampleRate, maxBlockSize);
+		}
 	}
 }
 
@@ -90,8 +96,8 @@ void TrackManager::processPerTrackDelays(std::vector<juce::AudioBuffer<float>> &
 {
 	if (!audioPrepared)
 		return;
-	if (perTrackDelayBuffer.getNumSamples() < numSamples)
-		perTrackDelayBuffer.setSize(2, numSamples, false, false, true);
+	if (perTrackFxBuffer.getNumSamples() < numSamples)
+		perTrackFxBuffer.setSize(2, numSamples, false, false, true);
 
 	const juce::ScopedLock sl(tracksLock);
 
@@ -117,20 +123,71 @@ void TrackManager::processPerTrackDelays(std::vector<juce::AudioBuffer<float>> &
 
 		const float sendLevel = track->delaySend.load();
 
-		perTrackDelayBuffer.clear(0, numSamples);
+		perTrackFxBuffer.clear(0, numSamples);
 		if (sendLevel > 0.0001f)
 		{
 			for (int ch = 0; ch < 2; ++ch)
-				perTrackDelayBuffer.addFrom(ch, 0, trackBuffer, ch, 0, numSamples, sendLevel);
+				perTrackFxBuffer.addFrom(ch, 0, trackBuffer, ch, 0, numSamples, sendLevel);
 		}
 
-		track->delaySendProcessor.process(perTrackDelayBuffer, 0, numSamples);
+		track->delaySendProcessor.process(perTrackFxBuffer, 0, numSamples);
 
 		for (int ch = 0; ch < 2; ++ch)
-			trackBuffer.addFrom(ch, 0, perTrackDelayBuffer, ch, 0, numSamples);
+			trackBuffer.addFrom(ch, 0, perTrackFxBuffer, ch, 0, numSamples);
 
 		for (int ch = 0; ch < std::min(2, mainOutput.getNumChannels()); ++ch)
-			mainOutput.addFrom(ch, 0, perTrackDelayBuffer, ch, 0, numSamples);
+			mainOutput.addFrom(ch, 0, perTrackFxBuffer, ch, 0, numSamples);
+	}
+}
+
+void TrackManager::processPerTrackReverbs(std::vector<juce::AudioBuffer<float>> &individualOutputs,
+                                          juce::AudioBuffer<float> &mainOutput, float size, float damping, float width,
+                                          float mix, int numSamples)
+{
+	if (!audioPrepared)
+		return;
+
+	if (perTrackFxBuffer.getNumSamples() < numSamples)
+		perTrackFxBuffer.setSize(2, numSamples, false, false, true);
+
+	const juce::ScopedLock sl(tracksLock);
+
+	for (const auto &id : trackOrder)
+	{
+		auto it = tracks.find(id);
+		if (it == tracks.end() || !it->second)
+			continue;
+
+		TrackData *track = it->second.get();
+		const int slot = track->slotIndex;
+		if (slot < 0 || slot >= (int)individualOutputs.size())
+			continue;
+
+		auto &trackBuffer = individualOutputs[slot];
+		if (trackBuffer.getNumChannels() < 2)
+			continue;
+
+		track->reverbSendProcessor.setSize(size);
+		track->reverbSendProcessor.setDamping(damping);
+		track->reverbSendProcessor.setWidth(width);
+		track->reverbSendProcessor.setMix(mix);
+
+		const float sendLevel = track->reverbSend.load();
+
+		perTrackFxBuffer.clear(0, numSamples);
+		if (sendLevel > 0.0001f)
+		{
+			for (int ch = 0; ch < 2; ++ch)
+				perTrackFxBuffer.addFrom(ch, 0, trackBuffer, ch, 0, numSamples, sendLevel);
+		}
+
+		track->reverbSendProcessor.process(perTrackFxBuffer, 0, numSamples);
+
+		for (int ch = 0; ch < 2; ++ch)
+			trackBuffer.addFrom(ch, 0, perTrackFxBuffer, ch, 0, numSamples);
+
+		for (int ch = 0; ch < std::min(2, mainOutput.getNumChannels()); ++ch)
+			mainOutput.addFrom(ch, 0, perTrackFxBuffer, ch, 0, numSamples);
 	}
 }
 

@@ -1,54 +1,36 @@
 #pragma once
-#include "ObsidianBase.h"
+#include "AccordionItem.h"
+#include "ObsidianListItem.h"
 #include "PromptBank.h"
 #include <JuceHeader.h>
 
-class PromptBankItem : public ObsidianComponent
+#if JUCE_MSVC
+#pragma warning(push)
+#pragma warning(disable : 4250)
+#endif
+
+class PromptBankItem : public AccordionItem, public ObsidianListItem
 {
   public:
-	PromptBankItem(PromptBankEntry *entry);
+	explicit PromptBankItem(PromptBankEntry *entry);
 	~PromptBankItem() override;
 
 	void paint(juce::Graphics &g) override;
-	void resized() override;
+	int getPreferredHeight(int width) const override;
 
-	void mouseEnter(const juce::MouseEvent &) override;
-	void mouseExit(const juce::MouseEvent &) override;
-	void mouseDown(const juce::MouseEvent &event) override;
-	void mouseDrag(const juce::MouseEvent &event) override;
-	void mouseUp(const juce::MouseEvent &) override;
+	void setCategoryColourResolver(std::function<juce::Colour(const juce::String &)> resolver)
+	{
+		categoryColourResolver = std::move(resolver);
+	}
 
-	void setSelected(bool s)
-	{
-		selected = s;
-		repaint();
-	}
-	bool isSelected() const
-	{
-		return selected;
-	}
-	PromptBankEntry *getPromptEntry() const
+	PromptBankEntry *getEntry() const
 	{
 		return entry;
 	}
 
-	std::function<void(PromptBankEntry *)> onItemClicked;
-	std::function<void(PromptBankEntry *)> onEditRequested;
-	std::function<void(PromptBankEntry *)> onDeleteRequested;
-	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
-
-	static constexpr int MIN_HEIGHT = 50;
-	static constexpr int MAX_LINES = 4;
-
-	int getPreferredHeight(int width) const;
-
   private:
-	PromptBankEntry *entry = nullptr;
-	bool selected = false;
-	bool isDragging = false;
-
-	IconButton editButton{"prompt-edit"};
-	IconButton deleteButton{"prompt-delete"};
+	PromptBankEntry *entry{nullptr};
+	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PromptBankItem)
 };

@@ -1,53 +1,11 @@
 ﻿#pragma once
+#include "DetailPanel.h"
 #include "ObsidianBase.h"
 #include "SampleBank.h"
+#include "SampleBankItem.h"
 #include <JuceHeader.h>
 
 class DjIaVstProcessor;
-
-class SampleBankItem : public ObsidianComponent, public juce::DragAndDropContainer
-{
-  public:
-	SampleBankItem(SampleBankEntry *entry, DjIaVstProcessor &processor);
-	~SampleBankItem() override;
-
-	void paint(juce::Graphics &g) override;
-	void resized() override;
-	void mouseDown(const juce::MouseEvent &event) override;
-	void mouseDrag(const juce::MouseEvent &event) override;
-	void mouseUp(const juce::MouseEvent &event) override;
-	void mouseEnter(const juce::MouseEvent &event) override;
-	void mouseExit(const juce::MouseEvent &event) override;
-
-	SampleBankEntry *getSampleEntry() const
-	{
-		return sampleEntry;
-	}
-	void setSelected(bool s)
-	{
-		selected = s;
-		repaint();
-	}
-
-	std::function<void(SampleBankEntry *)> onItemClicked;
-	std::function<void(SampleBankEntry *)> onDeleteRequested;
-	std::function<void(SampleBankEntry *, const std::vector<juce::String> &)> onCategoriesChanged;
-	std::function<std::vector<juce::String>()> getCategoriesList;
-	std::function<void(SampleBankEntry *)> onPromptEditRequested;
-	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
-
-  private:
-	SampleBankEntry *sampleEntry;
-	DjIaVstProcessor &audioProcessor;
-
-	bool selected = false;
-	bool isDragging = false;
-
-	void showCategoryMenu();
-	juce::Colour getCategoryColor(const juce::String &category);
-
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBankItem)
-};
 
 enum class SampleCategory
 {
@@ -80,55 +38,7 @@ struct CategoryInfo
 	juce::Colour colour{juce::Colour(0)};
 };
 
-class DetailPanel : public ObsidianComponent, public juce::Timer
-{
-  public:
-	DetailPanel();
-	~DetailPanel() override;
-
-	void setEntry(SampleBankEntry *entry);
-	void paint(juce::Graphics &g) override;
-	void resized() override;
-	void setIsPlaying(bool playing);
-	void updatePlaybackPosition(float pos);
-
-	std::function<void(SampleBankEntry *)> onPlayRequested;
-	std::function<void()> onStopRequested;
-	std::function<void(const juce::String &)> onDeleteRequested;
-	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
-
-	void loadAudio();
-
-  private:
-	SampleBankEntry *entry = nullptr;
-
-	juce::Label nameLabel;
-	juce::Label metaLabel;
-	IconButtonSimple playButton{"Play", ""};
-	IconButtonSimple deleteButton{"Delete", ""};
-
-	juce::Rectangle<int> waveformBounds;
-	std::vector<float> thumbL, thumbR;
-	juce::AudioBuffer<float> audioBuf;
-	std::shared_ptr<std::atomic<bool>> validity{std::make_shared<std::atomic<bool>>(true)};
-	std::atomic<bool> destroyed{false};
-
-	bool isPlaying = false;
-	float playbackPos = 0.0f;
-	double lastTimerCall = 0.0;
-
-	void timerCallback() override;
-	void generateThumbnail();
-	void drawWaveform(juce::Graphics &g);
-	void updatePlayButton();
-
-	juce::String formatDuration(float s);
-	juce::Colour getCategoryColor(const juce::String &category);
-
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DetailPanel)
-};
-
-class SampleBankPanel : public juce::Component, public juce::Timer, public juce::ListBoxModel
+class SampleBankPanel : public ObsidianComponent, public juce::Timer, public juce::ListBoxModel
 {
   public:
 	SampleBankPanel(DjIaVstProcessor &processor);

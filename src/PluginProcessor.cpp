@@ -125,7 +125,7 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	}
 
 	masterConsoleBuss.prepare(sampleRate);
-	trackManager.prepareDelays(sampleRate, samplesPerBlock);
+	trackManager.prepareSends(sampleRate, samplesPerBlock);
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -563,6 +563,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	    static_cast<DelaySend::TimeDivision>(parameterManager.getDelayDivisionIndex()), parameterManager.getFeedback(),
 	    static_cast<DelaySend::Mode>(parameterManager.getDelayModeIndex()), buffer.getNumSamples());
 
+	trackManager.processPerTrackReverbs(audioManager.getIndividualOutputBuffers(), mainOutput,
+	                                    parameterManager.getReverbSize(), parameterManager.getReverbDamping(),
+	                                    parameterManager.getReverbWidth(), parameterManager.getReverbMix(),
+	                                    buffer.getNumSamples());
+
 	audioManager.copyToIndividualOutputs(buffer);
 	audioManager.applyMasterEffects(mainOutput);
 	masterConsoleBuss.process(mainOutput, 0, mainOutput.getNumSamples());
@@ -770,6 +775,7 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 	float paramRandomRetrigger = pm.getRandomRetrigger(slot);
 	float paramRetriggerInterval = pm.getRetriggerInterval(slot);
 	float paramDelaySend = pm.getDelaySend(slot);
+	float paramReverbSend = pm.getReverbSend(slot);
 	int slotNumber = slot + 1;
 	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
 	int retriggerInterval = juce::jlimit(1, 10, (int)juce::roundToInt(paramRetriggerInterval));
@@ -854,6 +860,8 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 
 	if (std::abs(track->delaySend.load() - paramDelaySend) > 0.001f)
 		track->delaySend = paramDelaySend;
+	if (std::abs(track->reverbSend.load() - paramReverbSend) > 0.001f)
+		track->reverbSend = paramReverbSend;
 }
 
 void DjIaVstProcessor::handleSendsParams()

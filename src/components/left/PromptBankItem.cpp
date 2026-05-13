@@ -1,4 +1,5 @@
-#include "PromptBankItem.h"
+﻿#include "PromptBankItem.h"
+#include "Sizes.h"
 
 static float measureTextWidth(const juce::Font &font, const juce::String &text)
 {
@@ -9,40 +10,17 @@ static float measureTextWidth(const juce::Font &font, const juce::String &text)
 
 PromptBankItem::PromptBankItem(PromptBankEntry *entryIn) : entry(entryIn)
 {
-	setSize(400, MIN_HEIGHT);
-
-	addAndMakeVisible(editButton);
-	editButton.loadIcon(BinaryData::pencil_svg, BinaryData::pencil_svgSize);
-	editButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
-	editButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-	editButton.setCompactMode(true);
-	editButton.setTooltip("Edit prompt");
-	editButton.onClick = [this]()
-	{
-		if (entry && onEditRequested)
-			onEditRequested(entry);
-	};
-
-	addAndMakeVisible(deleteButton);
-	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
-	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	deleteButton.setCompactMode(true);
-	deleteButton.setTooltip("Delete prompt");
-	deleteButton.onClick = [this]()
-	{
-		if (entry && onDeleteRequested)
-			onDeleteRequested(entry);
-	};
-
-	editButton.setIconSize(10.0f);
-	deleteButton.setIconSize(10.0f);
+	setSize(400, ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT);
 
 	if (entry && entry->isBuiltIn)
+		setEditable(false);
+
+	dragPayloadProvider = [this]() -> juce::String
 	{
-		editButton.setVisible(false);
-		deleteButton.setVisible(false);
-	}
+		if (entry == nullptr)
+			return {};
+		return "prompt:" + entry->id;
+	};
 }
 
 PromptBankItem::~PromptBankItem() = default;
@@ -51,7 +29,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds();
 
-	if (selected)
+	if (isSelected())
 	{
 		g.setColour(juce::Colours::white.withAlpha(0.06f));
 		g.fillRect(bounds);
@@ -65,29 +43,42 @@ void PromptBankItem::paint(juce::Graphics &g)
 		return;
 	}
 
+	if (!getEditable())
+	{
+		const int lockW = ObsidianSizes::ACCORDION_LOCK_AREA_WIDTH;
+		auto lockArea = juce::Rectangle<int>(bounds.getRight() - lockW, bounds.getY(), lockW, lockW);
+		auto lockBounds = lockArea.withSizeKeepingCentre(ObsidianSizes::ACCORDION_LOCK_ICON_SIZE,
+		                                                 ObsidianSizes::ACCORDION_LOCK_ICON_SIZE);
+		auto lockSvg = juce::Drawable::createFromImageData(BinaryData::lockfill_svg, BinaryData::lockfill_svgSize);
+		if (lockSvg != nullptr)
+		{
+			lockSvg->replaceColour(juce::Colours::black, ColourPalette::textSecondary);
+			lockSvg->drawWithin(g, lockBounds.toFloat(), juce::RectanglePlacement::xRight, ObsidianShades::ALPHA_04);
+		}
+	}
+
 	if (entry->category.isNotEmpty())
 	{
-		const float thickness = selected ? 4.0f : 1.0f;
+		const float thickness = isSelected() ? 4.0f : 1.0f;
 		juce::Colour catCol =
 		    categoryColourResolver ? categoryColourResolver(entry->category) : ColourPalette::backgroundLight;
 		g.setColour(catCol);
 		g.fillRect(0.0f, 0.0f, thickness, (float)bounds.getHeight());
 	}
-	else if (selected)
+	else if (isSelected())
 	{
 		g.setColour(ColourPalette::lightGrey);
 		g.fillRect(0.0f, 0.0f, 4.0f, (float)bounds.getHeight());
 	}
 
-	const int buttonsZoneWidth = (entry && entry->isBuiltIn) ? 8 : 44;
-
-	auto textArea = bounds.withTrimmedLeft(12).withTrimmedRight(buttonsZoneWidth + 4).withTrimmedTop(6);
+	const int rightPad = !getEditable() ? (ObsidianSizes::ACCORDION_LOCK_AREA_WIDTH + 4) : 12;
+	auto textArea = bounds.withTrimmedLeft(12).withTrimmedRight(rightPad).withTrimmedTop(6);
 	auto promptArea = textArea.removeFromTop(bounds.getHeight() - 30);
 
 	const float fontSize = ObsidianSizes::TEXT_REGULAR;
 	juce::Font promptFont(juce::FontOptions(fontSize, juce::Font::plain));
 	const float lineHeight = promptFont.getHeight();
-	const int maxLines = MAX_LINES;
+	const int maxLines = ObsidianSizes::ACCORDION_ITEM_MAX_LINES;
 	const float maxWidth = (float)promptArea.getWidth();
 
 	juce::StringArray words;
@@ -118,10 +109,6 @@ void PromptBankItem::paint(juce::Graphics &g)
 
 	if ((int)lines.size() == maxLines)
 	{
-		int wordsConsumed = 0;
-		for (const auto &l : lines)
-			wordsConsumed += l.upToFirstOccurrenceOf(" ", false, false).isEmpty() ? 0 : 1;
-
 		juce::String fullJoined = lines.joinIntoString(" ");
 		if (fullJoined.length() < entry->text.length())
 		{
@@ -145,7 +132,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 			break;
 	}
 
-	auto metaArea = bounds.withTrimmedLeft(12).withTrimmedRight(buttonsZoneWidth + 4).removeFromBottom(20);
+	auto metaArea = bounds.withTrimmedLeft(12).withTrimmedRight(rightPad).removeFromBottom(20);
 	juce::Colour modelColour = AiModelDefinitions::getColourForModel(entry->modelName);
 	drawCircleWithEllipse(g, metaArea, modelColour);
 
@@ -181,14 +168,14 @@ void PromptBankItem::paint(juce::Graphics &g)
 int PromptBankItem::getPreferredHeight(int width) const
 {
 	if (!entry)
-		return MIN_HEIGHT;
+		return ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT;
 
 	const float fontSize = ObsidianSizes::TEXT_REGULAR;
 	juce::Font promptFont(juce::FontOptions(fontSize, juce::Font::plain));
 	const float maxWidth = (float)(width);
 
 	if (maxWidth <= 0)
-		return MIN_HEIGHT;
+		return ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT;
 
 	juce::AttributedString attr;
 	attr.append(entry->text, promptFont);
@@ -198,64 +185,8 @@ int PromptBankItem::getPreferredHeight(int width) const
 	juce::TextLayout layout;
 	layout.createLayout(attr, maxWidth);
 
-	int lineCount = juce::jlimit(1, (int)MAX_LINES, layout.getNumLines());
+	int lineCount = juce::jlimit(1, (int)ObsidianSizes::ACCORDION_ITEM_MAX_LINES, layout.getNumLines());
 	const float lineHeight = promptFont.getHeight() * 1.15f;
 
 	return 6 + (int)(lineCount * lineHeight) + 20 + 4;
-}
-
-void PromptBankItem::resized()
-{
-	auto bounds = getLocalBounds();
-	auto topRow = bounds.removeFromTop(26).reduced(0, 4);
-	const int btnW = 22;
-	deleteButton.setBounds(topRow.removeFromRight(btnW));
-	topRow.removeFromRight(2);
-	editButton.setBounds(topRow.removeFromRight(btnW));
-}
-
-void PromptBankItem::mouseEnter(const juce::MouseEvent &)
-{
-	setMouseCursor(juce::MouseCursor::PointingHandCursor);
-}
-
-void PromptBankItem::mouseExit(const juce::MouseEvent &)
-{
-	setMouseCursor(juce::MouseCursor::NormalCursor);
-}
-
-void PromptBankItem::mouseDown(const juce::MouseEvent &event)
-{
-	auto local = event.getEventRelativeTo(this).getPosition();
-	if (editButton.getBounds().contains(local) || deleteButton.getBounds().contains(local))
-		return;
-
-	if (event.getNumberOfClicks() == 2 && entry)
-	{
-		if (onItemClicked)
-			onItemClicked(entry);
-		if (onEditRequested)
-			onEditRequested(entry);
-		return;
-	}
-
-	if (onItemClicked)
-		onItemClicked(entry);
-}
-
-void PromptBankItem::mouseDrag(const juce::MouseEvent &event)
-{
-	if (event.getDistanceFromDragStart() < 6 || isDragging || !entry)
-		return;
-	isDragging = true;
-
-	if (auto *dc = juce::DragAndDropContainer::findParentDragContainerFor(this))
-	{
-		dc->startDragging("prompt:" + entry->id, this);
-	}
-}
-
-void PromptBankItem::mouseUp(const juce::MouseEvent &)
-{
-	isDragging = false;
 }

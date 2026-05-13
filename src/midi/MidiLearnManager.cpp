@@ -593,6 +593,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 		addCC(s + "Page", 89 + i, CH_SHAPE, d + " Page");
 		addCC(s + "Seq", 99 + i, CH_SHAPE, d + " Seq");
 		addCC(s + "DelaySend", 30 + i, CH_FX, d + " Delay Send");
+		addCC(s + "DelaySend", 39 + i, CH_FX, d + " Reverb Send");
 	}
 
 	addCC("pairCrossfader1", 20, CH_XFADER, "Crossfader 1 <-> 5");

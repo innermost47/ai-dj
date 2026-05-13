@@ -68,6 +68,8 @@ void MidiManager::sendFullStateFeedback()
 		                 MidiMapping::feedbackChannelShaping);
 		sendMidiFeedback(MidiMapping::ccFeedbackDelaySend(slot), MidiMapping::volumeToMidi(pm.getDelaySend(slotIdx)),
 		                 MidiMapping::feedbackChannelSends);
+		sendMidiFeedback(MidiMapping::ccFeedbackReverbSend(slot), MidiMapping::volumeToMidi(pm.getReverbSend(slotIdx)),
+		                 MidiMapping::feedbackChannelSends);
 	}
 
 	for (int p = 0; p < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++p)

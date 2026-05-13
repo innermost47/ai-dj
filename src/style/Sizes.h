@@ -57,6 +57,18 @@ inline constexpr float TEXT_SMALL = 12.0f;
 inline constexpr float TEXT_XS = 11.0f;
 inline constexpr float TEXT_XXS = 10.0f;
 inline constexpr float TEXT_XXXS = 8.0f;
+
+inline constexpr int ACCORDION_HEADER_HEIGHT = 32;
+inline constexpr int ACCORDION_ITEM_SPACING = 2;
+inline constexpr int ACCORDION_ACCENT_BAR_WIDTH = 4;
+inline constexpr int ACCORDION_CHEVRON_AREA_WIDTH = 24;
+inline constexpr int ACCORDION_TEXT_LEFT_PADDING = 10;
+
+inline constexpr int ACCORDION_ITEM_MIN_HEIGHT = 50;
+inline constexpr int ACCORDION_ITEM_MAX_LINES = 4;
+
+inline constexpr int ACCORDION_LOCK_ICON_SIZE = 12;
+inline constexpr int ACCORDION_LOCK_AREA_WIDTH = 18;
 } // namespace ObsidianSizes
 
 #endif

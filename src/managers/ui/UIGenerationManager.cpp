@@ -124,7 +124,7 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 
 	if (editor.mixerPanel)
 	{
-		editor.mixerPanel->stopGeneratingAnimationForTrack(trackId);
+		editor.mixerPanel->stopGeneratingAnimationForTrack(trackId, success);
 	}
 
 	isGenerating_.store(false);

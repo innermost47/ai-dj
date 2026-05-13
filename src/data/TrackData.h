@@ -3,6 +3,7 @@
 #include "DataConst.h"
 #include "DelaySend.h"
 #include "DjIaClient.h"
+#include "ReverbSend.h"
 #include <JuceHeader.h>
 
 struct SequencerData
@@ -143,6 +144,7 @@ struct TrackData
 	Console6Channel consoleChannel;
 
 	DelaySend delaySendProcessor;
+	ReverbSend reverbSendProcessor;
 
 	juce::String trackId;
 	juce::String trackName;

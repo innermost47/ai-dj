@@ -119,7 +119,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 		bool hasContent = (track->pages[p].numSamples > 0 || track->pages[p].selectedPrompt.isNotEmpty());
 
 		auto badgeArea = pageLine.removeFromLeft(14);
-		auto badgeRect = badgeArea.withSizeKeepingCentre(11, 11).toFloat();
+		auto badgeRect = badgeArea.withSizeKeepingCentre(10, 10).toFloat();
 
 		juce::Colour modelColourForPage = AiModelDefinitions::getColourForModel(track->pages[p].selectedModel);
 
