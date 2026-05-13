@@ -54,7 +54,7 @@ void UITrackManager::refreshTrackComponents()
 			for (int i = 0; i < (int)trackComponents.size() && i < (int)trackIds.size(); ++i)
 			{
 				trackComponents[i]->setTrackData(editor.audioProcessor.getTrack(trackIds[i]));
-
+				trackComponents[i]->refreshWaveformDisplay();
 				trackComponents[i]->updateFromTrackData();
 				if (auto *sequencer = trackComponents[i]->getSequencer())
 					sequencer->updateFromTrackData();
