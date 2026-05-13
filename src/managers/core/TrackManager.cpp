@@ -4,13 +4,13 @@
 juce::String TrackManager::createTrack(const juce::String &name)
 {
 	juce::ScopedLock lock(tracksLock);
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		usedSlots[i] = false;
 	}
 	for (const auto &pair : tracks)
 	{
-		if (pair.second->slotIndex >= 0 && pair.second->slotIndex < 8)
+		if (pair.second->slotIndex >= 0 && pair.second->slotIndex < ObsidianDataConst::MAX_TRACKS)
 		{
 			usedSlots[pair.second->slotIndex] = true;
 		}
@@ -101,7 +101,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			float deckGainStart = 1.0f;
 			float deckGainEnd = 1.0f;
 			int pairIdx = track->getPairIndex();
-			if (pairIdx >= 0 && pairIdx < 4)
+			if (pairIdx >= 0 && pairIdx < ObsidianDataConst::MAX_CROSSFADER_PAIR)
 			{
 				bool isA = track->isDeckA();
 
@@ -298,13 +298,13 @@ int TrackManager::findFreeSlot()
 	for (const auto &pair : tracks)
 	{
 		const auto &track = pair.second;
-		if (track->slotIndex >= 0 && track->slotIndex < 8)
+		if (track->slotIndex >= 0 && track->slotIndex < ObsidianDataConst::MAX_TRACKS)
 		{
 			actualUsage[track->slotIndex] = true;
 		}
 	}
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		if (!usedSlots[i])
 		{
@@ -448,6 +448,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	double samplesPerBeat = (60.0 / hostBpm) * sampleRateToUse;
 
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
+
 	const double totalSamplesBeforeFadeOut = juce::jmin((samplesPerMeasure * numMeasures) + startSample, endSample);
 
 	const double fadeLength = 64.0;

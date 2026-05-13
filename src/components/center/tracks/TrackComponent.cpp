@@ -17,7 +17,7 @@ TrackComponent::~TrackComponent()
 	markForDestruction();
 	stopTimer();
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		pageButtons[i].onClick = nullptr;
 	}
@@ -166,7 +166,7 @@ void TrackComponent::updateFromTrackData()
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
 	updateModelUI();
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setVisible(true);
 	}
@@ -649,7 +649,7 @@ void TrackComponent::setupPagesUI()
 	const char *pageLabels[4] = {"A", "B", "C", "D"};
 	const char *pageNames[4] = {"PageA", "PageB", "PageC", "PageD"};
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		addChildComponent(pageButtons[i]);
 		pageButtons[i].setButtonText(pageLabels[i]);
@@ -684,7 +684,7 @@ void TrackComponent::onPageSelected(int pageIndex)
 		return;
 	}
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setToggleState(i == track->currentPageIndex.load(), juce::dontSendNotification);
 	}
@@ -809,7 +809,7 @@ void TrackComponent::updatePagesDisplay()
 
 	int pendingPage = track->pageChangePending.load() ? track->pendingPageIndex.load() : -1;
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		PageButtonState newState;
 		newState.isActive = (i == track->currentPageIndex.load());
@@ -940,7 +940,7 @@ void TrackComponent::startGeneratingAnimation()
 {
 	isGenerating = true;
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setEnabled(false);
 	}
@@ -957,7 +957,7 @@ void TrackComponent::stopGeneratingAnimation()
 {
 	isGenerating = false;
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setEnabled(true);
 	}
@@ -1092,7 +1092,7 @@ void TrackComponent::setupUI()
 	intervalLabel.setFont(juce::FontOptions(9.0f));
 	intervalLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setVisible(true);
 	}
@@ -1553,7 +1553,7 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		}
 	}
 
-	if (track->slotIndex >= 0 && track->slotIndex < audioProcessor.getAudioManager().MAX_SLOTS)
+	if (track->slotIndex >= 0 && track->slotIndex < ObsidianDataConst::MAX_TRACKS)
 	{
 		auto &apvts = audioProcessor.getParameterManager().getAPVTS();
 		juce::String s = "slot" + juce::String(track->slotIndex + 1);

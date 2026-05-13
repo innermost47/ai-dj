@@ -13,26 +13,26 @@ SequencerComponent::~SequencerComponent()
 {
 	setVisible(false);
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_MEASURES; ++i)
 		removeChildComponent(&measureButtons[i]);
 	removeChildComponent(&prevMeasureButton);
 	removeChildComponent(&nextMeasureButton);
 	removeChildComponent(&measureLabel);
 	removeChildComponent(&currentPlayingMeasureLabel);
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_SEQUENCES; ++i)
 		removeChildComponent(&sequenceButtons[i]);
 
 	prevMeasureButton.setLookAndFeel(nullptr);
 	nextMeasureButton.setLookAndFeel(nullptr);
 	currentPlayingMeasureLabel.setLookAndFeel(nullptr);
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_SEQUENCES; ++i)
 		sequenceButtons[i].setLookAndFeel(nullptr);
 }
 
 void SequencerComponent::setupUI()
 {
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_MEASURES; ++i)
 	{
 		measureButtons[i].setButtonText(juce::String(i + 1));
 		measureButtons[i].setClickingTogglesState(false);
@@ -101,7 +101,7 @@ void SequencerComponent::setupUI()
 
 void SequencerComponent::updateMeasureButtonsDisplay()
 {
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_MEASURES; ++i)
 	{
 		bool active = (i + 1 == numMeasures);
 		measureButtons[i].setColour(juce::TextButton::buttonColourId,
@@ -122,7 +122,7 @@ void SequencerComponent::setupSequenceButtons()
 
 	int groupId = 2000 + track->slotIndex;
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_SEQUENCES; ++i)
 	{
 		sequenceButtons[i].setButtonText(juce::String(i + 1));
 		sequenceButtons[i].setClickingTogglesState(true);
@@ -177,7 +177,7 @@ void SequencerComponent::updateSequenceButtonsDisplay()
 	auto &currentPage = track->getCurrentPage();
 	int currentSeq = currentPage.currentSequenceIndex;
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_SEQUENCES; ++i)
 	{
 		sequenceButtons[i].setToggleState(i == currentSeq, juce::dontSendNotification);
 	}
@@ -189,7 +189,7 @@ void SequencerComponent::layoutSequenceButtons(juce::Rectangle<int> area)
 	int totalSpacing = (numButtons - 1) * 2;
 	int buttonWidth = (area.getWidth() - totalSpacing) / numButtons;
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_SEQUENCES; ++i)
 	{
 		sequenceButtons[i].setBounds(area.removeFromLeft(buttonWidth));
 		if (i < 7)
@@ -349,7 +349,7 @@ void SequencerComponent::setAccentColour(juce::Colour colour)
 {
 	accentColour = colour;
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_SEQUENCES; ++i)
 	{
 		sequenceButtons[i].setColour(juce::TextButton::buttonOnColourId, colour);
 		sequenceButtons[i].setColour(juce::TextButton::buttonColourId, colour.withAlpha(0.1f));
@@ -469,7 +469,7 @@ void SequencerComponent::resized()
 	nextMeasureButton.setBounds(controlsArea.removeFromLeft(18));
 	controlsArea.removeFromLeft(6);
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_MEASURES; ++i)
 	{
 		measureButtons[i].setBounds(controlsArea.removeFromLeft(18));
 		if (i < 3)

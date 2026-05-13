@@ -81,14 +81,14 @@ void MasterWaveformDisplay::paint(juce::Graphics &g)
 	}
 
 	g.setColour(ColourPalette::sequencerSubBeat.withAlpha(0.5f));
-	for (int i = 1; i < 8; ++i)
+	for (int i = 1; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		float gx = inner.getX() + (inner.getWidth() * (float)i / 8.0f);
 		g.drawLine(gx, inner.getY() + 2.0f, gx, inner.getBottom() - 2.0f, 0.5f);
 	}
 
 	g.setColour(ColourPalette::amber.withAlpha(0.7f));
-	for (int i = 1; i < 8; ++i)
+	for (int i = 1; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		float gx = inner.getX() + (inner.getWidth() * (float)i / 8.0f);
 		float r = (i == 4) ? 2.0f : 1.2f;

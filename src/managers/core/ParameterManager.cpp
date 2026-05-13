@@ -36,7 +36,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	apvts.addParameterListener("reverbWidth", listener);
 	apvts.addParameterListener("reverbMix", listener);
 
-	for (int i = 0; i < MAX_SLOTS; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		juce::String s = "slot" + juce::String(i + 1);
 
@@ -80,7 +80,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	apvts.addParameterListener("globalCrossfader", listener);
 	apvts.addParameterListener("crossfaderCurveMode", listener);
 
-	for (int i = 0; i < MAX_PAIRS; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		juce::String pairId = "pairCrossfader" + juce::String(i + 1);
 		pairCrossfaderParams[i] = apvts.getRawParameterValue(pairId);

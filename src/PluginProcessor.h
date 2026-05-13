@@ -663,7 +663,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	void setPairCrossfaderPrevious(int index, float value)
 	{
-		if (index >= 0 && index < 4)
+		if (index >= 0 && index < ObsidianDataConst::MAX_CROSSFADER_PAIR)
 			pairCrossfaderPrevious[index] = value;
 	}
 	void setGlobalCrossfaderPrevious(float value)

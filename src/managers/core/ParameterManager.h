@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include <JuceHeader.h>
 
 class ParameterManager
@@ -166,9 +167,6 @@ class ParameterManager
 		return safeLoadIndexed(slotDelaySendParams, slot);
 	}
 
-	static constexpr int MAX_SLOTS = 8;
-	static constexpr int MAX_PAIRS = 4;
-
   private:
 	juce::AudioProcessorValueTreeState apvts;
 
@@ -187,26 +185,26 @@ class ParameterManager
 	std::atomic<float> *reverbWidthParam = nullptr;
 	std::atomic<float> *reverbMixParam = nullptr;
 
-	std::atomic<float> *slotVolumeParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotPanParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotMuteParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotSoloParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotPlayParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotStopParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotGenerateParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotPitchParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotFineParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotBpmOffsetParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotRandomRetriggerParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotRetriggerIntervalParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotAdsrAttackParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotAdsrDecayParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotAdsrSustainParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotAdsrReleaseParams[MAX_SLOTS] = {};
-	std::atomic<float> *slotDelaySendParams[MAX_SLOTS] = {};
+	std::atomic<float> *slotVolumeParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotPanParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotMuteParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotSoloParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotPlayParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotStopParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotGenerateParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotPitchParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotFineParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotBpmOffsetParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotRandomRetriggerParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotRetriggerIntervalParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrAttackParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrDecayParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrSustainParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrReleaseParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotDelaySendParams[ObsidianDataConst::MAX_TRACKS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
-	std::atomic<float> *pairCrossfaderParams[MAX_PAIRS] = {};
+	std::atomic<float> *pairCrossfaderParams[ObsidianDataConst::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
 
 	std::atomic<float> *nextTrackParam = nullptr;

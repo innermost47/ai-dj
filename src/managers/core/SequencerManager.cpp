@@ -333,7 +333,7 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 	{
 		int targetPage = track->pendingPageIndex.load();
 		int slotNumber = track->slotIndex + 1;
-		if (targetPage >= 0 && targetPage < 4)
+		if (targetPage >= 0 && targetPage < ObsidianDataConst::MAX_PAGES)
 		{
 			juce::MessageManager::callAsync(
 			    [this, trackId = track->trackId, targetPage, slotNumber]()

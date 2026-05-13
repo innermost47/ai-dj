@@ -179,7 +179,7 @@ void UITrackManager::refreshUIForMode()
 			continue;
 		auto *track = tc->getTrack();
 
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 		{
 			auto &page = track->pages[i];
 

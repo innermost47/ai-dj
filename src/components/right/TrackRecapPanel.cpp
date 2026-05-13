@@ -48,7 +48,7 @@ void TrackRecapPanel::paint(juce::Graphics &g)
 	          });
 
 	int y = cardsArea.getY();
-	for (size_t i = 0; i < sortedIds.size() && i < 8; ++i)
+	for (size_t i = 0; i < sortedIds.size() && i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		auto cardBounds = juce::Rectangle<int>(cardsArea.getX(), y, cardsArea.getWidth(), CARD_HEIGHT);
 		paintTrackCard(g, cardBounds, (int)i);
@@ -109,7 +109,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 	static const char pageLetters[] = {'A', 'B', 'C', 'D'};
 	int activePage = track->currentPageIndex.load();
 
-	for (int p = 0; p < 4; ++p)
+	for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
 	{
 		if (inner.getHeight() < 13)
 			break;

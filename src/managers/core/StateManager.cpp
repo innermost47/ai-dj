@@ -1,4 +1,5 @@
 #include "StateManager.h"
+#include "DataConst.h"
 #include "JuceHeader.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
@@ -50,7 +51,7 @@ juce::ValueTree StateManager::saveState() const
 		                           nullptr);
 		    trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
 
-		    for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
+		    for (int pageIndex = 0; pageIndex < ObsidianDataConst::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
 			    const auto &page = track->pages[pageIndex];
@@ -84,7 +85,7 @@ juce::ValueTree StateManager::saveState() const
 			    pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
 			    pageState.setProperty("savedModelBeforeLocal", page.savedModelBeforeLocal, nullptr);
 
-			    for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
+			    for (int seqIdx = 0; seqIdx < ObsidianDataConst::MAX_SEQUENCES; ++seqIdx)
 			    {
 				    juce::ValueTree sequencerState("Sequence");
 				    const auto &seq = page.sequences[seqIdx];
@@ -96,9 +97,9 @@ juce::ValueTree StateManager::saveState() const
 				    sequencerState.setProperty("numMeasures", seq.numMeasures, nullptr);
 				    sequencerState.setProperty("beatsPerMeasure", seq.beatsPerMeasure, nullptr);
 
-				    for (int m = 0; m < 4; ++m)
+				    for (int m = 0; m < ObsidianDataConst::MAX_MEASURES; ++m)
 				    {
-					    for (int s = 0; s < 16; ++s)
+					    for (int s = 0; s < ObsidianDataConst::MAX_STEPS_PER_MEASURE; ++s)
 					    {
 						    juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
 						    sequencerState.setProperty(stepKey, seq.steps[m][s], nullptr);
@@ -164,7 +165,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 
-		for (int pageIndex = 0; pageIndex < 4; ++pageIndex)
+		for (int pageIndex = 0; pageIndex < ObsidianDataConst::MAX_PAGES; ++pageIndex)
 		{
 			juce::ValueTree pageState;
 
@@ -222,7 +223,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.adsrSustain.store(pageState.getProperty("adsrSustain", 1.0f));
 				page.adsrRelease.store(pageState.getProperty("adsrRelease", 0.0f));
 
-				for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
+				for (int seqIdx = 0; seqIdx < ObsidianDataConst::MAX_SEQUENCES; ++seqIdx)
 				{
 					juce::ValueTree sequencerState;
 
@@ -249,9 +250,9 @@ void StateManager::loadState(const juce::ValueTree &state)
 						seq.numMeasures = sequencerState.getProperty("numMeasures", 1);
 						seq.beatsPerMeasure = sequencerState.getProperty("beatsPerMeasure", 4);
 
-						for (int m = 0; m < 4; ++m)
+						for (int m = 0; m < ObsidianDataConst::MAX_MEASURES; ++m)
 						{
-							for (int s = 0; s < 16; ++s)
+							for (int s = 0; s < ObsidianDataConst::MAX_STEPS_PER_MEASURE; ++s)
 							{
 								juce::String stepKey = "step_" + juce::String(m) + "_" + juce::String(s);
 								seq.steps[m][s] = sequencerState.getProperty(stepKey, false);
@@ -321,7 +322,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		{
 			track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
 		}
-		if (track->slotIndex >= 0 && track->slotIndex < 8)
+		if (track->slotIndex >= 0 && track->slotIndex < ObsidianDataConst::MAX_TRACKS)
 		{
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 		}
@@ -330,7 +331,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
 	int trackCount = static_cast<int>(audioProcessor.getTrackManager().getNumTracks());
-	for (int i = trackCount; i < 8; ++i)
+	for (int i = trackCount; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		auto track = std::make_unique<TrackData>();
 		audioProcessor.attachPageChangeCallback(track.get());
@@ -339,9 +340,9 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->midiNote = 60 + i;
 		track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
 		auto serverModels = AiModelDefinitions::getModelsForMode(false);
-		for (int p = 0; p < 4; ++p)
+		for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
 			track->pages[p].selectedModel = serverModels[i % serverModels.size()];
-		if (track->slotIndex >= 0 && track->slotIndex < 8)
+		if (track->slotIndex >= 0 && track->slotIndex < ObsidianDataConst::MAX_TRACKS)
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 		std::string stdId = track->trackId.toStdString();
 		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
@@ -492,7 +493,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 			if (auto *p = audioProcessor.getParameters().getParameter("globalCrossfader"))
 				p->setValueNotifyingHost((float)state.getProperty("globalCrossfader", 0.5f));
 		}
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 		{
 			juce::String oldKey = "pairCrossfader" + juce::String(i);
 			juce::String newId = "pairCrossfader" + juce::String(i + 1);
@@ -510,7 +511,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		}
 	}
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		audioProcessor.setPairCrossfaderPrevious(i, audioProcessor.getParameterManager().getPairCrossfader(i));
 	}

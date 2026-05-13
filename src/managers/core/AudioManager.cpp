@@ -147,7 +147,7 @@ void AudioManager::clearOutputBuffers(juce::AudioSampleBuffer &buffer)
 {
 	for (int busIndex = 0; busIndex < audioProcessor.getTotalNumOutputChannels() / 2; ++busIndex)
 	{
-		if (busIndex * 2 + 1 < audioProcessor.getTotalNumOutputChannels() && busIndex <= MAX_SLOTS)
+		if (busIndex * 2 + 1 < audioProcessor.getTotalNumOutputChannels() && busIndex <= ObsidianDataConst::MAX_TRACKS)
 		{
 			auto busBuffer = audioProcessor.getBusBuffer(buffer, false, busIndex);
 			busBuffer.clear();

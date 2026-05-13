@@ -1,5 +1,6 @@
 ﻿#include "PluginProcessor.h"
 #include "AiModelDefinitions.h"
+#include "DataConst.h"
 #include "MidiMapping.h"
 #include "ObsidianAlertManager.h"
 #include "PluginEditor.h"
@@ -35,7 +36,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 
 	midiLearnManager.loadDefaultMappings(this);
 	audioManager.initDummySynth();
-	audioManager.initBuffers(audioManager.MAX_SLOTS);
+	audioManager.initBuffers(ObsidianDataConst::MAX_TRACKS);
 
 	trackManager.onPreviewEnded = [this](const juce::String &trackId)
 	{ juce::MessageManager::callAsync([this, trackId]() { audioManager.stopTrackPreview(trackId); }); };
@@ -146,7 +147,7 @@ juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 {
 	auto layout = juce::AudioProcessor::BusesProperties();
 	layout = layout.withOutput("Main", juce::AudioChannelSet::stereo(), true);
-	for (int i = 0; i < AudioManager::MAX_SLOTS + 1; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS + 1; ++i)
 	{
 		layout = layout.withOutput("Track " + juce::String(i + 1), juce::AudioChannelSet::stereo(), false);
 	}
@@ -262,7 +263,7 @@ void DjIaVstProcessor::initTracks()
 			defaultPrompt = all[0]->text;
 	}
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		juce::String newTrackId = trackManager.createTrack();
 		if (auto *track = trackManager.getTrack(newTrackId))
@@ -286,7 +287,7 @@ void DjIaVstProcessor::initTracks()
 				}
 			}
 
-			for (int p = 0; p < 4; ++p)
+			for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
 			{
 				auto &page = track->pages[p];
 				page.selectedModel = modelName;
@@ -542,7 +543,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	previewBus.clear();
 	float pairCurrent[4];
 	float pairPrev[4];
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		pairCurrent[i] = parameterManager.getPairCrossfader(i);
 		pairPrev[i] = pairCrossfaderPrevious[i];
@@ -790,7 +791,7 @@ void DjIaVstProcessor::playTrack(const juce::MidiMessage &message, double hostBp
 
 void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 {
-	jassert(slot >= 0 && slot < ParameterManager::MAX_SLOTS);
+	jassert(slot >= 0 && slot < ObsidianDataConst::MAX_TRACKS);
 	jassert(track != nullptr);
 
 	auto &pm = parameterManager;

@@ -76,8 +76,6 @@ class AudioManager
 
 	void computeAndSetPeakLevels(const juce::AudioBuffer<float> &buffer);
 
-	static constexpr int MAX_SLOTS = 8;
-
   private:
 	DjIaVstProcessor &audioProcessor;
 	TrackManager &trackManager;

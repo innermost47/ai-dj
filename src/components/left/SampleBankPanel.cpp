@@ -1193,7 +1193,7 @@ void SampleBankPanel::showDeleteConfirmation(const juce::String &id, const juce:
 		if (!used && !samplePath.isEmpty())
 		{
 			static const char pageLetters[] = {'A', 'B', 'C', 'D'};
-			for (int p = 0; p < 4; ++p)
+			for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
 			{
 				if (track->pages[p].audioFilePath == samplePath)
 				{

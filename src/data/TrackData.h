@@ -1,12 +1,13 @@
 ﻿#pragma once
 #include "Console6Channel.h"
+#include "DataConst.h"
 #include "DjIaClient.h"
 #include <JuceHeader.h>
 
 struct SequencerData
 {
-	bool steps[4][16] = {};
-	float velocities[4][16] = {};
+	bool steps[ObsidianDataConst::MAX_MEASURES][ObsidianDataConst::MAX_STEPS_PER_MEASURE] = {};
+	float velocities[ObsidianDataConst::MAX_MEASURES][ObsidianDataConst::MAX_STEPS_PER_MEASURE] = {};
 	bool isPlaying = false;
 	int currentStep = 0;
 	int currentMeasure = 0;
@@ -164,7 +165,7 @@ struct TrackData
 
 	DeckSide getDeckSide() const
 	{
-		return (slotIndex >= 0 && slotIndex < 4) ? DeckSide::A : DeckSide::B;
+		return (slotIndex >= 0 && slotIndex < ObsidianDataConst::MAX_CROSSFADER_PAIR) ? DeckSide::A : DeckSide::B;
 	}
 
 	int getPairIndex() const
@@ -178,7 +179,9 @@ struct TrackData
 	{
 		if (slotIndex < 0 || slotIndex >= 8)
 			return -1;
-		return (slotIndex < 4) ? slotIndex + 4 : slotIndex - 4;
+		return (slotIndex < ObsidianDataConst::MAX_CROSSFADER_PAIR)
+		           ? slotIndex + ObsidianDataConst::MAX_CROSSFADER_PAIR
+		           : slotIndex - ObsidianDataConst::MAX_CROSSFADER_PAIR;
 	}
 
 	bool isDeckA() const
@@ -275,7 +278,7 @@ struct TrackData
 
 	TrackData() : trackId(juce::Uuid().toString()), readPosition(0.0), onPlayStateChanged(nullptr)
 	{
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 			pages[i].reset();
 	}
 
@@ -341,7 +344,7 @@ struct TrackData
 
 	void reset()
 	{
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 			pages[i].reset();
 
 		currentPageIndex.store(0);

@@ -1,4 +1,5 @@
 ﻿#include "StandaloneTransportComponent.h"
+#include "DataConst.h"
 #include "PluginProcessor.h"
 
 void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
@@ -371,6 +372,19 @@ void StandaloneTransportComponent::handleTimeSigChange()
 
 		if (!juce::isPowerOfTwo(den))
 			den = juce::nextPowerOfTwo(den) / 2;
+
+		int stepsPerBeat;
+		if (den == 8)
+			stepsPerBeat = 2;
+		else if (den == 4)
+			stepsPerBeat = 4;
+		else if (den == 2)
+			stepsPerBeat = 8;
+		else
+			stepsPerBeat = 4;
+
+		const int maxNumerator = ObsidianDataConst::MAX_STEPS_PER_MEASURE / stepsPerBeat;
+		num = juce::jlimit(1, maxNumerator, num);
 
 		transport.setTimeSignature(num, den);
 		lcd.setTimeSignature(num, den);

@@ -20,7 +20,7 @@ CrossfaderComponent::~CrossfaderComponent()
 
 void CrossfaderComponent::timerCallback()
 {
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		if (!pairRowBounds[i].isEmpty())
 		{
@@ -33,7 +33,7 @@ void CrossfaderComponent::timerCallback()
 
 void CrossfaderComponent::wireParameters()
 {
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		const juce::String paramId = "pairCrossfader" + juce::String(i + 1);
 		registerSliderParam(paramId, pairSliders[i]);
@@ -59,7 +59,7 @@ void CrossfaderComponent::wireParameters()
 
 void CrossfaderComponent::setupUI()
 {
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		addAndMakeVisible(pairSliders[i]);
 		setupSlider(pairSliders[i], "Crossfader " + juce::String(i + 1) + " <-> " + juce::String(i + 5) +
@@ -135,7 +135,7 @@ void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	if (paramSuffix.startsWith("pairCrossfader"))
 	{
 		int idx = paramSuffix.getTrailingIntValue() - 1;
-		if (idx >= 0 && idx < 4)
+		if (idx >= 0 && idx < ObsidianDataConst::MAX_CROSSFADER_PAIR)
 		{
 			updateSliderColour(pairSliders[idx], idx);
 		}
@@ -185,7 +185,7 @@ void CrossfaderComponent::updateSliderColour(MidiLearnableSlider &slider, int pa
 
 void CrossfaderComponent::updatePairColours()
 {
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 		updateSliderColour(pairSliders[i], i);
 	repaint();
 }
@@ -351,7 +351,7 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics &g)
 	float deckAGain = 1.0f - globalX;
 	float deckBGain = globalX;
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		auto rowBounds = pairRowBounds[i];
 		if (rowBounds.isEmpty())
@@ -422,7 +422,7 @@ void CrossfaderComponent::resized()
 	const int rowSpacing = 2;
 	const int rowHeight = (area.getHeight() - rowSpacing * 3) / 4;
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
 	{
 		auto rowArea = (i == 3) ? area : area.removeFromTop(rowHeight);
 		pairRowBounds[i] = rowArea;
