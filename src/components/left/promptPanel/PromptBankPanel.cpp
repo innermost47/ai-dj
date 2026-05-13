@@ -22,60 +22,42 @@ PromptBankPanel::~PromptBankPanel()
 
 void PromptBankPanel::setupUI()
 {
-	addAndMakeVisible(titleLabel);
-	titleLabel.setText("PROMPT BANK", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_TITLE));
-	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
+	addAndMakeVisible(header);
 
-	addAndMakeVisible(helpLabel);
-	helpLabel.setText("Drag a prompt onto a track to assign it. Double-click or right-click to edit.\n"
-	                  "Locked items (with a lock icon) are factory presets and cannot be modified.",
-	                  juce::dontSendNotification);
-	helpLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
-	helpLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	helpLabel.setJustificationType(juce::Justification::topLeft);
+	header.setTitle("PROMPT BANK");
+	header.setHelpText("Drag a prompt onto a track to assign it. Double-click or right-click to edit.\n"
+	                   "Locked items (with a lock icon) are factory presets and cannot be modified.");
 
-	addAndMakeVisible(searchInput);
-	searchInput.setTextToShowWhenEmpty("Search prompts...", ColourPalette::textSecondary);
-	searchInput.onTextChange = [this]()
+	header.setSearchEnabled(true);
+	header.setSearchPlaceholder("Search prompts...");
+
+	header.setSortOptions({{Recent, "Sort: Recent"},
+	                       {Alphabetical, "Sort: Alphabetical"},
+	                       {MostUsed, "Sort: Most Used"},
+	                       {Model, "Sort: Model"}},
+	                      Recent);
+
+	header.addPrimaryButton("New Prompt", ColourPalette::violet, [this]() { addPromptDialog(); });
+	header.addPrimaryButton("New Category", ColourPalette::slate, [this]() { addCategoryDialog(); });
+
+	header.setShowExpandCollapseButtons(true);
+
+	header.onSearchChanged = [this](const juce::String &q)
 	{
-		currentSearch = searchInput.getText();
+		currentSearch = q;
 		applyFilterAndSort();
 		rebuildAccordions();
 	};
 
-	addAndMakeVisible(sortMenu);
-	sortMenu.addItem("Sort: Recent", Recent);
-	sortMenu.addItem("Sort: Alphabetical", Alphabetical);
-	sortMenu.addItem("Sort: Most Used", MostUsed);
-	sortMenu.addItem("Sort: Model", Model);
-	sortMenu.setSelectedId(Recent);
-	sortMenu.onChange = [this]()
+	header.onSortChanged = [this](int id)
 	{
-		currentSort = static_cast<SortType>(sortMenu.getSelectedId());
+		currentSort = static_cast<SortType>(id);
 		applyFilterAndSort();
 		rebuildAccordions();
 	};
 
-	addAndMakeVisible(addCategoryButton);
-	addCategoryButton.setColour(juce::TextButton::buttonColourId, ColourPalette::slate);
-	addCategoryButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	addCategoryButton.onClick = [this]() { addCategoryDialog(); };
-
-	addAndMakeVisible(addPromptButton);
-	addPromptButton.setColour(juce::TextButton::buttonColourId, ColourPalette::violet);
-	addPromptButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	addPromptButton.onClick = [this]() { addPromptDialog(); };
-
-	addAndMakeVisible(expandAllButton);
-	expandAllButton.loadIcon(BinaryData::expand_svg, BinaryData::expand_svgSize);
-	expandAllButton.setCompactMode(true);
-	expandAllButton.onClick = [this]() { expandAll(); };
-
-	addAndMakeVisible(collapseAllButton);
-	collapseAllButton.loadIcon(BinaryData::collapse_svg, BinaryData::collapse_svgSize);
-	collapseAllButton.setCompactMode(true);
-	collapseAllButton.onClick = [this]() { collapseAll(); };
+	header.onExpandAllRequested = [this]() { expandAll(); };
+	header.onCollapseAllRequested = [this]() { collapseAll(); };
 
 	addAndMakeVisible(accordionViewport);
 	accordionViewport.setViewedComponent(&accordionContainer, false);
@@ -89,29 +71,7 @@ void PromptBankPanel::resized()
 
 	area.removeFromBottom(ObsidianSizes::GAP_XL);
 
-	titleLabel.setBounds(area.removeFromTop(ObsidianSizes::TITLE_PANEL_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-	helpLabel.setBounds(area.removeFromTop(ObsidianSizes::INFO_PANEL_HEIGHT * 2));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-
-	searchInput.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-	sortMenu.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-
-	auto createRow = area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT);
-	const int halfW = (createRow.getWidth() - ObsidianSizes::SPACER) / 2;
-	addPromptButton.setBounds(createRow.removeFromLeft(halfW));
-	createRow.removeFromLeft(ObsidianSizes::SPACER);
-	addCategoryButton.setBounds(createRow);
-
-	area.removeFromTop(ObsidianSizes::GAP_4);
-
-	auto expandRow = area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT);
-	const int eW = expandRow.getWidth() / 2 - ObsidianSizes::SPACER / 2;
-	expandAllButton.setBounds(expandRow.removeFromLeft(eW));
-	expandRow.removeFromLeft(ObsidianSizes::SPACER);
-	collapseAllButton.setBounds(expandRow);
+	header.setBounds(area.removeFromTop(header.getPreferredHeight()));
 
 	area.removeFromTop(ObsidianSizes::GAP);
 	accordionViewport.setBounds(area);
@@ -477,7 +437,7 @@ void PromptBankPanel::restoreUIState(const juce::var &state)
 	if (s >= Recent && s <= Model)
 	{
 		currentSort = (SortType)s;
-		sortMenu.setSelectedId(s, juce::dontSendNotification);
+		header.setSelectedSortId(s, false);
 	}
 
 	refreshList();

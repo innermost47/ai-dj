@@ -20,7 +20,7 @@ struct SampleBankEntry
 	std::vector<juce::String> stems;
 	std::vector<juce::String> usedInProjects;
 
-	std::vector<juce::String> categories;
+	juce::String category;
 
 	double sampleRate;
 	int numChannels;
@@ -39,7 +39,8 @@ class SampleBank
 	~SampleBank() = default;
 
 	juce::String addSample(const juce::String &prompt, const juce::File &audioFile, float bpm = 126.0f,
-	                       const juce::String &key = "", const juce::String &modelName = "");
+	                       const juce::String &key = "", const juce::String &modelName = "",
+	                       const juce::String &category = "");
 
 	bool removeSample(const juce::String &sampleId);
 	SampleBankEntry *getSample(const juce::String &sampleId);
@@ -52,6 +53,11 @@ class SampleBank
 
 	void saveBankData();
 	void loadBankData();
+
+	std::function<void(const juce::String &name, juce::Colour colour)> onMigrateLegacyCategory;
+	std::function<bool(const juce::String &name)> onCheckCategoryExists;
+
+	void runLegacyCategoriesMigration();
 
 	std::function<void()> onBankChanged;
 

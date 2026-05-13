@@ -31,7 +31,7 @@ class SampleBankItem : public ObsidianComponent, public juce::DragAndDropContain
 
 	std::function<void(SampleBankEntry *)> onItemClicked;
 	std::function<void(SampleBankEntry *)> onDeleteRequested;
-	std::function<void(SampleBankEntry *, const std::vector<juce::String> &)> onCategoriesChanged;
+	std::function<void(SampleBankEntry *, const juce::String &)> onCategoryChanged;
 	std::function<std::vector<juce::String>()> getCategoriesList;
 	std::function<void(SampleBankEntry *)> onPromptEditRequested;
 	std::function<juce::Colour(const juce::String &)> categoryColourResolver;

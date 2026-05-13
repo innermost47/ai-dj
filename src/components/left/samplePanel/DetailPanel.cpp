@@ -88,8 +88,8 @@ void DetailPanel::setEntry(SampleBankEntry *e)
 	else
 		parts.add(juce::String((int)entry->usedInProjects.size()) + " project(s)");
 
-	if (!entry->categories.empty())
-		parts.add("[" + entry->categories[0] + "]");
+	if (!entry->category.isEmpty())
+		parts.add("[" + entry->category + "]");
 
 	metaLabel.setText(parts.joinIntoString(" - "), juce::dontSendNotification);
 
@@ -188,11 +188,11 @@ void DetailPanel::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds();
 	g.fillAll(ColourPalette::backgroundDark);
 
-	if (entry && !entry->categories.empty())
+	if (entry && !entry->category.isEmpty())
 	{
 		float cy = 6.0f + 18.0f * 0.5f;
-		juce::Colour col = this->categoryColourResolver ? this->categoryColourResolver(entry->categories[0])
-		                                                : getCategoryColor(entry->categories[0]);
+		juce::Colour col = this->categoryColourResolver ? this->categoryColourResolver(entry->category)
+		                                                : getCategoryColor(entry->category);
 		g.setColour(col);
 		g.fillEllipse(8.0f, cy - 4.0f, 8.0f, 8.0f);
 	}

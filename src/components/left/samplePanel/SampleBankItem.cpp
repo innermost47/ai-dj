@@ -31,10 +31,10 @@ void SampleBankItem::paint(juce::Graphics &g)
 		return;
 	}
 
-	if (sampleEntry && !sampleEntry->categories.empty())
+	if (sampleEntry && !sampleEntry->category.isEmpty())
 	{
 		const float thickness = selected ? 4.0f : 1.0f;
-		g.setColour(getCategoryColor(sampleEntry->categories[0]));
+		g.setColour(getCategoryColor(sampleEntry->category));
 		g.fillRect(0.0f, 0.0f, thickness, (float)bounds.getHeight());
 	}
 	else if (selected)
@@ -97,8 +97,8 @@ void SampleBankItem::paint(juce::Graphics &g)
 
 	juce::StringArray parts;
 
-	if (!sampleEntry->categories.empty())
-		parts.add("[" + sampleEntry->categories[0] + "]");
+	if (!sampleEntry->category.isEmpty())
+		parts.add("[" + sampleEntry->category + "]");
 
 	if (sampleEntry->duration > 0.0f)
 	{
@@ -235,16 +235,16 @@ void SampleBankItem::showCategoryMenu()
 		         "House", "Techno", "Hip-Hop", "Jazz",    "Rock",       "Electronic", "Piano", "Guitar", "Synth"};
 
 	ObsidianAlertManager::showCategoryEditor(
-	    this, sampleEntry->originalPrompt, sampleEntry->categories, avail,
-	    [sampleId, &ap = audioProcessor, cb = onCategoriesChanged](const std::vector<juce::String> &cats)
+	    this, sampleEntry->originalPrompt, sampleEntry->category, avail,
+	    [sampleId, &ap = audioProcessor, cb = onCategoryChanged](const juce::String &cat)
 	    {
 		    if (auto *bank = ap.getSampleBank())
 		    {
 			    if (auto *s = bank->getSample(sampleId))
 			    {
-				    s->categories = cats;
+				    s->category = cat;
 				    if (cb)
-					    cb(s, cats);
+					    cb(s, cat);
 			    }
 		    }
 	    });

@@ -32,7 +32,28 @@ SampleBankPanel::SampleBankPanel(DjIaVstProcessor &processor) : audioProcessor(p
 	setupUI();
 
 	if (auto *bank = audioProcessor.getSampleBank())
+	{
 		bank->onBankChanged = [this]() { juce::MessageManager::callAsync([this]() { refreshSampleList(); }); };
+
+		bank->onCheckCategoryExists = [this](const juce::String &name) -> bool
+		{
+			if (audioProcessor.getPromptBank() == nullptr)
+				return false;
+			for (const auto &c : audioProcessor.getPromptBank()->getCategories())
+				if (c.name.compareIgnoreCase(name) == 0)
+					return true;
+			return false;
+		};
+
+		bank->onMigrateLegacyCategory = [this](const juce::String &name, juce::Colour colour)
+		{
+			if (audioProcessor.getPromptBank() == nullptr)
+				return;
+			audioProcessor.getPromptBank()->addCategory(name, colour);
+		};
+
+		bank->runLegacyCategoriesMigration();
+	}
 }
 
 SampleBankPanel::~SampleBankPanel()
@@ -222,7 +243,7 @@ juce::Component *SampleBankPanel::refreshComponentForRow(int rowNumber, bool,
 			selectEntry(e);
 	};
 
-	item->onCategoriesChanged = [this](SampleBankEntry *, const std::vector<juce::String> &)
+	item->onCategoryChanged = [this](SampleBankEntry *, const juce::String &)
 	{
 		if (auto *bank = audioProcessor.getSampleBank())
 			bank->saveBankData();
@@ -430,11 +451,9 @@ void SampleBankPanel::applyFiltersAndSort()
 			}
 
 		if (!catName.isEmpty())
-			samples.erase(
-			    std::remove_if(
-			        samples.begin(), samples.end(), [&catName](const SampleBankEntry *e)
-			        { return std::find(e->categories.begin(), e->categories.end(), catName) == e->categories.end(); }),
-			    samples.end());
+			samples.erase(std::remove_if(samples.begin(), samples.end(),
+			                             [&catName](const SampleBankEntry *e) { return e->category == catName; }),
+			              samples.end());
 	}
 
 	switch (currentSortType)
@@ -665,9 +684,8 @@ void SampleBankPanel::showEditCategoryDialog()
 		    rebuildCategoryFilter();
 		    if (auto *bank = audioProcessor.getSampleBank())
 			    for (auto *s : bank->getAllSamples())
-				    for (auto &c : s->categories)
-					    if (c == oldName)
-						    c = newName;
+				    if (s->category == oldName)
+					    s->category = newName;
 
 		    categoryInput.clear();
 		    saveCategoriesConfig();
@@ -697,8 +715,7 @@ void SampleBankPanel::deleteCategory()
 		    if (auto *bank = audioProcessor.getSampleBank())
 		    {
 			    for (auto *s : bank->getAllSamples())
-				    s->categories.erase(std::remove(s->categories.begin(), s->categories.end(), catName),
-				                        s->categories.end());
+				    s->category = "";
 			    bank->saveBankData();
 		    }
 		    categoryInfos.erase(std::remove_if(categoryInfos.begin(), categoryInfos.end(),

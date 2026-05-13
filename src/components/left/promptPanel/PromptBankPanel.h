@@ -1,4 +1,5 @@
 #pragma once
+#include "ObsidianBankHeader.h"
 #include "ObsidianBase.h"
 #include "PromptBank.h"
 #include "PromptBankItem.h"
@@ -52,17 +53,7 @@ class PromptBankPanel : public juce::Component
 
 	DjIaVstProcessor &audioProcessor;
 	DjIaVstEditor &editor;
-
-	juce::Label titleLabel;
-	juce::Label helpLabel;
-
-	EscapableTextEditor searchInput;
-	juce::ComboBox sortMenu;
-
-	IconButton addCategoryButton{"add-cat", "New Category"};
-	IconButton addPromptButton{"add-prompt", "New Prompt"};
-	IconButton expandAllButton{"expand-all"};
-	IconButton collapseAllButton{"collapse-all"};
+	ObsidianBankHeader header;
 
 	juce::Viewport accordionViewport;
 	juce::Component accordionContainer;

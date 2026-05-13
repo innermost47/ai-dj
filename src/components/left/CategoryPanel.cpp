@@ -22,8 +22,7 @@ void CategoryTag::paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*
 	g.drawText(getButtonText(), bounds, juce::Justification::centred, true);
 }
 
-CategoryPanel::CategoryPanel(const std::vector<juce::String> &currentCategories,
-                             const std::vector<juce::String> &availableCategories)
+CategoryPanel::CategoryPanel(const juce::String &currentCategory, const std::vector<juce::String> &availableCategories)
 {
 	toggleContainer = std::make_unique<juce::Component>();
 	viewport.setViewedComponent(toggleContainer.get(), false);
@@ -34,8 +33,7 @@ CategoryPanel::CategoryPanel(const std::vector<juce::String> &currentCategories,
 	{
 		auto *tag = tags.add(new CategoryTag(category));
 
-		bool isAssigned =
-		    std::find(currentCategories.begin(), currentCategories.end(), category) != currentCategories.end();
+		bool isAssigned = category == currentCategory;
 		tag->setToggleState(isAssigned, juce::dontSendNotification);
 
 		toggleContainer->addAndMakeVisible(tag);
@@ -48,12 +46,12 @@ void CategoryPanel::clearAll()
 		tag->setToggleState(false, juce::dontSendNotification);
 }
 
-std::vector<juce::String> CategoryPanel::getSelectedCategories() const
+juce::String CategoryPanel::getSelectedCategory() const
 {
-	std::vector<juce::String> selected;
+	juce::String selected;
 	for (auto *tag : tags)
 		if (tag->getToggleState())
-			selected.push_back(tag->getButtonText());
+			selected = tag->getButtonText();
 	return selected;
 }
 

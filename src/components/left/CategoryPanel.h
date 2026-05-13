@@ -13,10 +13,9 @@ class CategoryTag : public juce::Button
 class CategoryPanel : public ObsidianComponent
 {
   public:
-	CategoryPanel(const std::vector<juce::String> &currentCategories,
-	              const std::vector<juce::String> &availableCategories);
+	CategoryPanel(const juce::String &currentCategory, const std::vector<juce::String> &availableCategories);
 	void clearAll();
-	std::vector<juce::String> getSelectedCategories() const;
+	juce::String getSelectedCategory() const;
 	void resized() override;
 
   private:

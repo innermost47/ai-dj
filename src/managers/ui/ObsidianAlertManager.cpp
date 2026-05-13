@@ -875,13 +875,13 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 }
 
 void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juce::String &sampleName,
-                                              const std::vector<juce::String> &currentCategories,
+                                              const juce::String &currentCategory,
                                               const std::vector<juce::String> &availableCategories,
-                                              std::function<void(const std::vector<juce::String> &)> onSave)
+                                              std::function<void(const juce::String &)> onSave)
 {
 	auto modal = std::make_unique<ObsidianModalWindow>("Categories: " + sampleName, 480, 400);
 
-	auto categoryContent = std::make_unique<CategoryPanel>(currentCategories, availableCategories);
+	auto categoryContent = std::make_unique<CategoryPanel>(currentCategory, availableCategories);
 	auto *panelPtr = categoryContent.get();
 	modal->setContent(std::move(categoryContent));
 
@@ -896,7 +896,7 @@ void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juc
 	                                [overlay, panelPtr, onSave]()
 	                                {
 		                                if (onSave)
-			                                onSave(panelPtr->getSelectedCategories());
+			                                onSave(panelPtr->getSelectedCategory());
 		                                overlay->close();
 	                                });
 }

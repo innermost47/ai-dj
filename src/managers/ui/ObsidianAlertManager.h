@@ -99,9 +99,9 @@ class ObsidianAlertManager
 	                             bool isFirstTime, std::function<void(const ConfigDialogResult &)> callback);
 
 	static void showCategoryEditor(juce::Component *parent, const juce::String &sampleName,
-	                               const std::vector<juce::String> &currentCategories,
+	                               const juce::String &currentCategory,
 	                               const std::vector<juce::String> &availableCategories,
-	                               std::function<void(const std::vector<juce::String> &)> onSave);
+	                               std::function<void(const juce::String &)> onSave);
 
 	static void showEditPrompt(juce::Component *parent, const juce::String &currentPrompt,
 	                           std::function<void(const juce::String &newPrompt)> callback);

@@ -28,7 +28,7 @@ void UIModalManager::removeModal(ObsidianModalOverlay *overlay)
 
 void UIModalManager::showFirstTimeSetup()
 {
-	ObsidianAlertManager::showConfigDialog(&editor, "OBSIDIAN-Neural Configuration " + Version::FULL,
+	ObsidianAlertManager::showConfigDialog(&editor, "OBSIDIAN-Neural Configuration " + Version::VERSION,
 	                                       editor.audioProcessor.getServerUrl(), editor.audioProcessor.getApiKey(),
 	                                       editor.audioProcessor.getUseLocalModel(),
 	                                       editor.audioProcessor.getRequestTimeout(), true,
@@ -54,7 +54,7 @@ void UIModalManager::showFirstTimeSetup()
 void UIModalManager::showConfigDialog()
 {
 	ObsidianAlertManager::showConfigDialog(
-	    &editor, "OBSIDIAN-Neural Configuration " + Version::FULL, editor.audioProcessor.getServerUrl(),
+	    &editor, "OBSIDIAN-Neural Configuration " + Version::VERSION, editor.audioProcessor.getServerUrl(),
 	    editor.audioProcessor.getApiKey(), editor.audioProcessor.getUseLocalModel(),
 	    editor.audioProcessor.getRequestTimeout(), false,
 	    [this](const ObsidianAlertManager::ConfigDialogResult &res)

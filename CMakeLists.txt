@@ -253,6 +253,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/shared/ColourPicker.cpp
     src/components/shared/IconButton.cpp
     src/components/shared/LedRadioButton.cpp
+    src/components/shared/ObsidianBankHeader.cpp
     src/components/shared/ObsidianAccordion.cpp
     src/components/shared/ObsidianBase.cpp
     src/components/shared/ObsidianBaseMidiComponent.cpp
