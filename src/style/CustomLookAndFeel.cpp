@@ -268,22 +268,13 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
 
 	auto arrowZone = juce::Rectangle<float>((float)buttonX, (float)buttonY, (float)buttonW, (float)buttonH);
 
-	auto cx = arrowZone.getCentreX();
-	auto cy = arrowZone.getCentreY();
-	const float chevronWidth = 4.5f;
-	const float chevronHeight = 3.0f;
-
-	juce::Path chevron;
-	chevron.startNewSubPath(cx - chevronWidth, cy - chevronHeight * 0.5f);
-	chevron.lineTo(cx, cy + chevronHeight * 0.5f);
-	chevron.lineTo(cx + chevronWidth, cy - chevronHeight * 0.5f);
-
-	auto chevronColour = box.isMouseOver() || box.hasKeyboardFocus(false)
-	                         ? ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_08)
-	                         : ColourPalette::lightGrey.withAlpha(ObsidianShades::ALPHA_06);
-
-	g.setColour(chevronColour);
-	g.strokePath(chevron, juce::PathStrokeType(1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+	auto chevronDownSvg = juce::Drawable::createFromImageData(BinaryData::caretdown_svg, BinaryData::caretdown_svgSize);
+	if (chevronDownSvg != nullptr)
+	{
+		chevronDownSvg->replaceColour(juce::Colours::black, ColourPalette::textPrimary);
+		chevronDownSvg->drawWithin(g, arrowZone.toFloat().reduced(4), juce::RectanglePlacement::centred,
+		                           ObsidianShades::ALPHA_04);
+	}
 }
 
 juce::Font CustomLookAndFeel::getComboBoxFont(juce::ComboBox & /*box*/)

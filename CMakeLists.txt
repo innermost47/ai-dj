@@ -230,16 +230,16 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/center/tracks/TrackComponent.cpp
     src/components/center/tracks/WaveformDisplay.cpp
     src/components/left/CategoryPanel.cpp
-    src/components/left/DetailPanel.cpp
     src/components/left/LeftPanelWrapper.cpp
-    src/components/left/PromptBank.cpp
-    src/components/left/PromptBankItem.cpp
-    src/components/left/PromptBankPanel.cpp
-    src/components/left/PromptCategoryAccordion.cpp
-    src/components/left/PromptModelDefinitions.cpp
-    src/components/left/SampleBank.cpp
-    src/components/left/SampleBankItem.cpp
-    src/components/left/SampleBankPanel.cpp
+    src/components/left/promptPanel/PromptBank.cpp
+    src/components/left/promptPanel/PromptBankItem.cpp
+    src/components/left/promptPanel/PromptBankPanel.cpp
+    src/components/left/promptPanel/PromptCategoryAccordion.cpp
+    src/components/left/promptPanel/PromptModelDefinitions.cpp
+    src/components/left/samplePanel/DetailPanel.cpp
+    src/components/left/samplePanel/SampleBank.cpp
+    src/components/left/samplePanel/SampleBankItem.cpp
+    src/components/left/samplePanel/SampleBankPanel.cpp
     src/components/right/ConfigComponent.cpp
     src/components/right/LCDScreen.cpp
     src/components/right/MasterChannel.cpp
@@ -302,6 +302,8 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/components/center/mixer
     src/components/center/tracks
     src/components/left
+    src/components/left/promptPanel
+    src/components/left/samplePanel
     src/components/right
     src/components/shared
     src/config
