@@ -361,7 +361,6 @@ void StandaloneTransportComponent::handleTimeSigChange()
 	auto text = timeSigEditor.getText();
 	juce::StringArray tokens;
 	tokens.addTokens(text, "/", "");
-
 	if (tokens.size() == 2)
 	{
 		int num = tokens[0].trim().getIntValue();
@@ -370,12 +369,13 @@ void StandaloneTransportComponent::handleTimeSigChange()
 		num = juce::jlimit(1, 32, num);
 		den = juce::jlimit(2, 32, den);
 
+		if (!juce::isPowerOfTwo(den))
+			den = juce::nextPowerOfTwo(den) / 2;
+
 		transport.setTimeSignature(num, den);
 		lcd.setTimeSignature(num, den);
-
 		if (audioProcessor.getIsLinkActive())
 			audioProcessor.setLinkQuantum(static_cast<double>(num));
-
 		if (onTimeSignatureChanged)
 			onTimeSignatureChanged();
 	}
