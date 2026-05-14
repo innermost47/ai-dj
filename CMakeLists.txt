@@ -296,6 +296,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/PluginProcessor.cpp
     src/standalone/core/StandaloneTransport.cpp
     src/standalone/ObsidianStandaloneApp.cpp
+    src/standalone/SplashScreen.cpp
     src/style/ColourPalette.cpp
     src/style/CustomLookAndFeel.cpp
 )

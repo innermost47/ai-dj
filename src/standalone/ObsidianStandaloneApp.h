@@ -1165,6 +1165,8 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 };
 } // namespace juce
 
+class SplashScreen;
+
 class ObsidianStandaloneApp : public juce::JUCEApplication
 {
   public:
@@ -1178,6 +1180,8 @@ class ObsidianStandaloneApp : public juce::JUCEApplication
 	static juce::AudioDeviceManager *getSharedDeviceManager();
 
   private:
+	std::unique_ptr<juce::Component> splashWindow;
+	std::unique_ptr<SplashScreen> splashScreen;
 	static ObsidianStandaloneApp *instance;
 	std::unique_ptr<juce::StandaloneFilterWindow> mainWindow;
 };

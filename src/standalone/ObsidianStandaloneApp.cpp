@@ -1,5 +1,7 @@
 #if JucePlugin_Build_Standalone
 #include "ObsidianStandaloneApp.h"
+#include "BinaryData.h"
+#include "SplashScreen.h"
 #include "StandaloneTransportComponent.h"
 #include "config/version.h"
 
@@ -23,9 +25,29 @@ bool ObsidianStandaloneApp::moreThanOneInstanceAllowed()
 void ObsidianStandaloneApp::initialise(const juce::String &)
 {
 	instance = this;
+
 	mainWindow =
 	    std::make_unique<juce::StandaloneFilterWindow>(getApplicationName(), juce::Colours::black, nullptr, true);
-	mainWindow->setVisible(true);
+	mainWindow->setVisible(false);
+
+	splashScreen = std::make_unique<SplashScreen>();
+	splashWindow = std::make_unique<juce::Component>();
+	splashWindow->addAndMakeVisible(splashScreen.get());
+	splashWindow->setSize(500, 400);
+	splashScreen->setSize(500, 400);
+	splashWindow->addToDesktop(juce::ComponentPeer::StyleFlags::windowIsTemporary |
+	                           juce::ComponentPeer::StyleFlags::windowHasDropShadow);
+	splashWindow->setAlwaysOnTop(true);
+	splashWindow->centreWithSize(500, 400);
+	splashWindow->setVisible(true);
+
+	juce::Timer::callAfterDelay(3000,
+	                            [this]
+	                            {
+		                            if (mainWindow)
+			                            mainWindow->setVisible(true);
+		                            splashWindow.reset();
+	                            });
 }
 
 void ObsidianStandaloneApp::shutdown()

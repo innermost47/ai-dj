@@ -50,7 +50,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::function<void(const juce::String &)> midiIndicatorCallback;
 
 	juce::ThreadPool threadPool{1};
-
+	std::atomic<bool> heavyInitDone{false};
 	std::atomic<bool> isShuttingDown{false};
 
 #if JucePlugin_Build_Standalone

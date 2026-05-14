@@ -47,6 +47,7 @@ inline constexpr float MIXER_LABEL_NAME = 13.0f;
 
 inline constexpr float SEND_KNOB_LABEL = 12.0f;
 
+inline constexpr float TEXT_SPLASH = 26.0f;
 inline constexpr float TEXT_XXL = 22.0f;
 inline constexpr float TEXT_XL = 18.0f;
 inline constexpr float TEXT_TITLE = 16.0f;

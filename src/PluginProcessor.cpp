@@ -72,10 +72,20 @@ DjIaVstProcessor::DjIaVstProcessor()
 	{
 		if (promptBank == nullptr)
 			return;
-		promptBank->addCategory(name, colour);
+		juce::MessageManager::callAsync(
+		    [this, name, colour]()
+		    {
+			    if (promptBank != nullptr)
+				    promptBank->addCategory(name, colour);
+		    });
 	};
 
-	sampleBank->runLegacyCategoriesMigration();
+	juce::Thread::launch(
+	    [this]()
+	    {
+		    sampleBank->runLegacyCategoriesMigration();
+		    heavyInitDone.store(true);
+	    });
 
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
