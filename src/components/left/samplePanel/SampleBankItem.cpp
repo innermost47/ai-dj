@@ -13,7 +13,7 @@ SampleBankItem::SampleBankItem(SampleBankEntry *entry, DjIaVstProcessor &process
 		return sampleEntry->id;
 	};
 
-	onBuildContextMenu = [this]() { buildSampleContextMenu(); };
+	onBuildContextMenu = [this](const juce::MouseEvent &e) { buildSampleContextMenu(e); };
 }
 
 SampleBankItem::~SampleBankItem() = default;
@@ -159,7 +159,7 @@ void SampleBankItem::mouseDrag(const juce::MouseEvent &event)
 	ObsidianListItem::mouseDrag(event);
 }
 
-void SampleBankItem::buildSampleContextMenu()
+void SampleBankItem::buildSampleContextMenu(const juce::MouseEvent &e)
 {
 	if (sampleEntry == nullptr)
 		return;
@@ -178,8 +178,11 @@ void SampleBankItem::buildSampleContextMenu()
 	menu.addSeparator();
 	menu.addItem(MenuDelete, "Delete");
 
+	auto screenPos = e.getScreenPosition();
+	auto screenArea = juce::Rectangle<int>(screenPos.x, screenPos.y, 1, 1);
+
 	juce::WeakReference<juce::Component> weakSelf(this);
-	menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
+	menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(screenArea),
 	                   [weakSelf](int result)
 	                   {
 		                   if (weakSelf == nullptr)

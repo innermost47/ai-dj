@@ -233,13 +233,13 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/center/tracks/TrackComponent.cpp
     src/components/center/tracks/WaveformDisplay.cpp
     src/components/left/BasePanel.cpp
-    src/components/left/CategoryPanel.cpp
     src/components/left/LeftPanelWrapper.cpp
     src/components/left/promptPanel/PromptBank.cpp
     src/components/left/promptPanel/PromptBankItem.cpp
     src/components/left/promptPanel/PromptBankPanel.cpp
     src/components/left/promptPanel/PromptCategoryAccordion.cpp
     src/components/left/promptPanel/PromptModelDefinitions.cpp
+    src/components/left/samplePanel/CategoryPanel.cpp
     src/components/left/samplePanel/DetailPanel.cpp
     src/components/left/samplePanel/SampleBank.cpp
     src/components/left/samplePanel/SampleBankItem.cpp
@@ -254,16 +254,16 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/right/StandaloneTransportComponent.cpp
     src/components/right/TrackEffectsPanel.cpp
     src/components/right/TrackRecapPanel.cpp
-    src/components/shared/BankCategoryOperations.cpp
+    src/components/shared/accordion/ObsidianAccordion.cpp
+    src/components/shared/accordion/ObsidianListItem.cpp
+    src/components/shared/bank/BankCategoryOperations.cpp
+    src/components/shared/bank/ObsidianBankHeader.cpp
+    src/components/shared/button/IconButton.cpp
+    src/components/shared/button/LedRadioButton.cpp
     src/components/shared/ColourPicker.cpp
-    src/components/shared/IconButton.cpp
-    src/components/shared/LedRadioButton.cpp
-    src/components/shared/ObsidianBankHeader.cpp
-    src/components/shared/ObsidianAccordion.cpp
+    src/components/shared/midi/ObsidianBaseMidiComponent.cpp
+    src/components/shared/modal/ObsidianModal.cpp
     src/components/shared/ObsidianBase.cpp
-    src/components/shared/ObsidianBaseMidiComponent.cpp
-    src/components/shared/ObsidianListItem.cpp
-    src/components/shared/ObsidianModal.cpp
     src/components/shared/VuMeter.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
@@ -312,6 +312,11 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/components/left/samplePanel
     src/components/right
     src/components/shared
+    src/components/shared/accordion
+    src/components/shared/bank
+    src/components/shared/button
+    src/components/shared/midi
+    src/components/shared/modal
     src/config
     src/data
     src/dsp

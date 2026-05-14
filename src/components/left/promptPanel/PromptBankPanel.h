@@ -35,8 +35,6 @@ class PromptBankPanel : public BasePanel
 		return static_cast<int>(currentSortType);
 	}
 
-	// void restoreUIState(const juce::var &state);
-
   private:
 	void setupUI();
 	void rebuildAccordions();

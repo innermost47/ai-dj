@@ -31,9 +31,9 @@ void ObsidianListItem::mouseDown(const juce::MouseEvent &e)
 	if (e.mods.isPopupMenu())
 	{
 		if (onBuildContextMenu)
-			onBuildContextMenu();
+			onBuildContextMenu(e);
 		else if (isEditable)
-			showDefaultContextMenu();
+			showDefaultContextMenu(e);
 		return;
 	}
 
@@ -71,7 +71,7 @@ void ObsidianListItem::mouseUp(const juce::MouseEvent &)
 	isDragging = false;
 }
 
-void ObsidianListItem::showDefaultContextMenu()
+void ObsidianListItem::showDefaultContextMenu(const juce::MouseEvent &e)
 {
 	juce::PopupMenu menu;
 
@@ -98,8 +98,11 @@ void ObsidianListItem::showDefaultContextMenu()
 	if (menu.getNumItems() == 0)
 		return;
 
+	auto screenPos = e.getScreenPosition();
+	auto screenArea = juce::Rectangle<int>(screenPos.x, screenPos.y, 1, 1);
+
 	juce::WeakReference<juce::Component> weakSelf(this);
-	menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
+	menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(screenArea),
 	                   [weakSelf](int result)
 	                   {
 		                   if (weakSelf == nullptr)

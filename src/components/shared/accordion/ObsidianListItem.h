@@ -40,7 +40,7 @@ class ObsidianListItem : public virtual ObsidianComponent
 
 	std::function<juce::String()> dragPayloadProvider;
 
-	std::function<void()> onBuildContextMenu;
+	std::function<void(const juce::MouseEvent &)> onBuildContextMenu;
 
   protected:
 	void mouseEnter(const juce::MouseEvent &) override;
@@ -55,7 +55,7 @@ class ObsidianListItem : public virtual ObsidianComponent
 	}
 
   private:
-	void showDefaultContextMenu();
+	void showDefaultContextMenu(const juce::MouseEvent &e);
 
 	bool selected{false};
 	bool isEditable{true};

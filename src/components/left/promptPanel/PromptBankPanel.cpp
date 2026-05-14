@@ -233,6 +233,7 @@ void PromptBankPanel::rebuildAccordions()
 
 		bool shouldExpand = autoExpandOnSearch || (openCategories.count(catName) > 0);
 		accordion->setExpanded(shouldExpand, false);
+		header.setExpanded(shouldExpand);
 
 		juce::String catNameCopy = catName;
 
@@ -365,34 +366,3 @@ void PromptBankPanel::editCategoryDialog(const juce::String &categoryName)
 		                                                     refreshList();
 	                                                     });
 }
-
-// void PromptBankPanel::restoreUIState(const juce::var &state)
-//{
-//	if (!state.isObject())
-//		return;
-//	auto *o = state.getDynamicObject();
-//	if (!o)
-//		return;
-//
-//	openCategories.clear();
-//	auto arr = o->getProperty("openCategories");
-//	if (arr.isArray())
-//		for (int i = 0; i < arr.getArray()->size(); ++i)
-//			openCategories.insert(arr.getArray()->getUnchecked(i).toString());
-//
-//	int s = (int)o->getProperty("sort");
-//	if (s >= Recent && s <= Model)
-//	{
-//		currentSortType = (SortType)s;
-//		header.setSelectedSortId(s, false);
-//	}
-//
-//	refreshList();
-//
-//	juce::MessageManager::callAsync(
-//	    [safe = juce::Component::SafePointer(this)]()
-//	    {
-//		    if (safe)
-//			    safe->resized();
-//	    });
-// }

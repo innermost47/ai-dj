@@ -51,7 +51,7 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 	std::function<void(const juce::String &)> onRenameRequested;
 
   private:
-	void showContextMenu();
+	void showContextMenu(const juce::MouseEvent &e);
 	void startInlineRename();
 	void finishInlineRename(bool acceptChanges);
 

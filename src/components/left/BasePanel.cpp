@@ -14,14 +14,19 @@ void BasePanel::transferOpenCategoryState(const juce::String &oldName, const juc
 		openCategories.insert(newName);
 }
 
-void BasePanel::expandAll()
+void BasePanel::expandAll(std::function<void(ObsidianAccordion *accordion, const juce::String &categoryName)> callback)
 {
 	openCategories.clear();
 	for (auto &acc : accordions)
 	{
 		acc->setExpanded(true, false);
+		if (callback != nullptr)
+		{
+			callback(acc.get(), acc->getName());
+		}
 		openCategories.insert(acc->getName());
 	}
+	header.setExpanded(true);
 	resized();
 }
 
@@ -30,6 +35,7 @@ void BasePanel::collapseAll()
 	openCategories.clear();
 	for (auto &acc : accordions)
 		acc->setExpanded(false, false);
+	header.setExpanded(false);
 	resized();
 }
 

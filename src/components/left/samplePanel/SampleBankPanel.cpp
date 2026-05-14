@@ -61,7 +61,10 @@ void SampleBankPanel::setupUI()
 		rebuildAccordions();
 	};
 
-	header.onExpandAllRequested = [this]() { expandAll(); };
+	header.onExpandAllRequested = [this]()
+	{
+		expandAll([this](ObsidianAccordion *acc, const juce::String &name) { ensureAccordionItemsCreated(acc, name); });
+	};
 	header.onCollapseAllRequested = [this]() { collapseAll(); };
 
 	addAndMakeVisible(accordionViewport);
@@ -166,7 +169,7 @@ void SampleBankPanel::rebuildAccordions()
 				ensureAccordionItemsCreated(accPtr, catCopy);
 			}
 		};
-
+		header.setExpanded(shouldExpand);
 		accordion->setExpanded(shouldExpand, false);
 
 		if (shouldExpand)
@@ -329,18 +332,6 @@ void SampleBankPanel::selectEntry(SampleBankEntry *entry)
 	}
 
 	detailPanel.setEntry(entry);
-}
-
-void SampleBankPanel::expandAll()
-{
-	openCategories.clear();
-	for (auto &acc : accordions)
-	{
-		acc->setExpanded(true, false);
-		ensureAccordionItemsCreated(acc.get(), acc->getName());
-		openCategories.insert(acc->getName());
-	}
-	resized();
 }
 
 void SampleBankPanel::onAccordionExpanded(const juce::String &categoryName, bool expanded)
@@ -638,42 +629,6 @@ void SampleBankPanel::showDeleteConfirmation(const juce::String &id, const juce:
 			                                  deleteSample(id);
 	                                  });
 }
-
-// void SampleBankPanel::restoreUIState(const juce::var &state)
-//{
-//	if (!state.isObject())
-//		return;
-//
-//	auto *o = state.getDynamicObject();
-//	if (o == nullptr)
-//		return;
-//
-//	openCategories.clear();
-//	auto arr = o->getProperty("openCategories");
-//	if (arr.isArray())
-//		for (int i = 0; i < arr.getArray()->size(); ++i)
-//			openCategories.insert(arr.getArray()->getUnchecked(i).toString());
-//
-//	int s = (int)o->getProperty("sort");
-//	if (s >= Time && s <= Duration)
-//	{
-//		currentSortType = (SortType)s;
-//		header.setSelectedSortId(s, false);
-//	}
-//
-//	juce::String savedSearch = o->getProperty("search").toString();
-//	currentSearch = savedSearch;
-//	header.setSearchText(savedSearch, false);
-//
-//	refreshSampleList();
-//
-//	juce::MessageManager::callAsync(
-//	    [safe = juce::Component::SafePointer(this)]()
-//	    {
-//		    if (safe)
-//			    safe->resized();
-//	    });
-// }
 
 void SampleBankPanel::showEditPromptDialog(SampleBankEntry *entry)
 {

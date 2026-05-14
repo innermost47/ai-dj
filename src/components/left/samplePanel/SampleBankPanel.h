@@ -40,8 +40,6 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	void refreshSampleList();
 	void refreshSampleListSilent();
 
-	// void restoreUIState(const juce::var &state);
-
 	int getSortType()
 	{
 		return static_cast<int>(currentSortType);
@@ -69,8 +67,6 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 
 	void deleteCategoryDialog(const juce::String &categoryName);
 	void editCategoryDialog(const juce::String &categoryName);
-
-	void expandAll();
 
 	void drawEmptyState(juce::Graphics &g);
 

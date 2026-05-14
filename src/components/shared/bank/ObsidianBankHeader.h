@@ -15,6 +15,7 @@ class ObsidianBankHeader : public ObsidianComponent
 
 	void setSearchEnabled(bool enabled);
 	void setSearchPlaceholder(const juce::String &placeholder);
+	void setExpanded(bool expanded);
 
 	void setSortOptions(const std::vector<std::pair<int, juce::String>> &options, int initialSelectedId = -1);
 
@@ -49,14 +50,15 @@ class ObsidianBankHeader : public ObsidianComponent
 	EscapableTextEditor searchInput;
 	juce::ComboBox sortMenu;
 	std::vector<PrimaryButton> primaryButtons;
-	IconButton expandAllButton{"expand-all", ""};
-	IconButton collapseAllButton{"collapse-all", ""};
+	IconButton expandCollapseButton{"expand-collapse", ""};
 
 	bool searchEnabled{false};
 	bool hasSortOptions{false};
 	bool showExpandCollapse{false};
+	bool isExpanded{false};
 
 	void rebuildLayout();
+	void updateExpandCollapseIconButton();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ObsidianBankHeader)
 };

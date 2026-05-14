@@ -101,7 +101,7 @@ void ObsidianAccordion::mouseDown(const juce::MouseEvent &e)
 	if (e.mods.isPopupMenu())
 	{
 		if (isEditable)
-			showContextMenu();
+			showContextMenu(e);
 		return;
 	}
 
@@ -118,7 +118,7 @@ void ObsidianAccordion::mouseDoubleClick(const juce::MouseEvent &e)
 	startInlineRename();
 }
 
-void ObsidianAccordion::showContextMenu()
+void ObsidianAccordion::showContextMenu(const juce::MouseEvent &e)
 {
 	juce::PopupMenu menu;
 
@@ -145,8 +145,11 @@ void ObsidianAccordion::showContextMenu()
 	if (menu.getNumItems() == 0)
 		return;
 
+	auto screenPos = e.getScreenPosition();
+	auto screenArea = juce::Rectangle<int>(screenPos.x, screenPos.y, 1, 1);
+
 	juce::WeakReference<juce::Component> weakSelf(this);
-	menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
+	menu.showMenuAsync(juce::PopupMenu::Options().withTargetScreenArea(screenArea),
 	                   [weakSelf](int result)
 	                   {
 		                   if (weakSelf == nullptr)

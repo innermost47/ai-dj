@@ -25,26 +25,44 @@ ObsidianBankHeader::ObsidianBankHeader()
 			onSortChanged(sortMenu.getSelectedId());
 	};
 
-	addChildComponent(expandAllButton);
-	expandAllButton.loadIcon(BinaryData::expand_svg, BinaryData::expand_svgSize);
-	expandAllButton.setCompactMode(true);
-	expandAllButton.onClick = [this]()
+	addChildComponent(expandCollapseButton);
+	updateExpandCollapseIconButton();
+	expandCollapseButton.setCompactMode(true);
+	expandCollapseButton.onClick = [this]()
 	{
-		if (onExpandAllRequested)
-			onExpandAllRequested();
-	};
-
-	addChildComponent(collapseAllButton);
-	collapseAllButton.loadIcon(BinaryData::collapse_svg, BinaryData::collapse_svgSize);
-	collapseAllButton.setCompactMode(true);
-	collapseAllButton.onClick = [this]()
-	{
-		if (onCollapseAllRequested)
-			onCollapseAllRequested();
+		if (isExpanded)
+		{
+			if (onCollapseAllRequested)
+				onCollapseAllRequested();
+		}
+		else
+		{
+			if (onExpandAllRequested)
+				onExpandAllRequested();
+		}
+		updateExpandCollapseIconButton();
 	};
 }
 
 ObsidianBankHeader::~ObsidianBankHeader() = default;
+
+void ObsidianBankHeader::setExpanded(bool expanded)
+{
+	isExpanded = expanded;
+	updateExpandCollapseIconButton();
+}
+
+void ObsidianBankHeader::updateExpandCollapseIconButton()
+{
+	if (isExpanded)
+	{
+		expandCollapseButton.loadIcon(BinaryData::expand_svg, BinaryData::expand_svgSize);
+	}
+	else
+	{
+		expandCollapseButton.loadIcon(BinaryData::collapse_svg, BinaryData::collapse_svgSize);
+	}
+}
 
 void ObsidianBankHeader::setTitle(const juce::String &title)
 {
@@ -124,8 +142,7 @@ void ObsidianBankHeader::setShowExpandCollapseButtons(bool show)
 	if (showExpandCollapse == show)
 		return;
 	showExpandCollapse = show;
-	expandAllButton.setVisible(show);
-	collapseAllButton.setVisible(show);
+	expandCollapseButton.setVisible(show);
 	resized();
 }
 
@@ -179,12 +196,6 @@ int ObsidianBankHeader::getPreferredHeight() const
 		total += ObsidianSizes::GAP_4;
 	}
 
-	if (showExpandCollapse)
-	{
-		total += ObsidianSizes::COMBO_BOX_BASE_HEIGHT;
-		total += ObsidianSizes::GAP_4;
-	}
-
 	return total;
 }
 
@@ -221,7 +232,12 @@ void ObsidianBankHeader::resized()
 		auto btnRow = area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT);
 		const int n = (int)primaryButtons.size();
 		const int totalSpacing = ObsidianSizes::GAP_4 * (n - 1);
-		const int btnW = (btnRow.getWidth() - totalSpacing) / n;
+		int btnW = (btnRow.getWidth() - totalSpacing) / n;
+		const int expandW = 32;
+		if (showExpandCollapse)
+		{
+			btnW = btnW - expandW / n;
+		}
 
 		for (int i = 0; i < n; ++i)
 		{
@@ -230,15 +246,11 @@ void ObsidianBankHeader::resized()
 			if (i < n - 1)
 				btnRow.removeFromLeft(ObsidianSizes::GAP_4);
 		}
+		if (showExpandCollapse)
+		{
+			btnRow.removeFromLeft(ObsidianSizes::GAP_4);
+			expandCollapseButton.setBounds(btnRow.removeFromLeft(expandW));
+		}
 		area.removeFromTop(ObsidianSizes::GAP_4);
-	}
-
-	if (showExpandCollapse)
-	{
-		auto row = area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT);
-		const int half = row.getWidth() / 2 - ObsidianSizes::GAP_4 / 2;
-		expandAllButton.setBounds(row.removeFromLeft(half));
-		row.removeFromLeft(ObsidianSizes::GAP_4);
-		collapseAllButton.setBounds(row);
 	}
 }

@@ -37,7 +37,7 @@ class SampleBankItem : public AccordionItem, public ObsidianListItem
 	void mouseDrag(const juce::MouseEvent &event) override;
 
   private:
-	void buildSampleContextMenu();
+	void buildSampleContextMenu(const juce::MouseEvent &event);
 
 	SampleBankEntry *sampleEntry{nullptr};
 	DjIaVstProcessor &audioProcessor;

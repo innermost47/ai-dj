@@ -14,7 +14,8 @@ class BasePanel : public ObsidianComponent
 
 	void transferOpenCategoryState(const juce::String &oldName, const juce::String &newName);
 	void resized() override;
-	void expandAll();
+	void expandAll(
+	    std::function<void(ObsidianAccordion *accordion, const juce::String &categoryName)> callback = nullptr);
 	void collapseAll();
 
 	juce::var saveUIState(int sortType) const;
@@ -30,6 +31,8 @@ class BasePanel : public ObsidianComponent
 	std::vector<std::unique_ptr<ObsidianAccordion>> accordions;
 
 	juce::String currentSearch;
+
+	bool isExpanded{false};
 
 	DjIaVstProcessor &audioProcessor;
 };
