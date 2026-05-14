@@ -72,6 +72,7 @@ class SampleBank
 	void analyzeSampleFile(SampleBankEntry *entry, const juce::File &audioFile);
 	juce::File getBankDirectory();
 	void ensureBankDirectoryExists();
+	static juce::Colour deriveColourFromName(const juce::String &name);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBank)
 };

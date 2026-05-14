@@ -90,7 +90,7 @@ void PromptBankPanel::resized()
 	{
 		int h = acc->getPreferredHeight();
 		acc->setBounds(0, y, containerWidth, h);
-		y += h + ObsidianSizes::SPACER;
+		y += h + ObsidianSizes::SPACER_XS;
 	}
 }
 
@@ -103,6 +103,15 @@ void PromptBankPanel::paint(juce::Graphics &g)
 	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
 	g.drawRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE,
 	                       ObsidianSizes::BORDER_WIDTH);
+
+	if (accordions.empty() || filteredPrompts.empty())
+	{
+		auto iconSvg = juce::Drawable::createFromImageData(BinaryData::musicnotes_svg, BinaryData::musicnotes_svgSize);
+		juce::String noItemYet = "No prompts yet";
+		juce::String tip = "Add your first prompt to get started!";
+		juce::String noMatch = "No prompts match ";
+		drawEmptyState(g, *iconSvg, noItemYet, tip, noMatch);
+	}
 }
 
 void PromptBankPanel::refreshList()
@@ -195,10 +204,24 @@ void PromptBankPanel::rebuildAccordions()
 		byCategory[cat].push_back(p);
 	}
 
+	for (const auto &c : bank->getCategories())
+	{
+		if (byCategory.find(c.name) == byCategory.end())
+			byCategory[c.name] = {};
+	}
+
 	std::vector<juce::String> categoryOrder;
 	for (const auto &pair : byCategory)
 		if (pair.first != "Uncategorized")
 			categoryOrder.push_back(pair.first);
+
+	if (currentSearch.isNotEmpty())
+	{
+		categoryOrder.erase(std::remove_if(categoryOrder.begin(), categoryOrder.end(),
+		                                   [this, &byCategory](const juce::String &catName)
+		                                   { return byCategory[catName].empty(); }),
+		                    categoryOrder.end());
+	}
 
 	std::sort(categoryOrder.begin(), categoryOrder.end(),
 	          [](const juce::String &a, const juce::String &b) { return a.compareIgnoreCase(b) < 0; });
@@ -259,7 +282,7 @@ void PromptBankPanel::rebuildAccordions()
 		accordionContainer.addAndMakeVisible(*accordion);
 		accordions.push_back(std::move(accordion));
 	}
-
+	header.setChildNum(accordionContainer.getNumChildComponents());
 	resized();
 }
 

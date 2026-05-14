@@ -17,11 +17,12 @@ void ObsidianAccordion::paint(juce::Graphics &g)
 {
 	auto headerBounds = getHeaderBounds();
 
-	g.setColour(ColourPalette::backgroundDeep.brighter(0.05f));
-	g.fillRoundedRectangle(headerBounds.toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE);
+	headerBounds.removeFromLeft(6);
+	auto circleArea = headerBounds.removeFromLeft(10);
+	auto circleRect = circleArea.withSizeKeepingCentre(6, 6).toFloat();
 
 	g.setColour(accentColour);
-	g.fillRect(0, headerBounds.getY(), ObsidianSizes::ACCORDION_ACCENT_BAR_WIDTH, headerBounds.getHeight());
+	g.fillEllipse(circleRect);
 
 	if (renameEditor != nullptr)
 		return;

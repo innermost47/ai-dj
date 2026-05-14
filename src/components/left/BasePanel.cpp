@@ -1,4 +1,4 @@
-#include "BasePanel.h"
+﻿#include "BasePanel.h"
 #include "ColourPalette.h"
 #include "PluginProcessor.h"
 
@@ -26,7 +26,10 @@ void BasePanel::expandAll(std::function<void(ObsidianAccordion *accordion, const
 		}
 		openCategories.insert(acc->getName());
 	}
-	header.setExpanded(true);
+	int childNum = accordionContainer.getNumChildComponents();
+	header.setChildNum(childNum);
+	if (childNum > 0)
+		header.setExpanded(true);
 	resized();
 }
 
@@ -35,7 +38,10 @@ void BasePanel::collapseAll()
 	openCategories.clear();
 	for (auto &acc : accordions)
 		acc->setExpanded(false, false);
-	header.setExpanded(false);
+	int childNum = accordionContainer.getNumChildComponents();
+	header.setChildNum(childNum);
+	if (childNum > 0)
+		header.setExpanded(false);
 	resized();
 }
 
@@ -101,4 +107,40 @@ void BasePanel::restoreUIState(const juce::var &state, std::function<void()> ref
 		    if (safe)
 			    safe->resized();
 	    });
+}
+
+void BasePanel::drawEmptyState(juce::Graphics &g, juce::Drawable &iconSvg, juce::String &noItemYet, juce::String &tip,
+                               juce::String noMatch)
+{
+	if (currentSearch.isNotEmpty())
+		drawNoSearchResults(g, noMatch);
+	else
+		drawEmptyBank(g, iconSvg, noItemYet, tip);
+}
+
+void BasePanel::drawEmptyBank(juce::Graphics &g, juce::Drawable &iconSvg, juce::String &noItemYet, juce::String &tip)
+{
+	auto b = accordionViewport.getBounds();
+	auto iconBounds = b.withSizeKeepingCentre(64, 64).translated(0, -20);
+
+	iconSvg.replaceColour(juce::Colours::black, ColourPalette::textSecondary);
+	iconSvg.drawWithin(g, iconBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
+
+	g.setColour(ColourPalette::textSecondary);
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE, juce::Font::bold));
+	g.drawText(noItemYet, b.withSizeKeepingCentre(300, 28).translated(0, 35), juce::Justification::centred);
+
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	g.drawText(tip, b.withSizeKeepingCentre(300, 28).translated(0, 60), juce::Justification::centred);
+}
+
+void BasePanel::drawNoSearchResults(juce::Graphics &g, juce::String &noMatch)
+{
+	auto b = accordionViewport.getBounds();
+
+	auto messageArea = b.withTrimmedTop(40).withHeight(40);
+
+	g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
+	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::italic));
+	g.drawText(noMatch + "\"" + currentSearch + "\"", messageArea, juce::Justification::centred);
 }

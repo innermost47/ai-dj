@@ -58,6 +58,25 @@ DjIaVstProcessor::DjIaVstProcessor()
 	link->enableStartStopSync(false);
 #endif
 
+	sampleBank->onCheckCategoryExists = [this](const juce::String &name) -> bool
+	{
+		if (promptBank == nullptr)
+			return false;
+		for (const auto &c : promptBank->getCategories())
+			if (c.name.compareIgnoreCase(name) == 0)
+				return true;
+		return false;
+	};
+
+	sampleBank->onMigrateLegacyCategory = [this](const juce::String &name, juce::Colour colour)
+	{
+		if (promptBank == nullptr)
+			return;
+		promptBank->addCategory(name, colour);
+	};
+
+	sampleBank->runLegacyCategoriesMigration();
+
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
 		standaloneTransport = std::make_unique<StandaloneTransport>();

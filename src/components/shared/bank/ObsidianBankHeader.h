@@ -16,6 +16,10 @@ class ObsidianBankHeader : public ObsidianComponent
 	void setSearchEnabled(bool enabled);
 	void setSearchPlaceholder(const juce::String &placeholder);
 	void setExpanded(bool expanded);
+	void setChildNum(int num)
+	{
+		childNum = num;
+	}
 
 	void setSortOptions(const std::vector<std::pair<int, juce::String>> &options, int initialSelectedId = -1);
 
@@ -56,6 +60,8 @@ class ObsidianBankHeader : public ObsidianComponent
 	bool hasSortOptions{false};
 	bool showExpandCollapse{false};
 	bool isExpanded{false};
+
+	int childNum = 0;
 
 	void rebuildLayout();
 	void updateExpandCollapseIconButton();

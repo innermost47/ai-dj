@@ -124,6 +124,14 @@ void SampleBankPanel::rebuildAccordions()
 		if (pair.first != "Uncategorized")
 			categoryOrder.push_back(pair.first);
 
+	if (currentSearch.isNotEmpty())
+	{
+		categoryOrder.erase(std::remove_if(categoryOrder.begin(), categoryOrder.end(),
+		                                   [this](const juce::String &catName)
+		                                   { return samplesByCategory[catName].empty(); }),
+		                    categoryOrder.end());
+	}
+
 	std::sort(categoryOrder.begin(), categoryOrder.end(),
 	          [](const juce::String &a, const juce::String &b) { return a.compareIgnoreCase(b) < 0; });
 
@@ -178,6 +186,7 @@ void SampleBankPanel::rebuildAccordions()
 		accordionContainer.addAndMakeVisible(*accordion);
 		accordions.push_back(std::move(accordion));
 	}
+	header.setChildNum(accordionContainer.getNumChildComponents());
 
 	resized();
 }
@@ -311,7 +320,7 @@ void SampleBankPanel::resized()
 	{
 		int h = acc->getPreferredHeight();
 		acc->setBounds(0, y, containerWidth, h);
-		y += h + ObsidianSizes::SPACER;
+		y += h + ObsidianSizes::SPACER_XS;
 	}
 }
 
@@ -389,28 +398,13 @@ void SampleBankPanel::paint(juce::Graphics &g)
 	g.drawRoundedRectangle(lb, ObsidianSizes::CORNER, 1);
 
 	if (filteredSamples.empty() && hasEverLoaded.load())
-		drawEmptyState(g);
-}
-
-void SampleBankPanel::drawEmptyState(juce::Graphics &g)
-{
-	auto b = accordionViewport.getBounds();
-
-	auto iconBounds = b.withSizeKeepingCentre(64, 64).translated(0, -20);
-	auto iconSvg = juce::Drawable::createFromImageData(BinaryData::musicnotes_svg, BinaryData::musicnotes_svgSize);
-	if (iconSvg != nullptr)
 	{
-		iconSvg->replaceColour(juce::Colours::black, ColourPalette::textSecondary);
-		iconSvg->drawWithin(g, iconBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
+		auto iconSvg = juce::Drawable::createFromImageData(BinaryData::musicnotes_svg, BinaryData::musicnotes_svgSize);
+		juce::String noItemYet = "No samples yet";
+		juce::String tip = "Generate some loops to populate your bank!";
+		juce::String noMatch = "No samples match ";
+		drawEmptyState(g, *iconSvg, noItemYet, tip, noMatch);
 	}
-
-	g.setColour(ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE, juce::Font::bold));
-	g.drawText("No samples yet", b.withSizeKeepingCentre(300, 28).translated(0, 35), juce::Justification::centred);
-
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
-	g.drawText("Generate some loops to populate your bank!", b.withSizeKeepingCentre(300, 28).translated(0, 60),
-	           juce::Justification::centred);
 }
 
 void SampleBankPanel::refreshSampleList()

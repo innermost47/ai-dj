@@ -60,15 +60,12 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	void showDeleteConfirmation(const juce::String &id, const juce::String &name);
 	void deleteSample(const juce::String &id);
 	void cleanupUnusedSamples();
-
 	void ensureAccordionItemsCreated(ObsidianAccordion *accordion, const juce::String &categoryName);
 
 	void addCategoryDialog();
 
 	void deleteCategoryDialog(const juce::String &categoryName);
 	void editCategoryDialog(const juce::String &categoryName);
-
-	void drawEmptyState(juce::Graphics &g);
 
 	std::map<juce::String, std::vector<SampleBankEntry *>> samplesByCategory;
 

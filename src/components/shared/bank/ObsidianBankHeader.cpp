@@ -15,7 +15,10 @@ ObsidianBankHeader::ObsidianBankHeader()
 	searchInput.onTextChange = [this]()
 	{
 		if (onSearchChanged)
+		{
+			setExpanded(true);
 			onSearchChanged(searchInput.getText());
+		}
 	};
 
 	addChildComponent(sortMenu);
@@ -30,17 +33,22 @@ ObsidianBankHeader::ObsidianBankHeader()
 	expandCollapseButton.setCompactMode(true);
 	expandCollapseButton.onClick = [this]()
 	{
-		if (isExpanded)
+		if (childNum > 0)
 		{
-			if (onCollapseAllRequested)
-				onCollapseAllRequested();
+			if (isExpanded)
+			{
+				if (onCollapseAllRequested)
+					onCollapseAllRequested();
+			}
+			else
+			{
+				if (onExpandAllRequested)
+					onExpandAllRequested();
+			}
+			updateExpandCollapseIconButton();
 		}
 		else
-		{
-			if (onExpandAllRequested)
-				onExpandAllRequested();
-		}
-		updateExpandCollapseIconButton();
+			return;
 	};
 }
 
@@ -62,6 +70,7 @@ void ObsidianBankHeader::updateExpandCollapseIconButton()
 	{
 		expandCollapseButton.loadIcon(BinaryData::collapse_svg, BinaryData::collapse_svgSize);
 	}
+	expandCollapseButton.repaint();
 }
 
 void ObsidianBankHeader::setTitle(const juce::String &title)

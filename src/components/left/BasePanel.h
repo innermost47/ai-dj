@@ -23,6 +23,11 @@ class BasePanel : public ObsidianComponent
 
 	juce::Colour resolveCategoryColour(const juce::String &name) const;
 
+	void drawEmptyState(juce::Graphics &g, juce::Drawable &iconSvg, juce::String &noItemYet, juce::String &tip,
+	                    juce::String noMatch);
+	void drawEmptyBank(juce::Graphics &g, juce::Drawable &iconSvg, juce::String &noItemYet, juce::String &tip);
+	void drawNoSearchResults(juce::Graphics &g, juce::String &noMatch);
+
 	ObsidianBankHeader header;
 	juce::Viewport accordionViewport;
 	juce::Component accordionContainer;

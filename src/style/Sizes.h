@@ -62,7 +62,7 @@ inline constexpr int ACCORDION_HEADER_HEIGHT = 28;
 inline constexpr int ACCORDION_ITEM_SPACING = 2;
 inline constexpr int ACCORDION_ACCENT_BAR_WIDTH = 4;
 inline constexpr int ACCORDION_CHEVRON_AREA_WIDTH = 24;
-inline constexpr int ACCORDION_TEXT_LEFT_PADDING = 10;
+inline constexpr int ACCORDION_TEXT_LEFT_PADDING = 6;
 
 inline constexpr int ACCORDION_ITEM_MIN_HEIGHT = 50;
 inline constexpr int ACCORDION_ITEM_MAX_LINES = 4;

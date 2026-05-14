@@ -382,10 +382,6 @@ void SampleBank::runLegacyCategoriesMigration()
 		if (catObj == nullptr)
 			continue;
 
-		const int id = (int)catObj->getProperty("id");
-		if (id < 20)
-			continue;
-
 		const juce::String name = catObj->getProperty("name").toString();
 		if (name.isEmpty())
 			continue;
@@ -396,7 +392,13 @@ void SampleBank::runLegacyCategoriesMigration()
 		juce::Colour colour;
 		auto colourVar = catObj->getProperty("colour");
 		if (!colourVar.isVoid())
+		{
 			colour = juce::Colour((juce::uint32)(int)colourVar);
+		}
+		else
+		{
+			colour = deriveColourFromName(name);
+		}
 
 		onMigrateLegacyCategory(name, colour);
 		++migratedCount;
@@ -404,6 +406,23 @@ void SampleBank::runLegacyCategoriesMigration()
 
 	juce::File archived = legacyFile.withFileExtension(".json.migrated");
 	legacyFile.moveFileTo(archived);
+}
+
+juce::Colour SampleBank::deriveColourFromName(const juce::String &name)
+{
+	juce::uint32 hash = 2166136261u;
+	for (int i = 0; i < name.length(); ++i)
+	{
+		hash ^= (juce::uint32)name[i];
+		hash *= 16777619u;
+	}
+
+	const float hue = (float)(hash % 360u) / 360.0f;
+
+	const float saturation = 0.55f;
+	const float brightness = 0.75f;
+
+	return juce::Colour::fromHSV(hue, saturation, brightness, 1.0f);
 }
 
 void SampleBank::loadBankData()
