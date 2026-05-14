@@ -174,6 +174,7 @@ const std::vector<PromptModelDefinitions::ModelInfo> &PromptModelDefinitions::ge
 	          {"Melancholic", "Reflective", "Catchy", "Smooth", "Epic", "Dark", "Atmospheric", "Building", "Ethereal",
 	           "Sad", "Heavy", "Driving", "Punchy", "Rhythmic"}},
 	         {"Tempo", {"Slow", "Medium", "Fast"}},
+	         {"Templates", {"Format: Solo | Genre:  | Sub-Genre:  | Instruments:  | Moods:  | Styles:  | Tempo: "}},
 	     },
 	     {
 	         "Format: Solo | Genre: Trap | Sub-Genre: Melodic Trap | Instruments: Piano, Synth Pad | Moods: "
