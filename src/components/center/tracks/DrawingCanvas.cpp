@@ -698,48 +698,8 @@ void DrawingCanvas::showKeywordContextMenu(KeywordBadge *badge, const juce::Stri
 	                   });
 }
 
-void DrawingCanvas::editKeyword(const juce::String &oldKeyword)
+void DrawingCanvas::editKeyword(const juce::String & /*oldKeyword*/)
 {
-	ObsidianAlertManager::showEditPrompt(
-	    this, oldKeyword,
-	    [this, oldKeyword](const juce::String &newKeyword)
-	    {
-		    juce::String kw = newKeyword.trim().toLowerCase();
-
-		    if (!isKeywordValid(kw))
-		    {
-			    ObsidianAlertManager::showError(
-			        this, "Invalid Keyword",
-			        "Keyword must be 1-15 characters and contain only letters, numbers, spaces or hyphens.");
-			    return;
-		    }
-		    if (kw != oldKeyword && availableKeywords.contains(kw))
-		    {
-			    ObsidianAlertManager::showError(this, "Duplicate Keyword", "This keyword already exists.");
-			    return;
-		    }
-
-		    int index = availableKeywords.indexOf(oldKeyword);
-		    if (index >= 0)
-			    availableKeywords.set(index, kw);
-
-		    if (selectedKeywords.contains(oldKeyword))
-		    {
-			    selectedKeywords.removeString(oldKeyword);
-			    selectedKeywords.add(kw);
-		    }
-
-		    auto customKeywords = audioProcessor.getCustomKeywords();
-		    if (customKeywords.contains(oldKeyword))
-		    {
-			    juce::StringArray newCustomKeywords;
-			    for (const auto &k : customKeywords)
-				    newCustomKeywords.add(k == oldKeyword ? kw : k);
-			    audioProcessor.setCustomKeywords(newCustomKeywords);
-		    }
-
-		    updateKeywordBadges();
-	    });
 }
 
 void DrawingCanvas::deleteKeyword(const juce::String &keyword)

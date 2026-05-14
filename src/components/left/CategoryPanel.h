@@ -1,5 +1,4 @@
 #pragma once
-#include "ColourPalette.h"
 #include "ObsidianBase.h"
 #include <JuceHeader.h>
 

@@ -80,7 +80,9 @@ juce::var LeftPanelWrapper::saveUIState() const
 	o->setProperty("activeTab", (int)activeTab);
 
 	if (promptBank)
-		o->setProperty("promptBankState", promptBank->saveUIState());
+		o->setProperty("promptBankState", promptBank->saveUIState(promptBank->getSortType()));
+	if (sampleBank)
+		o->setProperty("sampleBankState", sampleBank->saveUIState(sampleBank->getSortType()));
 
 	return juce::var(o.get());
 }
@@ -97,5 +99,11 @@ void LeftPanelWrapper::restoreUIState(const juce::var &state)
 	setActiveTab(static_cast<Tab>(tab));
 
 	if (promptBank)
-		promptBank->restoreUIState(o->getProperty("promptBankState"));
+		promptBank->restoreUIState(
+		    o->getProperty("promptBankState"), [this]() { promptBank->refreshList(); }, PromptBankPanel::firstSort,
+		    PromptBankPanel::lastSort);
+	if (sampleBank)
+		sampleBank->restoreUIState(
+		    o->getProperty("sampleBankState"), [this]() { sampleBank->refreshSampleList(); },
+		    SampleBankPanel::firstSort, SampleBankPanel::lastSort);
 }

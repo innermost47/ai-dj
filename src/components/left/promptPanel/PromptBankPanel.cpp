@@ -1,10 +1,12 @@
 #include "PromptBankPanel.h"
+#include "BankCategoryOperations.h"
+#include "BasePanel.h"
 #include "ObsidianAlertManager.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 
 PromptBankPanel::PromptBankPanel(DjIaVstProcessor &processor, DjIaVstEditor &editor)
-    : audioProcessor(processor), editor(editor)
+    : BasePanel(processor), editor(editor)
 {
 	setupUI();
 
@@ -51,7 +53,7 @@ void PromptBankPanel::setupUI()
 
 	header.onSortChanged = [this](int id)
 	{
-		currentSort = static_cast<SortType>(id);
+		currentSortType = static_cast<SortType>(id);
 		applyFilterAndSort();
 		rebuildAccordions();
 	};
@@ -134,7 +136,7 @@ void PromptBankPanel::applyFilterAndSort()
 		          all.end());
 	}
 
-	switch (currentSort)
+	switch (currentSortType)
 	{
 	case Recent:
 		std::sort(all.begin(), all.end(), [](auto *a, auto *b) { return a->creationTime > b->creationTime; });
@@ -233,6 +235,20 @@ void PromptBankPanel::rebuildAccordions()
 		accordion->setExpanded(shouldExpand, false);
 
 		juce::String catNameCopy = catName;
+
+		accordion->onRenameRequested = [this, catNameCopy](const juce::String &newName)
+		{
+			juce::Colour currentColour = resolveCategoryColour(catNameCopy);
+			BankCategoryOperations::renameCategory(audioProcessor, catNameCopy, newName, currentColour);
+
+			if (openCategories.count(catNameCopy) > 0)
+			{
+				openCategories.erase(catNameCopy);
+				openCategories.insert(newName);
+			}
+			refreshList();
+		};
+
 		accordion->onEditRequested = [this, catNameCopy]() { editCategoryDialog(catNameCopy); };
 		accordion->onDeleteRequested = [this, catNameCopy]() { deleteCategoryDialog(catNameCopy); };
 
@@ -312,38 +328,6 @@ void PromptBankPanel::onPromptDeleteRequested(PromptBankEntry *entry)
 	                                  });
 }
 
-void PromptBankPanel::expandAll()
-{
-	openCategories.clear();
-	for (auto &acc : accordions)
-	{
-		acc->setExpanded(true, false);
-		openCategories.insert(acc->getName());
-	}
-	resized();
-}
-
-void PromptBankPanel::collapseAll()
-{
-	openCategories.clear();
-	for (auto &acc : accordions)
-		acc->setExpanded(false, false);
-	resized();
-}
-
-juce::Colour PromptBankPanel::resolveCategoryColour(const juce::String &name) const
-{
-	auto *bank = audioProcessor.getPromptBank();
-	if (!bank)
-		return ColourPalette::backgroundLight;
-
-	for (const auto &c : bank->getCategories())
-		if (c.name == name)
-			return c.colour != juce::Colour(0) ? c.colour : ColourPalette::backgroundLight;
-
-	return ColourPalette::backgroundLight;
-}
-
 void PromptBankPanel::addCategoryDialog()
 {
 	ObsidianAlertManager::showAddCategoryDialog(this,
@@ -359,76 +343,56 @@ void PromptBankPanel::addCategoryDialog()
 	                                            });
 }
 
-void PromptBankPanel::editCategoryDialog(const juce::String &categoryName)
-{
-	juce::Colour oldColour = resolveCategoryColour(categoryName);
-
-	ObsidianAlertManager::showEditCategoryDialog(
-	    this, categoryName, oldColour,
-	    [this, categoryName](const juce::String &newName, juce::Colour newColour)
-	    {
-		    if (auto *bank = audioProcessor.getPromptBank())
-		    {
-			    bank->renameCategory(categoryName, newName, newColour);
-			    refreshList();
-		    }
-	    });
-}
-
 void PromptBankPanel::deleteCategoryDialog(const juce::String &categoryName)
 {
-	ObsidianAlertManager::showConfirm(this, "Delete Category",
-	                                  "Delete '" + categoryName + "'? Prompts in it will become Uncategorized.",
-	                                  "Delete", "Cancel",
-	                                  [this, categoryName](bool ok)
-	                                  {
-		                                  if (!ok)
-			                                  return;
-		                                  if (auto *bank = audioProcessor.getPromptBank())
-		                                  {
-			                                  bank->removeCategory(categoryName);
-			                                  refreshList();
-		                                  }
-	                                  });
+	BankCategoryOperations::promptDeleteCategoryWithDialog(audioProcessor, this, categoryName,
+	                                                       [this, categoryName]()
+	                                                       {
+		                                                       openCategories.erase(categoryName);
+		                                                       refreshList();
+	                                                       });
 }
-juce::var PromptBankPanel::saveUIState() const
+
+void PromptBankPanel::editCategoryDialog(const juce::String &categoryName)
 {
-	juce::DynamicObject::Ptr o = new juce::DynamicObject();
-	juce::Array<juce::var> openArr;
-	for (const auto &cat : openCategories)
-		openArr.add(juce::var(cat));
-	o->setProperty("openCategories", juce::var(openArr));
-	o->setProperty("sort", (int)currentSort);
-	return juce::var(o.get());
+	juce::Colour currentColour = resolveCategoryColour(categoryName);
+
+	BankCategoryOperations::promptEditCategoryWithDialog(audioProcessor, this, categoryName, currentColour,
+	                                                     [this](const BankCategoryOperations::EditResult &res)
+	                                                     {
+		                                                     if (res.wasRenamed)
+			                                                     transferOpenCategoryState(res.oldName, res.newName);
+		                                                     refreshList();
+	                                                     });
 }
 
-void PromptBankPanel::restoreUIState(const juce::var &state)
-{
-	if (!state.isObject())
-		return;
-	auto *o = state.getDynamicObject();
-	if (!o)
-		return;
-
-	openCategories.clear();
-	auto arr = o->getProperty("openCategories");
-	if (arr.isArray())
-		for (int i = 0; i < arr.getArray()->size(); ++i)
-			openCategories.insert(arr.getArray()->getUnchecked(i).toString());
-
-	int s = (int)o->getProperty("sort");
-	if (s >= Recent && s <= Model)
-	{
-		currentSort = (SortType)s;
-		header.setSelectedSortId(s, false);
-	}
-
-	refreshList();
-
-	juce::MessageManager::callAsync(
-	    [safe = juce::Component::SafePointer(this)]()
-	    {
-		    if (safe)
-			    safe->resized();
-	    });
-}
+// void PromptBankPanel::restoreUIState(const juce::var &state)
+//{
+//	if (!state.isObject())
+//		return;
+//	auto *o = state.getDynamicObject();
+//	if (!o)
+//		return;
+//
+//	openCategories.clear();
+//	auto arr = o->getProperty("openCategories");
+//	if (arr.isArray())
+//		for (int i = 0; i < arr.getArray()->size(); ++i)
+//			openCategories.insert(arr.getArray()->getUnchecked(i).toString());
+//
+//	int s = (int)o->getProperty("sort");
+//	if (s >= Recent && s <= Model)
+//	{
+//		currentSortType = (SortType)s;
+//		header.setSelectedSortId(s, false);
+//	}
+//
+//	refreshList();
+//
+//	juce::MessageManager::callAsync(
+//	    [safe = juce::Component::SafePointer(this)]()
+//	    {
+//		    if (safe)
+//			    safe->resized();
+//	    });
+// }

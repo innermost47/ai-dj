@@ -103,9 +103,6 @@ class ObsidianAlertManager
 	                               const std::vector<juce::String> &availableCategories,
 	                               std::function<void(const juce::String &)> onSave);
 
-	static void showEditPrompt(juce::Component *parent, const juce::String &currentPrompt,
-	                           std::function<void(const juce::String &newPrompt)> callback);
-
 	static void showUpdateAvailable(juce::Component *parent, const juce::String &latestTag,
 	                                const juce::String &currentBuild);
 };

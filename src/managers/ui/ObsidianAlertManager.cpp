@@ -901,58 +901,6 @@ void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juc
 	                                });
 }
 
-void ObsidianAlertManager::showEditPrompt(juce::Component *parent, const juce::String &currentPrompt,
-                                          std::function<void(const juce::String &newPrompt)> callback)
-{
-	class EditPromptContent : public ObsidianComponent
-	{
-	  public:
-		EscapableTextEditor editor;
-		EditPromptContent(const juce::String &text)
-		{
-			editor.setText(text);
-			editor.setMultiLine(true);
-			editor.setReturnKeyStartsNewLine(true);
-			editor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
-			editor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
-			editor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
-			editor.applyFontToAllText(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
-			addAndMakeVisible(editor);
-		}
-		void resized() override
-		{
-			editor.setBounds(getLocalBounds().reduced(5));
-		}
-	};
-
-	auto modal = std::make_unique<ObsidianModalWindow>("Edit Custom Prompt", 520, 220);
-
-	auto content = std::make_unique<EditPromptContent>(currentPrompt);
-	auto *editorPtr = &content->editor;
-	modal->setContent(std::move(content));
-
-	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
-	if (overlay == nullptr)
-		return;
-
-	overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
-	                                [overlay, callback]()
-	                                {
-		                                if (callback)
-			                                callback("");
-		                                overlay->close();
-	                                });
-
-	overlay->modalWindow->addButton("Save", checkSvg, ColourPalette::slate,
-	                                [overlay, editorPtr, callback]()
-	                                {
-		                                juce::String resultStr = editorPtr->getText();
-		                                if (callback && resultStr.isNotEmpty())
-			                                callback(resultStr);
-		                                overlay->close();
-	                                });
-}
-
 void ObsidianAlertManager::showUpdateAvailable(juce::Component *parent, const juce::String &latestTag,
                                                const juce::String &currentBuild)
 {

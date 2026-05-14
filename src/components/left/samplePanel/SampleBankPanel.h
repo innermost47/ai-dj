@@ -1,8 +1,7 @@
 ﻿#pragma once
+#include "BasePanel.h"
 #include "DetailPanel.h"
 #include "ObsidianAccordion.h"
-#include "ObsidianBankHeader.h"
-#include "ObsidianBase.h"
 #include "SampleBank.h"
 #include <JuceHeader.h>
 #include <set>
@@ -10,7 +9,7 @@
 
 class DjIaVstProcessor;
 
-class SampleBankPanel : public ObsidianComponent, private juce::Timer
+class SampleBankPanel : public BasePanel, private juce::Timer
 {
   public:
 	enum SortType
@@ -25,6 +24,9 @@ class SampleBankPanel : public ObsidianComponent, private juce::Timer
 	SampleBankPanel(DjIaVstProcessor &processor);
 	~SampleBankPanel() override;
 
+	static constexpr SortType firstSort = Time;
+	static constexpr SortType lastSort = Duration;
+
 	std::function<void(const juce::String &sampleId, const juce::String &trackId)> onSampleDroppedToTrack;
 
 	void paint(juce::Graphics &g) override;
@@ -38,8 +40,12 @@ class SampleBankPanel : public ObsidianComponent, private juce::Timer
 	void refreshSampleList();
 	void refreshSampleListSilent();
 
-	juce::var saveUIState() const;
-	void restoreUIState(const juce::var &state);
+	// void restoreUIState(const juce::var &state);
+
+	int getSortType()
+	{
+		return static_cast<int>(currentSortType);
+	}
 
   private:
 	void timerCallback() override;
@@ -59,30 +65,25 @@ class SampleBankPanel : public ObsidianComponent, private juce::Timer
 
 	void ensureAccordionItemsCreated(ObsidianAccordion *accordion, const juce::String &categoryName);
 
+	void addCategoryDialog();
+
+	void deleteCategoryDialog(const juce::String &categoryName);
+	void editCategoryDialog(const juce::String &categoryName);
+
 	void expandAll();
-	void collapseAll();
-	juce::Colour resolveCategoryColour(const juce::String &name) const;
 
 	void drawEmptyState(juce::Graphics &g);
 
-	DjIaVstProcessor &audioProcessor;
-
-	ObsidianBankHeader header;
-	juce::Viewport accordionViewport;
-	juce::Component accordionContainer;
-	std::vector<std::unique_ptr<ObsidianAccordion>> accordions;
 	std::map<juce::String, std::vector<SampleBankEntry *>> samplesByCategory;
 
 	DetailPanel detailPanel;
 
 	SortType currentSortType{Time};
-	juce::String currentSearch;
+
 	std::vector<SampleBankEntry *> filteredSamples;
 
 	SampleBankEntry *selectedEntry{nullptr};
 	SampleBankEntry *currentPreviewEntry{nullptr};
-
-	std::set<juce::String> openCategories;
 
 	std::atomic<bool> hasEverLoaded{false};
 

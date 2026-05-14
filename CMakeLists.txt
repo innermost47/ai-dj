@@ -232,6 +232,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/center/tracks/SequencerComponent.cpp
     src/components/center/tracks/TrackComponent.cpp
     src/components/center/tracks/WaveformDisplay.cpp
+    src/components/left/BasePanel.cpp
     src/components/left/CategoryPanel.cpp
     src/components/left/LeftPanelWrapper.cpp
     src/components/left/promptPanel/PromptBank.cpp
@@ -253,6 +254,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/right/StandaloneTransportComponent.cpp
     src/components/right/TrackEffectsPanel.cpp
     src/components/right/TrackRecapPanel.cpp
+    src/components/shared/BankCategoryOperations.cpp
     src/components/shared/ColourPicker.cpp
     src/components/shared/IconButton.cpp
     src/components/shared/LedRadioButton.cpp
