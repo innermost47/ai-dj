@@ -2,7 +2,7 @@
 #include "ObsidianBase.h"
 #include <JuceHeader.h>
 
-class SplashScreen : public ObsidianComponent
+class SplashScreen : public ObsidianComponent, private juce::Timer
 {
   public:
 	SplashScreen();
@@ -11,8 +11,9 @@ class SplashScreen : public ObsidianComponent
 	void paint(juce::Graphics &g) override;
 
   private:
+	void timerCallback() override;
 	juce::Image logoImage;
-	float rotation = 0.0f;
+	float progress = 0.0f;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SplashScreen)
 };

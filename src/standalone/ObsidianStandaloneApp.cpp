@@ -35,8 +35,12 @@ void ObsidianStandaloneApp::initialise(const juce::String &)
 	splashWindow->addAndMakeVisible(splashScreen.get());
 	splashWindow->setSize(500, 400);
 	splashScreen->setSize(500, 400);
+	splashWindow->setOpaque(false);
+	splashScreen->setOpaque(false);
+
 	splashWindow->addToDesktop(juce::ComponentPeer::StyleFlags::windowIsTemporary |
-	                           juce::ComponentPeer::StyleFlags::windowHasDropShadow);
+	                           juce::ComponentPeer::StyleFlags::windowIgnoresMouseClicks);
+
 	splashWindow->setAlwaysOnTop(true);
 	splashWindow->centreWithSize(500, 400);
 	splashWindow->setVisible(true);
