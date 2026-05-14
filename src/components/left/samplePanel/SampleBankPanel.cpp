@@ -91,19 +91,23 @@ void SampleBankPanel::rebuildAccordions()
 		const juce::String cat = s->category.isEmpty() ? "Uncategorized" : s->category;
 		samplesByCategory[cat].push_back(s);
 	}
-	std::vector<juce::String> categoryOrder;
+
 	for (const auto &c : promptBank->getCategories())
 	{
-		categoryOrder.push_back(c.name);
 		if (samplesByCategory.find(c.name) == samplesByCategory.end())
 			samplesByCategory[c.name] = {};
 	}
+
+	std::vector<juce::String> categoryOrder;
 	for (const auto &pair : samplesByCategory)
-	{
-		const juce::String &catName = pair.first;
-		if (std::find(categoryOrder.begin(), categoryOrder.end(), catName) == categoryOrder.end())
-			categoryOrder.push_back(catName);
-	}
+		if (pair.first != "Uncategorized")
+			categoryOrder.push_back(pair.first);
+
+	std::sort(categoryOrder.begin(), categoryOrder.end(),
+	          [](const juce::String &a, const juce::String &b) { return a.compareIgnoreCase(b) < 0; });
+
+	if (samplesByCategory.count("Uncategorized") > 0)
+		categoryOrder.push_back("Uncategorized");
 
 	const bool autoExpandOnSearch = currentSearch.isNotEmpty();
 

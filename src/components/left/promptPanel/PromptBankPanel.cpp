@@ -26,7 +26,7 @@ void PromptBankPanel::setupUI()
 
 	header.setTitle("PROMPT BANK");
 	header.setHelpText("Drag a prompt onto a track to assign it. Double-click or right-click to edit.\n"
-	                   "Locked items (with a lock icon) are factory presets and cannot be modified.");
+	                   "Categories are shared with the Sample Bank - renaming or deleting affects both.");
 
 	header.setSearchEnabled(true);
 	header.setSearchPlaceholder("Search prompts...");
@@ -194,12 +194,13 @@ void PromptBankPanel::rebuildAccordions()
 	}
 
 	std::vector<juce::String> categoryOrder;
-	for (const auto &c : bank->getCategories())
-	{
-		categoryOrder.push_back(c.name);
-		if (byCategory.find(c.name) == byCategory.end())
-			byCategory[c.name] = {};
-	}
+	for (const auto &pair : byCategory)
+		if (pair.first != "Uncategorized")
+			categoryOrder.push_back(pair.first);
+
+	std::sort(categoryOrder.begin(), categoryOrder.end(),
+	          [](const juce::String &a, const juce::String &b) { return a.compareIgnoreCase(b) < 0; });
+
 	if (byCategory.count("Uncategorized") > 0)
 		categoryOrder.push_back("Uncategorized");
 
@@ -221,11 +222,8 @@ void PromptBankPanel::rebuildAccordions()
 			item->onItemClicked = [this, entry]() { onPromptClicked(entry); };
 			item->onItemDoubleClicked = [this, entry]() { onPromptEditRequested(entry); };
 
-			if (!entry->isBuiltIn)
-			{
-				item->onEditRequested = [this, entry]() { onPromptEditRequested(entry); };
-				item->onDeleteRequested = [this, entry]() { onPromptDeleteRequested(entry); };
-			}
+			item->onEditRequested = [this, entry]() { onPromptEditRequested(entry); };
+			item->onDeleteRequested = [this, entry]() { onPromptDeleteRequested(entry); };
 
 			items.push_back(std::move(item));
 		}
