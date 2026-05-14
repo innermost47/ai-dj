@@ -1177,6 +1177,14 @@ class ObsidianStandaloneApp : public juce::JUCEApplication
 	void shutdown() override;
 	void systemRequestedQuit() override;
 
+	DjIaVstProcessor *getProcessor()
+	{
+		if (mainWindow)
+			if (auto *holder = mainWindow->getPluginHolder())
+				return dynamic_cast<DjIaVstProcessor *>(holder->processor.get());
+		return nullptr;
+	}
+
 	static juce::AudioDeviceManager *getSharedDeviceManager();
 
   private:
@@ -1184,4 +1192,6 @@ class ObsidianStandaloneApp : public juce::JUCEApplication
 	std::unique_ptr<SplashScreen> splashScreen;
 	static ObsidianStandaloneApp *instance;
 	std::unique_ptr<juce::StandaloneFilterWindow> mainWindow;
+	void checkInit();
+	juce::uint32 splashStartTime = 0;
 };

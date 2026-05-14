@@ -41,13 +41,26 @@ void ObsidianStandaloneApp::initialise(const juce::String &)
 	splashWindow->centreWithSize(500, 400);
 	splashWindow->setVisible(true);
 
-	juce::Timer::callAfterDelay(3000,
-	                            [this]
-	                            {
-		                            if (mainWindow)
-			                            mainWindow->setVisible(true);
-		                            splashWindow.reset();
-	                            });
+	splashStartTime = juce::Time::getMillisecondCounter();
+
+	juce::Timer::callAfterDelay(100, [this] { checkInit(); });
+}
+
+void ObsidianStandaloneApp::checkInit()
+{
+	const auto elapsed = juce::Time::getMillisecondCounter() - splashStartTime;
+	auto *p = getProcessor();
+	const bool ready = (p && p->heavyInitDone.load()) || elapsed > 10000;
+
+	if (ready && elapsed > 1500)
+	{
+		if (mainWindow)
+			mainWindow->setVisible(true);
+		splashWindow.reset();
+		return;
+	}
+
+	juce::Timer::callAfterDelay(100, [this] { checkInit(); });
 }
 
 void ObsidianStandaloneApp::shutdown()
