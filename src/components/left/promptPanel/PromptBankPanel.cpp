@@ -55,7 +55,7 @@ void PromptBankPanel::setupUI()
 	{
 		currentSortType = static_cast<SortType>(id);
 		applyFilterAndSort();
-		rebuildAccordions();
+		rebuildAccordions(true);
 	};
 
 	header.onExpandAllRequested = [this]() { expandAll(); };
@@ -188,8 +188,14 @@ void PromptBankPanel::addPromptDialog()
 	                                       });
 }
 
-void PromptBankPanel::rebuildAccordions()
+void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 {
+	if (filteredPrompts.empty())
+	{
+		header.setChildNum(0);
+		header.setExpanded(false);
+		return;
+	}
 	auto *bank = audioProcessor.getPromptBank();
 	if (!bank)
 		return;
@@ -254,9 +260,10 @@ void PromptBankPanel::rebuildAccordions()
 		}
 		accordion->setItems(std::move(items));
 
-		bool shouldExpand = autoExpandOnSearch || (openCategories.count(catName) > 0);
+		bool shouldExpand = autoExpandOnSort || autoExpandOnSearch || (openCategories.count(catName) > 0);
 		accordion->setExpanded(shouldExpand, false);
 		header.setExpanded(shouldExpand);
+		isExpanded = shouldExpand;
 
 		juce::String catNameCopy = catName;
 

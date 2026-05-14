@@ -16,7 +16,6 @@ ObsidianBankHeader::ObsidianBankHeader()
 	{
 		if (onSearchChanged)
 		{
-			setExpanded(true);
 			onSearchChanged(searchInput.getText());
 		}
 	};
@@ -25,7 +24,9 @@ ObsidianBankHeader::ObsidianBankHeader()
 	sortMenu.onChange = [this]()
 	{
 		if (onSortChanged)
+		{
 			onSortChanged(sortMenu.getSelectedId());
+		}
 	};
 
 	addChildComponent(expandCollapseButton);

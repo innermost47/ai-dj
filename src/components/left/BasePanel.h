@@ -19,7 +19,8 @@ class BasePanel : public ObsidianComponent
 	void collapseAll();
 
 	juce::var saveUIState(int sortType) const;
-	void restoreUIState(const juce::var &state, std::function<void()> refreshCallback, int min, int max);
+	void restoreUIState(const juce::var &state, std::function<void()> refreshCallback, int min, int max,
+	                    std::function<void(ObsidianAccordion *acc, const juce::String &name)> expandCallback = nullptr);
 
 	juce::Colour resolveCategoryColour(const juce::String &name) const;
 

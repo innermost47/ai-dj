@@ -105,5 +105,7 @@ void LeftPanelWrapper::restoreUIState(const juce::var &state)
 	if (sampleBank)
 		sampleBank->restoreUIState(
 		    o->getProperty("sampleBankState"), [this]() { sampleBank->refreshSampleList(); },
-		    SampleBankPanel::firstSort, SampleBankPanel::lastSort);
+		    SampleBankPanel::firstSort, SampleBankPanel::lastSort,
+		    [this](ObsidianAccordion *acc, const juce::String &name)
+		    { sampleBank->ensureAccordionItemsCreated(acc, name); });
 }

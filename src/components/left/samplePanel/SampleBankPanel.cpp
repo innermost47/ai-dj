@@ -58,7 +58,7 @@ void SampleBankPanel::setupUI()
 	{
 		currentSortType = static_cast<SortType>(id);
 		applyFiltersAndSort();
-		rebuildAccordions();
+		rebuildAccordions(true);
 	};
 
 	header.onExpandAllRequested = [this]()
@@ -96,8 +96,15 @@ void SampleBankPanel::addCategoryDialog()
 	                                            });
 }
 
-void SampleBankPanel::rebuildAccordions()
+void SampleBankPanel::rebuildAccordions(bool autoExpandOnSort)
 {
+	if (filteredSamples.empty())
+	{
+		isExpanded = false;
+		header.setChildNum(0);
+		header.setExpanded(false);
+		return;
+	}
 	auto *bank = audioProcessor.getSampleBank();
 	auto *promptBank = audioProcessor.getPromptBank();
 	if (bank == nullptr || promptBank == nullptr)
@@ -147,7 +154,7 @@ void SampleBankPanel::rebuildAccordions()
 
 		auto accordion = std::make_unique<ObsidianAccordion>(catName, colour);
 
-		const bool shouldExpand = autoExpandOnSearch || (openCategories.count(catName) > 0);
+		const bool shouldExpand = autoExpandOnSort || autoExpandOnSearch || (openCategories.count(catName) > 0);
 
 		juce::String catNameCopy = catName;
 
@@ -177,6 +184,7 @@ void SampleBankPanel::rebuildAccordions()
 				ensureAccordionItemsCreated(accPtr, catCopy);
 			}
 		};
+		isExpanded = shouldExpand;
 		header.setExpanded(shouldExpand);
 		accordion->setExpanded(shouldExpand, false);
 

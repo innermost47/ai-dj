@@ -1,5 +1,6 @@
 ﻿#include "BasePanel.h"
 #include "ColourPalette.h"
+#include "ObsidianAccordion.h"
 #include "PluginProcessor.h"
 
 BasePanel::BasePanel(DjIaVstProcessor &processor) : audioProcessor(processor)
@@ -29,7 +30,10 @@ void BasePanel::expandAll(std::function<void(ObsidianAccordion *accordion, const
 	int childNum = accordionContainer.getNumChildComponents();
 	header.setChildNum(childNum);
 	if (childNum > 0)
-		header.setExpanded(true);
+	{
+		isExpanded = true;
+		header.setExpanded(isExpanded);
+	}
 	resized();
 }
 
@@ -41,7 +45,11 @@ void BasePanel::collapseAll()
 	int childNum = accordionContainer.getNumChildComponents();
 	header.setChildNum(childNum);
 	if (childNum > 0)
-		header.setExpanded(false);
+	{
+		isExpanded = false;
+		header.setExpanded(isExpanded);
+	}
+
 	resized();
 }
 
@@ -71,10 +79,12 @@ juce::var BasePanel::saveUIState(int sortType) const
 	o->setProperty("openCategories", juce::var(openArr));
 	o->setProperty("sort", sortType);
 	o->setProperty("search", currentSearch);
+	o->setProperty("expanded", isExpanded);
 	return juce::var(o.get());
 }
 
-void BasePanel::restoreUIState(const juce::var &state, std::function<void()> refreshCallback, int min, int max)
+void BasePanel::restoreUIState(const juce::var &state, std::function<void()> refreshCallback, int min, int max,
+                               std::function<void(ObsidianAccordion *acc, const juce::String &name)> expandCallback)
 {
 	if (!state.isObject())
 		return;
@@ -93,7 +103,11 @@ void BasePanel::restoreUIState(const juce::var &state, std::function<void()> ref
 	int s = (int)o->getProperty("sort");
 	if (s >= min && s <= max)
 		header.setSelectedSortId(s, false);
-
+	bool expanded = (bool)o->getProperty("expanded");
+	if (expanded)
+	{
+		expandAll(expandCallback);
+	}
 	juce::String savedSearch = o->getProperty("search").toString();
 	currentSearch = savedSearch;
 	header.setSearchText(savedSearch, false);

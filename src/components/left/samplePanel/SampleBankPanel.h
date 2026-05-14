@@ -40,6 +40,8 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	void refreshSampleList();
 	void refreshSampleListSilent();
 
+	void ensureAccordionItemsCreated(ObsidianAccordion *accordion, const juce::String &categoryName);
+
 	int getSortType()
 	{
 		return static_cast<int>(currentSortType);
@@ -49,7 +51,7 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	void timerCallback() override;
 
 	void applyFiltersAndSort();
-	void rebuildAccordions();
+	void rebuildAccordions(bool autoExpandOnSort = false);
 	void onAccordionExpanded(const juce::String &categoryName, bool expanded);
 
 	void setupUI();
@@ -60,7 +62,6 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	void showDeleteConfirmation(const juce::String &id, const juce::String &name);
 	void deleteSample(const juce::String &id);
 	void cleanupUnusedSamples();
-	void ensureAccordionItemsCreated(ObsidianAccordion *accordion, const juce::String &categoryName);
 
 	void addCategoryDialog();
 

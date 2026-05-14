@@ -37,7 +37,7 @@ class PromptBankPanel : public BasePanel
 
   private:
 	void setupUI();
-	void rebuildAccordions();
+	void rebuildAccordions(bool autoExpandOnSort = false);
 	void applyFilterAndSort();
 
 	void onAccordionExpanded(const juce::String &categoryName, bool expanded);
