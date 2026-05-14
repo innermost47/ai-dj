@@ -73,11 +73,6 @@ void SampleBankPanel::setupUI()
 
 	detailPanel.onPlayRequested = [this](SampleBankEntry *e) { playPreview(e); };
 	detailPanel.onStopRequested = [this]() { stopPreview(); };
-	detailPanel.onDeleteRequested = [this](const juce::String &id)
-	{
-		if (auto *e = audioProcessor.getSampleBank()->getSample(id))
-			showDeleteConfirmation(id, e->originalPrompt);
-	};
 }
 
 void SampleBankPanel::rebuildAccordions()
@@ -121,77 +116,50 @@ void SampleBankPanel::rebuildAccordions()
 
 		const bool shouldExpand = autoExpandOnSearch || (openCategories.count(catName) > 0);
 
-		bool editable = false;
-		if (catName != "Uncategorized")
+		juce::String catNameCopy = catName;
+		accordion->onRenameRequested = [this, catNameCopy](const juce::String &newName)
 		{
-			for (const auto &c : promptBank->getCategories())
+			if (auto *pb = audioProcessor.getPromptBank())
 			{
-				if (c.name == catName && !c.isBuiltIn)
+				pb->renameCategory(catNameCopy, newName, resolveCategoryColour(catNameCopy));
+				if (auto *bank = audioProcessor.getSampleBank())
 				{
-					editable = true;
-					break;
+					for (auto *s : bank->getAllSamples())
+						if (s->category == catNameCopy)
+							s->category = newName;
+					bank->saveBankData();
 				}
-				auto categories = promptBank->getCategories();
-				auto it = std::find_if(categories.begin(), categories.end(),
-				                       [&](const PromptCategoryInfo &info) { return info.name == catName; });
-
-				if (it == categories.end())
+				if (openCategories.count(catNameCopy) > 0)
 				{
-					editable = true;
-					break;
+					openCategories.erase(catNameCopy);
+					openCategories.insert(newName);
 				}
+				refreshSampleList();
 			}
-		}
-		accordion->setEditable(editable);
-		accordion->setShowCount(false);
+		};
 
-		if (editable)
+		accordion->onDeleteRequested = [this, catNameCopy]()
 		{
-			juce::String catNameCopy = catName;
-			accordion->onRenameRequested = [this, catNameCopy](const juce::String &newName)
-			{
-				if (auto *pb = audioProcessor.getPromptBank())
-				{
-					pb->renameCategory(catNameCopy, newName, resolveCategoryColour(catNameCopy));
-					if (auto *bank = audioProcessor.getSampleBank())
-					{
-						for (auto *s : bank->getAllSamples())
-							if (s->category == catNameCopy)
-								s->category = newName;
-						bank->saveBankData();
-					}
-					if (openCategories.count(catNameCopy) > 0)
-					{
-						openCategories.erase(catNameCopy);
-						openCategories.insert(newName);
-					}
-					refreshSampleList();
-				}
-			};
-
-			accordion->onDeleteRequested = [this, catNameCopy]()
-			{
-				ObsidianAlertManager::showConfirm(
-				    this, "Delete Category", "Delete '" + catNameCopy + "'? Samples in it will become Uncategorized.",
-				    "Delete", "Cancel",
-				    [this, catNameCopy](bool ok)
-				    {
-					    if (!ok)
-						    return;
-					    if (auto *pb = audioProcessor.getPromptBank())
-						    pb->removeCategory(catNameCopy);
-					    if (auto *bank = audioProcessor.getSampleBank())
-					    {
-						    for (auto *s : bank->getAllSamples())
-							    if (s->category == catNameCopy)
-								    s->category.clear();
-						    bank->saveBankData();
-					    }
-					    openCategories.erase(catNameCopy);
-					    refreshSampleList();
-				    });
-			};
-		}
+			ObsidianAlertManager::showConfirm(this, "Delete Category",
+			                                  "Delete '" + catNameCopy + "'? Samples in it will become Uncategorized.",
+			                                  "Delete", "Cancel",
+			                                  [this, catNameCopy](bool ok)
+			                                  {
+				                                  if (!ok)
+					                                  return;
+				                                  if (auto *pb = audioProcessor.getPromptBank())
+					                                  pb->removeCategory(catNameCopy);
+				                                  if (auto *bank = audioProcessor.getSampleBank())
+				                                  {
+					                                  for (auto *s : bank->getAllSamples())
+						                                  if (s->category == catNameCopy)
+							                                  s->category.clear();
+					                                  bank->saveBankData();
+				                                  }
+				                                  openCategories.erase(catNameCopy);
+				                                  refreshSampleList();
+			                                  });
+		};
 
 		juce::String catCopy = catName;
 		ObsidianAccordion *accPtr = accordion.get();
@@ -201,9 +169,6 @@ void SampleBankPanel::rebuildAccordions()
 			if (expanded)
 			{
 				ensureAccordionItemsCreated(accPtr, catCopy);
-				resized();
-				const int targetY = accPtr->getY();
-				accordionViewport.setViewPosition(0, targetY);
 			}
 		};
 

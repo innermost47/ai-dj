@@ -12,9 +12,6 @@ PromptBankItem::PromptBankItem(PromptBankEntry *entryIn) : entry(entryIn)
 {
 	setSize(400, ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT);
 
-	if (entry && entry->isBuiltIn)
-		setEditable(false);
-
 	dragPayloadProvider = [this]() -> juce::String
 	{
 		if (entry == nullptr)
@@ -43,20 +40,6 @@ void PromptBankItem::paint(juce::Graphics &g)
 		return;
 	}
 
-	if (!getEditable())
-	{
-		const int lockW = ObsidianSizes::ACCORDION_LOCK_AREA_WIDTH;
-		auto lockArea = juce::Rectangle<int>(bounds.getRight() - lockW, bounds.getY(), lockW, lockW);
-		auto lockBounds = lockArea.withSizeKeepingCentre(ObsidianSizes::ACCORDION_LOCK_ICON_SIZE,
-		                                                 ObsidianSizes::ACCORDION_LOCK_ICON_SIZE);
-		auto lockSvg = juce::Drawable::createFromImageData(BinaryData::lockfill_svg, BinaryData::lockfill_svgSize);
-		if (lockSvg != nullptr)
-		{
-			lockSvg->replaceColour(juce::Colours::black, ColourPalette::textSecondary);
-			lockSvg->drawWithin(g, lockBounds.toFloat(), juce::RectanglePlacement::xRight, ObsidianShades::ALPHA_04);
-		}
-	}
-
 	if (entry->category.isNotEmpty())
 	{
 		const float thickness = isSelected() ? 4.0f : 1.0f;
@@ -71,7 +54,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 		g.fillRect(0.0f, 0.0f, 4.0f, (float)bounds.getHeight());
 	}
 
-	const int rightPad = !getEditable() ? (ObsidianSizes::ACCORDION_LOCK_AREA_WIDTH + 4) : 12;
+	const int rightPad = 12;
 	auto textArea = bounds.withTrimmedLeft(12).withTrimmedRight(rightPad).withTrimmedTop(6);
 	auto promptArea = textArea.removeFromTop(bounds.getHeight() - 30);
 

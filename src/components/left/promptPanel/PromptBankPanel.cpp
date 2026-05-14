@@ -234,35 +234,12 @@ void PromptBankPanel::rebuildAccordions()
 		bool shouldExpand = autoExpandOnSearch || (openCategories.count(catName) > 0);
 		accordion->setExpanded(shouldExpand, false);
 
-		bool editable = false;
-		if (catName != "Uncategorized")
-		{
-			for (const auto &c : bank->getCategories())
-				if (c.name == catName && !c.isBuiltIn)
-				{
-					editable = true;
-					break;
-				}
-		}
-		accordion->setEditable(editable);
-
-		if (editable)
-		{
-			juce::String catNameCopy = catName;
-			accordion->onEditRequested = [this, catNameCopy]() { editCategoryDialog(catNameCopy); };
-			accordion->onDeleteRequested = [this, catNameCopy]() { deleteCategoryDialog(catNameCopy); };
-		}
+		juce::String catNameCopy = catName;
+		accordion->onEditRequested = [this, catNameCopy]() { editCategoryDialog(catNameCopy); };
+		accordion->onDeleteRequested = [this, catNameCopy]() { deleteCategoryDialog(catNameCopy); };
 
 		juce::String catCopy = catName;
-		ObsidianAccordion *accPtr = accordion.get();
-		accordion->onExpansionChanged = [this, catCopy, accPtr](bool expanded)
-		{
-			onAccordionExpanded(catCopy, expanded);
-			resized();
-
-			const int targetY = accPtr->getY();
-			accordionViewport.setViewPosition(0, targetY);
-		};
+		accordion->onExpansionChanged = [this, catCopy](bool expanded) { onAccordionExpanded(catCopy, expanded); };
 
 		accordionContainer.addAndMakeVisible(*accordion);
 		accordions.push_back(std::move(accordion));

@@ -11,6 +11,8 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void mouseDown(const juce::MouseEvent &e) override;
+	void mouseEnter(const juce::MouseEvent &e) override;
+	void mouseExit(const juce::MouseEvent &e) override;
 	void mouseDoubleClick(const juce::MouseEvent &e) override;
 
 	void setItems(std::vector<std::unique_ptr<AccordionItem>> &&newItems);
@@ -24,16 +26,6 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 	bool isExpanded() const
 	{
 		return expanded;
-	}
-
-	void setEditable(bool editable);
-	bool getEditable() const
-	{
-		return isEditable;
-	}
-	void setShowCount(bool v)
-	{
-		showCount = v;
 	}
 
 	void setAccentColour(juce::Colour newColour);
@@ -76,7 +68,6 @@ class ObsidianAccordion : public ObsidianComponent, private juce::TextEditor::Li
 
 	bool expanded{false};
 	bool isEditable{true};
-	bool showCount{true};
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ObsidianAccordion)
 };

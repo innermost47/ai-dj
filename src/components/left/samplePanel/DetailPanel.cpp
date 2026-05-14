@@ -31,17 +31,7 @@ DetailPanel::DetailPanel()
 				onPlayRequested(entry);
 		}
 	};
-
-	addAndMakeVisible(deleteButton);
-	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
-	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
-	deleteButton.onClick = [this]()
-	{
-		if (entry && onDeleteRequested)
-			onDeleteRequested(entry->id);
-	};
 	playButton.setCompactMode(true);
-	deleteButton.setCompactMode(true);
 	setVisible(false);
 }
 
@@ -295,7 +285,6 @@ void DetailPanel::resized()
 	bottomRow.removeFromRight(4);
 
 	playButton.setBounds(btnCol.removeFromTop(bottomRow.getHeight() / 2).reduced(2));
-	deleteButton.setBounds(btnCol.reduced(2));
 
 	waveformBounds = bottomRow.reduced(2);
 

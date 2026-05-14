@@ -23,58 +23,39 @@ void ObsidianAccordion::paint(juce::Graphics &g)
 	g.setColour(accentColour);
 	g.fillRect(0, headerBounds.getY(), ObsidianSizes::ACCORDION_ACCENT_BAR_WIDTH, headerBounds.getHeight());
 
-	auto chevronArea = headerBounds.removeFromRight(ObsidianSizes::ACCORDION_CHEVRON_AREA_WIDTH);
-
-	auto cBounds = chevronArea.toFloat().reduced(8, 12);
-	if (expanded)
-	{
-		auto chevronUpSvg = juce::Drawable::createFromImageData(BinaryData::caretup_svg, BinaryData::caretup_svgSize);
-		if (chevronUpSvg != nullptr)
-		{
-			chevronUpSvg->replaceColour(juce::Colours::black, ColourPalette::textPrimary);
-			chevronUpSvg->drawWithin(g, cBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
-		}
-	}
-	else
-	{
-		auto chevronDownSvg =
-		    juce::Drawable::createFromImageData(BinaryData::caretdown_svg, BinaryData::caretdown_svgSize);
-		if (chevronDownSvg != nullptr)
-		{
-			chevronDownSvg->replaceColour(juce::Colours::black, ColourPalette::textPrimary);
-			chevronDownSvg->drawWithin(g, cBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
-		}
-	}
-
 	if (renameEditor != nullptr)
 		return;
 
 	auto textArea = headerBounds.withTrimmedLeft(ObsidianSizes::ACCORDION_TEXT_LEFT_PADDING);
 
-	if (!isEditable)
-	{
-		auto lockArea = textArea.removeFromLeft(ObsidianSizes::ACCORDION_LOCK_AREA_WIDTH);
-		auto lockBounds = lockArea.withSizeKeepingCentre(ObsidianSizes::ACCORDION_LOCK_ICON_SIZE,
-		                                                 ObsidianSizes::ACCORDION_LOCK_ICON_SIZE);
+	auto folderArea = textArea.removeFromLeft(ObsidianSizes::ACCORDION_FOLDER_AREA_WIDTH);
 
-		auto lockSvg = juce::Drawable::createFromImageData(BinaryData::lockfill_svg, BinaryData::lockfill_svgSize);
-		if (lockSvg != nullptr)
+	auto folderBounds = folderArea.withSizeKeepingCentre(ObsidianSizes::ACCORDION_FOLDER_ICON_SIZE,
+	                                                     ObsidianSizes::ACCORDION_FOLDER_ICON_SIZE);
+	if (expanded)
+	{
+		auto folderOpenSvg =
+		    juce::Drawable::createFromImageData(BinaryData::folderopen_svg, BinaryData::folderopen_svgSize);
+		if (folderOpenSvg != nullptr)
 		{
-			lockSvg->replaceColour(juce::Colours::black, ColourPalette::textSecondary);
-			lockSvg->drawWithin(g, lockBounds.toFloat(), juce::RectanglePlacement::xLeft, ObsidianShades::ALPHA_04);
+			folderOpenSvg->replaceColour(juce::Colours::black, ColourPalette::textPrimary);
+			folderOpenSvg->drawWithin(g, folderBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
+		}
+	}
+	else
+	{
+		auto folderClosedSvg =
+		    juce::Drawable::createFromImageData(BinaryData::folderclosed_svg, BinaryData::folderclosed_svgSize);
+		if (folderClosedSvg != nullptr)
+		{
+			folderClosedSvg->replaceColour(juce::Colours::black, ColourPalette::textPrimary);
+			folderClosedSvg->drawWithin(g, folderBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
 		}
 	}
 	textArea.removeFromLeft(ObsidianSizes::SPACER_SM);
 	g.setColour(ColourPalette::textPrimary);
 	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 	g.drawText(accordionName, textArea, juce::Justification::centredLeft, true);
-
-	if (showCount)
-	{
-		g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
-		g.drawText("(" + juce::String((int)items.size()) + ")", textArea, juce::Justification::centredRight, true);
-	}
 }
 
 void ObsidianAccordion::resized()
@@ -97,6 +78,16 @@ void ObsidianAccordion::resized()
 		item->setBounds(0, y, getWidth(), h);
 		y += h + ObsidianSizes::ACCORDION_ITEM_SPACING;
 	}
+}
+
+void ObsidianAccordion::mouseEnter(const juce::MouseEvent &)
+{
+	setMouseCursor(juce::MouseCursor::PointingHandCursor);
+}
+
+void ObsidianAccordion::mouseExit(const juce::MouseEvent &)
+{
+	setMouseCursor(juce::MouseCursor::NormalCursor);
 }
 
 void ObsidianAccordion::mouseDown(const juce::MouseEvent &e)
@@ -276,19 +267,6 @@ void ObsidianAccordion::setExpanded(bool shouldBeExpanded, bool sendNotification
 
 	if (sendNotification && onExpansionChanged)
 		onExpansionChanged(expanded);
-}
-
-void ObsidianAccordion::setEditable(bool editable)
-{
-	if (isEditable == editable)
-		return;
-
-	isEditable = editable;
-
-	if (!editable && renameEditor != nullptr)
-		finishInlineRename(false);
-
-	repaint();
 }
 
 void ObsidianAccordion::setAccentColour(juce::Colour newColour)

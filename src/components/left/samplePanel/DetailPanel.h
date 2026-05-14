@@ -17,7 +17,6 @@ class DetailPanel : public ObsidianComponent, public juce::Timer
 
 	std::function<void(SampleBankEntry *)> onPlayRequested;
 	std::function<void()> onStopRequested;
-	std::function<void(const juce::String &)> onDeleteRequested;
 	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
 
 	void loadAudio();
@@ -28,7 +27,6 @@ class DetailPanel : public ObsidianComponent, public juce::Timer
 	juce::Label nameLabel;
 	juce::Label metaLabel;
 	IconButtonSimple playButton{"Play", ""};
-	IconButtonSimple deleteButton{"Delete", ""};
 
 	juce::Rectangle<int> waveformBounds;
 	std::vector<float> thumbL, thumbR;
