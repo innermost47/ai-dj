@@ -324,6 +324,10 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 		{
 			g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(currentSize));
 		}
+		else if (label.getFont().isItalic())
+		{
+			g.setFont(juce::FontOptions(ObsidianFonts::NOTO_ITALIC).withHeight(currentSize));
+		}
 		else
 		{
 			g.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(currentSize));

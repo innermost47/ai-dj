@@ -23,9 +23,13 @@ class DetailPanel : public ObsidianComponent, public juce::Timer
 
   private:
 	SampleBankEntry *entry = nullptr;
+	std::unique_ptr<juce::Drawable> infoSvg;
 
 	juce::Label nameLabel;
 	juce::Label metaLabel;
+	juce::Label modelLabel;
+	juce::Label tipLabel;
+
 	IconButtonSimple playButton{"Play", ""};
 
 	juce::Rectangle<int> waveformBounds;

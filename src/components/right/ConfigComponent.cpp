@@ -72,7 +72,7 @@ void ConfigComponent::setupUI()
 	openMidiEditorButton.setTooltip("Open MIDI mappings editor");
 
 	addAndMakeVisible(helpButton);
-	helpButton.loadIcon(BinaryData::info_svg, BinaryData::info_svgSize);
+	helpButton.loadIcon(BinaryData::infofill_svg, BinaryData::infofill_svgSize);
 	helpButton.setTooltip("Open the Quick Start tour");
 
 	addAndMakeVisible(configButton);

@@ -9,6 +9,7 @@ namespace ObsidianSizes
 inline constexpr int GAP = 6;
 inline constexpr int GAP_8 = 8;
 inline constexpr int GAP_4 = 4;
+inline constexpr int GAP_2 = 2;
 inline constexpr int GAP_XL = 12;
 inline constexpr int SPACER_XXS = 1;
 inline constexpr int SPACER_XS = 2;
@@ -19,7 +20,8 @@ inline constexpr int PADDING = 6;
 inline constexpr int MIN_SMALL_BTN_WIDTH = 24;
 inline constexpr int MIN_SMALL_BTN_HEIGHT = 24;
 inline constexpr int CORNER = 1;
-inline constexpr int SAMPLE_DETAIL_HEIGHT = 86;
+inline constexpr int SAMPLE_DETAIL_HEIGHT_VST = 122;
+inline constexpr int SAMPLE_DETAIL_HEIGHT_STANDALONE = 94;
 inline constexpr int SAMPLE_ROW_HEIGHT = 54;
 inline constexpr int MIXER_CHANNEL_KNOB = 36;
 inline constexpr int COMBO_BOX_BASE_HEIGHT = 20;
@@ -38,6 +40,7 @@ inline constexpr int CONFIG_AREA_HEIGHT = 138;
 
 inline constexpr float LIST_PANEL_CORNER_SIZE = 1.0f;
 inline constexpr float HALF_CORNER = 0.5f;
+inline constexpr float BORDER_WIDTH_XS = 0.5f;
 inline constexpr float BORDER_WIDTH = 1.0f;
 inline constexpr float BORDER_WIDTH_XL = 1.2f;
 inline constexpr float BORDER_WIDTH_SM = 0.6f;

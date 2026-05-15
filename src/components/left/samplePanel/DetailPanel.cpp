@@ -4,18 +4,34 @@ DetailPanel::DetailPanel()
 {
 	addAndMakeVisible(nameLabel);
 	nameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	nameLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	nameLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+
+	addAndMakeVisible(modelLabel);
+	modelLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	modelLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
 
 	addAndMakeVisible(metaLabel);
-	metaLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	metaLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	metaLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
+
+	infoSvg = juce::Drawable::createFromImageData(BinaryData::warning_svg, BinaryData::warning_svgSize);
+	if (!juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		infoSvg->replaceColour(juce::Colours::black, ColourPalette::textSecondary);
+		addAndMakeVisible(infoSvg.get());
+	}
+
+	addAndMakeVisible(tipLabel);
+	tipLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	tipLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_XXS, juce::Font::italic));
+	tipLabel.setText("Preview routed to Output 9. Ensure Multi-Output mode is enabled in your DAW.",
+	                 juce::dontSendNotification);
 
 	addAndMakeVisible(playButton);
 	playButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
 	playButton.loadIconToggled(BinaryData::square_svg, BinaryData::square_svgSize);
 	playButton.setHasToggledIcon(true);
 	playButton.setClickingTogglesState(false);
-	playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::mossGreen);
 	playButton.onClick = [this]()
 	{
 		if (!entry)
@@ -32,6 +48,8 @@ DetailPanel::DetailPanel()
 		}
 	};
 	playButton.setCompactMode(true);
+
+	playButton.setTooltip("Preview sound on Output 9");
 	setVisible(false);
 }
 
@@ -61,13 +79,17 @@ void DetailPanel::setEntry(SampleBankEntry *e)
 	{
 		nameLabel.setText("", juce::dontSendNotification);
 		metaLabel.setText("", juce::dontSendNotification);
+		modelLabel.setText("", juce::dontSendNotification);
 		return;
 	}
 
 	juce::String nameText = entry->originalPrompt;
-	if (entry->modelName.isNotEmpty())
-		nameText += " - " + entry->modelName;
 	nameLabel.setText(nameText, juce::dontSendNotification);
+
+	if (entry->modelName.isNotEmpty())
+		modelLabel.setText(entry->modelName, juce::dontSendNotification);
+	else
+		modelLabel.setText("Unknown model", juce::dontSendNotification);
 
 	juce::StringArray parts;
 	parts.add(formatDuration(entry->duration));
@@ -146,7 +168,7 @@ void DetailPanel::generateThumbnail()
 	int n = audioBuf.getNumSamples();
 	int ch = audioBuf.getNumChannels();
 	bool mono = (ch == 1);
-	int w = waveformBounds.getWidth() - 4;
+	int w = waveformBounds.getWidth();
 	if (w <= 0)
 		return;
 	int spp = std::max(1, n / w);
@@ -180,19 +202,11 @@ void DetailPanel::paint(juce::Graphics &g)
 
 	if (entry && !entry->category.isEmpty())
 	{
-		float cy = 6.0f + 18.0f * 0.5f;
+		const float ellipseSize = 8.0f;
 		juce::Colour col = this->categoryColourResolver ? this->categoryColourResolver(entry->category)
 		                                                : getCategoryColor(entry->category);
 		g.setColour(col);
-		g.fillEllipse(8.0f, cy - 4.0f, 8.0f, 8.0f);
-	}
-
-	if (entry)
-	{
-		auto nameArea = juce::Rectangle<int>(20, 6, getWidth() - 80, 18);
-		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
-		g.drawText(entry->originalPrompt, nameArea, juce::Justification::centredLeft, true);
+		g.fillEllipse(ellipseSize, ObsidianSizes::GAP_4 + ellipseSize + 1.0f, ellipseSize, ellipseSize);
 	}
 
 	drawWaveform(g);
@@ -208,10 +222,10 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 	clip.addRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER);
 	g.reduceClipRegion(clip);
 
-	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::ALPHA_08));
+	g.setColour(ColourPalette::backgroundDeep);
 	g.fillRect(waveformBounds);
 
-	auto innerBounds = waveformBounds.reduced(6, 4);
+	auto innerBounds = waveformBounds;
 
 	size_t sz = std::min(thumbL.size(), thumbR.size());
 	float ppx = (float)innerBounds.getWidth() / (float)sz;
@@ -219,28 +233,40 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 
 	auto drawChannel = [&](const std::vector<float> &thumb, float centerY, float halfH)
 	{
-		juce::Path top, bot;
-		bool ts = false, bs = false;
-		for (size_t i = 0; i < sz; ++i)
+		juce::Path wavePath;
+		bool started = false;
+
+		for (size_t i = 0; i < sz; i++)
 		{
 			float x = innerBounds.getX() + i * ppx;
 			float h = thumb[i] * halfH;
-			if (!ts)
+			float yTop = centerY - h;
+
+			if (!started)
 			{
-				top.startNewSubPath(x, centerY);
-				ts = true;
+				wavePath.startNewSubPath(x, yTop);
+				started = true;
 			}
-			if (!bs)
+			else
 			{
-				bot.startNewSubPath(x, centerY);
-				bs = true;
+				wavePath.lineTo(x, yTop);
 			}
-			top.lineTo(x, centerY - h);
-			bot.lineTo(x, centerY + h);
 		}
-		g.setColour(ColourPalette::textPrimary.withAlpha(0.8f));
-		g.strokePath(top, juce::PathStrokeType(1.0f));
-		g.strokePath(bot, juce::PathStrokeType(1.0f));
+
+		for (int i = (int)sz - 1; i >= 0; --i)
+		{
+			float x = innerBounds.getX() + i * ppx;
+			float h = thumb[i] * halfH;
+			float yBot = centerY + h;
+
+			wavePath.lineTo(x, yBot);
+		}
+
+		wavePath.closeSubPath();
+
+		g.setColour(ColourPalette::textPrimary);
+		g.fillPath(wavePath);
+		g.strokePath(wavePath, juce::PathStrokeType(0.6f));
 	};
 
 	if (stereo)
@@ -250,7 +276,7 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 		float hH = innerBounds.getHeight() * 0.22f;
 		drawChannel(thumbL, qY, hH);
 		drawChannel(thumbR, tqY, hH);
-		g.setColour(ColourPalette::backgroundLight.withAlpha(0.15f));
+		g.setColour(ColourPalette::textPrimary.withAlpha(ObsidianShades::ALPHA_06));
 		g.drawLine((float)innerBounds.getX(), (float)innerBounds.getCentreY(), (float)innerBounds.getRight(),
 		           (float)innerBounds.getCentreY(), 0.5f);
 	}
@@ -265,29 +291,58 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 	{
 		float prog = playbackPos / entry->duration;
 		float hx = innerBounds.getX() + prog * innerBounds.getWidth();
-		g.setColour(ColourPalette::playArmed);
-		g.drawLine(hx, (float)innerBounds.getY(), hx, (float)innerBounds.getBottom(), 2.0f);
+		g.setColour(ColourPalette::textPrimary);
+		g.drawLine(hx, (float)innerBounds.getY(), hx, (float)innerBounds.getBottom(), 0.5f);
 	}
 
 	g.restoreState();
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
-	g.drawRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER, 0.5f);
+	g.setColour(ColourPalette::textSecondary.withAlpha(ObsidianShades::ALPHA_04));
+	g.drawRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER, ObsidianSizes::BORDER_WIDTH_XS);
 }
 
 void DetailPanel::resized()
 {
 	auto area = getLocalBounds().reduced(6, 4);
-	auto titleRow = area.removeFromTop(24);
+	area.removeFromTop(ObsidianSizes::GAP_4);
+	area.removeFromBottom(ObsidianSizes::GAP);
+	auto titleRow = area.removeFromTop(18);
+	auto modelRow = area.removeFromTop(14);
+	auto metaRow = area.removeFromTop(14);
+	juce::Rectangle<int> iconArea;
+	juce::Rectangle<int> tipRow;
+	int iconSize = 10;
+	if (!juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		tipRow = area.removeFromBottom(22);
+		area.removeFromBottom(ObsidianSizes::GAP_4);
+		tipRow.removeFromLeft(ObsidianSizes::GAP_4);
+		iconArea = tipRow.removeFromLeft(iconSize).removeFromTop(tipRow.getHeight());
+	}
 	auto bottomRow = area;
 
-	auto btnCol = bottomRow.removeFromRight(36);
-	bottomRow.removeFromRight(4);
+	titleRow.removeFromLeft(10);
+	nameLabel.setBounds(titleRow);
+	modelLabel.setBounds(modelRow);
+	metaLabel.setBounds(metaRow);
 
-	playButton.setBounds(btnCol.removeFromTop(bottomRow.getHeight() / 2).reduced(2));
+	if (!juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		if (infoSvg != nullptr)
+		{
+			infoSvg->setTransformToFit(iconArea.toFloat(), juce::RectanglePlacement::centred);
+		}
+		tipLabel.setBounds(tipRow);
+	}
 
-	waveformBounds = bottomRow.reduced(2);
+	bottomRow.removeFromTop(ObsidianSizes::GAP_4);
 
+	auto btnCol = bottomRow.removeFromRight(30);
+
+	playButton.setBounds(btnCol.removeFromTop(bottomRow.getHeight()));
+	bottomRow.removeFromRight(ObsidianSizes::GAP_4);
+	bottomRow.removeFromLeft(ObsidianSizes::GAP_4);
+	waveformBounds = bottomRow.reduced(0, 2);
 	generateThumbnail();
 	repaint();
 }
@@ -341,12 +396,12 @@ void DetailPanel::updatePlayButton()
 	if (isPlaying)
 	{
 		playButton.setToggleState(true, juce::dontSendNotification);
-		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
+		playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::mossGreen);
 	}
 	else
 	{
 		playButton.setToggleState(false, juce::dontSendNotification);
-		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::mossGreen);
+		playButton.setColour(juce::TextButton::buttonColourId, ColourPalette::slate);
 	}
 	playButton.repaint();
 }

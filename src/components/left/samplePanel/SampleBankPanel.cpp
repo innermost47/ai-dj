@@ -307,8 +307,13 @@ void SampleBankPanel::showChangeCategoryDialog(SampleBankEntry *entry)
 void SampleBankPanel::resized()
 {
 	auto area = getLocalBounds();
+	int removeBot = ObsidianSizes::SAMPLE_DETAIL_HEIGHT_VST;
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		removeBot = ObsidianSizes::SAMPLE_DETAIL_HEIGHT_STANDALONE;
+	}
 
-	auto detailPanelArea = area.removeFromBottom(ObsidianSizes::SAMPLE_DETAIL_HEIGHT);
+	auto detailPanelArea = area.removeFromBottom(removeBot);
 	detailPanel.setBounds(detailPanelArea);
 
 	header.setBounds(area.removeFromTop(header.getPreferredHeight()));
