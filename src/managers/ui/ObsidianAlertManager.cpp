@@ -889,8 +889,8 @@ void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juc
 	if (overlay == nullptr)
 		return;
 
-	overlay->modalWindow->addButton("Clear All", crossSvg, ColourPalette::buttonInactive,
-	                                [panelPtr]() { panelPtr->clearAll(); });
+	overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
+	                                [overlay]() { overlay->close(); });
 
 	overlay->modalWindow->addButton("Done", checkSvg, ColourPalette::slate,
 	                                [overlay, panelPtr, onSave]()

@@ -3,6 +3,7 @@
 CategoryTag::CategoryTag(const juce::String &name) : juce::Button(name)
 {
 	setClickingTogglesState(true);
+	setRadioGroupId(categories);
 }
 
 void CategoryTag::paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*isButtonDown*/)
@@ -10,14 +11,14 @@ void CategoryTag::paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*
 	auto bounds = getLocalBounds().toFloat().reduced(2.0f);
 	bool active = getToggleState();
 
-	g.setColour(active ? ColourPalette::buttonPrimary : ColourPalette::backgroundLight.withAlpha(0.4f));
+	g.setColour(active ? ColourPalette::slate : ColourPalette::backgroundLight.withAlpha(0.4f));
 	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
 	if (isMouseOverButton && !active)
 	{
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.2f));
 		g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1.5f);
 	}
-	g.setColour(active ? juce::Colours::white : ColourPalette::textSecondary);
+	g.setColour(active ? ColourPalette::textPrimary : ColourPalette::textSecondary);
 	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, active ? juce::Font::bold : juce::Font::plain));
 	g.drawText(getButtonText(), bounds, juce::Justification::centred, true);
 }
@@ -35,15 +36,8 @@ CategoryPanel::CategoryPanel(const juce::String &currentCategory, const std::vec
 
 		bool isAssigned = category == currentCategory;
 		tag->setToggleState(isAssigned, juce::dontSendNotification);
-
 		toggleContainer->addAndMakeVisible(tag);
 	}
-}
-
-void CategoryPanel::clearAll()
-{
-	for (auto *tag : tags)
-		tag->setToggleState(false, juce::dontSendNotification);
 }
 
 juce::String CategoryPanel::getSelectedCategory() const
@@ -52,6 +46,7 @@ juce::String CategoryPanel::getSelectedCategory() const
 	for (auto *tag : tags)
 		if (tag->getToggleState())
 			selected = tag->getButtonText();
+
 	return selected;
 }
 

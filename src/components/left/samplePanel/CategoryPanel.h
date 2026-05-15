@@ -7,13 +7,18 @@ class CategoryTag : public juce::Button
   public:
 	CategoryTag(const juce::String &name);
 	void paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*isButtonDown*/) override;
+
+  private:
+	enum CategoryRadioButtonIds
+	{
+		categories = 666
+	};
 };
 
 class CategoryPanel : public ObsidianComponent
 {
   public:
 	CategoryPanel(const juce::String &currentCategory, const std::vector<juce::String> &availableCategories);
-	void clearAll();
 	juce::String getSelectedCategory() const;
 	void resized() override;
 
