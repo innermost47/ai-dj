@@ -40,14 +40,25 @@ class LeftPanelWrapper : public ObsidianComponent
 	juce::var saveUIState() const;
 	void restoreUIState(const juce::var &state);
 
+	bool getIsExpanded()
+	{
+		return isExpanded;
+	}
+
   private:
+	DjIaVstEditor &editor;
+
 	void updateTabVisibility();
+	void collapseExpand();
 
 	std::unique_ptr<SampleBankPanel> sampleBank;
 	std::unique_ptr<PromptBankPanel> promptBank;
 
 	IconButton promptTabButton{"prompt"};
 	IconButton sampleTabButton{"sample"};
+	IconButton collapseButton{"collapse"};
+
+	bool isExpanded = true;
 
 	Tab activeTab = Tab::Prompt;
 

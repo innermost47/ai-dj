@@ -137,8 +137,19 @@ void UILayoutManager::resized()
 
 	Grid grid;
 
+	int mainWidth = 4;
+	int leftPanelWidth = 1;
+	int rightPanelWidth = 1;
+	int ratio = 8;
+
+	if (!leftPanelWrapper->getIsExpanded())
+	{
+		mainWidth = mainWidth * ratio;
+		rightPanelWidth = rightPanelWidth * ratio;
+	}
+
 	grid.templateRows = {Track(Fr(1))};
-	grid.templateColumns = {Track(Fr(1)), Track(Fr(4)), Track(Fr(1))};
+	grid.templateColumns = {Track(Fr(leftPanelWidth)), Track(Fr(mainWidth)), Track(Fr(rightPanelWidth))};
 	grid.columnGap = GridPx(ObsidianSizes::GAP);
 
 	GridItem leftPanel(leftPanelWrapper.get());

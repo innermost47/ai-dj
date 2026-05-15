@@ -175,6 +175,8 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/brush.svg
         src/assets/icons/bucket.svg
         src/assets/icons/caret-down.svg
+        src/assets/icons/caret-left.svg
+        src/assets/icons/caret-right.svg
         src/assets/icons/caret-up.svg
         src/assets/icons/chat-text.svg
         src/assets/icons/collapse.svg
