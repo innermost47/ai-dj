@@ -13,7 +13,7 @@
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
 	setResizable(true, true);
-	setResizeLimits(1100, 800, 2400, 1600);
+	setResizeLimits(1100, 820, 2400, 1600);
 	setSize(1620, 840);
 	setScaleFactor(1.0f);
 	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());

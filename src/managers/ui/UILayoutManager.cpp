@@ -119,7 +119,7 @@ UILayoutManager::UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	mainContainer = std::make_unique<MainContainer>(*tracksContainer, mixerPanel);
 
 	editor.mainViewport.setViewedComponent(mainContainer.get());
-	editor.mainViewport.setScrollBarsShown(true, true);
+	editor.mainViewport.setScrollBarsShown(false, true);
 
 	editor.addAndMakeVisible(*leftContainer);
 	editor.addAndMakeVisible(*leftPanelWrapper);

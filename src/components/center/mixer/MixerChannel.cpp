@@ -325,7 +325,7 @@ void MixerChannel::resized()
 	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label &label, juce::Slider &knob)
 	{
 		label.setBounds(secArea.removeFromTop(6));
-		knob.setBounds(secArea);
+		knob.setBounds(secArea.withTrimmedTop(-4));
 	};
 	knobsColumn.removeFromTop(4);
 	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), sendDelayLabel, sendDelayKnob);
