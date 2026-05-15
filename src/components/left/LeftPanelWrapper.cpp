@@ -30,7 +30,7 @@ LeftPanelWrapper::LeftPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &e
 
 	collapseButton.loadIcon(BinaryData::caretleft_svg, BinaryData::caretleft_svgSize);
 	collapseButton.setColour(juce::TextButton::buttonColourId, ColourPalette::lightGrey.withAlpha(0.05f));
-	collapseButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::lightGrey.withAlpha(0.3f));
+	collapseButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::lightGrey.withAlpha(0.05f));
 	collapseButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
 	collapseButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 	collapseButton.setClickingTogglesState(true);
@@ -123,12 +123,14 @@ void LeftPanelWrapper::resized()
 
 	if (isExpanded)
 	{
-		const int tabW = tabBar.getWidth() / 5;
-		promptTabButton.setBounds(tabBar.removeFromLeft(tabW * 2));
+
+		const int collapseButtonWidth = 28;
+		const int tabW = (tabBar.getWidth() - collapseButtonWidth - ObsidianSizes::SPACER_MD * 2) / 2;
+		promptTabButton.setBounds(tabBar.removeFromLeft(tabW));
 		tabBar.removeFromLeft(ObsidianSizes::SPACER_MD);
-		sampleTabButton.setBounds(tabBar.removeFromLeft(tabW * 2));
+		sampleTabButton.setBounds(tabBar.removeFromLeft(tabW));
 		tabBar.removeFromLeft(ObsidianSizes::SPACER_MD);
-		collapseButton.setBounds(tabBar.removeFromLeft(tabW));
+		collapseButton.setBounds(tabBar.removeFromLeft(collapseButtonWidth));
 	}
 	else
 	{
