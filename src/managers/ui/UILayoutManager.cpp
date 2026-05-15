@@ -83,10 +83,11 @@ void TracksContainer::resized()
 	grid.performLayout(getLocalBounds().reduced(0, ObsidianSizes::GAP));
 }
 
-MainContainer::MainContainer(TracksContainer &tc, MixerPanel &mp)
-    : tracksContainer(tc), mixerPanel(mp) {
-
-      };
+MainContainer::MainContainer(TracksContainer &tc, MixerPanel &mp) : tracksContainer(tc), mixerPanel(mp)
+{
+	addAndMakeVisible(tracksContainer);
+	addAndMakeVisible(mixerPanel);
+};
 
 void MainContainer::resized()
 {
@@ -117,11 +118,13 @@ UILayoutManager::UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	rightPanelWrapper = std::make_unique<RightPanelWrapper>(audioProcessor, editor);
 	mainContainer = std::make_unique<MainContainer>(*tracksContainer, mixerPanel);
 
+	editor.mainViewport.setViewedComponent(mainContainer.get());
+	editor.mainViewport.setScrollBarsShown(true, true);
+
 	editor.addAndMakeVisible(*leftContainer);
 	editor.addAndMakeVisible(*leftPanelWrapper);
-	editor.addAndMakeVisible(*tracksContainer);
 	editor.addAndMakeVisible(*rightPanelWrapper);
-	editor.addAndMakeVisible(mixerPanel);
+	editor.addAndMakeVisible(editor.mainViewport);
 }
 
 void UILayoutManager::resized()
@@ -139,9 +142,16 @@ void UILayoutManager::resized()
 	grid.columnGap = GridPx(ObsidianSizes::GAP);
 
 	GridItem leftPanel(leftPanelWrapper.get());
-	GridItem main(mainContainer.get());
+	GridItem main(editor.mainViewport);
 	GridItem rightPanel(rightPanelWrapper.get());
 
 	grid.items = {leftPanel, main, rightPanel};
 	grid.performLayout(editor.getBounds());
+
+	int minWidth = 1070;
+
+	int contentWidth = std::max(editor.mainViewport.getWidth(), minWidth);
+	int contentHeight = editor.mainViewport.getHeight();
+
+	mainContainer->setSize(contentWidth, contentHeight);
 }

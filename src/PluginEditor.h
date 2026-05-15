@@ -45,6 +45,8 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	std::unique_ptr<LCDScreen> lcdScreen;
 	std::unique_ptr<MasterWaveformDisplay> masterWaveformDisplay;
 
+	juce::Viewport mainViewport;
+
 	juce::Label statusLabel;
 
 	std::atomic<bool> isBeingDestroyed{false};

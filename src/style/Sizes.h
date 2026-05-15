@@ -23,7 +23,7 @@ inline constexpr int CORNER = 1;
 inline constexpr int SAMPLE_DETAIL_HEIGHT_VST = 122;
 inline constexpr int SAMPLE_DETAIL_HEIGHT_STANDALONE = 94;
 inline constexpr int SAMPLE_ROW_HEIGHT = 54;
-inline constexpr int MIXER_CHANNEL_KNOB = 36;
+inline constexpr int MIXER_CHANNEL_KNOB = 32;
 inline constexpr int COMBO_BOX_BASE_HEIGHT = 20;
 
 inline constexpr int TRACK_BASE_HEIGHT = 80;
