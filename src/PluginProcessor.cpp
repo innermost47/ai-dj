@@ -117,6 +117,7 @@ DjIaVstProcessor::~DjIaVstProcessor()
 void DjIaVstProcessor::cleanProcessor()
 {
 	isShuttingDown.store(true);
+	apiClient.cancelPendingRequests();
 #if JucePlugin_Build_Standalone
 	if (link->isEnabled())
 		link->enable(false);

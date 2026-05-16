@@ -64,6 +64,8 @@ void UIStatusManager::refreshCreditsAsync()
 		    if (safeEditor == nullptr)
 			    return;
 		    auto creditsInfo = processor.getApiClient().checkCredits(timeout);
+		    if (processor.isShuttingDown.load())
+			    return;
 		    juce::MessageManager::callAsync(
 		        [safeEditor, creditsInfo]()
 		        {

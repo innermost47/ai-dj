@@ -30,62 +30,96 @@ void DjIaClient::setBaseUrl(const juce::String &newBaseUrl)
 	}
 }
 
+std::shared_ptr<juce::WebInputStream> DjIaClient::createTrackedStream(const juce::URL &url,
+                                                                      const juce::URL::InputStreamOptions &options)
+{
+	if (cancelled.load())
+		return nullptr;
+
+	auto stream = std::shared_ptr<juce::WebInputStream>(
+	    new juce::WebInputStream(url, options.getParameterHandling() == juce::URL::ParameterHandling::inPostData));
+
+	stream->withExtraHeaders(options.getExtraHeaders());
+	stream->withConnectionTimeout(options.getConnectionTimeoutMs());
+
+	{
+		std::lock_guard<std::mutex> lock(streamsMutex);
+		activeStreams.erase(std::remove_if(activeStreams.begin(), activeStreams.end(),
+		                                   [](const std::weak_ptr<juce::WebInputStream> &w) { return w.expired(); }),
+		                    activeStreams.end());
+		activeStreams.push_back(stream);
+	}
+
+	if (cancelled.load())
+	{
+		stream->cancel();
+		return nullptr;
+	}
+
+	return stream;
+}
+
+void DjIaClient::cancelPendingRequests()
+{
+	cancelled.store(true);
+	std::lock_guard<std::mutex> lock(streamsMutex);
+	for (auto &weak : activeStreams)
+	{
+		if (auto s = weak.lock())
+			s->cancel();
+	}
+	activeStreams.clear();
+}
+
 DjIaClient::CreditsInfo DjIaClient::checkCredits(int timeoutMS)
 {
 	CreditsInfo result;
-
 	try
 	{
-		juce::String currentBaseUrl;
-		juce::String currentApiKey;
+		if (cancelled.load())
+			throw std::runtime_error("Cancelled");
 
+		juce::String currentBaseUrl, currentApiKey;
 		{
 			std::lock_guard<std::mutex> lock(mutex);
 			currentBaseUrl = baseUrl;
 			currentApiKey = apiKey;
 		}
-
 		if (currentBaseUrl.isEmpty())
-		{
 			throw std::runtime_error("Server URL not configured");
-		}
 
 		juce::String headerString = "Content-Type: application/json\n";
 		if (currentApiKey.isNotEmpty())
-		{
 			headerString += "X-API-Key: " + currentApiKey + "\n";
-		}
-
-		int statusCode = 0;
-		juce::StringPairArray responseHeaders;
 
 		auto url = juce::URL(currentBaseUrl + "/auth/credits/check/vst");
-		auto options = juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-		                   .withStatusCode(&statusCode)
-		                   .withResponseHeaders(&responseHeaders)
-		                   .withExtraHeaders(headerString)
-		                   .withConnectionTimeoutMs(timeoutMS);
+		auto stream = std::shared_ptr<juce::WebInputStream>(new juce::WebInputStream(url, false));
+		stream->withExtraHeaders(headerString);
+		stream->withConnectionTimeout(timeoutMS);
 
-		auto response = url.createInputStream(options);
-
-		if (!response)
 		{
+			std::lock_guard<std::mutex> lock(streamsMutex);
+			if (cancelled.load())
+				throw std::runtime_error("Cancelled");
+			activeStreams.push_back(stream);
+		}
+
+		if (!stream->connect(nullptr))
 			throw std::runtime_error("Cannot connect to server");
-		}
 
+		int statusCode = stream->getStatusCode();
 		if (statusCode != 200)
-		{
 			throw std::runtime_error("HTTP Error " + std::to_string(statusCode));
-		}
 
-		juce::String responseText = response->readEntireStreamAsString();
+		juce::String responseText = stream->readEntireStreamAsString();
+
+		if (cancelled.load())
+			throw std::runtime_error("Cancelled during read");
 
 		auto jsonResponse = juce::JSON::parse(responseText);
-
 		if (jsonResponse.isObject())
 		{
 			auto obj = jsonResponse.getDynamicObject();
-
 			result.creditsRemaining = obj->getProperty("credits_remaining");
 			result.creditsTotal = obj->getProperty("credits_total");
 			result.canGenerateStandard = obj->getProperty("can_generate_standard");
@@ -93,16 +127,13 @@ DjIaClient::CreditsInfo DjIaClient::checkCredits(int timeoutMS)
 			result.success = true;
 		}
 		else
-		{
 			throw std::runtime_error("Invalid JSON response");
-		}
 	}
 	catch (const std::exception &e)
 	{
 		result.success = false;
 		result.errorMessage = e.what();
 	}
-
 	return result;
 }
 

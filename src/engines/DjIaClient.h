@@ -57,9 +57,17 @@ class DjIaClient
 	void setBaseUrl(const juce::String &newBaseUrl);
 	CreditsInfo checkCredits(int timeoutMS = 10000);
 	LoopResponse generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS, bool bypassLLM);
+	void cancelPendingRequests();
 
   private:
 	mutable std::mutex mutex;
 	juce::String apiKey;
 	juce::String baseUrl;
+
+	std::mutex streamsMutex;
+	std::vector<std::weak_ptr<juce::WebInputStream>> activeStreams;
+	std::atomic<bool> cancelled{false};
+
+	std::shared_ptr<juce::WebInputStream> createTrackedStream(const juce::URL &url,
+	                                                          const juce::URL::InputStreamOptions &options);
 };
