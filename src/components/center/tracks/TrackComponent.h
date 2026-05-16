@@ -51,11 +51,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void itemDragExit(const SourceDetails &dragSourceDetails) override;
 	void itemDropped(const SourceDetails &dragSourceDetails) override;
 
-	TrackData *getTrack() const
-	{
-		return track;
-	}
-
 	std::function<void(const juce::String &)> onPreviewTrack;
 
 	juce::ComboBox modelSelector;
@@ -216,8 +211,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 
 	juce::StringArray promptPresets;
 
-	TrackData *track;
-
 	std::unique_ptr<WaveformDisplay> waveformDisplay;
 	std::unique_ptr<SequencerComponent> sequencer;
 	std::unique_ptr<DrawingCanvas> drawingCanvas;
@@ -297,16 +290,18 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
   protected:
 	juce::String getParameterPrefix() const override
 	{
-		if (!track || track->slotIndex == -1)
+		auto *t = getTrack();
+		if (!t || t->slotIndex == -1)
 			return {};
-		return "slot" + juce::String(track->slotIndex + 1);
+		return "slot" + juce::String(t->slotIndex + 1);
 	}
 
 	juce::String getMidiLearnDescriptionPrefix() const override
 	{
-		if (!track || track->slotIndex == -1)
+		auto *t = getTrack();
+		if (!t || t->slotIndex == -1)
 			return {};
-		return "Slot " + juce::String(track->slotIndex + 1) + " ";
+		return "Slot " + juce::String(t->slotIndex + 1) + " ";
 	}
 
 	void onParameterChangedUI(const juce::String &paramSuffix, float newValue) override;

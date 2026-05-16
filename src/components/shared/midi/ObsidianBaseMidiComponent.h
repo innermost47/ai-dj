@@ -1,6 +1,7 @@
 #pragma once
 #include "MidiLearnableComponents.h"
 #include "ObsidianBase.h"
+#include "TrackData.h"
 #include <JuceHeader.h>
 #include <functional>
 
@@ -13,9 +14,14 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 	~ObsidianBaseMidiComponent() override;
 
 	void parameterValueChanged(int parameterIndex, float newValue) final;
-	void parameterGestureChanged(int /*parameterIndex*/, bool /*gestureIsStarting*/) override
+	void parameterGestureChanged(int /*parameterIndex*/, bool /*gestureIsStarting*/) override {};
+
+	TrackData *getTrack() const
 	{
+		return track.get();
 	}
+
+	juce::WeakReference<TrackData> track;
 
   protected:
 	virtual juce::String getParameterPrefix() const

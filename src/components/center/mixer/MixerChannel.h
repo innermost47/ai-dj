@@ -20,7 +20,6 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 		return trackId;
 	}
 	juce::Label trackNameLabel;
-	TrackData *track;
 
 	void updateFromTrackData();
 	void updateModelUI();
@@ -106,16 +105,18 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
   protected:
 	juce::String getParameterPrefix() const override
 	{
-		if (!track || track->slotIndex == -1)
+		auto *t = track.get();
+		if (!t || t->slotIndex == -1)
 			return {};
-		return "slot" + juce::String(track->slotIndex + 1);
+		return "slot" + juce::String(t->slotIndex + 1);
 	}
 
 	juce::String getMidiLearnDescriptionPrefix() const override
 	{
-		if (!track || track->slotIndex == -1)
+		auto *t = track.get();
+		if (!t || t->slotIndex == -1)
 			return {};
-		return "Slot " + juce::String(track->slotIndex + 1) + " ";
+		return "Slot " + juce::String(t->slotIndex + 1) + " ";
 	}
 	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
 

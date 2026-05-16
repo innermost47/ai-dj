@@ -150,9 +150,9 @@ static TrackData *getTrackBySlot(DjIaVstProcessor &processor, int slotIndex)
 {
 	for (const auto &id : processor.getAllTrackIds())
 	{
-		auto *track = processor.getTrack(id);
-		if (track && track->slotIndex == slotIndex)
-			return track;
+		auto *trackLocal = processor.getTrack(id);
+		if (trackLocal && trackLocal->slotIndex == slotIndex)
+			return trackLocal;
 	}
 	return nullptr;
 }
@@ -278,13 +278,13 @@ void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics &g) const
 	if (curveButtonsRowBounds.isEmpty())
 		return;
 
-	auto track = curveButtonsRowBounds.toFloat();
+	auto sliderTrack = curveButtonsRowBounds.toFloat();
 
 	g.setColour(juce::Colours::black.withAlpha(0.4f));
-	g.fillRoundedRectangle(track, ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(sliderTrack, ObsidianSizes::CORNER);
 
 	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(track.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
+	g.drawRoundedRectangle(sliderTrack.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
 
 	int activeMode = audioProcessor.getCrossfaderCurveMode();
 	juce::Rectangle<int> activeBounds;

@@ -31,6 +31,7 @@ if(MSVC)
         /Qpar          
         /arch:AVX2  
         /WX-
+        /w14265
     )
     
     message(STATUS "MSVC optimizations enabled for Release builds")

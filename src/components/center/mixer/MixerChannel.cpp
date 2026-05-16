@@ -3,7 +3,7 @@
 #include <string>
 
 MixerChannel::MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData)
-    : trackId(trackId), ObsidianBaseMidiComponent(processor), track(nullptr)
+    : ObsidianBaseMidiComponent(processor), trackId(trackId)
 {
 	setupUI();
 	setTrackData(trackData);
@@ -37,17 +37,24 @@ void MixerChannel::cleanup()
 
 	stopTimer();
 
+	if (auto *t = getTrack())
+	{
+		t->onPlayStateChanged = nullptr;
+		t->onArmedStateChanged = nullptr;
+		t->onArmedToStopStateChanged = nullptr;
+	}
 	track = nullptr;
 }
 
 void MixerChannel::setTrackData(TrackData *trackData)
 {
 	track = trackData;
-	if (track && track->slotIndex != -1)
+	auto *t = getTrack();
+	if (t && t->slotIndex != -1)
 	{
 		wireParameters();
 		juce::WeakReference<MixerChannel> weakThis(this);
-		track->onPlayStateChanged = [weakThis](bool /*isPlaying*/)
+		t->onPlayStateChanged = [weakThis](bool /*isPlaying*/)
 		{
 			if (weakThis != nullptr)
 			{
@@ -61,7 +68,7 @@ void MixerChannel::setTrackData(TrackData *trackData)
 				    });
 			}
 		};
-		track->onArmedStateChanged = [weakThis](bool /*isArmed*/)
+		t->onArmedStateChanged = [weakThis](bool /*isArmed*/)
 		{
 			if (weakThis != nullptr)
 			{
@@ -77,7 +84,7 @@ void MixerChannel::setTrackData(TrackData *trackData)
 			}
 		};
 
-		track->onArmedToStopStateChanged = [weakThis](bool /*isArmedToStop*/)
+		t->onArmedToStopStateChanged = [weakThis](bool /*isArmedToStop*/)
 		{
 			if (weakThis != nullptr)
 			{
@@ -87,7 +94,7 @@ void MixerChannel::setTrackData(TrackData *trackData)
 					    if (weakThis != nullptr)
 					    {
 						    bool allStepsAreFalse = true;
-						    auto &seqData = weakThis->track->getCurrentSequencerData();
+						    auto &seqData = weakThis->getTrack()->getCurrentSequencerData();
 						    for (const auto &measure : seqData.steps)
 						    {
 							    for (bool step : measure)
@@ -151,21 +158,32 @@ void MixerChannel::wireParameters()
 
 void MixerChannel::stopTrackImmediatly()
 {
-	track->pendingAction = TrackData::PendingAction::None;
-	track->isArmed.store(false);
-	track->isArmedToStop.store(false);
-	track->isPlaying.store(false);
-	track->isCurrentlyPlaying.store(false);
-	playButton.setToggleState(false, juce::dontSendNotification);
-	playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
-	stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
-	playButton.repaint();
-	stopButton.repaint();
+	auto *t = getTrack();
+	if (t)
+	{
+		t->pendingAction = TrackData::PendingAction::None;
+		t->isArmed.store(false);
+		t->isArmedToStop.store(false);
+		t->isPlaying.store(false);
+		t->isCurrentlyPlaying.store(false);
+		playButton.setToggleState(false, juce::dontSendNotification);
+		playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
+		stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
+		playButton.repaint();
+		stopButton.repaint();
+	}
 }
 
 void MixerChannel::timerCallback()
 {
 	bool shouldContinueTimer = false;
+
+	auto *t = getTrack();
+	if (!t)
+	{
+		stopTimer();
+		return;
+	}
 
 	if (isGenerating)
 	{
@@ -174,7 +192,7 @@ void MixerChannel::timerCallback()
 		shouldContinueTimer = true;
 	}
 
-	if (isBlinking && track && track->isArmedToStop)
+	if (isBlinking && t && t->isArmedToStop)
 	{
 		stopBlinkState = !stopBlinkState;
 		stopButton.setColour(juce::TextButton::buttonColourId,
@@ -195,7 +213,6 @@ void MixerChannel::timerCallback()
 
 void MixerChannel::updateVUMeters()
 {
-
 	if (juce::MessageManager::getInstanceWithoutCreating() == nullptr)
 		return;
 
@@ -212,10 +229,12 @@ void MixerChannel::updateVUMeters()
 
 void MixerChannel::updateFromTrackData()
 {
-	if (!track || track->slotIndex == -1)
+
+	auto *t = getTrack();
+	if (!t || t->slotIndex == -1)
 		return;
 
-	trackNameLabel.setText(track->trackName, juce::dontSendNotification);
+	trackNameLabel.setText(t->trackName, juce::dontSendNotification);
 
 	syncBindingsFromParameters();
 
@@ -225,10 +244,11 @@ void MixerChannel::updateFromTrackData()
 
 void MixerChannel::updateModelUI()
 {
-	if (!track)
+	auto *t = getTrack();
+	if (!t)
 		return;
 
-	auto &currentPage = track->getCurrentPage();
+	auto &currentPage = t->getCurrentPage();
 	auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
 	bool darkText = modelColour.getBrightness() > 0.6f;
 	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
@@ -246,6 +266,7 @@ void MixerChannel::updateModelUI()
 
 void MixerChannel::paint(juce::Graphics &g)
 {
+	auto *t = getTrack();
 	auto bounds = getLocalBounds();
 
 	g.setColour(ColourPalette::backgroundMid.withAlpha(ObsidianShades::ALPHA_06));
@@ -260,9 +281,9 @@ void MixerChannel::paint(juce::Graphics &g)
 	juce::Colour borderColour;
 	float borderWidth;
 
-	if (isGenerating)
+	if (isGenerating && t)
 	{
-		auto &currentPage = track->getCurrentPage();
+		auto &currentPage = t->getCurrentPage();
 		auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
 		borderColour = blinkState ? modelColour.brighter(0.4f) : modelColour.darker(0.4f);
 		borderWidth = 3.0f;
@@ -337,11 +358,11 @@ void MixerChannel::resized()
 
 void MixerChannel::updateVUMeter()
 {
-	if (track)
+	auto *t = getTrack();
+	if (t)
 	{
-		auto &currentPage = track->getCurrentPage();
-		vuMeter.updateMeter(&currentPage.audioBuffer, track->readPosition.load(), track->volume.load(),
-		                    track->isPlaying.load());
+		auto &currentPage = t->getCurrentPage();
+		vuMeter.updateMeter(&currentPage.audioBuffer, t->readPosition.load(), t->volume.load(), t->isPlaying.load());
 	}
 	else
 	{
@@ -494,10 +515,11 @@ void MixerChannel::addEventListeners()
 
 	playButton.onClick = [this]()
 	{
-		if (!track)
+		auto *t = getTrack();
+		if (!t)
 			return;
 
-		bool currentlyActive = track->isArmed.load() || track->isCurrentlyPlaying.load();
+		bool currentlyActive = t->isArmed.load() || t->isCurrentlyPlaying.load();
 		bool desiredState = !currentlyActive;
 
 		applyPlayState(desiredState);
@@ -508,7 +530,8 @@ void MixerChannel::addEventListeners()
 
 	stopButton.onClick = [this]()
 	{
-		if (!track)
+		auto *t = getTrack();
+		if (!t)
 			return;
 		applyPlayState(false);
 
@@ -519,10 +542,11 @@ void MixerChannel::addEventListeners()
 
 bool MixerChannel::allSequencerStepsAreFalse() const
 {
-	if (!track)
+	auto *t = getTrack();
+	if (!t)
 		return true;
 
-	auto &seqData = track->getCurrentSequencerData();
+	auto &seqData = t->getCurrentSequencerData();
 	for (const auto &measure : seqData.steps)
 		for (bool step : measure)
 			if (step)
@@ -532,41 +556,42 @@ bool MixerChannel::allSequencerStepsAreFalse() const
 
 void MixerChannel::applyPlayState(bool shouldArm)
 {
-	if (!track)
+	auto *t = getTrack();
+	if (!t)
 		return;
 	juce::ScopedValueSetter<bool> guard(isApplyingPlayState, true);
 
-	auto &currentPage = track->getCurrentPage();
+	auto &currentPage = t->getCurrentPage();
 	if (currentPage.numSamples <= 0)
 	{
 		playButton.setToggleState(false, juce::dontSendNotification);
 		return;
 	}
 
-	const bool isPlaying = track->isCurrentlyPlaying.load();
+	const bool isPlaying = t->isCurrentlyPlaying.load();
 	const bool emptySeq = allSequencerStepsAreFalse();
 
 	if (shouldArm && !isPlaying)
 	{
 		if (emptySeq)
 		{
-			track->setArmedToStop(false);
-			track->pendingAction = TrackData::PendingAction::None;
+			t->setArmedToStop(false);
+			t->pendingAction = TrackData::PendingAction::None;
 		}
-		track->setArmed(true);
+		t->setArmed(true);
 	}
 	else if (!shouldArm && !isPlaying)
 	{
-		track->pendingAction = TrackData::PendingAction::None;
-		track->setArmed(false);
+		t->pendingAction = TrackData::PendingAction::None;
+		t->setArmed(false);
 	}
 	else if (!shouldArm && isPlaying && !emptySeq)
 	{
-		if (track->isArmedToStop.load())
+		if (t->isArmedToStop.load())
 			return;
-		track->pendingAction = TrackData::PendingAction::StopOnNextMeasure;
-		track->setArmed(false);
-		track->setArmedToStop(true);
+		t->pendingAction = TrackData::PendingAction::StopOnNextMeasure;
+		t->setArmed(false);
+		t->setArmedToStop(true);
 		isBlinking = true;
 		startTimer(300);
 	}
@@ -586,13 +611,14 @@ void MixerChannel::setTrackName(const juce::String &name)
 
 void MixerChannel::updateButtonColors()
 {
-	if (!track)
+	auto *t = getTrack();
+	if (!t)
 		return;
 
-	bool isArmed = track->isArmed.load();
-	bool isPlaying = track->isCurrentlyPlaying.load();
-	bool isMuted = track->isMuted.load();
-	bool isSolo = track->isSolo.load();
+	bool isArmed = t->isArmed.load();
+	bool isPlaying = t->isCurrentlyPlaying.load();
+	bool isMuted = t->isMuted.load();
+	bool isSolo = t->isSolo.load();
 
 	playButton.setToggleState(isArmed || isPlaying, juce::dontSendNotification);
 	if (isPlaying)
@@ -649,23 +675,24 @@ void MixerChannel::stopGeneratingAnimation()
 
 void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float newValue)
 {
-	if (!track)
+	auto *t = getTrack();
+	if (!t)
 		return;
 	if (isApplyingPlayState)
 		return;
 
 	if (paramSuffix == "Mute")
-		track->isMuted = newValue > 0.5f;
+		t->isMuted.store(newValue > 0.5f);
 	else if (paramSuffix == "Solo")
-		track->isSolo = newValue > 0.5f;
+		t->isSolo.store(newValue > 0.5f);
 	else if (paramSuffix == "Play")
 		applyPlayState(newValue > 0.5f);
 	else if (paramSuffix == "DelaySend")
 	{
-		track->delaySend = newValue;
+		t->delaySend.store(newValue);
 	}
 	else if (paramSuffix == "ReverbSend")
 	{
-		track->reverbSend = newValue;
+		t->reverbSend.store(newValue);
 	}
 }

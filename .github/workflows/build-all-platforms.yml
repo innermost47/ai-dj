@@ -38,7 +38,13 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-Windows-VST3
-          path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
+          path: build/ObsidianNeuralVST_artefacts/Release/VST3/
+
+      - name: Upload Windows Standalone
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ObsidianNeural-Windows-Standalone
+          path: build/ObsidianNeuralVST_artefacts/Release/Standalone/
 
   build-macos-universal:
     name: Build macOS Universal (VST3 + AU)
@@ -68,16 +74,17 @@ jobs:
       - name: Verify build
         run: |
           echo "=== VST3 Build ==="
-          lipo -info vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural
+          lipo -info build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural
 
           echo ""
           echo "=== AU Build ==="
-          lipo -info vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/OBSIDIAN-Neural
+          lipo -info build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/OBSIDIAN-Neural
 
       - name: Fix macOS permissions
         run: |
-          chmod +x vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/*
-          chmod +x vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/*
+          chmod +x build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/*
+          chmod +x build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/*
+          chmod +x build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/*
 
       - name: Import Code Signing Certificate
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -101,35 +108,49 @@ jobs:
           # Sign VST3
           codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
             --timestamp --options runtime --deep \
-            vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+            build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
 
           # Sign AU
           codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
             --timestamp --options runtime --deep \
-            vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+            build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+
+          # Sign Standalone
+          codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
+             --timestamp --options runtime --deep \
+             build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
 
       - name: Verify signatures
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "=== VST3 Signature ==="
-          codesign --verify --verbose vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+          codesign --verify --verbose build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
 
           echo ""
           echo "=== AU Signature ==="
-          codesign --verify --verbose vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+          codesign --verify --verbose build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+
+          echo ""
+          echo "=== Standalone Signature ==="
+          codesign --verify --verbose build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
 
       - name: Create ZIPs for notarization
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           # VST3
           ditto -c -k --keepParent \
-            vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3 \
+            build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3 \
             OBSIDIAN-Neural-VST3.zip
 
           # AU
           ditto -c -k --keepParent \
-            vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component \
+            build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component \
             OBSIDIAN-Neural-AU.zip
+
+          # Standalone
+          ditto -c -k --keepParent \
+            build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app \
+            OBSIDIAN-Neural-Standalone.zip
 
       - name: Notarize VST3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -157,23 +178,43 @@ jobs:
             --team-id "$APPLE_TEAM_ID" \
             --wait
 
+      - name: Notarize Standalone
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit OBSIDIAN-Neural-Standalone.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
       - name: Staple VST3 & AU
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          xcrun stapler staple vst/build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
-          xcrun stapler staple vst/build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+          xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+          xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+          xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
 
       - name: Upload macOS VST3
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-macOS-Universal-VST3
-          path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
+          path: build/ObsidianNeuralVST_artefacts/Release/VST3/
 
       - name: Upload macOS AU
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-macOS-Universal-AU
-          path: vst/build/ObsidianNeuralVST_artefacts/Release/AU/
+          path: build/ObsidianNeuralVST_artefacts/Release/AU/
+
+      - name: Upload macOS Standalone
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ObsidianNeural-macOS-Universal-Standalone
+          path: build/ObsidianNeuralVST_artefacts/Release/Standalone/
 
   build-linux:
     runs-on: ubuntu-latest
@@ -202,7 +243,13 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-Linux-VST3
-          path: vst/build/ObsidianNeuralVST_artefacts/Release/VST3/
+          path: build/ObsidianNeuralVST_artefacts/Release/VST3/
+      
+      - name: Upload Linux Standalone
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ObsidianNeural-Linux-Standalone
+          path: build/ObsidianNeuralVST_artefacts/Release/Standalone/
 
   create-release:
     needs: [build-windows, build-macos-universal, build-linux]
@@ -224,6 +271,13 @@ jobs:
             cd ..
           fi
 
+          # Windows Standalone
+          if [ -d "ObsidianNeural-Windows-Standalone" ]; then
+            cd ObsidianNeural-Windows-Standalone
+            zip -r ../OBSIDIAN-Neural-Windows-Standalone.zip .
+            cd ..
+          fi
+
           # macOS VST3
           if [ -d "ObsidianNeural-macOS-Universal-VST3" ]; then
             cd ObsidianNeural-macOS-Universal-VST3
@@ -238,10 +292,24 @@ jobs:
             cd ..
           fi
 
+          # macOS Standalone
+          if [ -d "ObsidianNeural-macOS-Universal-Standalone" ]; then
+            cd ObsidianNeural-macOS-Universal-Standalone
+            zip -r ../OBSIDIAN-Neural-macOS-Standalone.zip .
+            cd ..
+          fi
+
           # Linux VST3
           if [ -d "ObsidianNeural-Linux-VST3" ]; then
             cd ObsidianNeural-Linux-VST3
             tar -czf ../OBSIDIAN-Neural-Linux-VST3.tar.gz .
+            cd ..
+          fi
+
+          # Linux Standalone
+          if [ -d "ObsidianNeural-Linux-Standalone" ]; then
+            cd ObsidianNeural-Linux-Standalone
+            tar -czf ../OBSIDIAN-Neural-Linux-Standalone.tar.gz .
             cd ..
           fi
 
@@ -253,62 +321,55 @@ jobs:
           body: |
             # 🎵 OBSIDIAN-Neural Release v${{ github.run_number }}
 
+            Real-time AI music generation for your DAW — or Standalone.
+
             ## 📥 Installation
 
-            ### 🎯 **Cloud API** (Recommended - No GPU Required)
+            All builds use the Cloud API. Get your API key at [obsidian-neural.com](https://obsidian-neural.com).
 
-            #### **Windows**
+            ### **Windows**
+
+            **Plugin (VST3)**
             1. Download `OBSIDIAN-Neural-Windows-VST3.zip`
             2. Extract to `C:\Program Files\Common Files\VST3\`
-            3. Get your API key at [obsidian-neural.com](https://obsidian-neural.com)
-            4. Load in your DAW
+            3. Load in your DAW
 
-            #### **macOS** (10.15 Catalina → 15.0 Sequoia)
+            **Standalone**
+            1. Download `OBSIDIAN-Neural-Windows-Standalone.zip`
+            2. Extract anywhere and run `OBSIDIAN-Neural.exe`
 
-            **For Ableton, Bitwig, FL Studio, Reaper:**
+            ### **macOS** (10.15 Catalina → 15.0 Sequoia)
+
+            **VST3 (Ableton, Bitwig, FL Studio, Reaper)**
             1. Download `OBSIDIAN-Neural-macOS-VST3.zip`
-            2. Extract and double-click `OBSIDIAN-Neural.vst3` to install
-            3. Or manually copy to `~/Library/Audio/Plug-Ins/VST3/`
+            2. Extract and double-click `OBSIDIAN-Neural.vst3`, or copy to `~/Library/Audio/Plug-Ins/VST3/`
 
-            **For Logic Pro, GarageBand:**
+            **AU (Logic Pro, GarageBand)**
             1. Download `OBSIDIAN-Neural-macOS-AU.zip`
-            2. Extract and double-click `OBSIDIAN-Neural.component` to install
-            3. Or manually copy to `~/Library/Audio/Plug-Ins/Components/`
+            2. Extract and double-click `OBSIDIAN-Neural.component`, or copy to `~/Library/Audio/Plug-Ins/Components/`
 
-            💡 **Logic Pro users: Use the AU version for best compatibility**
+            💡 Logic Pro users: use the AU version for best compatibility.
 
-            Get your API key at [obsidian-neural.com](https://obsidian-neural.com)
+            **Standalone**
+            1. Download `OBSIDIAN-Neural-macOS-Standalone.zip`
+            2. Extract and drag `OBSIDIAN-Neural.app` to your Applications folder
 
-            #### **Linux**
+            ### **Linux**
+
+            **Plugin (VST3)**
             1. Download `OBSIDIAN-Neural-Linux-VST3.tar.gz`
             2. Extract to `~/.vst3/`
-            3. Get your API key at [obsidian-neural.com](https://obsidian-neural.com)
-            4. Load in your DAW
+            3. Load in your DAW
 
-            ---
-
-            ### 🔧 **Self-Hosted Server** (Advanced)
-
-            **Requirements:** NVIDIA GPU with CUDA, Python 3.10+
-            ```bash
-            # Clone the repository
-            git clone https://github.com/innermost47/ai-dj.git
-            cd ai-dj
-
-            # Run the installer
-            python installer.py
-            ```
-
-            The installer will guide you through the setup process and start the local server.
+            **Standalone**
+            1. Download `OBSIDIAN-Neural-Linux-Standalone.tar.gz`
+            2. Extract anywhere and run the binary
 
             ---
 
             ## 📚 Resources
 
-            - 📘 [Getting Started](https://obsidian-neural.com/documentation.html?page=getting-started)
-            - 🚀 [First Steps](https://obsidian-neural.com/documentation.html?page=first-step)
-            - 🎵 [Bank Management](https://obsidian-neural.com/documentation.html?page=bank-management)
-            - 🎨 [Draw to Audio](https://obsidian-neural.com/documentation.html?page=draw-to-audio)
+            - 🌐 [obsidian-neural.com](https://obsidian-neural.com) — Get your API key
             - 🎓 [Video Tutorial](https://www.youtube.com/watch?v=l4KMC5adxVA)
             - 💬 [Discussions](https://github.com/innermost47/ai-dj/discussions)
             - 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
@@ -319,6 +380,9 @@ jobs:
 
           files: |
             OBSIDIAN-Neural-Windows-VST3.zip
+            OBSIDIAN-Neural-Windows-Standalone.zip
             OBSIDIAN-Neural-macOS-VST3.zip
             OBSIDIAN-Neural-macOS-AU.zip
+            OBSIDIAN-Neural-macOS-Standalone.zip
             OBSIDIAN-Neural-Linux-VST3.tar.gz
+            OBSIDIAN-Neural-Linux-Standalone.tar.gz
