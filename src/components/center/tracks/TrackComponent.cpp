@@ -39,6 +39,8 @@ void TrackComponent::setTrackData(TrackData *trackData)
 	auto *t = getTrack();
 	if (!t)
 		return;
+	for (auto &state : lastPageStates)
+		state = PageButtonState{};
 	setupPagesUI();
 	if (t && t->slotIndex != -1)
 	{
@@ -323,39 +325,6 @@ void TrackComponent::setupAdsrKnobs()
 	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.0f, "ADSR Release time (seconds)");
 
 	adsrSustainKnob.setSkewFactor(1.0);
-
-	adsrAttackKnob.onValueChange = [this]()
-	{
-		auto *t = getTrack();
-		if (!t)
-			return;
-		t->getCurrentPage().adsrAttack = (float)adsrAttackKnob.getValue();
-		syncAdsrToWaveform();
-	};
-	adsrDecayKnob.onValueChange = [this]()
-	{
-		auto *t = getTrack();
-		if (!t)
-			return;
-		t->getCurrentPage().adsrDecay = (float)adsrDecayKnob.getValue();
-		syncAdsrToWaveform();
-	};
-	adsrSustainKnob.onValueChange = [this]()
-	{
-		auto *t = getTrack();
-		if (!t)
-			return;
-		t->getCurrentPage().adsrSustain = (float)adsrSustainKnob.getValue();
-		syncAdsrToWaveform();
-	};
-	adsrReleaseKnob.onValueChange = [this]()
-	{
-		auto *t = getTrack();
-		if (!t)
-			return;
-		t->getCurrentPage().adsrRelease = (float)adsrReleaseKnob.getValue();
-		syncAdsrToWaveform();
-	};
 }
 
 void TrackComponent::updateAdsrKnobsFromPage()
@@ -799,10 +768,7 @@ void TrackComponent::performPageChange(int pageIndex)
 		stopTimer();
 	}
 
-	updatePagesDisplay();
 	updateFromTrackData();
-	updateAdsrKnobsFromPage();
-	updateModelUI();
 
 	if (sequencer)
 	{

@@ -851,7 +851,6 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 
 			    processor->getStateManager().loadFromFile(file);
 			    processor->suspendProcessing(false);
-			    editor->uiTrackManager->refreshTrackComponents();
 			    editor->updateUIFromProcessor();
 			    editor->uiPresetManager->notifyTracksPromptUpdate();
 			    editor->uiLayoutManager->getRightPanelWrapper()->getSendsPanel()->syncParams();
