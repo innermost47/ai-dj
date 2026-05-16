@@ -182,23 +182,27 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/collapse.svg
         src/assets/icons/cpu.svg
         src/assets/icons/cpuregular.svg
+        src/assets/icons/dice.svg
         src/assets/icons/dj.svg
         src/assets/icons/download.svg
         src/assets/icons/eq.svg
         src/assets/icons/eraser.svg
         src/assets/icons/expand.svg
+        src/assets/icons/export.svg
         src/assets/icons/file-audio.svg
         src/assets/icons/folder-closed.svg
         src/assets/icons/folder-open.svg
         src/assets/icons/folder-plus.svg
         src/assets/icons/gear.svg
         src/assets/icons/grid.svg
+        src/assets/icons/hand-grabbing.svg
         src/assets/icons/headphones.svg
         src/assets/icons/info.svg
         src/assets/icons/info-fill.svg
         src/assets/icons/left.svg
         src/assets/icons/lin.svg
         src/assets/icons/lock-fill.svg
+        src/assets/icons/map.svg
         src/assets/icons/music-notes.svg
         src/assets/icons/mute.svg
         src/assets/icons/pause.svg
@@ -222,6 +226,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/upload.svg
         src/assets/icons/volume.svg
         src/assets/icons/warning.svg
+        src/assets/icons/waveform.svg
         src/assets/icons/wind.svg
         src/assets/icons/x.svg
         src/assets/icons/zap.svg
@@ -248,6 +253,9 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/left/samplePanel/SampleBank.cpp
     src/components/left/samplePanel/SampleBankItem.cpp
     src/components/left/samplePanel/SampleBankPanel.cpp
+    src/components/onboarding/ConceptRowComponent.cpp 
+    src/components/onboarding/OnboardingStep.cpp
+    src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
     src/components/right/LCDScreen.cpp
     src/components/right/MasterChannel.cpp
@@ -315,6 +323,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/components/left
     src/components/left/promptPanel
     src/components/left/samplePanel
+    src/components/onboarding
     src/components/right
     src/components/shared
     src/components/shared/accordion

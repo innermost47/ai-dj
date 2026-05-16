@@ -1,4 +1,5 @@
 #include "ConfigComponent.h"
+#include "OnboardingStepData.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "ScaleAndDuration.h"
@@ -150,7 +151,13 @@ void ConfigComponent::addEventListeners()
 
 	openMidiEditorButton.onClick = [this] { editor.uiModalManager->openMidiMappingEditor(); };
 
-	helpButton.onClick = [this]() { editor.uiModalManager->showOnboardingStep(1); };
+	helpButton.onClick = [this]()
+	{
+		const auto variant = audioProcessor.wrapperType == juce::AudioProcessor::wrapperType_Standalone
+		                         ? OnboardingVariant::Standalone
+		                         : OnboardingVariant::VST;
+		editor.uiModalManager->showOnboarding(variant);
+	};
 }
 
 void ConfigComponent::paint(juce::Graphics & /*g*/)

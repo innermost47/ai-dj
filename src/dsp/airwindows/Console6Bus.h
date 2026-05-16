@@ -4,12 +4,12 @@
 #include <cstdint>
 
 /**
- * Airwindows Console6Buss — Buss-side console emulation
+ * Airwindows Console6Buss - Buss-side console emulation
  * Original code by Chris Johnson (airwindows), MIT License
  * Inverse Square decode courtesy of torridgristle (MIT)
  *
  * Apply this on the master mix AFTER summing all Console6Channel-treated tracks.
- * The Channel encodes, the Buss decodes — together they create the analog console glue.
+ * The Channel encodes, the Buss decodes - together they create the analog console glue.
  */
 class Console6Buss
 {

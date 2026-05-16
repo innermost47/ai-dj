@@ -6,6 +6,8 @@
 
 namespace ObsidianSizes
 {
+inline constexpr int BASE_MODAL_WIDTH = 600;
+inline constexpr int BASE_MODAL_HEIGHT = 400;
 inline constexpr int GAP = 6;
 inline constexpr int GAP_8 = 8;
 inline constexpr int GAP_4 = 4;

@@ -4,7 +4,7 @@
 #include <cstdint>
 
 /**
- * Airwindows Channel6 — Channel-side console emulation
+ * Airwindows Channel6 - Channel-side console emulation
  * Original code by Chris Johnson (airwindows), MIT License
  * JUCE wrapper for OBSIDIAN Neural
  *
