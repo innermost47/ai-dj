@@ -57,17 +57,11 @@ void SampleBankItem::paint(juce::Graphics &g)
 		juce::String prompt = sampleEntry->originalPrompt;
 		const float maxWidth = (float)nameArea.getWidth();
 
-		juce::GlyphArrangement ga;
-		ga.addLineOfText(font, prompt, 0.0f, 0.0f);
-		float textWidth = ga.getBoundingBox(0, -1, true).getWidth();
-
-		if (textWidth > maxWidth)
+		if (juce::GlyphArrangement::getStringWidth(font, prompt) > maxWidth)
 		{
 			while (prompt.isNotEmpty())
 			{
-				ga.clear();
-				ga.addLineOfText(font, prompt + "...", 0.0f, 0.0f);
-				if (ga.getBoundingBox(0, -1, true).getWidth() <= maxWidth)
+				if (juce::GlyphArrangement::getStringWidth(font, prompt + "...") <= maxWidth)
 					break;
 				prompt = prompt.dropLastCharacters(1);
 			}

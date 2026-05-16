@@ -338,9 +338,7 @@ class PromptEditorContent : public ObsidianComponent
 				juce::Font kwFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
 				for (const auto &kw : group.keywords)
 				{
-					juce::GlyphArrangement ga;
-					ga.addLineOfText(kwFont, kw, 0.0f, 0.0f);
-					int textW = (int)ga.getBoundingBox(0, -1, true).getWidth();
+					int textW = (int)juce::GlyphArrangement::getStringWidth(kwFont, kw);
 					int w = textW + 28;
 
 					bool isOversized = (w > availableW);

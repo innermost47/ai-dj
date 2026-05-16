@@ -3,9 +3,7 @@
 
 static float measureTextWidth(const juce::Font &font, const juce::String &text)
 {
-	juce::GlyphArrangement ga;
-	ga.addLineOfText(font, text, 0.0f, 0.0f);
-	return ga.getBoundingBox(0, -1, true).getWidth();
+	return juce::GlyphArrangement::getStringWidth(font, text);
 }
 
 PromptBankItem::PromptBankItem(PromptBankEntry *entryIn) : entry(entryIn)

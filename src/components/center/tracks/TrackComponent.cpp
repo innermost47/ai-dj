@@ -37,11 +37,14 @@ void TrackComponent::setTrackData(TrackData *trackData)
 {
 	track = trackData;
 	auto *t = getTrack();
-	updateFromTrackData();
+	if (!t)
+		return;
+	setupPagesUI();
 	if (t && t->slotIndex != -1)
 	{
 		wireParameters();
 	}
+	updateFromTrackData();
 }
 
 bool TrackComponent::isWaveformVisible() const
@@ -1155,8 +1158,6 @@ void TrackComponent::setupUI()
 	{
 		pageButtons[i].setVisible(true);
 	}
-
-	setupPagesUI();
 
 	addAndMakeVisible(borderOverlay);
 }

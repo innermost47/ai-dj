@@ -356,9 +356,13 @@ void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
 	juce::WeakReference<TrackData> weakTrack(track);
 	track->onPageChanged = [this, weakTrack]()
 	{
+		if (isLoadingState.load())
+			return;
 		juce::MessageManager::callAsync(
 		    [this, weakTrack]()
 		    {
+			    if (isLoadingState.load())
+				    return;
 			    auto *t = weakTrack.get();
 			    if (!t || t->slotIndex < 0 || t->slotIndex >= 8)
 				    return;
