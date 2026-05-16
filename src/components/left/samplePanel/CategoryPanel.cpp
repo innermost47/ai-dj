@@ -65,7 +65,7 @@ void CategoryPanel::resized()
 
 	for (auto *tag : tags)
 	{
-		float textWidth = tagFont.getStringWidthFloat(tag->getButtonText());
+		int textWidth = (int)juce::GlyphArrangement::getStringWidth(tagFont, tag->getButtonText());
 		fb.items.add(
 		    juce::FlexItem(*tag).withWidth(textWidth + 30.0f).withHeight(32.0f).withMargin(juce::FlexItem::Margin(5)));
 	}
