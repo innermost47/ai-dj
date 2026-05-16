@@ -29,9 +29,9 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 				track->setCurrentPage(pageIndex);
 				if (!audioProcessor.getActiveEditor())
 				{
-					track->isPlaying = false;
-					track->isCurrentlyPlaying = false;
-					track->readPosition = 0.0;
+					track->isPlaying.store(false);
+					track->isCurrentlyPlaying.store(false);
+					track->readPosition.store(0.0);
 				}
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber),
 				                                                 MidiMapping::feedbackIdle);
@@ -91,8 +91,8 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 			}
 			else
 			{
-				track->pageChangePending = true;
-				track->pendingPageIndex = pageIndex;
+				track->pageChangePending.store(true);
+				track->pendingPageIndex.store(pageIndex);
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber),
 				                                                 MidiMapping::feedbackPending);
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber),
@@ -202,7 +202,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isArmed = arm;
 				track->isPlaying.store(false);
 				track->isCurrentlyPlaying = false;
-				track->readPosition = 0.0;
+				track->readPosition.store(0.0);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
 				seqData.stepAccumulator = 0.0;
@@ -223,16 +223,15 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 			if (track && track->isCurrentlyPlaying.load())
 			{
 				auto &seqData = track->getCurrentSequencerData();
-				track->isArmed = true;
-				track->isCurrentlyPlaying = false;
-				track->readPosition = 0.0;
+				track->isCurrentlyPlaying.store(false);
+				track->readPosition.store(0.0);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
 				seqData.stepAccumulator = 0.0;
 				track->customStepCounter = 0;
 				track->lastPpqPosition = -1.0;
 				seqData.isPlaying = false;
-				track->isArmed = false;
+				track->isArmed.store(false);
 				track->isPlaying.store(false);
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
 				                                                 MidiMapping::feedbackIdle);
@@ -357,8 +356,8 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 					    if (t)
 					    {
 						    t->setCurrentPage(targetPage);
-						    t->pageChangePending = false;
-						    t->pendingPageIndex = -1;
+						    t->pageChangePending.store(false);
+						    t->pendingPageIndex.store(-1);
 					    }
 				    }
 				    audioProcessor.getMidiManager().notifyPageChangedFeedback(slotNumber, targetPage);
@@ -389,7 +388,7 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 
 		if (!track->beatRepeatActive.load())
 		{
-			track->readPosition = 0.0;
+			track->readPosition.store(0.0);
 		}
 		track->setPlaying(true);
 		triggerSequencerStep(track);
@@ -412,7 +411,7 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 	{
 		if (!track->beatRepeatActive.load())
 		{
-			track->readPosition = 0.0;
+			track->readPosition.store(0.0);
 		}
 		audioProcessor.addPlayingTrack(track->midiNote, track->trackId);
 		juce::MidiMessage noteOn =
@@ -555,22 +554,22 @@ void SequencerManager::executePendingAction(TrackData *track)
 		{
 			if (!track->beatRepeatActive.load())
 			{
-				track->readPosition = 0.0;
+				track->readPosition.store(0.0);
 			}
 			auto &seqData = track->getCurrentSequencerData();
 			seqData.currentStep = 0;
 			seqData.currentMeasure = 0;
 			seqData.stepAccumulator = 0.0;
-			track->isCurrentlyPlaying = true;
+			track->isCurrentlyPlaying.store(true);
 			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
 			                                                 MidiMapping::feedbackActive);
 		}
 		break;
 
 	case TrackData::PendingAction::StopOnNextMeasure:
-		track->isPlaying = false;
-		track->isArmedToStop = false;
-		track->isCurrentlyPlaying = false;
+		track->isPlaying.store(false);
+		track->isArmedToStop.store(false);
+		track->isCurrentlyPlaying.store(false);
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
 		                                                 MidiMapping::feedbackIdle);
 		if (audioProcessor.onUIUpdateNeeded)

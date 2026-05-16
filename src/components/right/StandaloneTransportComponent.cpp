@@ -300,7 +300,7 @@ void StandaloneTransportComponent::setupUI()
 	{
 		audioProcessor.setLinkActive(linkButton.getToggleState());
 		juce::Component::SafePointer<StandaloneTransportComponent> safeThis(this);
-		juce::Timer::callAfterDelay(500,
+		juce::Timer::callAfterDelay(1000,
 		                            [safeThis]()
 		                            {
 			                            if (safeThis != nullptr)

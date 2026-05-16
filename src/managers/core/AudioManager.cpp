@@ -958,7 +958,7 @@ void AudioManager::stopTrackPreview(const juce::String &trackId)
 	if (track)
 	{
 		track->isPlaying.store(false);
-		track->readPosition = 0.0;
+		track->readPosition.store(0.0);
 		track->isPreviewMode.store(false);
 		track->previewEndPending.store(false);
 	}

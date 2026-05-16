@@ -152,10 +152,10 @@ void MixerChannel::wireParameters()
 void MixerChannel::stopTrackImmediatly()
 {
 	track->pendingAction = TrackData::PendingAction::None;
-	track->isArmed = false;
-	track->isArmedToStop = false;
-	track->isPlaying = false;
-	track->isCurrentlyPlaying = false;
+	track->isArmed.store(false);
+	track->isArmedToStop.store(false);
+	track->isPlaying.store(false);
+	track->isCurrentlyPlaying.store(false);
 	playButton.setToggleState(false, juce::dontSendNotification);
 	playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
 	stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);

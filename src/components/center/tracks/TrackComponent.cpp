@@ -691,8 +691,8 @@ void TrackComponent::onPageSelected(int pageIndex)
 
 	if (track->pageChangePending.load() && track->pendingPageIndex.load() == pageIndex)
 	{
-		track->pageChangePending = false;
-		track->pendingPageIndex = -1;
+		track->pageChangePending.store(false);
+		track->pendingPageIndex.store(-1);
 		stopTimer();
 		lastPageStates[pageIndex] = PageButtonState{};
 		updatePagesDisplay();
@@ -732,27 +732,29 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	track->setCurrentPage(pageIndex);
 
-	track->isPlaying = wasPlaying;
-	track->isArmed = wasArmed;
-	track->isArmedToStop = wasArmedToStop;
-	track->isCurrentlyPlaying = wasCurrentlyPlaying;
-	track->readPosition = 0.0;
+	track->isPlaying.store(wasPlaying);
+	track->isArmed.store(wasArmed);
+	track->isArmedToStop.store(wasArmedToStop);
+	track->isCurrentlyPlaying.store(wasCurrentlyPlaying);
+	track->readPosition.store(0.0);
 
 	const auto &newPage = track->getCurrentPage();
 
-	if (newPage.numSamples == 0 && wasPlaying)
+	if (newPage.numSamples == 0)
 	{
-		track->isPlaying = false;
-		track->isCurrentlyPlaying = false;
-		track->readPosition = 0.0;
+		track->isPlaying.store(false);
+		track->isCurrentlyPlaying.store(false);
+		track->isArmed.store(false);
+		track->isArmedToStop.store(false);
+		track->readPosition.store(0.0);
 		if (track->onPlayStateChanged)
 		{
 			track->onPlayStateChanged(false);
 		}
 	}
 
-	track->pageChangePending = false;
-	track->pendingPageIndex = -1;
+	track->pageChangePending.store(false);
+	track->pendingPageIndex.store(-1);
 
 	if (!isGenerating && !track->pageChangePending.load())
 	{

@@ -314,10 +314,6 @@ struct TrackData
 		if (currentPageIndex.load() == pageIndex)
 			return;
 
-		DBG("[setCurrentPage] slot=" << slotIndex << " from page " << currentPageIndex.load() << " to page "
-		                             << pageIndex << " | new page bpmOffset=" << pages[pageIndex].bpmOffset.load()
-		                             << " fineOffset=" << pages[pageIndex].fineOffset.load());
-
 		currentPageIndex.store(pageIndex);
 
 		if (onPageChanged)

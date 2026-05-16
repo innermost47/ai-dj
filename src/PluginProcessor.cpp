@@ -748,7 +748,7 @@ void DjIaVstProcessor::previewTrack(const juce::String &trackId)
 		return;
 	}
 
-	track->readPosition = 0.0;
+	track->readPosition.store(0.0);
 	track->isPlaying.store(true);
 	track->isPreviewMode.store(true);
 	track->previewEndPending.store(false);
@@ -936,7 +936,7 @@ void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, in
 	{
 		if (!track->beatRepeatActive.load())
 		{
-			track->readPosition = 0.0;
+			track->readPosition.store(0.0);
 		}
 		track->setPlaying(true);
 		track->isCurrentlyPlaying.store(true);
@@ -958,11 +958,11 @@ void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, in
 
 	if (!track->beatRepeatActive.load())
 	{
-		track->readPosition = 0.0;
+		track->readPosition.store(0.0);
 	}
 	track->setPlaying(true);
 	track->isCurrentlyPlaying.store(true);
-	track->isArmed = false;
+	track->isArmed.store(false);
 	playingTracks[noteNumber] = trackId;
 }
 
@@ -974,7 +974,7 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 		TrackData *track = trackManager.getTrack(it->second);
 		if (track)
 		{
-			track->isPlaying = false;
+			track->isPlaying.store(false);
 			if (!track->isArmed.load() && !track->isCurrentlyPlaying.load())
 				midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
 				                             MidiMapping::feedbackIdle);
