@@ -15,6 +15,18 @@ class AudioManager
 	AudioManager(DjIaVstProcessor &processor, TrackManager &trackManager, GenerationManager &generationManager);
 	~AudioManager() = default;
 
+	struct PreprocessResult
+	{
+		juce::File stretchedFile;
+		juce::File originalFile;
+		bool hasOriginalVersion = false;
+		float originalBpm = 126.0f;
+		bool success = false;
+	};
+
+	PreprocessResult preprocessAudioFile(const juce::File &rawFile, float serverSnappedBpm,
+	                                     const juce::String &trackId);
+
 	void prepareToPlay(double sampleRate, int samplesPerBlock);
 	void releaseResources();
 	void initDummySynth();

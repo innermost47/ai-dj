@@ -1,4 +1,4 @@
-#include "AudioManager.h"
+﻿#include "AudioManager.h"
 #include "AudioAnalyzer.h"
 #include "MiniBpm.h"
 #include "PluginEditor.h"
@@ -158,6 +158,118 @@ void AudioManager::clearOutputBuffers(juce::AudioSampleBuffer &buffer)
 	}
 }
 
+AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::File &rawFile, float serverSnappedBpm,
+                                                                 const juce::String &trackId)
+{
+	PreprocessResult result;
+
+	juce::AudioFormatManager fm;
+	fm.registerBasicFormats();
+	std::unique_ptr<juce::AudioFormatReader> reader(fm.createReaderFor(rawFile));
+	if (!reader)
+		return result;
+
+	const int numSamples = static_cast<int>(reader->lengthInSamples);
+	const double sampleRate = reader->sampleRate;
+	const int numChannels = std::max(1, (int)reader->numChannels);
+
+	juce::AudioBuffer<float> rawBuffer(2, numSamples);
+	rawBuffer.clear();
+	reader->read(&rawBuffer, 0, numSamples, 0, true, true);
+	if (reader->numChannels == 1)
+		rawBuffer.copyFrom(1, 0, rawBuffer, 0, 0, numSamples);
+
+	double hostBpm = audioProcessor.getCachedHostBpm();
+	double tempo = 0.0;
+
+	if (serverSnappedBpm <= 0.0f)
+	{
+		breakfastquay::MiniBPM bpm(sampleRate);
+		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
+		bpm.setBeatsPerBar(4);
+		bpm.process(rawBuffer.getReadPointer(0), numSamples);
+		tempo = bpm.estimateTempo();
+		bpm.reset();
+	}
+	else
+	{
+		tempo = static_cast<double>(serverSnappedBpm);
+	}
+
+	int targetPageIndex = 0;
+	if (TrackData *track = trackManager.getTrack(trackId))
+		targetPageIndex = track->currentPageIndex.load();
+
+	auto stretchedFile = getTrackPageAudioFile(trackId, targetPageIndex);
+	stretchedFile.getParentDirectory().createDirectory();
+
+	if (tempo <= 0.0 || hostBpm <= 0.0 || std::abs(hostBpm - tempo) < 0.1)
+	{
+		saveBufferToFile(rawBuffer, stretchedFile, sampleRate);
+		result.stretchedFile = stretchedFile;
+		result.hasOriginalVersion = false;
+		result.originalBpm = static_cast<float>(hostBpm > 0 ? hostBpm : 126.0);
+		result.success = true;
+		return result;
+	}
+
+	double ratio = hostBpm / tempo;
+	ratio = juce::jlimit(0.25, 4.0, ratio);
+
+	const int outputSamples = static_cast<int>(numSamples / ratio);
+	juce::AudioBuffer<float> stretchedBuffer(2, outputSamples);
+
+	signalsmith::stretch::SignalsmithStretch<float> stretch;
+	stretch.presetDefault(2, static_cast<float>(sampleRate));
+
+	const float *const *inPtrs = rawBuffer.getArrayOfReadPointers();
+	float *const *outPtrs = stretchedBuffer.getArrayOfWritePointers();
+	stretch.process(inPtrs, numSamples, outPtrs, outputSamples);
+
+	const float silenceThreshold = 0.001f;
+	int firstValidSample = 0;
+	for (int i = 0; i < outputSamples; ++i)
+	{
+		float maxVal = 0.0f;
+		for (int c = 0; c < 2; ++c)
+		{
+			maxVal = std::max(maxVal, std::abs(stretchedBuffer.getSample(c, i)));
+		}
+		if (maxVal > silenceThreshold)
+		{
+			firstValidSample = i;
+			break;
+		}
+	}
+
+	juce::AudioBuffer<float> finalBuffer;
+	int cleanedSize = outputSamples - firstValidSample;
+	if (cleanedSize > 0)
+	{
+		finalBuffer.setSize(2, cleanedSize);
+		for (int c = 0; c < 2; ++c)
+			finalBuffer.copyFrom(c, 0, stretchedBuffer, c, firstValidSample, cleanedSize);
+	}
+	else
+	{
+		finalBuffer.makeCopyOf(stretchedBuffer);
+	}
+
+	auto audioDir = stretchedFile.getParentDirectory();
+	char pageName = static_cast<char>('A' + targetPageIndex);
+	auto originalFile = audioDir.getChildFile(trackId + "_original_" + juce::String(pageName) + ".wav");
+
+	saveBufferToFile(rawBuffer, originalFile, sampleRate);
+	saveBufferToFile(finalBuffer, stretchedFile, sampleRate);
+
+	result.stretchedFile = stretchedFile;
+	result.originalFile = originalFile;
+	result.hasOriginalVersion = true;
+	result.originalBpm = static_cast<float>(hostBpm);
+	result.success = true;
+	return result;
+}
+
 void AudioManager::resizeIndividualBuffers(juce::AudioSampleBuffer &buffer)
 {
 	for (auto &indivBuffer : individualOutputBuffers)
@@ -251,22 +363,6 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 			double fourBars = beatDuration * 16.0;
 			targetPage.loopStart = 0.0;
 			targetPage.loopEnd = std::min(fourBars, sampleDuration);
-		}
-	}
-
-	if (targetPageIndex == track->currentPageIndex.load())
-	{
-		track->readPosition.store(0.0);
-		track->stretchImpl->stretch.reset();
-
-		const int prerollLen =
-		    track->stretchImpl->stretch.blockSamples() + track->stretchImpl->stretch.intervalSamples();
-		const int available = std::min(prerollLen, targetPage.numSamples);
-
-		if (available > 0 && targetPage.audioBuffer.getNumChannels() >= 1)
-		{
-			const float *const *inputPtrs = targetPage.audioBuffer.getArrayOfReadPointers();
-			track->stretchImpl->stretch.seek(inputPtrs, available, 1.0);
 		}
 	}
 
@@ -832,7 +928,17 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 			targetPageIndex = track->currentPageIndex.load();
 
 		loadAudioToStaging(reader, track);
-		processAudioBPMAndSync(track);
+		if (track->skipBpmSync.exchange(false))
+		{
+			auto &currentPage = track->getCurrentPage();
+			track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
+			currentPage.stagingOriginalBpm = track->preprocessOriginalBpm.load();
+			track->nextHasOriginalVersion.store(track->preprocessHasOriginal.load());
+		}
+		else
+		{
+			processAudioBPMAndSync(track);
+		}
 
 		juce::File permanentFile = getTrackPageAudioFile(trackId, targetPageIndex);
 		permanentFile.getParentDirectory().createDirectory();

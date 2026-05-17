@@ -224,6 +224,9 @@ struct TrackData
 	double preservedLoopEnd = 4.0;
 	double lastPpqPosition = -1.0;
 
+	std::atomic<bool> skipBpmSync{false};
+	std::atomic<bool> preprocessHasOriginal{false};
+	std::atomic<float> preprocessOriginalBpm{126.0f};
 	std::atomic<bool> isPlaying{false};
 	std::atomic<bool> isArmed{false};
 	std::atomic<bool> isArmedToStop{false};
