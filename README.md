@@ -69,7 +69,7 @@ OBSIDIAN Neural ships with **8 specialized AI engines** — assign a different o
 7. **StableBeaT** — Trap beats and 808 grooves (75–160 BPM)
 8. **gluten_v1** — Loopable melodic trap and wavy motifs (90–160 BPM)
 
-All models are hosted on [Hugging Face](https://huggingface.co/) — full links and credits in the [documentation](https://github.com/innermost47/ai-dj#models).
+All models are hosted on [Hugging Face](https://huggingface.co/innermost47/obsidian-neural-models).
 
 > ⚠️ AI generation can produce unexpected results. Feedback welcome on [Issues](https://github.com/innermost47/ai-dj/issues) or [Discussions](https://github.com/innermost47/ai-dj/discussions).
 
