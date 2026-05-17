@@ -193,8 +193,6 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.prompt = pageState.getProperty("prompt", "").toString();
 				page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
 				page.selectedModel = pageState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
-				if (page.selectedModel.isEmpty())
-					page.selectedModel = "stable-audio-open-1.0";
 				page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 				page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 				page.generationKey = pageState.getProperty("generationKey", "").toString();
@@ -335,15 +333,22 @@ void StateManager::loadState(const juce::ValueTree &state)
 	{
 		auto track = std::make_unique<TrackData>();
 		audioProcessor.attachPageChangeCallback(track.get());
-
 		track->trackName = "Track " + juce::String(i + 1);
 		track->midiNote = 60 + i;
 		track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
-		auto serverModels = AiModelDefinitions::getModelsForMode(false);
-		for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
-			track->pages[p].selectedModel = serverModels[i % serverModels.size()];
+
+		const bool isLocalMode = audioProcessor.getUseLocalModel();
+		auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+
+		if (!modelsForMode.isEmpty())
+		{
+			for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
+				track->pages[p].selectedModel = modelsForMode[i % modelsForMode.size()];
+		}
+
 		if (track->slotIndex >= 0 && track->slotIndex < ObsidianDataConst::MAX_TRACKS)
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
+
 		std::string stdId = track->trackId.toStdString();
 		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
@@ -384,6 +389,7 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("windowWidth", audioProcessor.getSavedWindowWidth(), nullptr);
 	state.setProperty("windowHeight", audioProcessor.getSavedWindowHeight(), nullptr);
 	state.setProperty("bankVisible", audioProcessor.getSavedPanelVisible(), nullptr);
+	state.setProperty("useLocalModel", audioProcessor.getUseLocalModel(), nullptr);
 
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = audioProcessor.getMidiLearnManager().getAllMappings();
@@ -445,6 +451,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		audioProcessor.setIsLoadingState(false);
 		return;
 	}
+
 	juce::ValueTree state = juce::ValueTree::fromXml(*xml);
 
 	if (juce::JUCEApplicationBase::isStandaloneApp())
@@ -471,6 +478,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setBypassLLM(state.getProperty("bypassLLM", false));
 	audioProcessor.setWindowSize(state.getProperty("windowWidth", 1620), state.getProperty("windowHeight", 840));
 	audioProcessor.setPanelVisible(state.getProperty("bankVisible", true));
+	audioProcessor.setUseLocalModel(state.getProperty("useLocalModel", false));
 
 	bool bypassValue = state.getProperty("bypassSequencer", false);
 	audioProcessor.setBypassSequencer(bypassValue);
@@ -603,7 +611,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->uiTrackManager->refreshTrackComponents();
 			    editor->updateUIFromProcessor();
 		    }
 	    });

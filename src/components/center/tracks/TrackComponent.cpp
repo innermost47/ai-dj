@@ -46,6 +46,7 @@ void TrackComponent::setTrackData(TrackData *trackData)
 	{
 		wireParameters();
 	}
+	refreshWaveformDisplay();
 	updateFromTrackData();
 }
 
@@ -154,7 +155,12 @@ juce::Colour TrackComponent::getCurrentModelColour() const
 	if (currentModel.isEmpty() && t)
 		currentModel = currentPage.selectedModel;
 	if (currentModel.isEmpty())
-		currentModel = AiModelDefinitions::getAvailableModels()[0];
+	{
+		const bool isLocalMode = audioProcessor.getUseLocalModel();
+		auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+		if (!modelsForMode.isEmpty())
+			currentModel = modelsForMode[0];
+	}
 	return AiModelDefinitions::getColourForModel(currentModel);
 }
 
@@ -174,11 +180,21 @@ void TrackComponent::updateFromTrackData()
 		return;
 
 	juce::String modelToSet = t->getCurrentPage().selectedModel;
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
 
-	if (modelToSet.isEmpty())
+	if (modelToSet.isEmpty() || !modelsForMode.contains(modelToSet))
 	{
-		auto &models = AiModelDefinitions::getAvailableModels();
-		modelToSet = models[0];
+		if (!isLocalMode && !t->getCurrentPage().savedModelBeforeLocal.isEmpty() &&
+		    modelsForMode.contains(t->getCurrentPage().savedModelBeforeLocal))
+		{
+			modelToSet = t->getCurrentPage().savedModelBeforeLocal;
+		}
+		else
+		{
+			modelToSet = modelsForMode[0];
+		}
+		t->getCurrentPage().selectedModel = modelToSet;
 	}
 
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
@@ -544,8 +560,15 @@ void TrackComponent::resized()
 		juce::String currentModel = modelSelector.getText();
 		if (currentModel.isEmpty() && t)
 			currentModel = currentPage.selectedModel;
+
 		if (currentModel.isEmpty())
-			currentModel = AiModelDefinitions::getAvailableModels()[0];
+		{
+			const bool isLocalMode = audioProcessor.getUseLocalModel();
+			auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+			if (!modelsForMode.isEmpty())
+				currentModel = modelsForMode[0];
+		}
+
 		sequencer->setAccentColour(AiModelDefinitions::getColourForModel(currentModel));
 	}
 
@@ -1073,14 +1096,15 @@ void TrackComponent::setupUI()
 	addAndMakeVisible(modelSelector);
 	modelSelector.setTooltip("Select model for this page");
 
-	auto &models = AiModelDefinitions::getAvailableModels();
-	for (int i = 0; i < models.size(); ++i)
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+	for (int i = 0; i < modelsForMode.size(); ++i)
 	{
-		modelSelector.addItem(models[i], i + 1);
+		modelSelector.addItem(modelsForMode[i], i + 1);
 	}
 
 	int trackNum = trackId.retainCharacters("0123456789").getIntValue();
-	if (trackNum >= 1 && trackNum <= models.size())
+	if (trackNum >= 1 && trackNum <= modelsForMode.size())
 	{
 		modelSelector.setSelectedId(trackNum, juce::dontSendNotification);
 	}
@@ -1684,7 +1708,6 @@ void TrackComponent::updateModelUI()
 		sequencer->setAccentColour(modelColour);
 
 	syncBorderOverlay();
-	loadPromptPresets();
 }
 
 void TrackComponent::detachWaveformTrack()
@@ -1765,19 +1788,4 @@ void TrackComponent::wireParameters()
 	registerMidiLearn("RetriggerInterval", &intervalKnob);
 	registerMidiLearn("RandomRetrigger", &beatRepeatButton);
 	registerMidiLearn("Generate", &generateButton);
-
-	auto promptCallback = [this](float value)
-	{
-		juce::MessageManager::callAsync(
-		    [this, value]()
-		    {
-			    int n = promptPresetSelector.getNumItems();
-			    if (n > 0)
-			    {
-				    int idx = (int)(value * (n - 1));
-				    promptPresetSelector.setSelectedItemIndex(idx, juce::sendNotification);
-			    }
-		    });
-	};
-	registerMidiLearn("promptSelector_", &promptPresetSelector, promptCallback);
 }

@@ -1403,8 +1403,9 @@ juce::Colour WaveformDisplay::getModelAccentColour() const
 
 	if (modelName.isEmpty())
 		return ColourPalette::buttonPrimary;
-	auto &models = AiModelDefinitions::getAvailableModels();
-	int modelIndex = models.indexOf(modelName);
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+	int modelIndex = modelsForMode.indexOf(modelName);
 
 	if (modelIndex < 0)
 		return ColourPalette::buttonPrimary;

@@ -79,7 +79,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
 
-	MidiLearnableComboBox promptPresetSelector;
+	juce::ComboBox promptPresetSelector;
 
 	juce::Component::SafePointer<juce::DocumentWindow> drawingWindowPtr;
 
