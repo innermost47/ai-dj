@@ -800,9 +800,14 @@ float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int cur
 	}
 	case 2:
 	{
-		const float s = std::sin(x * juce::MathConstants<float>::halfPi);
-		const float sq = s * s;
-		return sq * sq;
+		if (x < 0.1f)
+			return 0.0f;
+		if (x > 0.9f)
+			return 1.0f;
+
+		const float remapped = (x - 0.1f) / 0.8f;
+		const float s = std::sin(remapped * juce::MathConstants<float>::halfPi);
+		return s * s;
 	}
 	default:
 		return x;
