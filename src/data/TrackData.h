@@ -5,6 +5,9 @@
 #include "DjIaClient.h"
 #include "ReverbSend.h"
 #include <JuceHeader.h>
+#include <memory>
+
+struct TrackStretchImpl;
 
 struct SequencerData
 {
@@ -204,6 +207,18 @@ struct TrackData
 	int midiNote = 60;
 	int customStepCounter = 0;
 
+	std::unique_ptr<TrackStretchImpl> stretchImpl;
+	std::atomic<bool> stretchNeedsReset{true};
+	int stretchConfiguredChannels = 0;
+	float stretchConfiguredSampleRate = 0.0f;
+	juce::AudioBuffer<float> pitchInputBuffer;
+	juce::AudioBuffer<float> pitchOutputBuffer;
+	int lastRenderedPageIndex = -1;
+	bool wasPitchActiveLastBlock = false;
+	int pitchTransitionCounter = 0;
+	bool pitchTransitionToActive = false;
+	int pitchTransitionLength = 4096;
+
 	double timeStretchRatio = 1.0;
 	double preservedLoopStart = 0.0;
 	double preservedLoopEnd = 4.0;
@@ -281,19 +296,8 @@ struct TrackData
 		return getCurrentPage().getCurrentSequence();
 	}
 
-	TrackData() : trackId(juce::Uuid().toString()), readPosition(0.0), onPlayStateChanged(nullptr)
-	{
-		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
-			pages[i].reset();
-	}
-
-	~TrackData()
-	{
-		onPlayStateChanged = nullptr;
-		onArmedStateChanged = nullptr;
-		onArmedToStopStateChanged = nullptr;
-		onPageChanged = nullptr;
-	}
+	TrackData();
+	~TrackData();
 
 	TrackPage &getCurrentPage()
 	{

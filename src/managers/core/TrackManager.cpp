@@ -1,5 +1,6 @@
 ﻿#include "TrackManager.h"
 #include "TrackData.h"
+#include "TrackStretchImpl.h"
 
 juce::String TrackManager::createTrack(const juce::String &name)
 {
@@ -30,8 +31,7 @@ juce::String TrackManager::createTrack(const juce::String &name)
 
 	if (audioPrepared)
 	{
-		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
-		track->reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+		initializeTrackAudio(*track, currentSampleRate, currentMaxBlockSize);
 	}
 
 	tracks[stdId] = std::move(track);
@@ -71,20 +71,34 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 	return ids;
 }
 
-void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
+void TrackManager::initializeTrackAudio(TrackData &track, double sampleRate, int maxBlockSize)
+{
+	track.delaySendProcessor.prepare(sampleRate, maxBlockSize);
+	track.reverbSendProcessor.prepare(sampleRate, maxBlockSize);
+
+	const int numChannels = 2;
+	track.stretchImpl->stretch.presetDefault(numChannels, static_cast<float>(sampleRate));
+	track.stretchImpl->stretch.reset();
+	track.stretchConfiguredChannels = numChannels;
+	track.stretchConfiguredSampleRate = static_cast<float>(sampleRate);
+	track.pitchInputBuffer.setSize(numChannels, maxBlockSize, false, false, true);
+	track.pitchOutputBuffer.setSize(numChannels, maxBlockSize, false, false, true);
+	track.stretchNeedsReset.store(true);
+	track.pitchTransitionLength = track.stretchImpl->stretch.outputLatency() + 512;
+}
+
+void TrackManager::prepareTracksAudio(double sampleRate, int maxBlockSize)
 {
 	const juce::ScopedLock sl(tracksLock);
 	currentSampleRate = sampleRate;
 	currentMaxBlockSize = maxBlockSize;
 	audioPrepared = true;
-
 	perTrackFxBuffer.setSize(2, maxBlockSize, false, false, true);
 	for (const auto &pair : tracks)
 	{
 		if (pair.second)
 		{
-			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
-			pair.second->reverbSendProcessor.prepare(sampleRate, maxBlockSize);
+			initializeTrackAudio(*pair.second, sampleRate, maxBlockSize);
 		}
 	}
 }
@@ -515,6 +529,9 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	double currentPosition = track.readPosition.load();
 	double playbackRatio = 1.0;
 
+	float pitchSemis = 0.0f;
+	bool pitchActive = false;
+
 	switch (track.timeStretchMode)
 	{
 	case 1:
@@ -538,12 +555,57 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	case 4:
 		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
 		{
-			float totalManualAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
-			float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
-			effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
-			playbackRatio = effectiveHostBpm / originalBpmToUse;
+			playbackRatio = hostBpm / originalBpmToUse;
+
+			const float bpmOffsetVal = static_cast<float>(currentPage.bpmOffset.load());
+			const float fineOffsetVal = currentPage.fineOffset.load();
+			const float totalOffset = bpmOffsetVal + fineOffsetVal;
+
+			if (std::abs(totalOffset) > 0.001f)
+			{
+				const float ratio = (originalBpmToUse + totalOffset) / originalBpmToUse;
+				pitchSemis = 12.0f * std::log2(ratio);
+			}
+
+			pitchActive = std::abs(pitchSemis) > 0.001f;
 		}
 		break;
+	}
+
+	const int currentPageIdx = track.currentPageIndex;
+	if (currentPageIdx != track.lastRenderedPageIndex)
+	{
+		track.stretchNeedsReset.store(true);
+		track.lastRenderedPageIndex = currentPageIdx;
+	}
+
+	if (pitchActive != track.wasPitchActiveLastBlock)
+	{
+		track.pitchTransitionCounter = track.pitchTransitionLength;
+		track.pitchTransitionToActive = pitchActive;
+
+		if (pitchActive)
+		{
+			track.stretchNeedsReset.store(true);
+		}
+	}
+	track.wasPitchActiveLastBlock = pitchActive;
+
+	if (track.stretchNeedsReset.exchange(false))
+	{
+		track.stretchImpl->stretch.reset();
+	}
+
+	const bool needStretchProcess = pitchActive || track.pitchTransitionCounter > 0;
+
+	if (pitchActive)
+	{
+		track.stretchImpl->stretch.setTransposeSemitones(pitchSemis);
+	}
+
+	if (needStretchProcess)
+	{
+		track.pitchInputBuffer.clear(0, numSamples);
 	}
 
 	double startSample = loopStartToUse * sampleRateToUse;
@@ -601,6 +663,18 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		if (absolutePosition >= endSample)
 		{
+			if (needStretchProcess)
+			{
+				for (int j = i; j < numSamples; ++j)
+				{
+					track.pitchInputBuffer.setSample(0, j, 0.0f);
+					track.pitchInputBuffer.setSample(1, j, 0.0f);
+				}
+				track.readPosition = 0.0;
+				track.isPlaying = false;
+				handleEndOfPreview();
+				break;
+			}
 			track.readPosition = 0.0;
 			track.isPlaying = false;
 			handleEndOfPreview();
@@ -618,6 +692,14 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		{
 			track.isPlaying = false;
 			handleEndOfPreview();
+			if (needStretchProcess)
+			{
+				for (int j = i; j < numSamples; ++j)
+				{
+					track.pitchInputBuffer.setSample(0, j, 0.0f);
+					track.pitchInputBuffer.setSample(1, j, 0.0f);
+				}
+			}
 			break;
 		}
 
@@ -684,15 +766,65 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
 		float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
 
-		leftSample *= volume * leftGain * totalGain;
-		rightSample *= volume * rightGain * totalGain;
+		if (needStretchProcess)
+		{
+			leftSample *= totalGain;
+			rightSample *= totalGain;
 
-		mixOutput.addSample(0, i, leftSample);
-		mixOutput.addSample(1, i, rightSample);
-		individualOutput.setSample(0, i, leftSample);
-		individualOutput.setSample(1, i, rightSample);
+			track.pitchInputBuffer.setSample(0, i, leftSample);
+			track.pitchInputBuffer.setSample(1, i, rightSample);
+		}
+		else
+		{
+			leftSample *= volume * leftGain * totalGain;
+			rightSample *= volume * rightGain * totalGain;
+
+			mixOutput.addSample(0, i, leftSample);
+			mixOutput.addSample(1, i, rightSample);
+			individualOutput.setSample(0, i, leftSample);
+			individualOutput.setSample(1, i, rightSample);
+		}
 
 		currentPosition += playbackRatio;
+	}
+
+	if (needStretchProcess)
+	{
+		const float *const *inPtrs = track.pitchInputBuffer.getArrayOfReadPointers();
+		float *const *outPtrs = track.pitchOutputBuffer.getArrayOfWritePointers();
+
+		track.stretchImpl->stretch.process(inPtrs, numSamples, outPtrs, numSamples);
+
+		const float *outLeft = track.pitchOutputBuffer.getReadPointer(0);
+		const float *outRight = track.pitchOutputBuffer.getReadPointer(1);
+		const float *dryLeft = track.pitchInputBuffer.getReadPointer(0);
+		const float *dryRight = track.pitchInputBuffer.getReadPointer(1);
+
+		for (int i = 0; i < numSamples; ++i)
+		{
+			float wetMix = 1.0f;
+
+			if (track.pitchTransitionCounter > 0)
+			{
+				const float t = 1.0f - (static_cast<float>(track.pitchTransitionCounter) / track.pitchTransitionLength);
+				wetMix = track.pitchTransitionToActive ? t : (1.0f - t);
+				track.pitchTransitionCounter--;
+			}
+			else if (!pitchActive)
+			{
+				wetMix = 0.0f;
+			}
+
+			const float dryMix = 1.0f - wetMix;
+
+			const float l = (outLeft[i] * wetMix + dryLeft[i] * dryMix) * volume * leftGain;
+			const float r = (outRight[i] * wetMix + dryRight[i] * dryMix) * volume * rightGain;
+
+			mixOutput.addSample(0, i, l);
+			mixOutput.addSample(1, i, r);
+			individualOutput.setSample(0, i, l);
+			individualOutput.setSample(1, i, r);
+		}
 	}
 
 	track.readPosition = currentPosition;

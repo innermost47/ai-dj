@@ -290,6 +290,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/shared/modal/ObsidianModal.cpp
     src/components/shared/ObsidianBase.cpp
     src/components/shared/VuMeter.cpp
+    src/data/TrackData.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/AudioAnalyzer.cpp

@@ -155,7 +155,7 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	}
 
 	masterConsoleBuss.prepare(sampleRate);
-	trackManager.prepareSends(sampleRate, samplesPerBlock);
+	trackManager.prepareTracksAudio(sampleRate, samplesPerBlock);
 }
 
 void DjIaVstProcessor::releaseResources()
