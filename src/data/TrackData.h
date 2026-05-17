@@ -313,7 +313,7 @@ struct TrackData
 
 	void setCurrentPage(int pageIndex)
 	{
-		if (pageIndex < 0 || pageIndex >= 4)
+		if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 			return;
 		if (currentPageIndex.load() == pageIndex)
 			return;

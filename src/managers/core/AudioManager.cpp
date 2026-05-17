@@ -4,6 +4,7 @@
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "TrackData.h"
+#include "TrackStretchImpl.h"
 #include "signalsmith-stretch.h"
 
 AudioManager::AudioManager(DjIaVstProcessor &processor, TrackManager &trackManager,
@@ -185,8 +186,8 @@ void AudioManager::loadAudioToStaging(std::unique_ptr<juce::AudioFormatReader> &
 		track->stagingBuffer.copyFrom(1, 0, track->stagingBuffer, 0, 0, numSamples);
 	}
 
-	track->stagingNumSamples = numSamples;
-	track->stagingSampleRate = sampleRate;
+	track->stagingNumSamples.store(numSamples);
+	track->stagingSampleRate.store(sampleRate);
 }
 
 void AudioManager::checkAndSwapStagingBuffers()
@@ -198,9 +199,9 @@ void AudioManager::checkAndSwapStagingBuffers()
 		TrackData *track = trackManager.getTrack(trackId);
 		if (!track)
 			continue;
-		if (track->swapRequested.exchange(false))
+		if (track->swapRequested.exchange(false, std::memory_order_acquire))
 		{
-			if (track->hasStagingData.load())
+			if (track->hasStagingData.load(std::memory_order_acquire))
 			{
 				performAtomicSwap(track, trackId);
 			}
@@ -211,7 +212,7 @@ void AudioManager::checkAndSwapStagingBuffers()
 void AudioManager::performAtomicSwap(TrackData *track, const juce::String &trackId)
 {
 	int targetPageIndex = track->stagingTargetPageIndex.load();
-	if (targetPageIndex < 0 || targetPageIndex >= 4)
+	if (targetPageIndex < 0 || targetPageIndex >= ObsidianDataConst::MAX_PAGES)
 		targetPageIndex = track->currentPageIndex.load();
 
 	auto &targetPage = track->pages[targetPageIndex];
@@ -250,6 +251,22 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 			double fourBars = beatDuration * 16.0;
 			targetPage.loopStart = 0.0;
 			targetPage.loopEnd = std::min(fourBars, sampleDuration);
+		}
+	}
+
+	if (targetPageIndex == track->currentPageIndex.load())
+	{
+		track->readPosition.store(0.0);
+		track->stretchImpl->stretch.reset();
+
+		const int prerollLen =
+		    track->stretchImpl->stretch.blockSamples() + track->stretchImpl->stretch.intervalSamples();
+		const int available = std::min(prerollLen, targetPage.numSamples);
+
+		if (available > 0 && targetPage.audioBuffer.getNumChannels() >= 1)
+		{
+			const float *const *inputPtrs = targetPage.audioBuffer.getArrayOfReadPointers();
+			track->stretchImpl->stretch.seek(inputPtrs, available, 1.0);
 		}
 	}
 
@@ -324,9 +341,9 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 	double hostBpm = audioProcessor.getCachedHostBpm();
 	double tempo = 0.0;
 
-	if (serverSnappedBpm < 0)
+	if (serverSnappedBpm <= 0.0f)
 	{
-		breakfastquay::MiniBPM bpm(track->stagingSampleRate);
+		breakfastquay::MiniBPM bpm(track->stagingSampleRate.load());
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
 		bpm.setBeatsPerBar(4);
 
@@ -361,10 +378,19 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 			return;
 		}
 	}
+	if (tempo <= 0.0 || hostBpm <= 0.0)
+	{
+		track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
+		currentPage.stagingOriginalBpm = static_cast<float>(hostBpm > 0 ? hostBpm : 126.0);
+		track->nextHasOriginalVersion.store(false);
+		return;
+	}
 
 	audioProcessor.setPendingSnappedBpm(-1.0f);
 
 	double ratio = hostBpm / tempo;
+
+	ratio = juce::jlimit(0.25, 4.0, ratio);
 
 	track->originalStagingBuffer.makeCopyOf(track->stagingBuffer);
 
@@ -375,7 +401,7 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 	juce::AudioBuffer<float> finalStretchedAudio(numChannels, outputSamples);
 
 	signalsmith::stretch::SignalsmithStretch<float> stretch;
-	stretch.presetDefault(numChannels, track->stagingSampleRate);
+	stretch.presetDefault(numChannels, track->stagingSampleRate.load());
 
 	const float *const *inputPointers = track->stagingBuffer.getArrayOfReadPointers();
 	float *const *outputPointers = finalStretchedAudio.getArrayOfWritePointers();
@@ -574,7 +600,7 @@ void AudioManager::saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float
 void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile)
 {
 	TrackData *track = trackManager.getTrack(trackId);
-	if (!track || pageIndex < 0 || pageIndex >= 4)
+	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 		return;
 
 	auto &page = track->pages[pageIndex];
@@ -601,8 +627,8 @@ void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int p
 			track->stagingBuffer.copyFrom(1, 0, track->stagingBuffer, 0, 0, numSamples);
 		}
 
-		track->stagingNumSamples = numSamples;
-		track->stagingSampleRate = reader->sampleRate;
+		track->stagingNumSamples.store(numSamples);
+		track->stagingSampleRate.store(reader->sampleRate);
 
 		track->isVersionSwitch.store(true);
 		track->preservedLoopStart = preservedLoopStart;
@@ -611,8 +637,8 @@ void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int p
 
 		if (pageIndex == track->currentPageIndex.load())
 		{
-			track->hasStagingData = true;
-			track->swapRequested = true;
+			track->hasStagingData.store(true);
+			track->swapRequested.store(true);
 		}
 		else
 		{
@@ -636,7 +662,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
                                         const juce::String &sampleId)
 {
 	TrackData *track = trackManager.getTrack(trackId);
-	if (!track || pageIndex < 0 || pageIndex >= 4)
+	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 		return;
 
 	auto &page = track->pages[pageIndex];
@@ -662,8 +688,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		}
 		auto &currentPage = track->getCurrentPage();
 
-		track->stagingNumSamples = numSamples;
-		track->stagingSampleRate = reader->sampleRate;
+		track->stagingNumSamples.store(numSamples);
+		track->stagingSampleRate.store(reader->sampleRate);
 		currentPage.stagingOriginalBpm = 126.0f;
 
 		processAudioBPMAndSync(track);
@@ -675,12 +701,12 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		{
 			auto originalFile = getTrackPageAudioFile(trackId + "_original", pageIndex);
 			auto stretchedFile = getTrackPageAudioFile(trackId, pageIndex);
-			saveBufferToFile(track->originalStagingBuffer, originalFile, track->stagingSampleRate);
-			saveBufferToFile(track->stagingBuffer, stretchedFile, track->stagingSampleRate);
+			saveBufferToFile(track->originalStagingBuffer, originalFile, track->stagingSampleRate.load());
+			saveBufferToFile(track->stagingBuffer, stretchedFile, track->stagingSampleRate.load());
 		}
 		else
 		{
-			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate);
+			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate.load());
 		}
 
 		page.audioFilePath = permanentFile.getFullPathName();
@@ -702,8 +728,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 		if (pageIndex == track->currentPageIndex.load())
 		{
-			track->hasStagingData = true;
-			track->swapRequested = true;
+			track->hasStagingData.store(true);
+			track->swapRequested.store(true);
 		}
 
 		juce::MessageManager::callAsync(
@@ -802,7 +828,7 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 		}
 
 		int targetPageIndex = track->stagingTargetPageIndex.load();
-		if (targetPageIndex < 0 || targetPageIndex >= 4)
+		if (targetPageIndex < 0 || targetPageIndex >= ObsidianDataConst::MAX_PAGES)
 			targetPageIndex = track->currentPageIndex.load();
 
 		loadAudioToStaging(reader, track);
@@ -814,16 +840,16 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 		if (track->nextHasOriginalVersion.load())
 		{
 			saveOriginalAndStretchedBuffers(track->originalStagingBuffer, track->stagingBuffer, trackId,
-			                                track->stagingSampleRate);
+			                                track->stagingSampleRate.load());
 		}
 		else
 		{
-			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate);
+			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate.load());
 		}
 
 		track->pages[targetPageIndex].audioFilePath = permanentFile.getFullPathName();
-		track->hasStagingData = true;
-		track->swapRequested = true;
+		track->hasStagingData.store(true, std::memory_order_release);
+		track->swapRequested.store(true, std::memory_order_release);
 
 		juce::MessageManager::callAsync(
 		    [this]()

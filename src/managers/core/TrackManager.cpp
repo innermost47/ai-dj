@@ -73,18 +73,27 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 
 void TrackManager::initializeTrackAudio(TrackData &track, double sampleRate, int maxBlockSize)
 {
+	const int numChannels = 2;
+	const int safeBlockSize = std::max(maxBlockSize * 2, 8192);
+
+	const bool alreadyConfigured =
+	    track.stretchConfiguredChannels == numChannels &&
+	    std::abs(track.stretchConfiguredSampleRate - static_cast<float>(sampleRate)) < 0.01f &&
+	    track.pitchInputBuffer.getNumSamples() >= safeBlockSize;
+
+	if (alreadyConfigured)
+		return;
+
 	track.delaySendProcessor.prepare(sampleRate, maxBlockSize);
 	track.reverbSendProcessor.prepare(sampleRate, maxBlockSize);
 
-	const int numChannels = 2;
 	track.stretchImpl->stretch.presetDefault(numChannels, static_cast<float>(sampleRate));
 	track.stretchImpl->stretch.reset();
 	track.stretchConfiguredChannels = numChannels;
 	track.stretchConfiguredSampleRate = static_cast<float>(sampleRate);
-	track.pitchInputBuffer.setSize(numChannels, maxBlockSize, false, false, true);
-	track.pitchOutputBuffer.setSize(numChannels, maxBlockSize, false, false, true);
+	track.pitchInputBuffer.setSize(numChannels, safeBlockSize, false, false, true);
+	track.pitchOutputBuffer.setSize(numChannels, safeBlockSize, false, false, true);
 	track.stretchNeedsReset.store(true);
-	track.pitchTransitionLength = track.stretchImpl->stretch.outputLatency() + 512;
 }
 
 void TrackManager::prepareTracksAudio(double sampleRate, int maxBlockSize)
@@ -315,7 +324,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 
 void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile)
 {
-	if (!track || pageIndex < 0 || pageIndex >= 4)
+	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 	{
 		return;
 	}
@@ -530,7 +539,6 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	double playbackRatio = 1.0;
 
 	float pitchSemis = 0.0f;
-	bool pitchActive = false;
 
 	switch (track.timeStretchMode)
 	{
@@ -621,7 +629,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	const double totalSamplesBeforeFadeOut = juce::jmin((samplesPerMeasure * numMeasures) + startSample, endSample);
 
-	const double fadeLength = 64.0;
+	const double fadeLength = 256.0;
 	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
 
 	for (int i = 0; i < numSamples; ++i)
@@ -645,8 +653,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 				track.pitchInputBuffer.setSample(0, j, 0.0f);
 				track.pitchInputBuffer.setSample(1, j, 0.0f);
 			}
-			track.readPosition = 0.0;
-			track.isPlaying = false;
+			track.readPosition.store(0.0);
+			track.isPlaying.store(false);
 			handleEndOfPreview();
 			break;
 		}
@@ -660,7 +668,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		int sampleIndex = static_cast<int>(absolutePosition);
 		if (sampleIndex >= bufferSize)
 		{
-			track.isPlaying = false;
+			track.isPlaying.store(false);
 			handleEndOfPreview();
 			for (int j = i; j < numSamples; ++j)
 			{
@@ -785,13 +793,16 @@ float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int cur
 		return x;
 
 	case 1:
-		return std::sin(x * juce::MathConstants<float>::halfPi);
-
+	{
+		const float s = std::sin(x * juce::MathConstants<float>::halfPi);
+		return s * s;
+	}
 	case 2:
-		if (x >= 0.5f)
-			return 1.0f;
-		return std::sin(x * juce::MathConstants<float>::pi);
-
+	{
+		const float s = std::sin(x * juce::MathConstants<float>::halfPi);
+		const float sq = s * s;
+		return sq * sq;
+	}
 	default:
 		return x;
 	}

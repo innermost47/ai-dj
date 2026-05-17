@@ -478,6 +478,12 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	if (tracksState.isValid())
 	{
 		loadState(tracksState);
+		const double sampleRate = audioProcessor.getSampleRate();
+		const int blockSize = audioProcessor.getBlockSize();
+		if (sampleRate > 0 && blockSize > 0)
+		{
+			audioProcessor.getTrackManager().prepareTracksAudio(sampleRate, blockSize);
+		}
 	}
 
 	audioProcessor.setCrossfaderValue((float)state.getProperty("crossfaderValue", juce::var(0.5f)));

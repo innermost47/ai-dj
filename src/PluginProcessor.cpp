@@ -548,7 +548,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 #endif
 
 	sequencerManager.internalSampleCounter += buffer.getNumSamples();
-	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
 		buffer.clear(i, 0, buffer.getNumSamples());
 	auto currentPlayHead = getPlayHead();
@@ -572,6 +571,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	{
 		audioManager.processIncomingAudio(hostIsPlaying);
 	}
+	audioManager.checkAndSwapStagingBuffers();
 	audioManager.resizeIndividualBuffers(buffer);
 	audioManager.clearOutputBuffers(buffer);
 	auto mainOutput = getBusBuffer(buffer, false, 0);

@@ -28,7 +28,7 @@ class DjIaClient
 		float duration;
 		float bpm;
 		float detectedBpm;
-		float snappedBpm;
+		float snappedBpm = -1.0f;
 		juce::String key;
 		juce::String errorMessage = "";
 		int creditsRemaining = -1;
