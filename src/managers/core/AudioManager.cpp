@@ -226,22 +226,33 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	float *const *outPtrs = stretchedBuffer.getArrayOfWritePointers();
 	stretch.process(inPtrs, numSamples, outPtrs, outputSamples);
 
-	const float silenceThreshold = 0.001f;
+	const float silenceThresholdRMS = 0.01f;
+	const int windowSize = 256;
 	int firstValidSample = 0;
-	for (int i = 0; i < outputSamples; ++i)
+
+	for (int i = 0; i < outputSamples - windowSize; i += windowSize / 4)
 	{
-		float maxVal = 0.0f;
-		for (int c = 0; c < 2; ++c)
+		double sumSquares = 0.0;
+		int countSamples = 0;
+
+		for (int j = 0; j < windowSize && (i + j) < outputSamples; ++j)
 		{
-			maxVal = std::max(maxVal, std::abs(stretchedBuffer.getSample(c, i)));
+			for (int c = 0; c < 2; ++c)
+			{
+				const float s = stretchedBuffer.getSample(c, i + j);
+				sumSquares += s * s;
+				countSamples++;
+			}
 		}
-		if (maxVal > silenceThreshold)
+
+		const float rms = std::sqrt(static_cast<float>(sumSquares / countSamples));
+
+		if (rms > silenceThresholdRMS)
 		{
 			firstValidSample = i;
 			break;
 		}
 	}
-
 	juce::AudioBuffer<float> finalBuffer;
 	int cleanedSize = outputSamples - firstValidSample;
 	if (cleanedSize > 0)
