@@ -276,7 +276,7 @@ float TrackComponent::calculateEffectiveBpm()
 		double hostBpm = audioProcessor.getHostBpm();
 		if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
 		{
-			effectiveBpm = (float)hostBpm + static_cast<float>(currentPage.bpmOffset.load());
+			effectiveBpm = (float)hostBpm;
 		}
 	}
 	break;
@@ -679,7 +679,7 @@ void TrackComponent::onPageSelected(int pageIndex)
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= 4)
+	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 		return;
 
 	if (t->currentPageIndex.load() == pageIndex && !t->pageChangePending.load())
@@ -722,7 +722,7 @@ void TrackComponent::performPageChange(int pageIndex)
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= 4)
+	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 		return;
 
 	if (isPreviewPlaying)
@@ -865,7 +865,7 @@ void TrackComponent::loadPageIfNeeded(int pageIndex)
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= 4)
+	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 		return;
 
 	auto &page = t->pages[pageIndex];
@@ -894,7 +894,7 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File &audioFil
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= 4)
+	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
 		return;
 
 	auto &page = t->pages[pageIndex];

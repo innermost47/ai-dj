@@ -5,6 +5,7 @@
 #include "ObsidianAlertManager.h"
 #include "PluginEditor.h"
 #include "SequencerComponent.h"
+#include "signalsmith-stretch.h"
 #if JucePlugin_Build_Standalone
 #include <ableton/Link.hpp>
 #include <ableton/link/HostTimeFilter.hpp>
@@ -155,7 +156,11 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	}
 
 	masterConsoleBuss.prepare(sampleRate);
-	trackManager.prepareSends(sampleRate, samplesPerBlock);
+	trackManager.prepareTracksAudio(sampleRate, samplesPerBlock);
+	signalsmith::stretch::SignalsmithStretch<float> tempStretch;
+	tempStretch.presetDefault(2, static_cast<float>(sampleRate));
+	const int latency = tempStretch.outputLatency() + tempStretch.inputLatency();
+	setLatencySamples(latency);
 }
 
 void DjIaVstProcessor::releaseResources()

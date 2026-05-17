@@ -136,6 +136,18 @@ if(NOT abletonlink_POPULATED)
     include(${abletonlink_SOURCE_DIR}/AbletonLinkConfig.cmake)
 endif()
 
+find_package(signalsmith QUIET)
+if(NOT signalsmith_dsp_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(signalsmith_dsp
+        GIT_REPOSITORY https://github.com/Signalsmith-Audio/signalsmith-stretch.git
+        GIT_TAG 1.1.0
+        GIT_SHALLOW TRUE     
+        GIT_PROGRESS TRUE
+    )
+    FetchContent_MakeAvailable(signalsmith_dsp)
+endif()
+
 if(DEFINED GITHUB_BUILD_NUMBER)
     set(BUILD_NUMBER "${GITHUB_BUILD_NUMBER}")
 else()
@@ -278,10 +290,12 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/shared/modal/ObsidianModal.cpp
     src/components/shared/ObsidianBase.cpp
     src/components/shared/VuMeter.cpp
+    src/data/TrackData.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/AudioAnalyzer.cpp
     src/dsp/DelaySend.cpp
+    src/dsp/MiniBpm.cpp
     src/dsp/ReverbSend.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
@@ -316,6 +330,7 @@ target_sources(ObsidianNeuralVST PRIVATE
 
 target_include_directories(ObsidianNeuralVST PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${signalsmith_dsp_SOURCE_DIR}
     ${soundtouch_SOURCE_DIR}/include
     src
     src/components

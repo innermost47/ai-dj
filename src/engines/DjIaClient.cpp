@@ -150,6 +150,7 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, do
 		}
 		jsonRequest.getDynamicObject()->setProperty("prompt", request.prompt);
 		jsonRequest.getDynamicObject()->setProperty("bpm", bpm);
+		jsonRequest.getDynamicObject()->setProperty("sync_on_server", false);
 		jsonRequest.getDynamicObject()->setProperty("key", request.key);
 		jsonRequest.getDynamicObject()->setProperty("model", request.model);
 		jsonRequest.getDynamicObject()->setProperty("bypass_llm", bypassLLM);
@@ -284,6 +285,11 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, do
 		if (detectedBpmStr.isNotEmpty())
 		{
 			result.detectedBpm = detectedBpmStr.getFloatValue();
+		}
+		auto snappedBpmStr = responseHeaders["X-Snapped-BPM"];
+		if (snappedBpmStr.isNotEmpty())
+		{
+			result.snappedBpm = snappedBpmStr.getFloatValue();
 		}
 
 		return result;

@@ -1,4 +1,4 @@
-#include "GenerationManager.h"
+﻿#include "GenerationManager.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "TrackData.h"
@@ -80,11 +80,16 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 		return;
 	}
 
+	auto preprocessResult =
+	    audioProcessor.getAudioManager().preprocessAudioFile(response.audioData, response.snappedBpm, trackId);
+
 	{
 		const juce::ScopedLock lock(apiLock);
 		audioProcessor.setPendingTrackId(trackId);
-		audioProcessor.setPendingAudioFile(response.audioData);
+		audioProcessor.setPendingAudioFile(preprocessResult.success ? preprocessResult.stretchedFile
+		                                                            : response.audioData);
 		audioProcessor.setPendingDetectedBpm(response.detectedBpm);
+		audioProcessor.setPendingSnappedBpm(-1.0f);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
 		audioProcessor.setTrackIdWaitingForLoad(trackId);
@@ -93,6 +98,9 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 
 	if (TrackData *track = audioProcessor.getTrack(trackId))
 	{
+		track->preprocessHasOriginal.store(preprocessResult.hasOriginalVersion);
+		track->preprocessOriginalBpm.store(preprocessResult.originalBpm);
+		track->skipBpmSync.store(true);
 		auto &currentPage = track->getCurrentPage();
 		currentPage.prompt = request.prompt;
 		currentPage.bpm = request.bpm;
@@ -324,6 +332,7 @@ void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest &req
 		audioProcessor.setPendingTrackId(trackId);
 		audioProcessor.setPendingAudioFile(response.audioData);
 		audioProcessor.setPendingDetectedBpm(response.detectedBpm);
+		audioProcessor.setPendingSnappedBpm(response.snappedBpm);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
 		audioProcessor.setTrackIdWaitingForLoad(trackId);

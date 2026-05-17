@@ -374,7 +374,7 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("hostBpmEnabled", audioProcessor.isHostBpmEnabled(), nullptr);
 	state.setProperty("lastDuration", audioProcessor.getLastDuration(), nullptr);
 	state.setProperty("lastKeyIndex", audioProcessor.getLastKeyIndex(), nullptr);
-	state.setProperty("isGenerating", audioProcessor.getIsGenerating(), nullptr);
+	state.setProperty("isGenerating", false, nullptr);
 	state.setProperty("autoLoadEnabled", audioProcessor.getAutoLoadEnabled(), nullptr);
 	state.setProperty("bypassLLM", audioProcessor.getBypassLLM(), nullptr);
 	state.setProperty("generatingTrackId", audioProcessor.getGeneratingTrackId(), nullptr);
@@ -465,7 +465,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setHostBpmEnabled(state.getProperty("hostBpmEnabled", false));
 	audioProcessor.setLastDuration(state.getProperty("lastDuration", 6.0));
 	audioProcessor.setLastKeyIndex(state.getProperty("lastKeyIndex", 1));
-	audioProcessor.setIsGenerating(state.getProperty("isGenerating", false));
+	audioProcessor.setIsGenerating(false);
 	audioProcessor.setGeneratingTrackId(state.getProperty("generatingTrackId", "").toString());
 	audioProcessor.setAutoLoadEnabled(state.getProperty("autoLoadEnabled", true));
 	audioProcessor.setBypassLLM(state.getProperty("bypassLLM", false));
@@ -478,6 +478,12 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	if (tracksState.isValid())
 	{
 		loadState(tracksState);
+		const double sampleRate = audioProcessor.getSampleRate();
+		const int blockSize = audioProcessor.getBlockSize();
+		if (sampleRate > 0 && blockSize > 0)
+		{
+			audioProcessor.getTrackManager().prepareTracksAudio(sampleRate, blockSize);
+		}
 	}
 
 	audioProcessor.setCrossfaderValue((float)state.getProperty("crossfaderValue", juce::var(0.5f)));
