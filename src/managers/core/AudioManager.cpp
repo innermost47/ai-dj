@@ -1,8 +1,10 @@
 #include "AudioManager.h"
 #include "AudioAnalyzer.h"
+#include "MiniBpm.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "TrackData.h"
+#include "signalsmith-stretch.h"
 
 AudioManager::AudioManager(DjIaVstProcessor &processor, TrackManager &trackManager,
                            GenerationManager &generationManager)
@@ -318,103 +320,105 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 {
 	track->nextHasOriginalVersion.store(false);
 	auto &currentPage = track->getCurrentPage();
-	float serverDetectedBpm = audioProcessor.getPendingDetectedBpm();
-	float soundTouchDetectedBpm = AudioAnalyzer::detectBPM(track->stagingBuffer, track->stagingSampleRate);
+	float serverSnappedBpm = audioProcessor.getPendingSnappedBpm();
 	double hostBpm = audioProcessor.getCachedHostBpm();
+	double tempo = 0.0;
 
-	float correctedServerBpm = serverDetectedBpm;
-	float correctedSoundTouchBpm = soundTouchDetectedBpm;
-
-	if (hostBpm > 0)
+	if (serverSnappedBpm < 0)
 	{
-		double directTolerance = 20.0;
-		double halfDoubleTolerance = hostBpm * 0.2;
+		breakfastquay::MiniBPM bpm(track->stagingSampleRate);
+		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
+		bpm.setBeatsPerBar(4);
 
-		if (serverDetectedBpm > 0.0f)
+		int nsamples = track->stagingBuffer.getNumSamples();
+		const float *channelData = track->stagingBuffer.getReadPointer(0);
+
+		bpm.process(channelData, nsamples);
+		tempo = bpm.estimateTempo();
+
+		bpm.reset();
+
+		double bpmDifference = std::abs(hostBpm - tempo);
+
+		if (bpmDifference < 0.1)
 		{
-			float directDiff = std::abs(serverDetectedBpm - static_cast<float>(hostBpm));
-			float halfDiff = std::abs(serverDetectedBpm * 2.0f - static_cast<float>(hostBpm));
-			float doubleDiff = std::abs(serverDetectedBpm / 2.0f - static_cast<float>(hostBpm));
-
-			if (directDiff <= directTolerance)
-			{
-				correctedServerBpm = serverDetectedBpm;
-			}
-			else if (halfDiff < directDiff && halfDiff <= halfDoubleTolerance)
-			{
-				correctedServerBpm = serverDetectedBpm * 2.0f;
-			}
-			else if (doubleDiff < directDiff && doubleDiff <= halfDoubleTolerance)
-			{
-				correctedServerBpm = serverDetectedBpm / 2.0f;
-			}
-			else
-			{
-				correctedServerBpm = serverDetectedBpm;
-			}
+			track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
+			currentPage.stagingOriginalBpm = static_cast<float>(hostBpm);
+			track->nextHasOriginalVersion.store(false);
+			audioProcessor.setPendingSnappedBpm(-1.0f);
+			return;
 		}
-
-		if (soundTouchDetectedBpm > 0.0f)
-		{
-			float directDiff = std::abs(soundTouchDetectedBpm - static_cast<float>(hostBpm));
-			float halfDiff = std::abs(soundTouchDetectedBpm * 2.0f - static_cast<float>(hostBpm));
-			float doubleDiff = std::abs(soundTouchDetectedBpm / 2.0f - static_cast<float>(hostBpm));
-
-			if (directDiff <= directTolerance)
-			{
-				correctedSoundTouchBpm = soundTouchDetectedBpm;
-			}
-			else if (halfDiff < directDiff && halfDiff <= halfDoubleTolerance)
-			{
-				correctedSoundTouchBpm = soundTouchDetectedBpm * 2.0f;
-			}
-			else if (doubleDiff < directDiff && doubleDiff <= halfDoubleTolerance)
-			{
-				correctedSoundTouchBpm = soundTouchDetectedBpm / 2.0f;
-			}
-			else
-			{
-				correctedSoundTouchBpm = soundTouchDetectedBpm;
-			}
-		}
-	}
-
-	float detectedBPM;
-
-	if (serverDetectedBpm > 0.0f)
-	{
-		detectedBPM = correctedServerBpm;
 	}
 	else
 	{
-		detectedBPM = correctedSoundTouchBpm;
+		tempo = static_cast<double>(serverSnappedBpm);
+		if (tempo == hostBpm)
+		{
+			track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
+			currentPage.stagingOriginalBpm = static_cast<float>(hostBpm);
+			track->nextHasOriginalVersion.store(false);
+			audioProcessor.setPendingSnappedBpm(-1.0f);
+			return;
+		}
 	}
 
-	audioProcessor.setPendingDetectedBpm(-1.0f);
+	audioProcessor.setPendingSnappedBpm(-1.0f);
 
-	bool bpmValid = (detectedBPM > 60.0f && detectedBPM < 200.0f);
-	currentPage.stagingOriginalBpm = bpmValid ? detectedBPM : static_cast<float>(hostBpm);
+	double ratio = hostBpm / tempo;
 
-	double bpmDifference = std::abs(hostBpm - currentPage.stagingOriginalBpm);
-	bool hostBpmValid = (hostBpm > 0.0);
-	bool originalBpmValid = (currentPage.stagingOriginalBpm > 0.0f);
-	bool bpmDifferenceSignificant = (bpmDifference > 0.01 && bpmDifference < 5.0);
+	track->originalStagingBuffer.makeCopyOf(track->stagingBuffer);
 
-	if ((hostBpmValid && originalBpmValid && bpmDifferenceSignificant) || audioProcessor.getUseLocalModel())
+	int inputSamples = track->stagingBuffer.getNumSamples();
+	int outputSamples = static_cast<int>(inputSamples / ratio);
+	int numChannels = track->stagingBuffer.getNumChannels();
+
+	juce::AudioBuffer<float> finalStretchedAudio(numChannels, outputSamples);
+
+	signalsmith::stretch::SignalsmithStretch<float> stretch;
+	stretch.presetDefault(numChannels, track->stagingSampleRate);
+
+	const float *const *inputPointers = track->stagingBuffer.getArrayOfReadPointers();
+	float *const *outputPointers = finalStretchedAudio.getArrayOfWritePointers();
+
+	stretch.process(inputPointers, inputSamples, outputPointers, outputSamples);
+
+	const float silenceThreshold = 0.001f;
+	int firstValidSample = 0;
+
+	for (int i = 0; i < outputSamples; ++i)
 	{
-		track->originalStagingBuffer.makeCopyOf(track->stagingBuffer);
-		double stretchRatio = hostBpm / static_cast<double>(currentPage.stagingOriginalBpm);
-		AudioAnalyzer::timeStretchBufferHQ(track->stagingBuffer, stretchRatio, track->stagingSampleRate);
-		track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
-		currentPage.stagingOriginalBpm = static_cast<float>(hostBpm);
-		track->nextHasOriginalVersion.store(true);
+		float maxVal = 0.0f;
+		for (int channel = 0; channel < numChannels; ++channel)
+		{
+			float sampleVal = std::abs(finalStretchedAudio.getSample(channel, i));
+			if (sampleVal > maxVal)
+				maxVal = sampleVal;
+		}
+		if (maxVal > silenceThreshold)
+		{
+			firstValidSample = i;
+			break;
+		}
+	}
+
+	int cleanedSize = outputSamples - firstValidSample;
+
+	if (cleanedSize > 0)
+	{
+		juce::AudioBuffer<float> totalAudio(numChannels, cleanedSize);
+
+		for (int channel = 0; channel < numChannels; ++channel)
+		{
+			totalAudio.copyFrom(channel, 0, finalStretchedAudio, channel, firstValidSample, cleanedSize);
+		}
+		track->stagingBuffer.makeCopyOf(totalAudio);
 	}
 	else
-	{
-		track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
-		currentPage.stagingOriginalBpm = static_cast<float>(hostBpm);
-		track->nextHasOriginalVersion.store(false);
-	}
+		track->stagingBuffer.makeCopyOf(finalStretchedAudio);
+
+	track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
+	currentPage.stagingOriginalBpm = static_cast<float>(hostBpm);
+	track->nextHasOriginalVersion.store(true);
 }
 
 void AudioManager::updateMasterEQ()

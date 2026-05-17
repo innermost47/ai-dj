@@ -85,6 +85,7 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 		audioProcessor.setPendingTrackId(trackId);
 		audioProcessor.setPendingAudioFile(response.audioData);
 		audioProcessor.setPendingDetectedBpm(response.detectedBpm);
+		audioProcessor.setPendingSnappedBpm(response.snappedBpm);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
 		audioProcessor.setTrackIdWaitingForLoad(trackId);
@@ -324,6 +325,7 @@ void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest &req
 		audioProcessor.setPendingTrackId(trackId);
 		audioProcessor.setPendingAudioFile(response.audioData);
 		audioProcessor.setPendingDetectedBpm(response.detectedBpm);
+		audioProcessor.setPendingSnappedBpm(response.snappedBpm);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
 		audioProcessor.setTrackIdWaitingForLoad(trackId);

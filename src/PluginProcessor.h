@@ -249,6 +249,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return pendingDetectedBpm.load();
 	}
+	float getPendingSnappedBpm() const
+	{
+		return pendingSnappedBpm.load();
+	}
 	float getGlobalCrossfaderValue() const;
 	float getPairCrossfaderValue(int pairIndex) const;
 	double getHostBpm() const;
@@ -557,6 +561,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		pendingDetectedBpm.store(v);
 	}
+	void setPendingSnappedBpm(float v)
+	{
+		pendingSnappedBpm.store(v);
+	}
 	void setLastGeneratedTrackId(const juce::String &id)
 	{
 		lastGeneratedTrackId = id;
@@ -779,6 +787,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> bypassLLM{true};
 	std::atomic<bool> isLoadingFromBank{false};
 	std::atomic<float> pendingDetectedBpm{-1.0f};
+	std::atomic<float> pendingSnappedBpm{-1.0f};
 
 	juce::File pendingAudioFile;
 
