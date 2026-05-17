@@ -159,7 +159,7 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	trackManager.prepareTracksAudio(sampleRate, samplesPerBlock);
 	signalsmith::stretch::SignalsmithStretch<float> tempStretch;
 	tempStretch.presetDefault(2, static_cast<float>(sampleRate));
-	const int latency = tempStretch.outputLatency();
+	const int latency = tempStretch.outputLatency() + tempStretch.inputLatency();
 	setLatencySamples(latency);
 }
 
