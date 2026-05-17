@@ -573,6 +573,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			{
 				const float ratio = (originalBpmToUse + totalOffset) / originalBpmToUse;
 				pitchSemis = 12.0f * std::log2(ratio);
+				pitchSemis = juce::jlimit(-12.0f, 12.0f, pitchSemis);
 			}
 		}
 		break;
