@@ -31,7 +31,6 @@
 Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ### Performance
-
 - **8-track sampler** with MIDI triggering (C3-B3)
 - **4 pages per track** (A/B/C/D) - Switch variations instantly
 - **8 sequences per page** - 256 total patterns for complex live sets
@@ -42,8 +41,9 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 - **MIDI learn on every parameter** - Map any control to any hardware override, with persistent user mappings
 
 ### Sound design
-
 - **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
+- **Independent pitch shifting** - Transpose each page without affecting tempo, powered by [Signalsmith Stretch](https://github.com/Signalsmith-Audio/signalsmith-stretch) phase-vocoder
+- **Automatic tempo sync** - Incoming samples are BPM-detected with [MiniBPM](https://breakfastquay.com/minibpm/) and time-stretched on load via Signalsmith Stretch to lock to your host tempo, with zero pitch drift
 - **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
 - **Reverb send** - Per-track reverb with size, damping, width and mix controls
 - **Airwindows Console6 master bus** - Analog-modeled saturation for cohesive mix glue
