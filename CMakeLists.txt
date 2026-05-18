@@ -330,8 +330,6 @@ target_sources(ObsidianNeuralVST PRIVATE
 
 target_include_directories(ObsidianNeuralVST PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${signalsmith_dsp_SOURCE_DIR}
-    ${soundtouch_SOURCE_DIR}/include
     src
     src/components
     src/components/center/mixer
@@ -359,6 +357,11 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/standalone/core
     src/standalone/transport/ui
     src/style
+)
+
+target_include_directories(ObsidianNeuralVST SYSTEM PRIVATE
+    ${signalsmith_dsp_SOURCE_DIR}
+    ${soundtouch_SOURCE_DIR}/include
 )
 
 target_compile_definitions(ObsidianNeuralVST 

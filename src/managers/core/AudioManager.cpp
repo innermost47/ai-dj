@@ -171,7 +171,6 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	const int numSamples = static_cast<int>(reader->lengthInSamples);
 	const double sampleRate = reader->sampleRate;
-	const int numChannels = std::max(1, (int)reader->numChannels);
 
 	juce::AudioBuffer<float> rawBuffer(2, numSamples);
 	rawBuffer.clear();
@@ -184,7 +183,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	if (serverSnappedBpm <= 0.0f)
 	{
-		breakfastquay::MiniBPM bpm(sampleRate);
+		breakfastquay::MiniBPM bpm(static_cast<float>(sampleRate));
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
 		bpm.setBeatsPerBar(4);
 		bpm.process(rawBuffer.getReadPointer(0), numSamples);
@@ -343,7 +342,6 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 
 	std::swap(targetPage.audioBuffer, track->stagingBuffer);
 	track->stretchNeedsReset.store(true);
-	track->postSwapFadeRemaining.store(track->stretchLatencySamples.load());
 	targetPage.numSamples = track->stagingNumSamples.load();
 	targetPage.sampleRate = track->stagingSampleRate.load();
 	targetPage.originalBpm = targetPage.stagingOriginalBpm;
@@ -452,7 +450,7 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 
 	if (serverSnappedBpm <= 0.0f)
 	{
-		breakfastquay::MiniBPM bpm(track->stagingSampleRate.load());
+		breakfastquay::MiniBPM bpm(static_cast<float>(track->stagingSampleRate.load()));
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
 		bpm.setBeatsPerBar(4);
 

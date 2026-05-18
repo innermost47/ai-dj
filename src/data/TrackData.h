@@ -273,8 +273,6 @@ struct TrackData
 	std::atomic<int> randomRetriggerInterval{3};
 	std::atomic<int> pendingPageIndex{-1};
 	std::atomic<int> stagingTargetPageIndex{-1};
-	std::atomic<int> postSwapFadeRemaining{0};
-	std::atomic<int> stretchLatencySamples{256};
 
 	std::atomic<float> volume{0.8f};
 	std::atomic<float> pan{0.0f};

@@ -280,7 +280,7 @@ float TrackComponent::calculateEffectiveBpm()
 		double hostBpm = audioProcessor.getHostBpm();
 		if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
 		{
-			effectiveBpm = (float)hostBpm;
+			effectiveBpm = (float)hostBpm + static_cast<float>(currentPage.bpmOffset.load());
 		}
 	}
 	break;

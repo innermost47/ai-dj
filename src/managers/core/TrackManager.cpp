@@ -1,6 +1,5 @@
 ﻿#include "TrackManager.h"
 #include "TrackData.h"
-#include "TrackStretchImpl.h"
 
 juce::String TrackManager::createTrack(const juce::String &name)
 {
@@ -31,7 +30,8 @@ juce::String TrackManager::createTrack(const juce::String &name)
 
 	if (audioPrepared)
 	{
-		initializeTrackAudio(*track, currentSampleRate, currentMaxBlockSize);
+		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+		track->reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
 	}
 
 	tracks[stdId] = std::move(track);
@@ -71,45 +71,20 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 	return ids;
 }
 
-void TrackManager::initializeTrackAudio(TrackData &track, double sampleRate, int maxBlockSize)
-{
-	const int numChannels = 2;
-	const int safeBlockSize = std::max(maxBlockSize * 2, 8192);
-
-	const bool alreadyConfigured =
-	    track.stretchConfiguredChannels == numChannels &&
-	    std::abs(track.stretchConfiguredSampleRate - static_cast<float>(sampleRate)) < 0.01f &&
-	    track.pitchInputBuffer.getNumSamples() >= safeBlockSize;
-
-	if (alreadyConfigured)
-		return;
-
-	track.delaySendProcessor.prepare(sampleRate, maxBlockSize);
-	track.reverbSendProcessor.prepare(sampleRate, maxBlockSize);
-
-	track.stretchImpl->stretch.presetDefault(numChannels, static_cast<float>(sampleRate));
-	track.stretchImpl->stretch.reset();
-	track.stretchConfiguredChannels = numChannels;
-	track.stretchConfiguredSampleRate = static_cast<float>(sampleRate);
-	track.pitchInputBuffer.setSize(numChannels, safeBlockSize, false, false, true);
-	track.pitchOutputBuffer.setSize(numChannels, safeBlockSize, false, false, true);
-	track.stretchNeedsReset.store(true);
-	const int latency = track.stretchImpl->stretch.outputLatency() + track.stretchImpl->stretch.inputLatency();
-	track.stretchLatencySamples.store(latency);
-}
-
-void TrackManager::prepareTracksAudio(double sampleRate, int maxBlockSize)
+void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 {
 	const juce::ScopedLock sl(tracksLock);
 	currentSampleRate = sampleRate;
 	currentMaxBlockSize = maxBlockSize;
 	audioPrepared = true;
+
 	perTrackFxBuffer.setSize(2, maxBlockSize, false, false, true);
 	for (const auto &pair : tracks)
 	{
 		if (pair.second)
 		{
-			initializeTrackAudio(*pair.second, sampleRate, maxBlockSize);
+			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
+			pair.second->reverbSendProcessor.prepare(sampleRate, maxBlockSize);
 		}
 	}
 }
@@ -326,7 +301,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 
 void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile)
 {
-	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (!track || pageIndex < 0 || pageIndex >= 4)
 	{
 		return;
 	}
@@ -471,13 +446,6 @@ int TrackManager::findFreeSlot()
 	return -1;
 }
 
-void TrackManager::seekTrack(TrackData &track, double newAbsolutePosition) const
-{
-	track.readPosition.store(newAbsolutePosition);
-	track.stretchNeedsReset.store(true);
-	track.postSwapFadeRemaining.store(track.stretchLatencySamples.load());
-}
-
 void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
                                      juce::AudioBuffer<float> &individualOutput,
                                      juce::AudioBuffer<float> & /* previewOutput */, int numSamples,
@@ -547,8 +515,6 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	double currentPosition = track.readPosition.load();
 	double playbackRatio = 1.0;
 
-	float pitchSemis = 0.0f;
-
 	switch (track.timeStretchMode)
 	{
 	case 1:
@@ -572,35 +538,13 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	case 4:
 		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
 		{
-			playbackRatio = hostBpm / originalBpmToUse;
-			const float bpmOffsetVal = static_cast<float>(currentPage.bpmOffset.load());
-			const float fineOffsetVal = currentPage.fineOffset.load();
-			const float totalOffset = bpmOffsetVal + fineOffsetVal;
-
-			if (std::abs(totalOffset) > 0.001f)
-			{
-				const float ratio = (originalBpmToUse + totalOffset) / originalBpmToUse;
-				pitchSemis = 12.0f * std::log2(ratio);
-				pitchSemis = juce::jlimit(-12.0f, 12.0f, pitchSemis);
-			}
+			float totalManualAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
+			float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
+			effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
+			playbackRatio = effectiveHostBpm / originalBpmToUse;
 		}
 		break;
 	}
-
-	const int currentPageIdx = track.currentPageIndex;
-	if (currentPageIdx != track.lastRenderedPageIndex)
-	{
-		track.stretchNeedsReset.store(true);
-		track.lastRenderedPageIndex = currentPageIdx;
-	}
-
-	if (track.stretchNeedsReset.exchange(false))
-	{
-		track.stretchImpl->stretch.reset();
-	}
-
-	track.stretchImpl->stretch.setTransposeSemitones(pitchSemis);
-	track.pitchInputBuffer.clear(0, numSamples);
 
 	double startSample = loopStartToUse * sampleRateToUse;
 	double endSample = loopEndToUse * sampleRateToUse;
@@ -629,33 +573,20 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	SequencerData seqData = currentPage.getCurrentSequence();
 
 	const int numMeasures = seqData.numMeasures;
-
 	const double beatsPerMeasure = (double)timeSignatureNumerator * (4.0 / timeSignatureDenominator);
-
 	double samplesPerBeat = (60.0 / hostBpm) * sampleRateToUse;
-
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
-
-	const double fadeLength = 512.0;
-
+	const double fadeLength = 64.0;
 	double endSampleLoop = 0.0;
 
 	if (startSample > 0.0 && endSample - startSample > samplesPerMeasure)
-	{
 		endSampleLoop = (samplesPerMeasure * numMeasures) + startSample;
-	}
 	else if (startSample > 0.0 && endSample - startSample < samplesPerMeasure)
-	{
 		endSampleLoop = endSample;
-	}
 	else if (endSample - startSample < samplesPerMeasure)
-	{
 		endSampleLoop = endSample;
-	}
 	else if (endSample - startSample > samplesPerMeasure)
-	{
 		endSampleLoop = samplesPerMeasure * numMeasures;
-	}
 
 	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
 
@@ -666,8 +597,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			double absolutePos = startSample + currentPosition;
 			if (absolutePos >= beatRepeatEnd)
 			{
-				seekTrack(track, beatRepeatStart);
 				currentPosition = beatRepeatStart - startSample;
+				track.readPosition.store(beatRepeatStart);
 			}
 		}
 
@@ -675,39 +606,23 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		if (absolutePosition >= endSample)
 		{
-			for (int j = i; j < numSamples; ++j)
-			{
-				track.pitchInputBuffer.setSample(0, j, 0.0f);
-				track.pitchInputBuffer.setSample(1, j, 0.0f);
-			}
-			seekTrack(track, 0.0);
-			track.isPlaying.store(false);
+			track.readPosition = 0.0;
+			track.isPlaying = false;
 			handleEndOfPreview();
-			break;
+			return;
 		}
 
 		if (absolutePosition >= numSamplesToUse)
 		{
-			seekTrack(track, startSample);
 			currentPosition = 0.0;
 			absolutePosition = startSample;
-		}
-
-		if (absolutePosition == startSample)
-		{
-			seekTrack(track, 0.0);
 		}
 
 		int sampleIndex = static_cast<int>(absolutePosition);
 		if (sampleIndex >= bufferSize)
 		{
-			track.isPlaying.store(false);
+			track.isPlaying = false;
 			handleEndOfPreview();
-			for (int j = i; j < numSamples; ++j)
-			{
-				track.pitchInputBuffer.setSample(0, j, 0.0f);
-				track.pitchInputBuffer.setSample(1, j, 0.0f);
-			}
 			break;
 		}
 
@@ -756,69 +671,36 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			adsrGain = juce::jlimit(0.0f, 1.0f, adsrGain);
 		}
 
-		float totalGain = adsrGain;
-
-		float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
-		float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
-
-		leftSample *= totalGain;
-		rightSample *= totalGain;
-
-		track.pitchInputBuffer.setSample(0, i, leftSample);
-		track.pitchInputBuffer.setSample(1, i, rightSample);
-
-		currentPosition += playbackRatio;
-	}
-
-	const float *const *inPtrs = track.pitchInputBuffer.getArrayOfReadPointers();
-	float *const *outPtrs = track.pitchOutputBuffer.getArrayOfWritePointers();
-
-	track.stretchImpl->stretch.process(inPtrs, numSamples, outPtrs, numSamples);
-
-	const float *outLeft = track.pitchOutputBuffer.getReadPointer(0);
-	const float *outRight = track.pitchOutputBuffer.getReadPointer(1);
-
-	int fadeRemaining = track.postSwapFadeRemaining.load();
-	const int fadeTotal = track.stretchLatencySamples.load();
-
-	double relativePosition = track.readPosition.load() + startSample;
-
-	for (int i = 0; i < numSamples; ++i)
-	{
-		float fadeGain = 1.0f;
-		if (fadeRemaining > 0)
-		{
-			float linear = 1.0f - (static_cast<float>(fadeRemaining) / static_cast<float>(fadeTotal));
-			fadeGain = std::sqrt(linear);
-			--fadeRemaining;
-		}
-
 		float safetyFade = 1.0f;
 
-		if (relativePosition < startSample + numSamples)
+		if (absolutePosition < startSample + numSamples)
 		{
-			safetyFade = static_cast<float>(relativePosition) * fadeRcp;
+			safetyFade = static_cast<float>(absolutePosition) * fadeRcp;
 		}
-		else if (relativePosition > endSampleLoop - numSamples)
+		else if (absolutePosition > endSampleLoop - numSamples)
 		{
-			safetyFade = static_cast<float>(endSampleLoop - relativePosition) * fadeRcp;
+			safetyFade = static_cast<float>(endSampleLoop - absolutePosition) * fadeRcp;
 		}
 
 		safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
 
-		const float l = outLeft[i] * volume * leftGain * fadeGain * safetyFade;
-		const float r = outRight[i] * volume * rightGain * fadeGain * safetyFade;
+		float totalGain = adsrGain * safetyFade;
 
-		mixOutput.addSample(0, i, l);
-		mixOutput.addSample(1, i, r);
-		individualOutput.setSample(0, i, l);
-		individualOutput.setSample(1, i, r);
+		float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
+		float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
 
-		relativePosition += playbackRatio;
+		leftSample *= volume * leftGain * totalGain;
+		rightSample *= volume * rightGain * totalGain;
+
+		mixOutput.addSample(0, i, leftSample);
+		mixOutput.addSample(1, i, rightSample);
+		individualOutput.setSample(0, i, leftSample);
+		individualOutput.setSample(1, i, rightSample);
+
+		currentPosition += playbackRatio;
 	}
 
-	track.postSwapFadeRemaining.store(fadeRemaining);
-	track.readPosition.store(currentPosition);
+	track.readPosition = currentPosition;
 }
 
 float TrackManager::interpolateLinear(const float *buffer, double position, int bufferSize) const
@@ -829,24 +711,6 @@ float TrackManager::interpolateLinear(const float *buffer, double position, int 
 
 	float fraction = static_cast<float>(position - index);
 	return buffer[index] + fraction * (buffer[index + 1] - buffer[index]);
-}
-
-float TrackManager::interpolateHermite(const float *buffer, double position, int bufferSize) const
-{
-	int index = static_cast<int>(position);
-	float fraction = static_cast<float>(position - index);
-
-	const float y0 = (index - 1 >= 0) ? buffer[index - 1] : buffer[0];
-	const float y1 = (index >= 0 && index < bufferSize) ? buffer[index] : 0.0f;
-	const float y2 = (index + 1 < bufferSize) ? buffer[index + 1] : buffer[bufferSize - 1];
-	const float y3 = (index + 2 < bufferSize) ? buffer[index + 2] : buffer[bufferSize - 1];
-
-	const float c0 = y1;
-	const float c1 = 0.5f * (y2 - y0);
-	const float c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3;
-	const float c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
-
-	return ((c3 * fraction + c2) * fraction + c1) * fraction + c0;
 }
 
 float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode)
@@ -860,21 +724,13 @@ float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int cur
 		return x;
 
 	case 1:
-	{
-		const float s = std::sin(x * juce::MathConstants<float>::halfPi);
-		return s * s;
-	}
-	case 2:
-	{
-		if (x < 0.1f)
-			return 0.0f;
-		if (x > 0.9f)
-			return 1.0f;
+		return std::sin(x * juce::MathConstants<float>::halfPi);
 
-		const float remapped = (x - 0.1f) / 0.8f;
-		const float s = std::sin(remapped * juce::MathConstants<float>::halfPi);
-		return s * s;
-	}
+	case 2:
+		if (x >= 0.5f)
+			return 1.0f;
+		return std::sin(x * juce::MathConstants<float>::pi);
+
 	default:
 		return x;
 	}

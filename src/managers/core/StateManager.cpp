@@ -490,7 +490,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		const int blockSize = audioProcessor.getBlockSize();
 		if (sampleRate > 0 && blockSize > 0)
 		{
-			audioProcessor.getTrackManager().prepareTracksAudio(sampleRate, blockSize);
+			audioProcessor.getTrackManager().prepareSends(sampleRate, blockSize);
 		}
 	}
 
