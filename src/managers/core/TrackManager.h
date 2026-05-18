@@ -67,7 +67,11 @@ class TrackManager
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 
+	float interpolateHermite(const float *buffer, double position, int bufferSize) const;
+
 	void initializeTrackAudio(TrackData &track, double sampleRate, int maxBlockSize);
+
+	void seekTrack(TrackData &track, double newAbsolutePosition) const;
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };

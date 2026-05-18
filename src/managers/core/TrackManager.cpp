@@ -94,6 +94,8 @@ void TrackManager::initializeTrackAudio(TrackData &track, double sampleRate, int
 	track.pitchInputBuffer.setSize(numChannels, safeBlockSize, false, false, true);
 	track.pitchOutputBuffer.setSize(numChannels, safeBlockSize, false, false, true);
 	track.stretchNeedsReset.store(true);
+	const int latency = track.stretchImpl->stretch.outputLatency() + track.stretchImpl->stretch.inputLatency();
+	track.stretchLatencySamples.store(latency);
 }
 
 void TrackManager::prepareTracksAudio(double sampleRate, int maxBlockSize)
@@ -469,6 +471,13 @@ int TrackManager::findFreeSlot()
 	return -1;
 }
 
+void TrackManager::seekTrack(TrackData &track, double newAbsolutePosition) const
+{
+	track.readPosition.store(newAbsolutePosition);
+	track.stretchNeedsReset.store(true);
+	track.postSwapFadeRemaining.store(track.stretchLatencySamples.load());
+}
+
 void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
                                      juce::AudioBuffer<float> &individualOutput,
                                      juce::AudioBuffer<float> & /* previewOutput */, int numSamples,
@@ -563,8 +572,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	case 4:
 		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
 		{
-			playbackRatio = hostBpm / originalBpmToUse;
-
+			playbackRatio = 1.0;
 			const float bpmOffsetVal = static_cast<float>(currentPage.bpmOffset.load());
 			const float fineOffsetVal = currentPage.fineOffset.load();
 			const float totalOffset = bpmOffsetVal + fineOffsetVal;
@@ -628,9 +636,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
 
+	const double fadeLength = 64.0;
 	const double totalSamplesBeforeFadeOut = juce::jmin((samplesPerMeasure * numMeasures) + startSample, endSample);
-
-	const double fadeLength = 256.0;
 	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
 
 	for (int i = 0; i < numSamples; ++i)
@@ -640,8 +647,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			double absolutePos = startSample + currentPosition;
 			if (absolutePos >= beatRepeatEnd)
 			{
+				seekTrack(track, beatRepeatStart);
 				currentPosition = beatRepeatStart - startSample;
-				track.readPosition.store(beatRepeatStart);
 			}
 		}
 
@@ -654,7 +661,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 				track.pitchInputBuffer.setSample(0, j, 0.0f);
 				track.pitchInputBuffer.setSample(1, j, 0.0f);
 			}
-			track.readPosition.store(0.0);
+			seekTrack(track, startSample);
 			track.isPlaying.store(false);
 			handleEndOfPreview();
 			break;
@@ -662,8 +669,14 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		if (absolutePosition >= numSamplesToUse)
 		{
+			seekTrack(track, startSample);
 			currentPosition = 0.0;
 			absolutePosition = startSample;
+		}
+
+		if (absolutePosition == startSample)
+		{
+			seekTrack(track, startSample);
 		}
 
 		int sampleIndex = static_cast<int>(absolutePosition);
@@ -730,9 +743,11 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		{
 			safetyFade = static_cast<float>(absolutePosition) * fadeRcp;
 		}
-		else if (absolutePosition > (totalSamplesBeforeFadeOut - numSamples))
+		else if (absolutePosition - track.stretchLatencySamples.load() > (totalSamplesBeforeFadeOut - numSamples))
 		{
-			safetyFade = static_cast<float>(totalSamplesBeforeFadeOut - absolutePosition) * fadeRcp;
+			safetyFade =
+			    static_cast<float>(totalSamplesBeforeFadeOut - absolutePosition - track.stretchLatencySamples.load()) *
+			    fadeRcp;
 		}
 
 		safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
@@ -759,10 +774,21 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	const float *outLeft = track.pitchOutputBuffer.getReadPointer(0);
 	const float *outRight = track.pitchOutputBuffer.getReadPointer(1);
 
+	int fadeRemaining = track.postSwapFadeRemaining.load();
+	const int fadeTotal = track.stretchLatencySamples.load();
+
 	for (int i = 0; i < numSamples; ++i)
 	{
-		const float l = outLeft[i] * volume * leftGain;
-		const float r = outRight[i] * volume * rightGain;
+		float fadeGain = 1.0f;
+		if (fadeRemaining > 0)
+		{
+			float linear = 1.0f - (static_cast<float>(fadeRemaining) / static_cast<float>(fadeTotal));
+			fadeGain = std::sqrt(linear);
+			--fadeRemaining;
+		}
+
+		const float l = outLeft[i] * volume * leftGain * fadeGain;
+		const float r = outRight[i] * volume * rightGain * fadeGain;
 
 		mixOutput.addSample(0, i, l);
 		mixOutput.addSample(1, i, r);
@@ -770,7 +796,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		individualOutput.setSample(1, i, r);
 	}
 
-	track.readPosition = currentPosition;
+	track.postSwapFadeRemaining.store(fadeRemaining);
+	track.readPosition.store(currentPosition);
 }
 
 float TrackManager::interpolateLinear(const float *buffer, double position, int bufferSize) const
@@ -781,6 +808,24 @@ float TrackManager::interpolateLinear(const float *buffer, double position, int 
 
 	float fraction = static_cast<float>(position - index);
 	return buffer[index] + fraction * (buffer[index + 1] - buffer[index]);
+}
+
+float TrackManager::interpolateHermite(const float *buffer, double position, int bufferSize) const
+{
+	int index = static_cast<int>(position);
+	float fraction = static_cast<float>(position - index);
+
+	const float y0 = (index - 1 >= 0) ? buffer[index - 1] : buffer[0];
+	const float y1 = (index >= 0 && index < bufferSize) ? buffer[index] : 0.0f;
+	const float y2 = (index + 1 < bufferSize) ? buffer[index + 1] : buffer[bufferSize - 1];
+	const float y3 = (index + 2 < bufferSize) ? buffer[index + 2] : buffer[bufferSize - 1];
+
+	const float c0 = y1;
+	const float c1 = 0.5f * (y2 - y0);
+	const float c2 = y0 - 2.5f * y1 + 2.0f * y2 - 0.5f * y3;
+	const float c3 = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
+
+	return ((c3 * fraction + c2) * fraction + c1) * fraction + c0;
 }
 
 float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode)

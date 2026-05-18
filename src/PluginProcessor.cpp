@@ -548,7 +548,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 #endif
 
 	sequencerManager.internalSampleCounter += buffer.getNumSamples();
-	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
 		buffer.clear(i, 0, buffer.getNumSamples());
 	auto currentPlayHead = getPlayHead();
@@ -560,7 +559,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 		getDawInformations(currentPlayHead, hostIsPlaying, hostBpm, hostPpqPosition);
 
 	lastHostBpmForQuantization.store(hostBpm);
-
+	if (hasPendingAudioData.load())
+	{
+		audioManager.processIncomingAudio(hostIsPlaying);
+	}
+	audioManager.checkAndSwapStagingBuffers();
 	sequencerManager.handleSequencerPlayState(hostIsPlaying);
 	sequencerManager.updateSequencers(hostIsPlaying);
 	sequencerManager.checkBeatRepeatWithSampleCounter();
@@ -568,10 +571,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	midiManager.processMidiMessages(midiMessages, hostIsPlaying, hostBpm);
 	midiManager.flushFeedbackBuffer(midiMessages, buffer.getNumSamples());
-	if (hasPendingAudioData.load())
-	{
-		audioManager.processIncomingAudio(hostIsPlaying);
-	}
 	audioManager.resizeIndividualBuffers(buffer);
 	audioManager.clearOutputBuffers(buffer);
 	auto mainOutput = getBusBuffer(buffer, false, 0);

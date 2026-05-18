@@ -342,6 +342,8 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	bool preservedHasOriginal = targetPage.hasOriginalVersion.load();
 
 	std::swap(targetPage.audioBuffer, track->stagingBuffer);
+	track->stretchNeedsReset.store(true);
+	track->postSwapFadeRemaining.store(track->stretchLatencySamples.load());
 	targetPage.numSamples = track->stagingNumSamples.load();
 	targetPage.sampleRate = track->stagingSampleRate.load();
 	targetPage.originalBpm = targetPage.stagingOriginalBpm;
