@@ -572,7 +572,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	case 4:
 		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
 		{
-			playbackRatio = 1.0;
+			playbackRatio = hostBpm / originalBpmToUse;
 			const float bpmOffsetVal = static_cast<float>(currentPage.bpmOffset.load());
 			const float fineOffsetVal = currentPage.fineOffset.load();
 			const float totalOffset = bpmOffsetVal + fineOffsetVal;
@@ -636,8 +636,27 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
 
-	const double fadeLength = 64.0;
-	const double totalSamplesBeforeFadeOut = juce::jmin((samplesPerMeasure * numMeasures) + startSample, endSample);
+	const double fadeLength = 512.0;
+
+	double endSampleLoop = 0.0;
+
+	if (startSample > 0.0 && endSample - startSample > samplesPerMeasure)
+	{
+		endSampleLoop = (samplesPerMeasure * numMeasures) + startSample;
+	}
+	else if (startSample > 0.0 && endSample - startSample < samplesPerMeasure)
+	{
+		endSampleLoop = endSample;
+	}
+	else if (endSample - startSample < samplesPerMeasure)
+	{
+		endSampleLoop = endSample;
+	}
+	else if (endSample - startSample > samplesPerMeasure)
+	{
+		endSampleLoop = samplesPerMeasure * numMeasures;
+	}
+
 	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
 
 	for (int i = 0; i < numSamples; ++i)
@@ -661,7 +680,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 				track.pitchInputBuffer.setSample(0, j, 0.0f);
 				track.pitchInputBuffer.setSample(1, j, 0.0f);
 			}
-			seekTrack(track, startSample);
+			seekTrack(track, 0.0);
 			track.isPlaying.store(false);
 			handleEndOfPreview();
 			break;
@@ -676,7 +695,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		if (absolutePosition == startSample)
 		{
-			seekTrack(track, startSample);
+			seekTrack(track, 0.0);
 		}
 
 		int sampleIndex = static_cast<int>(absolutePosition);
@@ -737,22 +756,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			adsrGain = juce::jlimit(0.0f, 1.0f, adsrGain);
 		}
 
-		float safetyFade = 1.0f;
-
-		if (absolutePosition < startSample + numSamples)
-		{
-			safetyFade = static_cast<float>(absolutePosition) * fadeRcp;
-		}
-		else if (absolutePosition - track.stretchLatencySamples.load() > (totalSamplesBeforeFadeOut - numSamples))
-		{
-			safetyFade =
-			    static_cast<float>(totalSamplesBeforeFadeOut - absolutePosition - track.stretchLatencySamples.load()) *
-			    fadeRcp;
-		}
-
-		safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
-
-		float totalGain = adsrGain * safetyFade;
+		float totalGain = adsrGain;
 
 		float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
 		float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
@@ -777,6 +781,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	int fadeRemaining = track.postSwapFadeRemaining.load();
 	const int fadeTotal = track.stretchLatencySamples.load();
 
+	double relativePosition = track.readPosition.load() + startSample;
+
 	for (int i = 0; i < numSamples; ++i)
 	{
 		float fadeGain = 1.0f;
@@ -787,13 +793,28 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			--fadeRemaining;
 		}
 
-		const float l = outLeft[i] * volume * leftGain * fadeGain;
-		const float r = outRight[i] * volume * rightGain * fadeGain;
+		float safetyFade = 1.0f;
+
+		if (relativePosition < startSample + numSamples)
+		{
+			safetyFade = static_cast<float>(relativePosition) * fadeRcp;
+		}
+		else if (relativePosition > endSampleLoop - numSamples)
+		{
+			safetyFade = static_cast<float>(endSampleLoop - relativePosition) * fadeRcp;
+		}
+
+		safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
+
+		const float l = outLeft[i] * volume * leftGain * fadeGain * safetyFade;
+		const float r = outRight[i] * volume * rightGain * fadeGain * safetyFade;
 
 		mixOutput.addSample(0, i, l);
 		mixOutput.addSample(1, i, r);
 		individualOutput.setSample(0, i, l);
 		individualOutput.setSample(1, i, r);
+
+		relativePosition += playbackRatio;
 	}
 
 	track.postSwapFadeRemaining.store(fadeRemaining);
