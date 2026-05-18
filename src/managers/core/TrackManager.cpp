@@ -540,7 +540,13 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		{
 			float totalManualAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
 			float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
+
+			float minEffectiveBpm = static_cast<float>(hostBpm) * 0.5f;
+			float maxEffectiveBpm = static_cast<float>(hostBpm) * 1.99f;
+
+			effectiveHostBpm = juce::jlimit(minEffectiveBpm, maxEffectiveBpm, effectiveHostBpm);
 			effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
+
 			playbackRatio = effectiveHostBpm / originalBpmToUse;
 		}
 		break;
@@ -578,15 +584,16 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
 	const double fadeLength = 64.0;
 	double endSampleLoop = 0.0;
+	double samplesPerMeasureScaled = samplesPerMeasure * playbackRatio;
 
-	if (startSample > 0.0 && endSample - startSample > samplesPerMeasure)
-		endSampleLoop = (samplesPerMeasure * numMeasures) + startSample;
-	else if (startSample > 0.0 && endSample - startSample < samplesPerMeasure)
+	if (startSample > 0.0 && endSample - startSample > samplesPerMeasureScaled)
+		endSampleLoop = (samplesPerMeasureScaled * numMeasures) + startSample;
+	else if (startSample > 0.0 && endSample - startSample < samplesPerMeasureScaled)
 		endSampleLoop = endSample;
-	else if (endSample - startSample < samplesPerMeasure)
+	else if (endSample - startSample < samplesPerMeasureScaled)
 		endSampleLoop = endSample;
-	else if (endSample - startSample > samplesPerMeasure)
-		endSampleLoop = samplesPerMeasure * numMeasures;
+	else if (endSample - startSample > samplesPerMeasureScaled)
+		endSampleLoop = samplesPerMeasureScaled * numMeasures;
 
 	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
 
