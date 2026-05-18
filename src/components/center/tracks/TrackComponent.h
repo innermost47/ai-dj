@@ -65,7 +65,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void updateWaveformWithTimeStretch();
 	void updatePlaybackPosition(double timeInSeconds);
 	void refreshWaveformIfNeeded();
-	void updatePromptPresets(const juce::StringArray &presets);
+	void updatePromptPresets(const juce::StringArray &presets, const juce::String &selectedPrompt = "");
 	void updatePromptSelection(const juce::String &promptText);
 	void onPageSelected(int pageIndex);
 	void performPageChange(int pageIndex);

@@ -828,7 +828,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		if (sampleEntry)
 		{
 			page.prompt = sampleEntry->originalPrompt;
-			page.selectedPrompt = sampleEntry->originalPrompt;
+			page.setSelectedPrompt(sampleEntry->originalPrompt);
 			page.generationBpm = sampleEntry->bpm;
 			page.generationKey = sampleEntry->key;
 		}

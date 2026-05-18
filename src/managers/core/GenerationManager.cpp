@@ -432,7 +432,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 				    request = audioProcessor.createGlobalLoopRequest();
 				    if (currentPage.selectedModel.isNotEmpty())
 					    request.model = currentPage.selectedModel;
-				    currentPage.selectedPrompt = request.prompt;
+				    currentPage.setSelectedPrompt(request.prompt);
 				    currentPage.generationBpm = currentHostBpm;
 				    currentPage.generationKey = request.key;
 			    }

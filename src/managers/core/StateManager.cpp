@@ -191,7 +191,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.sampleRate = pageState.getProperty("sampleRate", ObsidianDataConst::SAMPLERATE);
 				page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 				page.prompt = pageState.getProperty("prompt", "").toString();
-				page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
+				page.setSelectedPrompt(pageState.getProperty("selectedPrompt", "").toString());
 				page.selectedModel = pageState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
 				page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 				page.generationBpm = pageState.getProperty("generationBpm", 126.0f);

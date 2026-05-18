@@ -131,6 +131,11 @@ struct TrackPage
 		return sequences[currentSequenceIndex];
 	}
 
+	void setSelectedPrompt(juce::String newPrompt)
+	{
+		selectedPrompt = newPrompt;
+	}
+
 	const SequencerData &getCurrentSequence() const
 	{
 		return sequences[currentSequenceIndex];

@@ -71,7 +71,7 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 			if (track)
 			{
 				auto &currentPage = track->getCurrentPage();
-				currentPage.selectedPrompt = promptPresetSelector.getText();
+				currentPage.setSelectedPrompt(promptPresetSelector.getText());
 				currentPage.generationBpm = audioProcessor.getGlobalBpm();
 				currentPage.generationKey = audioProcessor.getGlobalKey();
 				currentPage.generationDuration = audioProcessor.getGlobalDuration();
@@ -217,18 +217,6 @@ void TrackComponent::updateFromTrackData()
 	useOriginal = hasOriginal && currentPage.useOriginalFile.load();
 
 	originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
-
-	if (!currentPage.selectedPrompt.isEmpty())
-	{
-		for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
-		{
-			if (promptPresetSelector.getItemText(i) == currentPage.selectedPrompt)
-			{
-				promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-				break;
-			}
-		}
-	}
 
 	if (waveformDisplay)
 	{
@@ -793,6 +781,9 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	updateFromTrackData();
 
+	juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(t->getCurrentPage().selectedModel);
+	updatePromptPresets(prompts);
+
 	if (sequencer)
 	{
 		sequencer->updateSequenceButtonsDisplay();
@@ -1123,7 +1114,8 @@ void TrackComponent::setupUI()
 		auto selectedModel = modelSelector.getText();
 
 		t->getCurrentPage().selectedModel = selectedModel;
-
+		juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(selectedModel);
+		updatePromptPresets(prompts);
 		updateModelUI();
 		if (onModelChanged)
 			onModelChanged(trackId);
@@ -1393,13 +1385,16 @@ void TrackComponent::loadPromptPresets()
 		    if (!selected && allPrompts.size() > 0)
 		    {
 			    safeThis->promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
-			    t->getCurrentPage().selectedPrompt = allPrompts[0];
+			    t->getCurrentPage().setSelectedPrompt(allPrompts[0]);
 		    }
 	    });
 }
 
-void TrackComponent::updatePromptPresets(const juce::StringArray &presets)
+void TrackComponent::updatePromptPresets(const juce::StringArray &presets, const juce::String &selectedPrompt)
 {
+	auto *t = getTrack();
+	if (!t)
+		return;
 	juce::String currentSelection = promptPresetSelector.getText();
 	promptPresets = presets;
 	promptPresets.sort(true);
@@ -1409,11 +1404,35 @@ void TrackComponent::updatePromptPresets(const juce::StringArray &presets)
 		promptPresetSelector.addItem(promptPresets[i], i + 1);
 
 	int index = promptPresets.indexOf(currentSelection);
-	if (index >= 0)
+	if (index >= 0 && selectedPrompt.isEmpty())
 		promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
 	else if (promptPresets.size() > 0)
 	{
-		promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
+		if (t->getCurrentPage().selectedPrompt.isNotEmpty())
+		{
+			bool found = false;
+			if (selectedPrompt.isNotEmpty() && t->getCurrentPage().selectedPrompt != selectedPrompt)
+			{
+				t->getCurrentPage().selectedPrompt = selectedPrompt;
+			}
+
+			for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+			{
+				if (promptPresetSelector.getItemText(i) == t->getCurrentPage().selectedPrompt)
+				{
+					promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+			{
+				promptPresetSelector.addItem(t->getCurrentPage().selectedPrompt, promptPresets.size() + 1);
+				promptPresetSelector.setSelectedId(promptPresets.size() + 1, juce::dontSendNotification);
+			}
+		}
+
 		onTrackPresetSelected();
 	}
 }
@@ -1462,7 +1481,7 @@ void TrackComponent::onTrackPresetSelected()
 	juce::String newPrompt = promptPresetSelector.getText();
 
 	auto &currentPage = t->getCurrentPage();
-	currentPage.selectedPrompt = newPrompt;
+	currentPage.setSelectedPrompt(newPrompt);
 
 	if (onTrackPromptChanged)
 	{
@@ -1530,7 +1549,7 @@ void TrackComponent::updatePromptSelection(const juce::String &promptText)
 	if (!t)
 		return;
 
-	t->getCurrentPage().selectedPrompt = promptText;
+	t->getCurrentPage().setSelectedPrompt(promptText);
 
 	for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 	{
@@ -1595,13 +1614,21 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		{
 			if (!sampleEntry->originalPrompt.isEmpty())
 			{
-				for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+				if (!sampleEntry->modelName.isEmpty())
 				{
-					if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+					juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(sampleEntry->modelName);
+					updatePromptPresets(prompts, sampleEntry->originalPrompt);
+				}
+				else
+				{
+					for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 					{
-						promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-						t->getCurrentPage().selectedPrompt = sampleEntry->originalPrompt;
-						break;
+						if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+						{
+							promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+							t->getCurrentPage().setSelectedPrompt(sampleEntry->originalPrompt);
+							break;
+						}
 					}
 				}
 			}
@@ -1750,7 +1777,7 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 			if (promptPresetSelector.getItemText(i) == entry->text)
 			{
 				promptPresetSelector.setSelectedItemIndex(i, juce::sendNotification);
-				t->getCurrentPage().selectedPrompt = entry->text;
+				t->getCurrentPage().setSelectedPrompt(entry->text);
 				found = true;
 				break;
 			}
@@ -1760,7 +1787,7 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 		{
 			promptPresetSelector.addItem(entry->text, promptPresetSelector.getNumItems() + 1);
 			promptPresetSelector.setSelectedId(promptPresetSelector.getNumItems(), juce::sendNotification);
-			t->getCurrentPage().selectedPrompt = entry->text;
+			t->getCurrentPage().setSelectedPrompt(entry->text);
 		}
 	}
 

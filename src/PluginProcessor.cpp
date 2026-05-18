@@ -327,7 +327,7 @@ void DjIaVstProcessor::initTracks()
 				page.selectedModel = modelName;
 				page.prompt = promptForThisModel;
 				page.generationPrompt = promptForThisModel;
-				page.selectedPrompt = promptForThisModel;
+				page.setSelectedPrompt(promptForThisModel);
 				page.selectedKeywords = customKeywords;
 			}
 		}
