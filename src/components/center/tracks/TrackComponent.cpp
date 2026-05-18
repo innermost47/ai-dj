@@ -1291,12 +1291,23 @@ void TrackComponent::onIntervalChanged()
 			double startPosition = t->beatRepeatStartPosition.load();
 			double repeatDuration = audioProcessor.getSequencerManager().calculateRetriggerInterval(value, hostBpm);
 			double repeatDurationSamples = repeatDuration * t->getCurrentPage().sampleRate;
-			t->beatRepeatEndPosition.store(startPosition + repeatDurationSamples);
+
+			const double GATE_SAMPLES = 64.0;
+			double newEnd = startPosition + repeatDurationSamples - GATE_SAMPLES;
 
 			double maxSamples = t->getCurrentPage().numSamples;
-			if (t->beatRepeatEndPosition.load() > maxSamples)
+			if (newEnd > maxSamples)
+				newEnd = maxSamples;
+			if (newEnd <= startPosition)
+				newEnd = startPosition + 1.0;
+
+			t->beatRepeatEndPosition.store(newEnd);
+
+			double currentPos = t->readPosition.load();
+			if (currentPos >= newEnd)
 			{
-				t->beatRepeatEndPosition.store(maxSamples);
+				t->readPosition.store(startPosition);
+				t->brFadeInPending.store(64);
 			}
 		}
 	}

@@ -540,13 +540,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		{
 			float totalManualAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
 			float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
-
-			float minEffectiveBpm = static_cast<float>(hostBpm) * 0.5f;
-			float maxEffectiveBpm = static_cast<float>(hostBpm) * 1.99f;
-
-			effectiveHostBpm = juce::jlimit(minEffectiveBpm, maxEffectiveBpm, effectiveHostBpm);
 			effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
-
 			playbackRatio = effectiveHostBpm / originalBpmToUse;
 		}
 		break;
@@ -582,7 +576,6 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	const double beatsPerMeasure = (double)timeSignatureNumerator * (4.0 / timeSignatureDenominator);
 	double samplesPerBeat = (60.0 / hostBpm) * sampleRateToUse;
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
-	const double fadeLength = 64.0;
 	double endSampleLoop = 0.0;
 	double samplesPerMeasureScaled = samplesPerMeasure * playbackRatio;
 
@@ -595,7 +588,29 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	else if (endSample - startSample > samplesPerMeasureScaled)
 		endSampleLoop = samplesPerMeasureScaled * numMeasures;
 
+	const double FADE_DURATION = 512.0;
+	double samplesSourceUntilEnd = endSampleLoop - (startSample + currentPosition);
+	double samplesUntilLoopEnd = samplesSourceUntilEnd / playbackRatio;
+	bool fadeOutThisBuffer = (samplesUntilLoopEnd > 0 && samplesUntilLoopEnd <= FADE_DURATION + numSamples);
+
+	const double fadeLength = 64.0;
 	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
+
+	double samplesUntilBeatRepeatEnd = -1.0;
+	if (beatRepeatActive)
+	{
+		double samplesSourceUntilBREnd = beatRepeatEnd - (startSample + currentPosition);
+		samplesUntilBeatRepeatEnd = samplesSourceUntilBREnd / playbackRatio;
+	}
+	double brLengthSamples = beatRepeatActive ? (beatRepeatEnd - beatRepeatStart) / playbackRatio : 0.0;
+	const int BR_FADE_DURATION = beatRepeatActive ? juce::jlimit(16, 64, static_cast<int>(brLengthSamples / 16.0)) : 64;
+	const int BR_FADE_IN_LENGTH = BR_FADE_DURATION;
+	int brFadeInCounter = 0;
+	int pendingFadeIn = track.brFadeInPending.exchange(0);
+	if (pendingFadeIn > 0)
+	{
+		brFadeInCounter = pendingFadeIn;
+	}
 
 	for (int i = 0; i < numSamples; ++i)
 	{
@@ -606,6 +621,10 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			{
 				currentPosition = beatRepeatStart - startSample;
 				track.readPosition.store(beatRepeatStart);
+
+				brFadeInCounter = BR_FADE_IN_LENGTH;
+				double samplesSourceUntilBREnd = beatRepeatEnd - (startSample + currentPosition);
+				samplesUntilBeatRepeatEnd = (samplesSourceUntilBREnd / playbackRatio) + i;
 			}
 		}
 
@@ -678,15 +697,46 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			adsrGain = juce::jlimit(0.0f, 1.0f, adsrGain);
 		}
 
+		double posInLoop = absolutePosition - startSample;
+		double loopLength = endSampleLoop - startSample;
+
 		float safetyFade = 1.0f;
 
-		if (absolutePosition < startSample + numSamples)
+		if (posInLoop < fadeLength)
 		{
-			safetyFade = static_cast<float>(absolutePosition) * fadeRcp;
+			safetyFade = static_cast<float>(posInLoop) * fadeRcp;
 		}
-		else if (absolutePosition > endSampleLoop - numSamples)
+		else if (posInLoop > loopLength - fadeLength)
 		{
-			safetyFade = static_cast<float>(endSampleLoop - absolutePosition) * fadeRcp;
+			safetyFade = static_cast<float>(loopLength - posInLoop) * fadeRcp;
+		}
+
+		if (beatRepeatActive && samplesUntilBeatRepeatEnd > 0)
+		{
+			double samplesUntilBR = samplesUntilBeatRepeatEnd - i;
+			if (samplesUntilBR > 0 && samplesUntilBR <= BR_FADE_DURATION)
+			{
+				float brFade = static_cast<float>(samplesUntilBR / static_cast<double>(BR_FADE_DURATION));
+				safetyFade = std::min(safetyFade, brFade);
+			}
+		}
+
+		if (brFadeInCounter > 0)
+		{
+			float brFadeIn =
+			    static_cast<float>(BR_FADE_IN_LENGTH - brFadeInCounter) / static_cast<float>(BR_FADE_IN_LENGTH);
+			safetyFade = std::min(safetyFade, brFadeIn);
+			brFadeInCounter--;
+		}
+
+		if (fadeOutThisBuffer)
+		{
+			double samplesUntilTrigger = samplesUntilLoopEnd - i;
+			if (samplesUntilTrigger > 0 && samplesUntilTrigger <= FADE_DURATION)
+			{
+				float triggerFade = static_cast<float>(samplesUntilTrigger / FADE_DURATION);
+				safetyFade = std::min(safetyFade, triggerFade);
+			}
 		}
 
 		safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);

@@ -268,7 +268,7 @@ struct TrackData
 	std::atomic<float> lastFeedbackPan{-999.0f};
 	std::atomic<float> lastFeedbackPitch{-999.0f};
 	std::atomic<float> lastFeedbackFine{-999.0f};
-
+	std::atomic<int> brFadeInPending{0};
 	std::atomic<int> stagingNumSamples{0};
 	std::atomic<int> randomRetriggerInterval{3};
 	std::atomic<int> pendingPageIndex{-1};

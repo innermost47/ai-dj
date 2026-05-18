@@ -561,7 +561,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	}
 	audioManager.checkAndSwapStagingBuffers();
 	sequencerManager.handleSequencerPlayState(hostIsPlaying);
-	sequencerManager.updateSequencers(hostIsPlaying);
+	sequencerManager.updateSequencers(hostIsPlaying, buffer.getNumSamples());
 	sequencerManager.checkBeatRepeatWithSampleCounter();
 	sequencerManager.flushMidiBuffer(midiMessages, buffer.getNumSamples());
 

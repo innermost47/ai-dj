@@ -12,7 +12,7 @@ class SequencerManager
 	~SequencerManager() = default;
 
 	void handleSequencerPlayState(bool hostIsPlaying);
-	void updateSequencers(bool hostIsPlaying);
+	void updateSequencers(bool hostIsPlaying, int numSamples);
 	void addSequencerMidiMessage(const juce::MidiMessage &message);
 	void handleAdvanceStep(TrackData *track, bool hostIsPlaying);
 	void triggerSequencerStep(TrackData *track);
