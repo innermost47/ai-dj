@@ -781,8 +781,8 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	updateFromTrackData();
 
-	juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(t->getCurrentPage().selectedModel);
-	updatePromptPresets(prompts);
+	juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(newPage.selectedModel);
+	updatePromptPresets(prompts, newPage.selectedPrompt);
 
 	if (sequencer)
 	{
