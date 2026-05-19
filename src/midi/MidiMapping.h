@@ -116,11 +116,11 @@ struct MidiMapping
 	}
 	static int pitchToMidi(float p)
 	{
-		return juce::jlimit(0, 127, juce::roundToInt((p + 96.0f) / 192.0f * 127.0f));
+		return juce::jlimit(0, 127, juce::roundToInt((p + 12.0f) / 24.0f * 127.0f));
 	}
 	static int fineToMidi(float f)
 	{
-		return juce::jlimit(0, 127, juce::roundToInt((f + 100.0f) / 200.0f * 127.0f));
+		return juce::jlimit(0, 127, juce::roundToInt((f + 50.0f) / 100.0f * 127.0f));
 	}
 
 	static int normalizedToMidi(float v)

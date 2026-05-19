@@ -127,26 +127,20 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 	}
 }
 
-void SequencerManager::handleSequenceChange(const juce::String &parameterID)
+void SequencerManager::handleSequenceChange(int slotNum, int targetSequence)
 {
-	juce::String slotStr = parameterID.substring(4, 5);
-	juce::String seqStr = parameterID.substring(8, 9);
 
-	int slotNumber = slotStr.getIntValue();
-	int seqNumber = seqStr.getIntValue();
-
-	if (slotNumber < 1 || slotNumber > 8 || seqNumber < 1 || seqNumber > 8)
+	if (slotNum < 1 || slotNum > 8 || targetSequence < 1 || targetSequence > 8)
 		return;
 
 	auto trackIds = trackManager.getAllTrackIds();
 	for (const auto &trackId : trackIds)
 	{
 		TrackData *track = trackManager.getTrack(trackId);
-		if (track && track->slotIndex == (slotNumber - 1))
+		if (track && track->slotIndex == (slotNum - 1))
 		{
 			auto &currentPage = track->getCurrentPage();
-			currentPage.currentSequenceIndex = seqNumber - 1;
-			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber), seqNumber - 1);
+			currentPage.currentSequenceIndex = targetSequence - 1;
 			juce::MessageManager::callAsync(
 			    [this]()
 			    {

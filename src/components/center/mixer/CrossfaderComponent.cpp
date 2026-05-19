@@ -130,7 +130,7 @@ void CrossfaderComponent::setupSlider(MidiLearnableSlider &slider, const juce::S
 	slider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
 }
 
-void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, float /*normalizedValue*/)
+void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
 {
 	if (paramSuffix.startsWith("pairCrossfader"))
 	{
@@ -138,6 +138,9 @@ void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 		if (idx >= 0 && idx < ObsidianDataConst::MAX_CROSSFADER_PAIR)
 		{
 			updateSliderColour(pairSliders[idx], idx);
+			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(idx),
+			                                                 MidiMapping::volumeToMidi(normalizedValue),
+			                                                 MidiMapping::feedbackChannelShaping);
 		}
 	}
 	else if (paramSuffix == "crossfaderCurveMode")

@@ -212,11 +212,16 @@ void SequencerComponent::onSequenceSelected(int seqIndex)
 
 	if (track->slotIndex != -1)
 	{
-		juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + "Seq" + juce::String(seqIndex + 1);
+		juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + "Seq";
+
 		auto *param = audioProcessor.getParameterTreeState().getParameter(paramName);
 		if (param)
 		{
-			param->setValueNotifyingHost(1.0f);
+			int seqIdx = seqIndex + 1;
+			float normalizedValue = (static_cast<float>(seqIdx) - 1.0f) / 7.0f;
+			param->setValueNotifyingHost(normalizedValue);
+			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSeq(track->slotIndex + 1),
+			                                                 seqIndex);
 		}
 	}
 }

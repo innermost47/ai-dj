@@ -241,7 +241,7 @@ class ParameterManager
 		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",        "ReverbSend",
 		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval"};
 
-		for (int slot = 1; slot <= 8; ++slot)
+		for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
 		{
 			const juce::String prefix = "slot" + juce::String(slot);
 			for (const auto &param : perSlotParams)
@@ -260,7 +260,7 @@ class ParameterManager
 		static const juce::StringArray perSlotParams = {
 		    "Mute", "Solo", "Play", "Stop", "Generate", "RandomRetrigger", "PageA", "PageB", "PageC", "PageD"};
 
-		for (int slot = 1; slot <= 8; ++slot)
+		for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
 		{
 			const juce::String prefix = "slot" + juce::String(slot);
 			for (const auto &param : perSlotParams)
