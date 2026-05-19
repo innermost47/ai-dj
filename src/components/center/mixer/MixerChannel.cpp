@@ -687,6 +687,8 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 		return;
 
 	auto &pm = audioProcessor.getParameterManager();
+	auto &apvts = audioProcessor.getParameterTreeState();
+	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
 	int slot = track->slotIndex + 1;
 	int slotIdx = track->slotIndex;
 
@@ -705,7 +707,7 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 	}
 	else if (paramSuffix == "Pan")
 	{
-		t->pan.store(newValue);
+		t->pan.store(range.convertFrom0to1(newValue));
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
 		                                                 MidiMapping::panToMidi(pm.getPan(slotIdx)));
 	}
@@ -735,14 +737,12 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 		t->reverbSend.store(newValue);
 	else if (paramSuffix == "Pitch")
 	{
-		auto range = audioProcessor.getParameterTreeState().getParameterRange(fullParamId("Pitch"));
 		t->getCurrentPage().pitchSemitones.store(range.convertFrom0to1(newValue));
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPitch(slot),
 		                                                 MidiMapping::pitchToMidi(pm.getPitch(slotIdx)));
 	}
 	else if (paramSuffix == "Fine")
 	{
-		auto range = audioProcessor.getParameterTreeState().getParameterRange(fullParamId("Fine"));
 		t->getCurrentPage().fineOffset.store(range.convertFrom0to1(newValue));
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackFine(slot),
 		                                                 MidiMapping::fineToMidi(pm.getFine(slotIdx)));

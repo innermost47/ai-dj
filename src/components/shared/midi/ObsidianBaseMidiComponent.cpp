@@ -177,7 +177,7 @@ void ObsidianBaseMidiComponent::parameterValueChanged(int parameterIndex, float 
 
 	auto *p = allParams[parameterIndex];
 	auto *paramByID = dynamic_cast<juce::RangedAudioParameter *>(p);
-	juce::String fullId = paramByID ? paramByID->paramID : p->getName(256);
+	juce::String fullId = paramByID->paramID;
 
 	juce::WeakReference<juce::Component> safeThis(this);
 
