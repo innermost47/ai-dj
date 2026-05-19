@@ -24,7 +24,6 @@ juce::ValueTree StateManager::saveState() const
 
 		    trackState.setProperty("slotIndex", track->slotIndex, nullptr);
 		    trackState.setProperty("style", track->style, nullptr);
-		    trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
 		    trackState.setProperty("midiNote", track->midiNote, nullptr);
 		    trackState.setProperty("volume", track->volume.load(), nullptr);
 		    trackState.setProperty("pan", track->pan.load(), nullptr);
@@ -81,7 +80,8 @@ juce::ValueTree StateManager::saveState() const
 			    pageState.setProperty("adsrDecay", page.adsrDecay.load(), nullptr);
 			    pageState.setProperty("adsrSustain", page.adsrSustain.load(), nullptr);
 			    pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
-			    pageState.setProperty("bpmOffset", page.bpmOffset.load(), nullptr);
+			    pageState.setProperty("pitchSemitones", page.pitchSemitones.load(), nullptr);
+			    pageState.setProperty("fineOffset", page.fineOffset.load(), nullptr);
 			    pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
 			    pageState.setProperty("savedModelBeforeLocal", page.savedModelBeforeLocal, nullptr);
 
@@ -138,8 +138,6 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->trackName = trackState.getProperty("name", "Track");
 		track->slotIndex = trackState.getProperty("slotIndex", -1);
 		track->style = trackState.getProperty("style", "");
-		track->timeStretchMode = 4;
-		double legacyBpmOffset = trackState.getProperty("bpmOffset", 0.0);
 		track->midiNote = trackState.getProperty("midiNote", 60);
 		track->volume = trackState.getProperty("volume", 0.8f);
 		track->pan = trackState.getProperty("pan", 0.0f);
@@ -191,10 +189,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.sampleRate = pageState.getProperty("sampleRate", ObsidianDataConst::SAMPLERATE);
 				page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 				page.prompt = pageState.getProperty("prompt", "").toString();
-				page.selectedPrompt = pageState.getProperty("selectedPrompt", "").toString();
+				page.setSelectedPrompt(pageState.getProperty("selectedPrompt", "").toString());
 				page.selectedModel = pageState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
-				if (page.selectedModel.isEmpty())
-					page.selectedModel = "stable-audio-open-1.0";
 				page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 				page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 				page.generationKey = pageState.getProperty("generationKey", "").toString();
@@ -205,7 +201,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.hasOriginalVersion = pageState.getProperty("hasOriginalVersion", false);
 				page.canvasData = pageState.getProperty("canvasData", "").toString();
 				page.canvasState = pageState.getProperty("canvasState", "").toString();
-				page.bpmOffset.store(pageState.getProperty("bpmOffset", legacyBpmOffset));
+				page.pitchSemitones.store(pageState.getProperty("pitchSemitones", 0.0f));
+				page.fineOffset.store(pageState.getProperty("fineOffset", 0.0f));
 				page.loopPointsLocked = pageState.getProperty("loopPointsLocked", false);
 				page.savedModelBeforeLocal =
 				    pageState.getProperty("savedModelBeforeLocal", "stable-audio-open-1.0").toString();
@@ -335,15 +332,22 @@ void StateManager::loadState(const juce::ValueTree &state)
 	{
 		auto track = std::make_unique<TrackData>();
 		audioProcessor.attachPageChangeCallback(track.get());
-
 		track->trackName = "Track " + juce::String(i + 1);
 		track->midiNote = 60 + i;
 		track->slotIndex = audioProcessor.getTrackManager().findFreeSlot();
-		auto serverModels = AiModelDefinitions::getModelsForMode(false);
-		for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
-			track->pages[p].selectedModel = serverModels[i % serverModels.size()];
+
+		const bool isLocalMode = audioProcessor.getUseLocalModel();
+		auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+
+		if (!modelsForMode.isEmpty())
+		{
+			for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
+				track->pages[p].selectedModel = modelsForMode[i % modelsForMode.size()];
+		}
+
 		if (track->slotIndex >= 0 && track->slotIndex < ObsidianDataConst::MAX_TRACKS)
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
+
 		std::string stdId = track->trackId.toStdString();
 		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
@@ -384,6 +388,7 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("windowWidth", audioProcessor.getSavedWindowWidth(), nullptr);
 	state.setProperty("windowHeight", audioProcessor.getSavedWindowHeight(), nullptr);
 	state.setProperty("bankVisible", audioProcessor.getSavedPanelVisible(), nullptr);
+	state.setProperty("useLocalModel", audioProcessor.getUseLocalModel(), nullptr);
 
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = audioProcessor.getMidiLearnManager().getAllMappings();
@@ -445,6 +450,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		audioProcessor.setIsLoadingState(false);
 		return;
 	}
+
 	juce::ValueTree state = juce::ValueTree::fromXml(*xml);
 
 	if (juce::JUCEApplicationBase::isStandaloneApp())
@@ -471,6 +477,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setBypassLLM(state.getProperty("bypassLLM", false));
 	audioProcessor.setWindowSize(state.getProperty("windowWidth", 1620), state.getProperty("windowHeight", 840));
 	audioProcessor.setPanelVisible(state.getProperty("bankVisible", true));
+	audioProcessor.setUseLocalModel(state.getProperty("useLocalModel", false));
 
 	bool bypassValue = state.getProperty("bypassSequencer", false);
 	audioProcessor.setBypassSequencer(bypassValue);
@@ -482,7 +489,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		const int blockSize = audioProcessor.getBlockSize();
 		if (sampleRate > 0 && blockSize > 0)
 		{
-			audioProcessor.getTrackManager().prepareTracksAudio(sampleRate, blockSize);
+			audioProcessor.getTrackManager().prepareSends(sampleRate, blockSize);
 		}
 	}
 
@@ -603,7 +610,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
 		    {
-			    editor->uiTrackManager->refreshTrackComponents();
 			    editor->updateUIFromProcessor();
 		    }
 	    });

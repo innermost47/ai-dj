@@ -46,6 +46,9 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, con
 
 void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, const juce::String &trackId)
 {
+	if (TrackData *t = audioProcessor.getTrack(trackId))
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
+		                                                 MidiMapping::feedbackActive);
 
 	auto response = audioProcessor.getApiClient().generateLoop(
 	    request, audioProcessor.getHostSampleRate(), audioProcessor.getRequestTimeout(), audioProcessor.getBypassLLM());
@@ -142,6 +145,9 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 	StableAudioEngine::GenerationParams params(request.prompt, 6.0f);
 	params.sampleRate = static_cast<int>(audioProcessor.getHostSampleRate());
 	params.numThreads = 4;
+	if (TrackData *t = audioProcessor.getTrack(trackId))
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
+		                                                 MidiMapping::feedbackActive);
 
 	auto result = localEngine.generateSample(params);
 
@@ -392,8 +398,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 
 	audioProcessor.setIsGenerating(true);
 	audioProcessor.setGeneratingTrackId(trackId);
-	audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(track->slotIndex + 1),
-	                                                 MidiMapping::feedbackPending);
+
 	juce::MessageManager::callAsync(
 	    [this, trackId]()
 	    {
@@ -432,7 +437,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 				    request = audioProcessor.createGlobalLoopRequest();
 				    if (currentPage.selectedModel.isNotEmpty())
 					    request.model = currentPage.selectedModel;
-				    currentPage.selectedPrompt = request.prompt;
+				    currentPage.setSelectedPrompt(request.prompt);
 				    currentPage.generationBpm = currentHostBpm;
 				    currentPage.generationKey = request.key;
 			    }

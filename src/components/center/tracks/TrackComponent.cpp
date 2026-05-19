@@ -46,6 +46,7 @@ void TrackComponent::setTrackData(TrackData *trackData)
 	{
 		wireParameters();
 	}
+	refreshWaveformDisplay();
 	updateFromTrackData();
 }
 
@@ -70,7 +71,7 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 			if (track)
 			{
 				auto &currentPage = track->getCurrentPage();
-				currentPage.selectedPrompt = promptPresetSelector.getText();
+				currentPage.setSelectedPrompt(promptPresetSelector.getText());
 				currentPage.generationBpm = audioProcessor.getGlobalBpm();
 				currentPage.generationKey = audioProcessor.getGlobalKey();
 				currentPage.generationDuration = audioProcessor.getGlobalDuration();
@@ -154,7 +155,12 @@ juce::Colour TrackComponent::getCurrentModelColour() const
 	if (currentModel.isEmpty() && t)
 		currentModel = currentPage.selectedModel;
 	if (currentModel.isEmpty())
-		currentModel = AiModelDefinitions::getAvailableModels()[0];
+	{
+		const bool isLocalMode = audioProcessor.getUseLocalModel();
+		auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+		if (!modelsForMode.isEmpty())
+			currentModel = modelsForMode[0];
+	}
 	return AiModelDefinitions::getColourForModel(currentModel);
 }
 
@@ -174,11 +180,21 @@ void TrackComponent::updateFromTrackData()
 		return;
 
 	juce::String modelToSet = t->getCurrentPage().selectedModel;
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
 
-	if (modelToSet.isEmpty())
+	if (modelToSet.isEmpty() || !modelsForMode.contains(modelToSet))
 	{
-		auto &models = AiModelDefinitions::getAvailableModels();
-		modelToSet = models[0];
+		if (!isLocalMode && !t->getCurrentPage().savedModelBeforeLocal.isEmpty() &&
+		    modelsForMode.contains(t->getCurrentPage().savedModelBeforeLocal))
+		{
+			modelToSet = t->getCurrentPage().savedModelBeforeLocal;
+		}
+		else
+		{
+			modelToSet = modelsForMode[0];
+		}
+		t->getCurrentPage().selectedModel = modelToSet;
 	}
 
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
@@ -201,18 +217,6 @@ void TrackComponent::updateFromTrackData()
 	useOriginal = hasOriginal && currentPage.useOriginalFile.load();
 
 	originalSyncButton.setToggleState(useOriginal, juce::dontSendNotification);
-
-	if (!currentPage.selectedPrompt.isEmpty())
-	{
-		for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
-		{
-			if (promptPresetSelector.getItemText(i) == currentPage.selectedPrompt)
-			{
-				promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-				break;
-			}
-		}
-	}
 
 	if (waveformDisplay)
 	{
@@ -252,35 +256,24 @@ float TrackComponent::calculateEffectiveBpm()
 	auto *t = getTrack();
 	if (!t)
 		return 126.0f;
+
 	auto &currentPage = t->getCurrentPage();
 	float effectiveBpm = currentPage.originalBpm;
-	switch (t->timeStretchMode)
+
+	double hostBpm = audioProcessor.getHostBpm();
+	if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
 	{
-	case 1:
-		effectiveBpm = currentPage.originalBpm;
-		break;
-	case 2:
-		effectiveBpm = currentPage.originalBpm + static_cast<float>(currentPage.bpmOffset.load());
-		break;
-	case 3:
-	{
-		double hostBpm = audioProcessor.getHostBpm();
-		if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
+		effectiveBpm = (float)hostBpm;
+		float pitchSemis = currentPage.pitchSemitones.load();
+		float fineCents = currentPage.fineOffset.load();
+		float totalSemis = pitchSemis + (fineCents / 100.0f);
+
+		if (std::abs(totalSemis) > 0.001f)
 		{
-			effectiveBpm = (float)hostBpm;
+			effectiveBpm *= std::pow(2.0f, totalSemis / 12.0f);
 		}
 	}
-	break;
-	case 4:
-	{
-		double hostBpm = audioProcessor.getHostBpm();
-		if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
-		{
-			effectiveBpm = (float)hostBpm;
-		}
-	}
-	break;
-	}
+
 	return juce::jlimit(40.0f, 250.0f, effectiveBpm);
 }
 
@@ -368,7 +361,14 @@ void TrackComponent::resized()
 	layoutPagesButtons(pagesArea);
 
 	{
-		const int selectorsWidth = 120;
+		const int rightElementsWidth = 36 + ObsidianSizes::SPACER_SM + 36 + ObsidianSizes::SPACER_SM +
+		                               ObsidianSizes::SPACER_SM + 34 + ObsidianSizes::SPACER_SM + 34 +
+		                               ObsidianSizes::SPACER_SM + 38 + ObsidianSizes::SPACER_SM + (32 * 4);
+
+		const int pagesWidth = 38;
+		const int availableForSelectors =
+		    headerArea.getWidth() - pagesWidth - rightElementsWidth - ObsidianSizes::SPACER_SM * 2;
+		const int selectorsWidth = std::max(availableForSelectors, 120);
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 		selectorsArea.removeFromTop(2);
 		const int selectorHeight = 16;
@@ -544,8 +544,15 @@ void TrackComponent::resized()
 		juce::String currentModel = modelSelector.getText();
 		if (currentModel.isEmpty() && t)
 			currentModel = currentPage.selectedModel;
+
 		if (currentModel.isEmpty())
-			currentModel = AiModelDefinitions::getAvailableModels()[0];
+		{
+			const bool isLocalMode = audioProcessor.getUseLocalModel();
+			auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+			if (!modelsForMode.isEmpty())
+				currentModel = modelsForMode[0];
+		}
+
 		sequencer->setAccentColour(AiModelDefinitions::getColourForModel(currentModel));
 	}
 
@@ -769,6 +776,9 @@ void TrackComponent::performPageChange(int pageIndex)
 	}
 
 	updateFromTrackData();
+
+	juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(newPage.selectedModel);
+	updatePromptPresets(prompts, newPage.selectedPrompt);
 
 	if (sequencer)
 	{
@@ -1073,14 +1083,15 @@ void TrackComponent::setupUI()
 	addAndMakeVisible(modelSelector);
 	modelSelector.setTooltip("Select model for this page");
 
-	auto &models = AiModelDefinitions::getAvailableModels();
-	for (int i = 0; i < models.size(); ++i)
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+	for (int i = 0; i < modelsForMode.size(); ++i)
 	{
-		modelSelector.addItem(models[i], i + 1);
+		modelSelector.addItem(modelsForMode[i], i + 1);
 	}
 
 	int trackNum = trackId.retainCharacters("0123456789").getIntValue();
-	if (trackNum >= 1 && trackNum <= models.size())
+	if (trackNum >= 1 && trackNum <= modelsForMode.size())
 	{
 		modelSelector.setSelectedId(trackNum, juce::dontSendNotification);
 	}
@@ -1099,7 +1110,8 @@ void TrackComponent::setupUI()
 		auto selectedModel = modelSelector.getText();
 
 		t->getCurrentPage().selectedModel = selectedModel;
-
+		juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(selectedModel);
+		updatePromptPresets(prompts);
 		updateModelUI();
 		if (onModelChanged)
 			onModelChanged(trackId);
@@ -1275,12 +1287,23 @@ void TrackComponent::onIntervalChanged()
 			double startPosition = t->beatRepeatStartPosition.load();
 			double repeatDuration = audioProcessor.getSequencerManager().calculateRetriggerInterval(value, hostBpm);
 			double repeatDurationSamples = repeatDuration * t->getCurrentPage().sampleRate;
-			t->beatRepeatEndPosition.store(startPosition + repeatDurationSamples);
+
+			const double GATE_SAMPLES = 64.0;
+			double newEnd = startPosition + repeatDurationSamples - GATE_SAMPLES;
 
 			double maxSamples = t->getCurrentPage().numSamples;
-			if (t->beatRepeatEndPosition.load() > maxSamples)
+			if (newEnd > maxSamples)
+				newEnd = maxSamples;
+			if (newEnd <= startPosition)
+				newEnd = startPosition + 1.0;
+
+			t->beatRepeatEndPosition.store(newEnd);
+
+			double currentPos = t->readPosition.load();
+			if (currentPos >= newEnd)
 			{
-				t->beatRepeatEndPosition.store(maxSamples);
+				t->readPosition.store(startPosition);
+				t->brFadeInPending.store(64);
 			}
 		}
 	}
@@ -1369,13 +1392,16 @@ void TrackComponent::loadPromptPresets()
 		    if (!selected && allPrompts.size() > 0)
 		    {
 			    safeThis->promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
-			    t->getCurrentPage().selectedPrompt = allPrompts[0];
+			    t->getCurrentPage().setSelectedPrompt(allPrompts[0]);
 		    }
 	    });
 }
 
-void TrackComponent::updatePromptPresets(const juce::StringArray &presets)
+void TrackComponent::updatePromptPresets(const juce::StringArray &presets, const juce::String &selectedPrompt)
 {
+	auto *t = getTrack();
+	if (!t)
+		return;
 	juce::String currentSelection = promptPresetSelector.getText();
 	promptPresets = presets;
 	promptPresets.sort(true);
@@ -1385,11 +1411,35 @@ void TrackComponent::updatePromptPresets(const juce::StringArray &presets)
 		promptPresetSelector.addItem(promptPresets[i], i + 1);
 
 	int index = promptPresets.indexOf(currentSelection);
-	if (index >= 0)
+	if (index >= 0 && selectedPrompt.isEmpty())
 		promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
 	else if (promptPresets.size() > 0)
 	{
-		promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
+		if (t->getCurrentPage().selectedPrompt.isNotEmpty())
+		{
+			bool found = false;
+			if (selectedPrompt.isNotEmpty() && t->getCurrentPage().selectedPrompt != selectedPrompt)
+			{
+				t->getCurrentPage().selectedPrompt = selectedPrompt;
+			}
+
+			for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+			{
+				if (promptPresetSelector.getItemText(i) == t->getCurrentPage().selectedPrompt)
+				{
+					promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+			{
+				promptPresetSelector.addItem(t->getCurrentPage().selectedPrompt, promptPresets.size() + 1);
+				promptPresetSelector.setSelectedId(promptPresets.size() + 1, juce::dontSendNotification);
+			}
+		}
+
 		onTrackPresetSelected();
 	}
 }
@@ -1438,7 +1488,7 @@ void TrackComponent::onTrackPresetSelected()
 	juce::String newPrompt = promptPresetSelector.getText();
 
 	auto &currentPage = t->getCurrentPage();
-	currentPage.selectedPrompt = newPrompt;
+	currentPage.setSelectedPrompt(newPrompt);
 
 	if (onTrackPromptChanged)
 	{
@@ -1451,35 +1501,14 @@ void TrackComponent::updateTrackInfo()
 	auto *t = getTrack();
 	if (!t)
 		return;
-
 	if (!t->getCurrentPage().prompt.isEmpty())
 	{
 		float effectiveBpm = calculateEffectiveBpm();
-		float originalBpm = t->getCurrentPage().originalBpm;
+		float pitchSemis = t->getCurrentPage().pitchSemitones.load();
 
-		juce::String bpmInfo = "";
-		juce::String stretchIndicator = "";
-
-		switch (t->timeStretchMode)
-		{
-		case 1:
-			bpmInfo = " | Original: " + juce::String(originalBpm, 1);
-			break;
-		case 2:
-			stretchIndicator = (effectiveBpm > originalBpm) ? " +" : (effectiveBpm < originalBpm) ? " -" : " =";
-			bpmInfo = " | BPM: " + juce::String(effectiveBpm, 1) + stretchIndicator;
-			break;
-		case 3:
-			stretchIndicator = " =";
-			bpmInfo = " | Sync: " + juce::String(effectiveBpm, 1) + stretchIndicator;
-			break;
-		case 4:
-			stretchIndicator = (t->getCurrentPage().bpmOffset > 0)   ? " +"
-			                   : (t->getCurrentPage().bpmOffset < 0) ? " -"
-			                                                         : "";
-			bpmInfo = " | Host+ " + juce::String(t->getCurrentPage().bpmOffset, 1) + stretchIndicator;
-			break;
-		}
+		juce::String stretchIndicator = (pitchSemis > 0) ? " +" : (pitchSemis < 0) ? " -" : "";
+		juce::String bpmInfo =
+		    " | Sync: " + juce::String(effectiveBpm, 1) + " | Pitch: " + juce::String(pitchSemis, 1) + stretchIndicator;
 
 		infoLabel.setText(t->getCurrentPage().prompt.substring(0, 30) + "..." + bpmInfo, juce::dontSendNotification);
 	}
@@ -1506,7 +1535,7 @@ void TrackComponent::updatePromptSelection(const juce::String &promptText)
 	if (!t)
 		return;
 
-	t->getCurrentPage().selectedPrompt = promptText;
+	t->getCurrentPage().setSelectedPrompt(promptText);
 
 	for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 	{
@@ -1571,13 +1600,21 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		{
 			if (!sampleEntry->originalPrompt.isEmpty())
 			{
-				for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+				if (!sampleEntry->modelName.isEmpty())
 				{
-					if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+					juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(sampleEntry->modelName);
+					updatePromptPresets(prompts, sampleEntry->originalPrompt);
+				}
+				else
+				{
+					for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 					{
-						promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-						t->getCurrentPage().selectedPrompt = sampleEntry->originalPrompt;
-						break;
+						if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+						{
+							promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+							t->getCurrentPage().setSelectedPrompt(sampleEntry->originalPrompt);
+							break;
+						}
 					}
 				}
 			}
@@ -1684,7 +1721,6 @@ void TrackComponent::updateModelUI()
 		sequencer->setAccentColour(modelColour);
 
 	syncBorderOverlay();
-	loadPromptPresets();
 }
 
 void TrackComponent::detachWaveformTrack()
@@ -1727,7 +1763,7 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 			if (promptPresetSelector.getItemText(i) == entry->text)
 			{
 				promptPresetSelector.setSelectedItemIndex(i, juce::sendNotification);
-				t->getCurrentPage().selectedPrompt = entry->text;
+				t->getCurrentPage().setSelectedPrompt(entry->text);
 				found = true;
 				break;
 			}
@@ -1737,7 +1773,7 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 		{
 			promptPresetSelector.addItem(entry->text, promptPresetSelector.getNumItems() + 1);
 			promptPresetSelector.setSelectedId(promptPresetSelector.getNumItems(), juce::sendNotification);
-			t->getCurrentPage().selectedPrompt = entry->text;
+			t->getCurrentPage().setSelectedPrompt(entry->text);
 		}
 	}
 
@@ -1765,19 +1801,4 @@ void TrackComponent::wireParameters()
 	registerMidiLearn("RetriggerInterval", &intervalKnob);
 	registerMidiLearn("RandomRetrigger", &beatRepeatButton);
 	registerMidiLearn("Generate", &generateButton);
-
-	auto promptCallback = [this](float value)
-	{
-		juce::MessageManager::callAsync(
-		    [this, value]()
-		    {
-			    int n = promptPresetSelector.getNumItems();
-			    if (n > 0)
-			    {
-				    int idx = (int)(value * (n - 1));
-				    promptPresetSelector.setSelectedItemIndex(idx, juce::sendNotification);
-			    }
-		    });
-	};
-	registerMidiLearn("promptSelector_", &promptPresetSelector, promptCallback);
 }

@@ -78,7 +78,6 @@ juce::var BasePanel::saveUIState(int sortType) const
 		openArr.add(juce::var(cat));
 	o->setProperty("openCategories", juce::var(openArr));
 	o->setProperty("sort", sortType);
-	o->setProperty("search", currentSearch);
 	o->setProperty("expanded", isExpanded);
 	return juce::var(o.get());
 }
@@ -108,9 +107,6 @@ void BasePanel::restoreUIState(const juce::var &state, std::function<void()> ref
 	{
 		expandAll(expandCallback);
 	}
-	juce::String savedSearch = o->getProperty("search").toString();
-	currentSearch = savedSearch;
-	header.setSearchText(savedSearch, false);
 
 	if (refreshCallback != nullptr)
 		refreshCallback();

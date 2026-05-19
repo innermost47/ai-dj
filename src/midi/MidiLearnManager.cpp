@@ -259,11 +259,13 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 					int seqIdx = (ccVal / 16) + 1;
 					if (seqIdx > 8)
 						seqIdx = 8;
-					juce::String targetParam = mapping.parameterName + juce::String(seqIdx);
+					juce::String targetParam = mapping.parameterName;
 
 					if (auto *p = mapping.processor->getParameterTreeState().getParameter(targetParam))
 					{
-						p->setValueNotifyingHost(1.0f);
+						float normalizedValue = (static_cast<float>(seqIdx) - 1.0f) / 7.0f;
+
+						p->setValueNotifyingHost(normalizedValue);
 						statusMessage = "Slot Seq -> " + juce::String(seqIdx);
 						showStatus(mapping, statusMessage, false);
 					}
@@ -316,7 +318,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 					else if (mapping.parameterName.contains("PageD"))
 						pageIndex = 3;
 
-					if (slotNumber >= 1 && slotNumber <= 8 && pageIndex >= 0)
+					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS && pageIndex >= 0)
 					{
 						auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 						if (param)
@@ -354,23 +356,6 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 			auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 			if (param)
 			{
-				if (mapping.parameterName.startsWith("slot"))
-				{
-					juce::String slotPart = mapping.parameterName.substring(0, 5);
-					auto trackIds = mapping.processor->getAllTrackIds();
-					for (const auto &trackId : trackIds)
-					{
-						TrackData *track = mapping.processor->getTrack(trackId);
-						if (track)
-						{
-							juce::String expectedSlot = "slot" + juce::String(track->slotIndex + 1);
-							if (slotPart == expectedSlot)
-							{
-								break;
-							}
-						}
-					}
-				}
 				param->setValueNotifyingHost(value);
 				showStatus(mapping, statusMessage, isWarning);
 
@@ -378,7 +363,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				{
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= 8)
+					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
 					{
 						changedPlaySlotIndex.store(slotNumber - 1);
 						mustCheckForMidiEvent.store(true);
@@ -390,7 +375,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 						return;
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= 8)
+					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
 					{
 						changedGenerateSlotIndex.store(slotNumber - 1);
 						mustCheckForMidiEvent.store(true);
@@ -400,7 +385,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				{
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= 8)
+					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
 					{
 						mustCheckForMidiEvent.store(true);
 					}
@@ -410,7 +395,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				{
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= 8)
+					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
 					{
 						mustCheckForMidiEvent.store(true);
 					}
@@ -564,7 +549,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 	addCC("reverbWidth", 25, CH_FX, "Reverb Width");
 	addCC("reverbMix", 26, CH_FX, "Reverb Mix");
 
-	for (int i = 1; i <= 8; ++i)
+	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		const juce::String s = "slot" + juce::String(i);
 		const juce::String d = "Slot " + juce::String(i);
@@ -578,7 +563,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 		addCC(s + "Generate", 59 + i, CH_PERF, d + " Generate");
 	}
 
-	for (int i = 1; i <= 8; ++i)
+	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		const juce::String s = "slot" + juce::String(i);
 		const juce::String d = "Slot " + juce::String(i);
@@ -591,9 +576,9 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 		addCC(s + "AdsrRelease", 69 + i, CH_SHAPE, d + " ADSR Release");
 		addCC(s + "RandomRetrigger", 79 + i, CH_SHAPE, d + " Beat Repeat");
 		addCC(s + "Page", 89 + i, CH_SHAPE, d + " Page");
-		addCC(s + "Seq", 99 + i, CH_SHAPE, d + " Seq");
 		addCC(s + "DelaySend", 30 + i, CH_FX, d + " Delay Send");
-		addCC(s + "DelaySend", 39 + i, CH_FX, d + " Reverb Send");
+		addCC(s + "ReverbSend", 39 + i, CH_FX, d + " Reverb Send");
+		addCC(s + "Seq", 99 + i, CH_SHAPE, d + " Seq");
 	}
 
 	addCC("pairCrossfader1", 20, CH_XFADER, "Crossfader 1 <-> 5");

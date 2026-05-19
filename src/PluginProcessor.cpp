@@ -35,7 +35,6 @@ DjIaVstProcessor::DjIaVstProcessor()
 	sharedFormatManager.registerBasicFormats();
 	obsidianEngine->initialize();
 
-	midiLearnManager.loadDefaultMappings(this);
 	audioManager.initDummySynth();
 	audioManager.initBuffers(ObsidianDataConst::MAX_TRACKS);
 
@@ -156,11 +155,7 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	}
 
 	masterConsoleBuss.prepare(sampleRate);
-	trackManager.prepareTracksAudio(sampleRate, samplesPerBlock);
-	signalsmith::stretch::SignalsmithStretch<float> tempStretch;
-	tempStretch.presetDefault(2, static_cast<float>(sampleRate));
-	const int latency = tempStretch.outputLatency() + tempStretch.inputLatency();
-	setLatencySamples(latency);
+	trackManager.prepareSends(sampleRate, samplesPerBlock);
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -327,7 +322,7 @@ void DjIaVstProcessor::initTracks()
 				page.selectedModel = modelName;
 				page.prompt = promptForThisModel;
 				page.generationPrompt = promptForThisModel;
-				page.selectedPrompt = promptForThisModel;
+				page.setSelectedPrompt(promptForThisModel);
 				page.selectedKeywords = customKeywords;
 			}
 		}
@@ -376,7 +371,7 @@ void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
 			    auto &apvts = parameterManager.getAPVTS();
 
 			    float pitchValue =
-			        juce::jlimit(-12.0f, 12.0f, (float(page.bpmOffset.load()) - page.fineOffset.load()) / 8.0f);
+			        juce::jlimit(-12.0f, 12.0f, (float(page.pitchSemitones.load()) - page.fineOffset.load()) / 8.0f);
 			    float fineValue = juce::jlimit(-50.0f, 50.0f, page.fineOffset.load() * 10.0f);
 
 			    if (auto *p = apvts.getParameter(s + "Pitch"))
@@ -548,7 +543,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 #endif
 
 	sequencerManager.internalSampleCounter += buffer.getNumSamples();
-	audioManager.checkAndSwapStagingBuffers();
 	for (auto i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
 		buffer.clear(i, 0, buffer.getNumSamples());
 	auto currentPlayHead = getPlayHead();
@@ -560,23 +554,22 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 		getDawInformations(currentPlayHead, hostIsPlaying, hostBpm, hostPpqPosition);
 
 	lastHostBpmForQuantization.store(hostBpm);
-
+	if (hasPendingAudioData.load())
+	{
+		audioManager.processIncomingAudio(hostIsPlaying);
+	}
+	audioManager.checkAndSwapStagingBuffers();
 	sequencerManager.handleSequencerPlayState(hostIsPlaying);
-	sequencerManager.updateSequencers(hostIsPlaying);
+	sequencerManager.updateSequencers(hostIsPlaying, buffer.getNumSamples());
 	sequencerManager.checkBeatRepeatWithSampleCounter();
 	sequencerManager.flushMidiBuffer(midiMessages, buffer.getNumSamples());
 
 	midiManager.processMidiMessages(midiMessages, hostIsPlaying, hostBpm);
 	midiManager.flushFeedbackBuffer(midiMessages, buffer.getNumSamples());
-	if (hasPendingAudioData.load())
-	{
-		audioManager.processIncomingAudio(hostIsPlaying);
-	}
 	audioManager.resizeIndividualBuffers(buffer);
 	audioManager.clearOutputBuffers(buffer);
 	auto mainOutput = getBusBuffer(buffer, false, 0);
 	mainOutput.clear();
-	audioManager.updateTimeStretchRatios(hostBpm);
 	auto previewBus = getBusBuffer(buffer, false, getBusCount(false) - 1);
 	previewBus.clear();
 	float pairCurrent[4];
@@ -634,30 +627,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	sample_time += buffer.getNumSamples();
 }
 
-void DjIaVstProcessor::setPairCrossfaderValue(int pairIdx, float value)
-{
-	if (pairIdx < 0 || pairIdx >= 4)
-		return;
-	juce::String pairId = "pairCrossfader" + juce::String(pairIdx + 1);
-	if (auto *p = parameterManager.getAPVTS().getParameter(pairId))
-	{
-		p->setValueNotifyingHost(juce::jlimit(0.0f, 1.0f, value));
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(pairIdx), MidiMapping::volumeToMidi(value),
-		                             MidiMapping::feedbackChannelShaping);
-	}
-}
-
 float DjIaVstProcessor::getPairCrossfaderValue(int pairIdx) const
 {
 	if (pairIdx < 0 || pairIdx >= 4)
 		return 0.5f;
 	return parameterManager.getPairCrossfader(pairIdx);
-}
-
-void DjIaVstProcessor::setGlobalCrossfaderValue(float value)
-{
-	if (auto *p = parameterManager.getAPVTS().getParameter("globalCrossfader"))
-		p->setValueNotifyingHost(juce::jlimit(0.0f, 1.0f, value));
 }
 
 float DjIaVstProcessor::getGlobalCrossfaderValue() const
@@ -800,64 +774,10 @@ void DjIaVstProcessor::playTrack(const juce::MidiMessage &message, double hostBp
 
 void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 {
-	jassert(slot >= 0 && slot < ObsidianDataConst::MAX_TRACKS);
-	jassert(track != nullptr);
-
 	auto &pm = parameterManager;
-	auto &currentPage = track->getCurrentPage();
-	float paramVolume = pm.getVolume(slot);
-	float paramPan = pm.getPan(slot);
-	float paramPitch = pm.getPitch(slot) * 8;
-	float paramFine = pm.getFine(slot) * 2;
-	bool isSolo = pm.getSolo(slot);
-	bool isMuted = pm.getMute(slot);
 	float paramRandomRetrigger = pm.getRandomRetrigger(slot);
-	float paramRetriggerInterval = pm.getRetriggerInterval(slot);
-	float paramDelaySend = pm.getDelaySend(slot);
-	float paramReverbSend = pm.getReverbSend(slot);
 	int slotNumber = slot + 1;
 	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
-	int retriggerInterval = juce::jlimit(1, 10, (int)juce::roundToInt(paramRetriggerInterval));
-
-	if (std::abs(track->lastFeedbackVolume.load() - paramVolume) > 0.01f)
-	{
-		track->lastFeedbackVolume = paramVolume;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackVolume(slotNumber), MidiMapping::volumeToMidi(paramVolume));
-	}
-	if (std::abs(track->volume.load() - paramVolume) > 0.01f)
-		track->volume = paramVolume;
-
-	if (std::abs(track->lastFeedbackPan.load() - paramPan) > 0.01f)
-	{
-		track->lastFeedbackPan = paramPan;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPan(slotNumber), MidiMapping::panToMidi(paramPan));
-	}
-	if (std::abs(track->pan.load() - paramPan) > 0.01f)
-		track->pan = paramPan;
-
-	if (std::abs(track->lastFeedbackPitch.load() - paramPitch) > 0.01f)
-	{
-		track->lastFeedbackPitch = paramPitch;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNumber), MidiMapping::pitchToMidi(paramPitch));
-	}
-	if (std::abs(track->lastFeedbackFine.load() - paramFine) > 0.01f)
-	{
-		track->lastFeedbackFine = paramFine;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNumber), MidiMapping::fineToMidi(paramFine));
-	}
-
-	if (track->isSolo.load() != isSolo)
-	{
-		track->isSolo = isSolo;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackSolo(slotNumber),
-		                             isSolo ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-	}
-	if (track->isMuted.load() != isMuted)
-	{
-		track->isMuted = isMuted;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackMute(slotNumber),
-		                             isMuted ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-	}
 
 	if (track->lastFeedbackBeatRepeat.load() != isRetriggerEnabled)
 	{
@@ -865,42 +785,6 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
 		                             isRetriggerEnabled ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 	}
-	if (track->randomRetriggerEnabled.load() != isRetriggerEnabled)
-	{
-		track->randomRetriggerEnabled = isRetriggerEnabled;
-		if (!isRetriggerEnabled)
-			track->beatRepeatStopPending.store(true);
-		else
-			track->beatRepeatPending.store(true);
-	}
-	if (track->randomRetriggerInterval.load() != retriggerInterval)
-	{
-		track->randomRetriggerInterval = retriggerInterval;
-		if (track->beatRepeatActive.load())
-		{
-			double hostBpm = lastHostBpmForQuantization.load();
-			if (hostBpm <= 0.0)
-				hostBpm = 120.0;
-			double startPosition = track->beatRepeatStartPosition.load();
-			double repeatDuration = sequencerManager.calculateRetriggerInterval(retriggerInterval, hostBpm);
-			double repeatDurationSamples = repeatDuration * currentPage.sampleRate;
-			track->beatRepeatEndPosition.store(startPosition + repeatDurationSamples);
-			double maxSamples = currentPage.numSamples;
-			if (track->beatRepeatEndPosition.load() > maxSamples)
-				track->beatRepeatEndPosition.store(maxSamples);
-		}
-	}
-	if (std::abs(track->lastFeedbackDelaySend.load() - paramDelaySend) > 0.001f)
-	{
-		track->lastFeedbackDelaySend = paramDelaySend;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackDelaySend(slotNumber),
-		                             MidiMapping::volumeToMidi(paramDelaySend), MidiMapping::feedbackChannelSends);
-	}
-
-	if (std::abs(track->delaySend.load() - paramDelaySend) > 0.001f)
-		track->delaySend = paramDelaySend;
-	if (std::abs(track->reverbSend.load() - paramReverbSend) > 0.001f)
-		track->reverbSend = paramReverbSend;
 }
 
 void DjIaVstProcessor::handleSendsParams()
@@ -1189,63 +1073,14 @@ void DjIaVstProcessor::parameterChanged(const juce::String &parameterID, float n
 				    param->setValueNotifyingHost(0.0f);
 		    });
 	}
-	else if (parameterID.startsWith("slot") && parameterID.contains("Seq") && newValue > 0.5f)
+	else if (parameterID.startsWith("slot") && parameterID.contains("Seq"))
 	{
-		sequencerManager.handleSequenceChange(parameterID);
-		juce::MessageManager::callAsync(
-		    [this, parameterID]()
-		    {
-			    if (auto *param = parameterManager.getAPVTS().getParameter(parameterID))
-				    param->setValueNotifyingHost(0.0f);
-		    });
-	}
-	else if (parameterID.startsWith("slot") && (parameterID.endsWith("Pitch") || parameterID.endsWith("Fine")))
-	{
-		int slotNum = parameterID.substring(4, 5).getIntValue();
-		if (slotNum < 1 || slotNum > 8)
-			return;
-		auto trackIds = trackManager.getAllTrackIds();
-		for (const auto &tid : trackIds)
+		if (auto *param =
+		        dynamic_cast<juce::AudioParameterInt *>(parameterManager.getAPVTS().getParameter(parameterID)))
 		{
-			TrackData *t = trackManager.getTrack(tid);
-			if (!t || t->slotIndex != slotNum - 1)
-				continue;
-			auto &page = t->getCurrentPage();
-
-			if (parameterID.endsWith("Pitch"))
-			{
-				float paramPitch = newValue * 8.0f;
-				page.bpmOffset.store(paramPitch + page.fineOffset.load());
-			}
-			else
-			{
-				float paramFine = newValue * 2.0f;
-				page.fineOffset.store(paramFine * 0.05f);
-				float currentPitch = parameterManager.getPitch(slotNum - 1) * 8.0f;
-				page.bpmOffset.store(currentPitch + page.fineOffset.load());
-			}
-
-			if (parameterID.endsWith("Pitch"))
-			{
-				float paramPitch = newValue * 8.0f;
-				if (std::abs(t->lastFeedbackPitch.load() - paramPitch) > 0.01f)
-				{
-					t->lastFeedbackPitch.store(paramPitch);
-					midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPitch(slotNum),
-					                             MidiMapping::pitchToMidi(paramPitch));
-				}
-			}
-			else
-			{
-				float paramFine = newValue * 2.0f;
-				if (std::abs(t->lastFeedbackFine.load() - paramFine) > 0.01f)
-				{
-					t->lastFeedbackFine.store(paramFine);
-					midiManager.sendMidiFeedback(MidiMapping::ccFeedbackFine(slotNum),
-					                             MidiMapping::fineToMidi(paramFine));
-				}
-			}
-			break;
+			int targetSequence = param->get();
+			int slotNum = parameterID.substring(4, 5).getIntValue();
+			sequencerManager.handleSequenceChange(slotNum, targetSequence);
 		}
 	}
 	else if (parameterID == "globalCrossfader")

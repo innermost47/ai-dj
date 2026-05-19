@@ -42,7 +42,6 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ### Sound design
 - **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
-- **Independent pitch shifting** - Transpose each page without affecting tempo, powered by [Signalsmith Stretch](https://github.com/Signalsmith-Audio/signalsmith-stretch) phase-vocoder
 - **Automatic tempo sync** - Incoming samples are BPM-detected with [MiniBPM](https://breakfastquay.com/minibpm/) and time-stretched on load via Signalsmith Stretch to lock to your host tempo, with zero pitch drift
 - **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
 - **Reverb send** - Per-track reverb with size, damping, width and mix controls

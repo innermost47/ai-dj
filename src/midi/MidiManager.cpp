@@ -43,8 +43,8 @@ void MidiManager::sendFullStateFeedback()
 
 		sendMidiFeedback(MidiMapping::ccFeedbackVolume(slot), MidiMapping::volumeToMidi(pm.getVolume(slotIdx)));
 		sendMidiFeedback(MidiMapping::ccFeedbackPan(slot), MidiMapping::panToMidi(pm.getPan(slotIdx)));
-		sendMidiFeedback(MidiMapping::ccFeedbackPitch(slot), MidiMapping::pitchToMidi(pm.getPitch(slotIdx) * 8.0f));
-		sendMidiFeedback(MidiMapping::ccFeedbackFine(slot), MidiMapping::fineToMidi(pm.getFine(slotIdx) * 2.0f));
+		sendMidiFeedback(MidiMapping::ccFeedbackPitch(slot), MidiMapping::pitchToMidi(pm.getPitch(slotIdx)));
+		sendMidiFeedback(MidiMapping::ccFeedbackFine(slot), MidiMapping::fineToMidi(pm.getFine(slotIdx)));
 		sendMidiFeedback(MidiMapping::ccFeedbackMute(slot),
 		                 track->isMuted.load() ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
 		sendMidiFeedback(MidiMapping::ccFeedbackSolo(slot),

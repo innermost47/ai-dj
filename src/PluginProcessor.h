@@ -463,9 +463,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void setServerUrl(const juce::String &url);
 	void setAutoLoadEnabled(bool enabled);
 	void setBypassLLM(bool bypassed);
-	void setGlobalCrossfaderValue(float value);
 	void setCrossfaderCurveMode(int mode);
-	void setPairCrossfaderValue(int pairIndex, float value);
 	void setBypassSequencer(bool bypass)
 	{
 		sequencerManager.setBypass(bypass);

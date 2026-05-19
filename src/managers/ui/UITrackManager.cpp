@@ -1,4 +1,4 @@
-#include "UITrackManager.h"
+﻿#include "UITrackManager.h"
 #include "AiModelDefinitions.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
@@ -54,8 +54,6 @@ void UITrackManager::refreshTrackComponents()
 			for (int i = 0; i < (int)trackComponents.size() && i < (int)trackIds.size(); ++i)
 			{
 				trackComponents[i]->setTrackData(editor.audioProcessor.getTrack(trackIds[i]));
-				trackComponents[i]->refreshWaveformDisplay();
-				trackComponents[i]->updateFromTrackData();
 				if (auto *sequencer = trackComponents[i]->getSequencer())
 					sequencer->updateFromTrackData();
 			}
@@ -170,6 +168,9 @@ void UITrackManager::onSampleLoaded(const juce::String &trackId)
 
 void UITrackManager::refreshUIForMode()
 {
+	if (editor.audioProcessor.getIsLoadingState())
+		return;
+
 	bool isLocalMode = editor.audioProcessor.getUseLocalModel();
 	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
 
@@ -182,7 +183,6 @@ void UITrackManager::refreshUIForMode()
 		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
 		{
 			auto &page = track->pages[i];
-
 			if (isLocalMode)
 			{
 				if (page.selectedModel != AiModelDefinitions::LOCAL_MODEL_NAME)
@@ -191,8 +191,21 @@ void UITrackManager::refreshUIForMode()
 			}
 			else
 			{
-				if (!page.savedModelBeforeLocal.isEmpty())
-					page.selectedModel = page.savedModelBeforeLocal;
+				if (page.selectedModel == AiModelDefinitions::LOCAL_MODEL_NAME)
+				{
+					if (!page.savedModelBeforeLocal.isEmpty() && modelsForMode.contains(page.savedModelBeforeLocal))
+					{
+						page.selectedModel = page.savedModelBeforeLocal;
+					}
+					else
+					{
+						page.selectedModel = modelsForMode[0];
+					}
+				}
+				else if (!modelsForMode.contains(page.selectedModel))
+				{
+					page.selectedModel = modelsForMode[0];
+				}
 			}
 		}
 
@@ -203,14 +216,13 @@ void UITrackManager::refreshUIForMode()
 		juce::String currentModel = track->getCurrentPage().selectedModel;
 		int idx = modelsForMode.indexOf(currentModel);
 		if (idx >= 0)
-			tc->modelSelector.setSelectedId(idx + 1, juce::sendNotification);
+			tc->modelSelector.setSelectedId(idx + 1, juce::dontSendNotification);
 		else
-			tc->modelSelector.setSelectedId(1, juce::sendNotification);
+			tc->modelSelector.setSelectedId(1, juce::dontSendNotification);
 
 		if (editor.mixerPanel)
 			editor.mixerPanel->updateModelUI(tc->getTrackId());
 	}
-
 	editor.resized();
 }
 

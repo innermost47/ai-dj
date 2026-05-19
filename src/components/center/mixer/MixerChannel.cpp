@@ -148,6 +148,11 @@ void MixerChannel::wireParameters()
 	registerMidiLearn("DelaySend", &sendDelayKnob);
 	registerMidiLearn("ReverbSend", &sendReverbKnob);
 
+	syncSliderRange(pitchKnob, fullParamId("Pitch"));
+	syncSliderRange(fineKnob, fullParamId("Fine"));
+	syncSliderRange(panKnob, fullParamId("Pan"));
+	syncSliderRange(volumeSlider, fullParamId("Volume"));
+
 	sendDelayKnob.setDoubleClickReturnValue(true, 0.0);
 	sendReverbKnob.setDoubleClickReturnValue(true, 0.0);
 	volumeSlider.setDoubleClickReturnValue(true, 0.8);
@@ -681,18 +686,65 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 	if (isApplyingPlayState)
 		return;
 
+	auto &pm = audioProcessor.getParameterManager();
+	int slot = track->slotIndex + 1;
+	int slotIdx = track->slotIndex;
+
 	if (paramSuffix == "Mute")
+	{
 		t->isMuted.store(newValue > 0.5f);
-	else if (paramSuffix == "Solo")
-		t->isSolo.store(newValue > 0.5f);
-	else if (paramSuffix == "Play")
-		applyPlayState(newValue > 0.5f);
-	else if (paramSuffix == "DelaySend")
-	{
-		t->delaySend.store(newValue);
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackMute(slot),
+		                                                 t->isMuted.load() ? MidiMapping::feedbackActive
+		                                                                   : MidiMapping::feedbackIdle);
 	}
-	else if (paramSuffix == "ReverbSend")
+	else if (paramSuffix == "Volume")
 	{
+		t->volume.store(newValue);
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackVolume(slot),
+		                                                 MidiMapping::volumeToMidi(pm.getVolume(slotIdx)));
+	}
+	else if (paramSuffix == "Pan")
+	{
+		t->pan.store(newValue);
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
+		                                                 MidiMapping::panToMidi(pm.getPan(slotIdx)));
+	}
+	else if (paramSuffix == "Solo")
+	{
+		t->isSolo.store(newValue > 0.5f);
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSolo(slot),
+		                                                 t->isSolo.load() ? MidiMapping::feedbackActive
+		                                                                  : MidiMapping::feedbackIdle);
+	}
+	else if (paramSuffix == "Play")
+	{
+		applyPlayState(newValue > 0.5f);
+		if (track->isCurrentlyPlaying.load())
+			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
+			                                                 MidiMapping::feedbackActive);
+		else if (track->isArmed.load())
+			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
+			                                                 MidiMapping::feedbackPending);
+		else
+			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
+			                                                 MidiMapping::feedbackIdle);
+	}
+	else if (paramSuffix == "DelaySend")
+		t->delaySend.store(newValue);
+	else if (paramSuffix == "ReverbSend")
 		t->reverbSend.store(newValue);
+	else if (paramSuffix == "Pitch")
+	{
+		auto range = audioProcessor.getParameterTreeState().getParameterRange(fullParamId("Pitch"));
+		t->getCurrentPage().pitchSemitones.store(range.convertFrom0to1(newValue));
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPitch(slot),
+		                                                 MidiMapping::pitchToMidi(pm.getPitch(slotIdx)));
+	}
+	else if (paramSuffix == "Fine")
+	{
+		auto range = audioProcessor.getParameterTreeState().getParameterRange(fullParamId("Fine"));
+		t->getCurrentPage().fineOffset.store(range.convertFrom0to1(newValue));
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackFine(slot),
+		                                                 MidiMapping::fineToMidi(pm.getFine(slotIdx)));
 	}
 }

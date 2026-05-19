@@ -42,7 +42,7 @@ class TrackManager
 	                           juce::AudioBuffer<float> &mainOutput, double hostBpm, DelaySend::TimeDivision division,
 	                           float feedback, DelaySend::Mode mode, int numSamples);
 
-	void prepareTracksAudio(double sampleRate, int maxBlockSize);
+	void prepareSends(double sampleRate, int maxBlockSize);
 
 	void processPerTrackReverbs(std::vector<juce::AudioBuffer<float>> &individualOutputs,
 	                            juce::AudioBuffer<float> &mainOutput, float size, float damping, float width, float mix,
@@ -66,8 +66,6 @@ class TrackManager
 	                       int timeSignatureDenominator) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
-
-	void initializeTrackAudio(TrackData &track, double sampleRate, int maxBlockSize);
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };

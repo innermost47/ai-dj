@@ -165,7 +165,7 @@ void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId
 
 	auto &currentPage = track->getCurrentPage();
 
-	currentPage.selectedPrompt = track->getCurrentPage().selectedPrompt;
+	currentPage.setSelectedPrompt(track->getCurrentPage().selectedPrompt);
 	currentPage.generationPrompt = track->getCurrentPage().selectedPrompt;
 	currentPage.generationBpm = editor.audioProcessor.getGlobalBpm();
 	currentPage.generationKey = editor.audioProcessor.getGlobalKey();

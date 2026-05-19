@@ -40,7 +40,6 @@ class AudioManager
 	void checkAndSwapStagingBuffers();
 	void performAtomicSwap(TrackData *track, const juce::String &trackId);
 	void updateWaveformDisplay(const juce::String &trackId);
-	void updateTimeStretchRatios(double hostBpm);
 	void loadAudioFileAsync(const juce::String &trackId, const juce::File &audioFile);
 	void processAudioBPMAndSync(TrackData *track);
 	void updateMasterEQ();

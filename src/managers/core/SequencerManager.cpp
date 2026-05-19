@@ -127,26 +127,20 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 	}
 }
 
-void SequencerManager::handleSequenceChange(const juce::String &parameterID)
+void SequencerManager::handleSequenceChange(int slotNum, int targetSequence)
 {
-	juce::String slotStr = parameterID.substring(4, 5);
-	juce::String seqStr = parameterID.substring(8, 9);
 
-	int slotNumber = slotStr.getIntValue();
-	int seqNumber = seqStr.getIntValue();
-
-	if (slotNumber < 1 || slotNumber > 8 || seqNumber < 1 || seqNumber > 8)
+	if (slotNum < 1 || slotNum > 8 || targetSequence < 1 || targetSequence > 8)
 		return;
 
 	auto trackIds = trackManager.getAllTrackIds();
 	for (const auto &trackId : trackIds)
 	{
 		TrackData *track = trackManager.getTrack(trackId);
-		if (track && track->slotIndex == (slotNumber - 1))
+		if (track && track->slotIndex == (slotNum - 1))
 		{
 			auto &currentPage = track->getCurrentPage();
-			currentPage.currentSequenceIndex = seqNumber - 1;
-			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSeq(slotNumber), seqNumber - 1);
+			currentPage.currentSequenceIndex = targetSequence - 1;
 			juce::MessageManager::callAsync(
 			    [this]()
 			    {
@@ -242,7 +236,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 	wasPlaying = hostIsPlaying;
 }
 
-void SequencerManager::updateSequencers(bool hostIsPlaying)
+void SequencerManager::updateSequencers(bool hostIsPlaying, int numSamples)
 {
 	if (isBypassed())
 	{
@@ -261,6 +255,14 @@ void SequencerManager::updateSequencers(bool hostIsPlaying)
 	double currentPpq = *ppqPosition;
 	double stepInPpq = 0.25;
 
+	double hostBpm = audioProcessor.getLastHostBpmForQuantization();
+	if (hostBpm <= 0.0)
+		hostBpm = 120.0;
+	double sampleRate = audioProcessor.getSampleRate();
+	double samplesPerPpq = (60.0 / hostBpm) * sampleRate;
+	double bufferDurationInPpq = numSamples / samplesPerPpq;
+	double ppqEndOfBuffer = currentPpq + bufferDurationInPpq;
+
 	auto trackIds = trackManager.getAllTrackIds();
 	for (const auto &trackId : trackIds)
 	{
@@ -277,7 +279,7 @@ void SequencerManager::updateSequencers(bool hostIsPlaying)
 				track->lastPpqPosition = track->customStepCounter * stepInPpq;
 				shouldAdvanceStep = true;
 			}
-			else if (currentPpq >= expectedPpqForNextStep)
+			else if (ppqEndOfBuffer >= expectedPpqForNextStep)
 			{
 				track->customStepCounter++;
 				track->lastPpqPosition = expectedPpqForNextStep;
@@ -476,9 +478,18 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 					track->beatRepeatEndPosition.store(maxSamples);
 				}
 
+				const double GATE_SAMPLES = 64.0;
+				double currentEnd = track->beatRepeatEndPosition.load();
+				double gatedEnd = currentEnd - GATE_SAMPLES;
+				if (gatedEnd > track->beatRepeatStartPosition.load())
+				{
+					track->beatRepeatEndPosition.store(gatedEnd);
+				}
+
 				track->beatRepeatActive.store(true);
 				track->beatRepeatPending.store(false);
 				track->pendingBeatNumber.store(-1);
+				track->brFadeInPending.store(64);
 				track->readPosition.store(track->beatRepeatStartPosition.load());
 			}
 		}
@@ -504,6 +515,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 				track->beatRepeatStopPending.store(false);
 				track->randomRetriggerActive.store(false);
 				track->lastRetriggerTime.store(-1.0);
+				track->brFadeInPending.store(64);
 				track->readPosition.store(track->originalReadPosition.load());
 				track->pendingStopBeatNumber.store(-1);
 			}

@@ -171,7 +171,6 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	const int numSamples = static_cast<int>(reader->lengthInSamples);
 	const double sampleRate = reader->sampleRate;
-	const int numChannels = std::max(1, (int)reader->numChannels);
 
 	juce::AudioBuffer<float> rawBuffer(2, numSamples);
 	rawBuffer.clear();
@@ -184,7 +183,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	if (serverSnappedBpm <= 0.0f)
 	{
-		breakfastquay::MiniBPM bpm(sampleRate);
+		breakfastquay::MiniBPM bpm(static_cast<float>(sampleRate));
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
 		bpm.setBeatsPerBar(4);
 		bpm.process(rawBuffer.getReadPointer(0), numSamples);
@@ -342,6 +341,7 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	bool preservedHasOriginal = targetPage.hasOriginalVersion.load();
 
 	std::swap(targetPage.audioBuffer, track->stagingBuffer);
+	track->stretchNeedsReset.store(true);
 	targetPage.numSamples = track->stagingNumSamples.load();
 	targetPage.sampleRate = track->stagingSampleRate.load();
 	targetPage.originalBpm = targetPage.stagingOriginalBpm;
@@ -404,42 +404,6 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 	}
 }
 
-void AudioManager::updateTimeStretchRatios(double hostBpm)
-{
-	auto trackIds = trackManager.getAllTrackIds();
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *track = trackManager.getTrack(trackId);
-		if (!track)
-			continue;
-
-		auto &currentPage = track->getCurrentPage();
-
-		double ratio = 1.0;
-
-		switch (track->timeStretchMode)
-		{
-		case 1:
-		case 3:
-			ratio = 1.0;
-			break;
-
-		case 2:
-		case 4:
-			if (currentPage.originalBpm > 0.0f && hostBpm > 0.0)
-			{
-				double hostRatio = hostBpm / currentPage.originalBpm;
-				double manualAdjust = currentPage.bpmOffset / currentPage.originalBpm;
-				ratio = hostRatio + manualAdjust;
-			}
-			break;
-		}
-
-		ratio = juce::jlimit(0.25, 4.0, ratio);
-		track->cachedPlaybackRatio = ratio;
-	}
-}
-
 void AudioManager::processAudioBPMAndSync(TrackData *track)
 {
 	track->nextHasOriginalVersion.store(false);
@@ -450,7 +414,7 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 
 	if (serverSnappedBpm <= 0.0f)
 	{
-		breakfastquay::MiniBPM bpm(track->stagingSampleRate.load());
+		breakfastquay::MiniBPM bpm(static_cast<float>(track->stagingSampleRate.load()));
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
 		bpm.setBeatsPerBar(4);
 
@@ -508,7 +472,7 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 	juce::AudioBuffer<float> finalStretchedAudio(numChannels, outputSamples);
 
 	signalsmith::stretch::SignalsmithStretch<float> stretch;
-	stretch.presetDefault(numChannels, track->stagingSampleRate.load());
+	stretch.presetDefault(numChannels, static_cast<float>(track->stagingSampleRate.load()));
 
 	const float *const *inputPointers = track->stagingBuffer.getArrayOfReadPointers();
 	float *const *outputPointers = finalStretchedAudio.getArrayOfWritePointers();
@@ -828,7 +792,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		if (sampleEntry)
 		{
 			page.prompt = sampleEntry->originalPrompt;
-			page.selectedPrompt = sampleEntry->originalPrompt;
+			page.setSelectedPrompt(sampleEntry->originalPrompt);
 			page.generationBpm = sampleEntry->bpm;
 			page.generationKey = sampleEntry->key;
 		}

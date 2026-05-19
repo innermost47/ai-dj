@@ -12,12 +12,12 @@ class SequencerManager
 	~SequencerManager() = default;
 
 	void handleSequencerPlayState(bool hostIsPlaying);
-	void updateSequencers(bool hostIsPlaying);
+	void updateSequencers(bool hostIsPlaying, int numSamples);
 	void addSequencerMidiMessage(const juce::MidiMessage &message);
 	void handleAdvanceStep(TrackData *track, bool hostIsPlaying);
 	void triggerSequencerStep(TrackData *track);
 	void handlePageChange(const juce::String &parameterID);
-	void handleSequenceChange(const juce::String &parameterID);
+	void handleSequenceChange(int slotNum, int targetSequence);
 	void checkBeatRepeatWithSampleCounter();
 	void executePendingAction(TrackData *track);
 	void flushMidiBuffer(juce::MidiBuffer &destination, int numSamples);

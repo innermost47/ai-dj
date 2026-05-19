@@ -49,7 +49,6 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotGenerateParams[i] = apvts.getRawParameterValue(s + "Generate");
 		slotPitchParams[i] = apvts.getRawParameterValue(s + "Pitch");
 		slotFineParams[i] = apvts.getRawParameterValue(s + "Fine");
-		slotBpmOffsetParams[i] = apvts.getRawParameterValue(s + "BpmOffset");
 		slotRandomRetriggerParams[i] = apvts.getRawParameterValue(s + "RandomRetrigger");
 		slotRetriggerIntervalParams[i] = apvts.getRawParameterValue(s + "RetriggerInterval");
 		slotAdsrAttackParams[i] = apvts.getRawParameterValue(s + "AdsrAttack");
@@ -68,11 +67,12 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "AdsrRelease", listener);
 		apvts.addParameterListener(s + "DelaySend", listener);
 		apvts.addParameterListener(s + "ReverbSend", listener);
+		apvts.addParameterListener(s + "Seq", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
 
-		for (int seq = 1; seq <= 8; ++seq)
+		for (int seq = 1; seq <= ObsidianDataConst::MAX_TRACKS; ++seq)
 			apvts.addParameterListener(s + "Seq" + juce::String(seq), listener);
 	}
 
@@ -109,7 +109,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 	apvts.removeParameterListener("reverbWidth", listener);
 	apvts.removeParameterListener("reverbMix", listener);
 
-	for (int slot = 1; slot <= 8; ++slot)
+	for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
 	{
 		juce::String s = "slot" + juce::String(slot);
 
@@ -125,9 +125,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "AdsrRelease", listener);
 		apvts.removeParameterListener(s + "DelaySend", listener);
 		apvts.removeParameterListener(s + "ReverbSend", listener);
-
-		for (int seq = 1; seq <= 8; ++seq)
-			apvts.removeParameterListener(s + "Seq" + juce::String(seq), listener);
+		apvts.removeParameterListener(s + "Seq", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -182,7 +180,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 	params.push_back(std::make_unique<juce::AudioParameterChoice>("crossfaderCurveMode", "Crossfader Curve",
 	                                                              juce::StringArray{"Linear", "Equal Power", "DJ"}, 1));
 
-	for (int i = 1; i <= 8; ++i)
+	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS; ++i)
 	{
 		juce::String slotId = "slot" + juce::String(i);
 		juce::String slotName = "Slot " + juce::String(i);
@@ -197,8 +195,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Pitch", slotName + " Pitch", -12.0f, 12.0f, 0.0f));
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Fine", slotName + " Fine", -50.0f, 50.0f, 0.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "BpmOffset", slotName + " BPM Offset",
-		                                                             -20.0f, 20.0f, 0.0f));
+
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "RandomRetrigger",
 		                                                            slotName + " Random Retrigger", false));
 		params.push_back(
@@ -219,6 +216,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(makeTrigg(slotId + "PageC", slotName + " Page C"));
 		params.push_back(makeTrigg(slotId + "PageD", slotName + " Page D"));
 
+		params.push_back(std::make_unique<juce::AudioParameterInt>(slotId + "Seq", slotName + " Sequence", 1,
+		                                                           ObsidianDataConst::MAX_TRACKS, 1));
+
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "AdsrAttack", slotName + " ADSR Attack", juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -227,9 +227,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 1.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "AdsrRelease", slotName + " ADSR Release", juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));
-
-		for (int j = 1; j <= 8; ++j)
-			params.push_back(makeTrigg(slotId + "Seq" + juce::String(j), slotName + " Sequence " + juce::String(j)));
 	}
 
 	return {params.begin(), params.end()};
