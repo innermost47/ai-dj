@@ -404,42 +404,6 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 	}
 }
 
-void AudioManager::updateTimeStretchRatios(double hostBpm)
-{
-	auto trackIds = trackManager.getAllTrackIds();
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *track = trackManager.getTrack(trackId);
-		if (!track)
-			continue;
-
-		auto &currentPage = track->getCurrentPage();
-
-		double ratio = 1.0;
-
-		switch (track->timeStretchMode)
-		{
-		case 1:
-		case 3:
-			ratio = 1.0;
-			break;
-
-		case 2:
-		case 4:
-			if (currentPage.originalBpm > 0.0f && hostBpm > 0.0)
-			{
-				double hostRatio = hostBpm / currentPage.originalBpm;
-				double manualAdjust = currentPage.bpmOffset / currentPage.originalBpm;
-				ratio = hostRatio + manualAdjust;
-			}
-			break;
-		}
-
-		ratio = juce::jlimit(0.25, 4.0, ratio);
-		track->cachedPlaybackRatio = ratio;
-	}
-}
-
 void AudioManager::processAudioBPMAndSync(TrackData *track)
 {
 	track->nextHasOriginalVersion.store(false);

@@ -49,7 +49,6 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotGenerateParams[i] = apvts.getRawParameterValue(s + "Generate");
 		slotPitchParams[i] = apvts.getRawParameterValue(s + "Pitch");
 		slotFineParams[i] = apvts.getRawParameterValue(s + "Fine");
-		slotBpmOffsetParams[i] = apvts.getRawParameterValue(s + "BpmOffset");
 		slotRandomRetriggerParams[i] = apvts.getRawParameterValue(s + "RandomRetrigger");
 		slotRetriggerIntervalParams[i] = apvts.getRawParameterValue(s + "RetriggerInterval");
 		slotAdsrAttackParams[i] = apvts.getRawParameterValue(s + "AdsrAttack");
@@ -197,8 +196,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Pitch", slotName + " Pitch", -12.0f, 12.0f, 0.0f));
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Fine", slotName + " Fine", -50.0f, 50.0f, 0.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "BpmOffset", slotName + " BPM Offset",
-		                                                             -20.0f, 20.0f, 0.0f));
+
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "RandomRetrigger",
 		                                                            slotName + " Random Retrigger", false));
 		params.push_back(

@@ -148,6 +148,11 @@ void MixerChannel::wireParameters()
 	registerMidiLearn("DelaySend", &sendDelayKnob);
 	registerMidiLearn("ReverbSend", &sendReverbKnob);
 
+	syncSliderRange(pitchKnob, fullParamId("Pitch"));
+	syncSliderRange(fineKnob, fullParamId("Fine"));
+	syncSliderRange(panKnob, fullParamId("Pan"));
+	syncSliderRange(volumeSlider, fullParamId("Volume"));
+
 	sendDelayKnob.setDoubleClickReturnValue(true, 0.0);
 	sendReverbKnob.setDoubleClickReturnValue(true, 0.0);
 	volumeSlider.setDoubleClickReturnValue(true, 0.8);
@@ -688,11 +693,17 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 	else if (paramSuffix == "Play")
 		applyPlayState(newValue > 0.5f);
 	else if (paramSuffix == "DelaySend")
-	{
 		t->delaySend.store(newValue);
-	}
 	else if (paramSuffix == "ReverbSend")
-	{
 		t->reverbSend.store(newValue);
+	else if (paramSuffix == "Pitch")
+	{
+		auto range = audioProcessor.getParameterTreeState().getParameterRange(fullParamId("Pitch"));
+		t->getCurrentPage().pitchSemitones.store(range.convertFrom0to1(newValue));
+	}
+	else if (paramSuffix == "Fine")
+	{
+		auto range = audioProcessor.getParameterTreeState().getParameterRange(fullParamId("Fine"));
+		t->getCurrentPage().fineOffset.store(range.convertFrom0to1(newValue));
 	}
 }

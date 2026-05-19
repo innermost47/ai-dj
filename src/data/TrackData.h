@@ -52,7 +52,7 @@ struct TrackPage
 	double loopEnd = 4.0;
 
 	std::atomic<float> fineOffset{0.0f};
-	std::atomic<double> bpmOffset{0.0};
+	std::atomic<float> pitchSemitones{0.0f};
 	float stagingOriginalBpm = 126.0f;
 	float bpm = 126.0f;
 	float originalBpm = 126.0f;
@@ -91,7 +91,7 @@ struct TrackPage
 		adsrDecay.store(other.adsrDecay.load());
 		adsrSustain.store(other.adsrSustain.load());
 		adsrRelease.store(other.adsrRelease.load());
-		bpmOffset.store(other.bpmOffset.load());
+		pitchSemitones.store(other.pitchSemitones.load());
 	}
 
 	void reset()
@@ -119,7 +119,7 @@ struct TrackPage
 		adsrDecay.store(4.0f);
 		adsrSustain.store(1.0f);
 		adsrRelease.store(0.0f);
-		bpmOffset.store(0.0);
+		pitchSemitones.store(0.0);
 		savedModelBeforeLocal.clear();
 	}
 
@@ -208,7 +208,6 @@ struct TrackData
 	}
 
 	std::atomic<int> currentPageIndex{0};
-	int timeStretchMode = 4;
 	int midiNote = 60;
 	int customStepCounter = 0;
 
@@ -253,7 +252,6 @@ struct TrackData
 	std::atomic<bool> isPreviewMode{false};
 	std::atomic<bool> previewEndPending{false};
 
-	std::atomic<double> cachedPlaybackRatio{1.0};
 	std::atomic<double> stagingSampleRate{ObsidianDataConst::SAMPLERATE};
 	std::atomic<double> readPosition{0.0};
 	std::atomic<double> beatRepeatStartPosition{0.0};

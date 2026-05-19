@@ -372,7 +372,7 @@ void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
 			    auto &apvts = parameterManager.getAPVTS();
 
 			    float pitchValue =
-			        juce::jlimit(-12.0f, 12.0f, (float(page.bpmOffset.load()) - page.fineOffset.load()) / 8.0f);
+			        juce::jlimit(-12.0f, 12.0f, (float(page.pitchSemitones.load()) - page.fineOffset.load()) / 8.0f);
 			    float fineValue = juce::jlimit(-50.0f, 50.0f, page.fineOffset.load() * 10.0f);
 
 			    if (auto *p = apvts.getParameter(s + "Pitch"))
@@ -571,7 +571,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	audioManager.clearOutputBuffers(buffer);
 	auto mainOutput = getBusBuffer(buffer, false, 0);
 	mainOutput.clear();
-	audioManager.updateTimeStretchRatios(hostBpm);
 	auto previewBus = getBusBuffer(buffer, false, getBusCount(false) - 1);
 	previewBus.clear();
 	float pairCurrent[4];
@@ -1210,14 +1209,14 @@ void DjIaVstProcessor::parameterChanged(const juce::String &parameterID, float n
 			if (parameterID.endsWith("Pitch"))
 			{
 				float paramPitch = newValue * 8.0f;
-				page.bpmOffset.store(paramPitch + page.fineOffset.load());
+				page.pitchSemitones.store(paramPitch + page.fineOffset.load());
 			}
 			else
 			{
 				float paramFine = newValue * 2.0f;
 				page.fineOffset.store(paramFine * 0.05f);
 				float currentPitch = parameterManager.getPitch(slotNum - 1) * 8.0f;
-				page.bpmOffset.store(currentPitch + page.fineOffset.load());
+				page.pitchSemitones.store(currentPitch + page.fineOffset.load());
 			}
 
 			if (parameterID.endsWith("Pitch"))

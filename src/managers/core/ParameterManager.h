@@ -199,7 +199,6 @@ class ParameterManager
 	std::atomic<float> *slotGenerateParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotPitchParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotFineParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotBpmOffsetParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotRandomRetriggerParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotRetriggerIntervalParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotAdsrAttackParams[ObsidianDataConst::MAX_TRACKS] = {};
@@ -238,9 +237,9 @@ class ParameterManager
 		                         "delayMode",
 		                         "crossfaderCurveMode"};
 
-		static const juce::StringArray perSlotParams = {"Volume",    "Pan",         "Pitch",       "Fine",
-		                                                "BpmOffset", "DelaySend",   "ReverbSend",  "ADSRAttack",
-		                                                "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval"};
+		static const juce::StringArray perSlotParams = {
+		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",        "ReverbSend",
+		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval"};
 
 		for (int slot = 1; slot <= 8; ++slot)
 		{

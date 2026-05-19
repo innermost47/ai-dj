@@ -24,7 +24,6 @@ juce::ValueTree StateManager::saveState() const
 
 		    trackState.setProperty("slotIndex", track->slotIndex, nullptr);
 		    trackState.setProperty("style", track->style, nullptr);
-		    trackState.setProperty("timeStretchMode", track->timeStretchMode, nullptr);
 		    trackState.setProperty("midiNote", track->midiNote, nullptr);
 		    trackState.setProperty("volume", track->volume.load(), nullptr);
 		    trackState.setProperty("pan", track->pan.load(), nullptr);
@@ -81,7 +80,8 @@ juce::ValueTree StateManager::saveState() const
 			    pageState.setProperty("adsrDecay", page.adsrDecay.load(), nullptr);
 			    pageState.setProperty("adsrSustain", page.adsrSustain.load(), nullptr);
 			    pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
-			    pageState.setProperty("bpmOffset", page.bpmOffset.load(), nullptr);
+			    pageState.setProperty("pitchSemitones", page.pitchSemitones.load(), nullptr);
+			    pageState.setProperty("fineOffset", page.fineOffset.load(), nullptr);
 			    pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
 			    pageState.setProperty("savedModelBeforeLocal", page.savedModelBeforeLocal, nullptr);
 
@@ -138,8 +138,6 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->trackName = trackState.getProperty("name", "Track");
 		track->slotIndex = trackState.getProperty("slotIndex", -1);
 		track->style = trackState.getProperty("style", "");
-		track->timeStretchMode = 4;
-		double legacyBpmOffset = trackState.getProperty("bpmOffset", 0.0);
 		track->midiNote = trackState.getProperty("midiNote", 60);
 		track->volume = trackState.getProperty("volume", 0.8f);
 		track->pan = trackState.getProperty("pan", 0.0f);
@@ -203,7 +201,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.hasOriginalVersion = pageState.getProperty("hasOriginalVersion", false);
 				page.canvasData = pageState.getProperty("canvasData", "").toString();
 				page.canvasState = pageState.getProperty("canvasState", "").toString();
-				page.bpmOffset.store(pageState.getProperty("bpmOffset", legacyBpmOffset));
+				page.pitchSemitones.store(pageState.getProperty("pitchSemitones", 0.0f));
+				page.fineOffset.store(pageState.getProperty("fineOffset", 0.0f));
 				page.loopPointsLocked = pageState.getProperty("loopPointsLocked", false);
 				page.savedModelBeforeLocal =
 				    pageState.getProperty("savedModelBeforeLocal", "stable-audio-open-1.0").toString();

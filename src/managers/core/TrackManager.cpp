@@ -515,35 +515,13 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	double currentPosition = track.readPosition.load();
 	double playbackRatio = 1.0;
 
-	switch (track.timeStretchMode)
+	float pitchSemis = juce::jlimit(-12.0f, 12.0f, currentPage.pitchSemitones.load());
+	float fineCents = juce::jlimit(-50.0f, 50.0f, currentPage.fineOffset.load());
+	float totalSemis = pitchSemis + (fineCents / 100.0f);
+
+	if (std::abs(totalSemis) > 0.001f)
 	{
-	case 1:
-		playbackRatio = 1.0;
-		break;
-	case 2:
-		if (originalBpmToUse > 0.0f)
-		{
-			float totalBpmAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
-			float adjustedBpm = originalBpmToUse + totalBpmAdjust;
-			adjustedBpm = juce::jlimit(1.0f, 1000.0f, adjustedBpm);
-			playbackRatio = adjustedBpm / originalBpmToUse;
-		}
-		break;
-	case 3:
-		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
-		{
-			playbackRatio = hostBpm / originalBpmToUse;
-		}
-		break;
-	case 4:
-		if (originalBpmToUse > 0.0f && hostBpm > 0.0)
-		{
-			float totalManualAdjust = static_cast<float>(currentPage.bpmOffset.load()) + currentPage.fineOffset.load();
-			float effectiveHostBpm = static_cast<float>(hostBpm) + totalManualAdjust;
-			effectiveHostBpm = juce::jlimit(1.0f, 1000.0f, effectiveHostBpm);
-			playbackRatio = effectiveHostBpm / originalBpmToUse;
-		}
-		break;
+		playbackRatio *= std::pow(2.0f, totalSemis / 12.0f);
 	}
 
 	double startSample = loopStartToUse * sampleRateToUse;

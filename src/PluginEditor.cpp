@@ -270,7 +270,7 @@ void DjIaVstEditor::timerCallback()
 		for (auto &trackComp : uiTrackManager->getTrackComponents())
 		{
 			TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
-			if (track && (track->timeStretchMode == 3 || track->timeStretchMode == 4))
+			if (track)
 				trackComp->updateWaveformWithTimeStretch();
 		}
 	}

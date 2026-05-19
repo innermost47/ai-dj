@@ -256,35 +256,24 @@ float TrackComponent::calculateEffectiveBpm()
 	auto *t = getTrack();
 	if (!t)
 		return 126.0f;
+
 	auto &currentPage = t->getCurrentPage();
 	float effectiveBpm = currentPage.originalBpm;
-	switch (t->timeStretchMode)
+
+	double hostBpm = audioProcessor.getHostBpm();
+	if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
 	{
-	case 1:
-		effectiveBpm = currentPage.originalBpm;
-		break;
-	case 2:
-		effectiveBpm = currentPage.originalBpm + static_cast<float>(currentPage.bpmOffset.load());
-		break;
-	case 3:
-	{
-		double hostBpm = audioProcessor.getHostBpm();
-		if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
+		effectiveBpm = (float)hostBpm;
+		float pitchSemis = currentPage.pitchSemitones.load();
+		float fineCents = currentPage.fineOffset.load();
+		float totalSemis = pitchSemis + (fineCents / 100.0f);
+
+		if (std::abs(totalSemis) > 0.001f)
 		{
-			effectiveBpm = (float)hostBpm;
+			effectiveBpm *= std::pow(2.0f, totalSemis / 12.0f);
 		}
 	}
-	break;
-	case 4:
-	{
-		double hostBpm = audioProcessor.getHostBpm();
-		if (hostBpm > 0.0 && currentPage.originalBpm > 0.0)
-		{
-			effectiveBpm = (float)hostBpm + static_cast<float>(currentPage.bpmOffset.load());
-		}
-	}
-	break;
-	}
+
 	return juce::jlimit(40.0f, 250.0f, effectiveBpm);
 }
 
@@ -1512,35 +1501,14 @@ void TrackComponent::updateTrackInfo()
 	auto *t = getTrack();
 	if (!t)
 		return;
-
 	if (!t->getCurrentPage().prompt.isEmpty())
 	{
 		float effectiveBpm = calculateEffectiveBpm();
-		float originalBpm = t->getCurrentPage().originalBpm;
+		float pitchSemis = t->getCurrentPage().pitchSemitones.load();
 
-		juce::String bpmInfo = "";
-		juce::String stretchIndicator = "";
-
-		switch (t->timeStretchMode)
-		{
-		case 1:
-			bpmInfo = " | Original: " + juce::String(originalBpm, 1);
-			break;
-		case 2:
-			stretchIndicator = (effectiveBpm > originalBpm) ? " +" : (effectiveBpm < originalBpm) ? " -" : " =";
-			bpmInfo = " | BPM: " + juce::String(effectiveBpm, 1) + stretchIndicator;
-			break;
-		case 3:
-			stretchIndicator = " =";
-			bpmInfo = " | Sync: " + juce::String(effectiveBpm, 1) + stretchIndicator;
-			break;
-		case 4:
-			stretchIndicator = (t->getCurrentPage().bpmOffset > 0)   ? " +"
-			                   : (t->getCurrentPage().bpmOffset < 0) ? " -"
-			                                                         : "";
-			bpmInfo = " | Host+ " + juce::String(t->getCurrentPage().bpmOffset, 1) + stretchIndicator;
-			break;
-		}
+		juce::String stretchIndicator = (pitchSemis > 0) ? " +" : (pitchSemis < 0) ? " -" : "";
+		juce::String bpmInfo =
+		    " | Sync: " + juce::String(effectiveBpm, 1) + " | Pitch: " + juce::String(pitchSemis, 1) + stretchIndicator;
 
 		infoLabel.setText(t->getCurrentPage().prompt.substring(0, 30) + "..." + bpmInfo, juce::dontSendNotification);
 	}
