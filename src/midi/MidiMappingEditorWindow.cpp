@@ -18,7 +18,7 @@ MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *man
 	midiInfoLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(12.0f));
 	addAndMakeVisible(midiInfoLabel);
 
-	deleteButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
+	deleteButton.loadIcon(BinaryData::trash_svg, BinaryData::trash_svgSize);
 	deleteButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	deleteButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	deleteButton.addListener(this);
@@ -186,14 +186,15 @@ MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager) : mi
 	countLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(countLabel);
 
-	clearAllButton.loadIcon(BinaryData::x_svg, BinaryData::x_svgSize);
+	clearAllButton.loadIcon(BinaryData::trash_svg, BinaryData::trash_svgSize);
 	clearAllButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonDangerDark);
 	clearAllButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	clearAllButton.setCompactMode(true);
 	clearAllButton.addListener(this);
 	addAndMakeVisible(clearAllButton);
 
-	reloadDefaultsButton.loadIcon(BinaryData::refresh_svg, BinaryData::refresh_svgSize);
+	reloadDefaultsButton.loadIcon(BinaryData::treestructure_svg, BinaryData::treestructure_svgSize);
+	reloadDefaultsButton.setTooltip("Load default MIDI mappings (for OBSIDIAN Neural - Mobile Controller)");
 	reloadDefaultsButton.setColour(juce::TextButton::buttonColourId, ColourPalette::indigo);
 	reloadDefaultsButton.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	reloadDefaultsButton.setCompactMode(true);
@@ -291,17 +292,20 @@ void MidiMappingEditorWindow::buttonClicked(juce::Button *button)
 	}
 	else if (button == &reloadDefaultsButton)
 	{
-		ObsidianAlertManager::showConfirm(this, "Confirmation", "Reset mappings to default configuration?", "Yes", "No",
-		                                  [this](bool confirmed)
-		                                  {
-			                                  if (confirmed)
-			                                  {
-				                                  midiLearnManager->clearAllMappings();
-				                                  midiLearnManager->loadDefaultMappings(
-				                                      midiLearnManager->getProcessor());
-				                                  refreshMappingsList();
-			                                  }
-		                                  });
+		ObsidianAlertManager::showConfirm(
+		    this, "Load Default Mappings",
+		    "Load default MIDI mappings configured for the OBSIDIAN Neural - Mobile Controller? "
+		    "This will replace your current mappings.",
+		    "Load", "Cancel",
+		    [this](bool confirmed)
+		    {
+			    if (confirmed)
+			    {
+				    midiLearnManager->clearAllMappings();
+				    midiLearnManager->loadDefaultMappings(midiLearnManager->getProcessor());
+				    refreshMappingsList();
+			    }
+		    });
 	}
 }
 

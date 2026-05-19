@@ -8,7 +8,7 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-project(OBSIDIAN-Neural VERSION 2.1.1)
+project(OBSIDIAN-Neural VERSION 2.5.1)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(LINK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -160,7 +160,7 @@ configure_file(
 )
 
 juce_add_plugin(ObsidianNeuralVST
-    VERSION "2.1.1"
+    VERSION "2.5.1"
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
     COMPANY_NAME "InnerMost47"
@@ -235,6 +235,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/sliders.svg
         src/assets/icons/square.svg
         src/assets/icons/trash.svg
+        src/assets/icons/tree-structure.svg
         src/assets/icons/undo.svg
         src/assets/icons/upload.svg
         src/assets/icons/volume.svg

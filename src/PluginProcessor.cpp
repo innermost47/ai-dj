@@ -35,7 +35,6 @@ DjIaVstProcessor::DjIaVstProcessor()
 	sharedFormatManager.registerBasicFormats();
 	obsidianEngine->initialize();
 
-	midiLearnManager.loadDefaultMappings(this);
 	audioManager.initDummySynth();
 	audioManager.initBuffers(ObsidianDataConst::MAX_TRACKS);
 
@@ -801,8 +800,8 @@ void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
 	auto &currentPage = track->getCurrentPage();
 	float paramVolume = pm.getVolume(slot);
 	float paramPan = pm.getPan(slot);
-	float paramPitch = pm.getPitch(slot) * 8;
-	float paramFine = pm.getFine(slot) * 2;
+	float paramPitch = pm.getPitch(slot);
+	float paramFine = pm.getFine(slot);
 	bool isSolo = pm.getSolo(slot);
 	bool isMuted = pm.getMute(slot);
 	float paramRandomRetrigger = pm.getRandomRetrigger(slot);

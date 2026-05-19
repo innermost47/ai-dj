@@ -146,7 +146,7 @@ void SampleBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		categoryOrder.push_back("Uncategorized");
 
 	const bool autoExpandOnSearch = currentSearch.isNotEmpty();
-
+	bool shouldExpandIfAllAreOpened = true;
 	for (const auto &catName : categoryOrder)
 	{
 		juce::Colour colour =
@@ -155,7 +155,8 @@ void SampleBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		auto accordion = std::make_unique<ObsidianAccordion>(catName, colour);
 
 		const bool shouldExpand = autoExpandOnSort || autoExpandOnSearch || (openCategories.count(catName) > 0);
-
+		if (!shouldExpand)
+			shouldExpandIfAllAreOpened = false;
 		juce::String catNameCopy = catName;
 
 		accordion->onRenameRequested = [this, catNameCopy](const juce::String &newName)
@@ -184,8 +185,6 @@ void SampleBankPanel::rebuildAccordions(bool autoExpandOnSort)
 				ensureAccordionItemsCreated(accPtr, catCopy);
 			}
 		};
-		isExpanded = shouldExpand;
-		header.setExpanded(shouldExpand);
 		accordion->setExpanded(shouldExpand, false);
 
 		if (shouldExpand)
@@ -194,6 +193,8 @@ void SampleBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		accordionContainer.addAndMakeVisible(*accordion);
 		accordions.push_back(std::move(accordion));
 	}
+	isExpanded = shouldExpandIfAllAreOpened;
+	header.setExpanded(isExpanded);
 	header.setChildNum(accordionContainer.getNumChildComponents());
 
 	resized();
