@@ -508,7 +508,7 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 	juce::AudioBuffer<float> finalStretchedAudio(numChannels, outputSamples);
 
 	signalsmith::stretch::SignalsmithStretch<float> stretch;
-	stretch.presetDefault(numChannels, track->stagingSampleRate.load());
+	stretch.presetDefault(numChannels, static_cast<float>(track->stagingSampleRate.load()));
 
 	const float *const *inputPointers = track->stagingBuffer.getArrayOfReadPointers();
 	float *const *outputPointers = finalStretchedAudio.getArrayOfWritePointers();
