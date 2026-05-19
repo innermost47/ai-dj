@@ -9,22 +9,6 @@ class WaveformDisplay;
 class SequencerComponent;
 class DjIaVstProcessor;
 
-class CustomInfoLabelLookAndFeel : public juce::LookAndFeel_V4
-{
-  public:
-	void drawLabel(juce::Graphics &g, juce::Label &label) override
-	{
-		auto bounds = label.getLocalBounds().toFloat();
-		g.setColour(ColourPalette::backgroundDeep);
-		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-		g.setColour(ColourPalette::textAccent.withAlpha(0.4f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
-		g.setColour(ColourPalette::textAccent);
-		g.setFont(juce::FontOptions(juce::Font::getDefaultMonospacedFontName(), 10.0f, juce::Font::plain));
-		g.drawText(label.getText(), bounds.reduced(8, 2), juce::Justification::centredLeft, false);
-	}
-};
-
 class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, public juce::DragAndDropTarget
 {
   public:
@@ -170,7 +154,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 			}
 
 			g.setColour(borderColour);
-			g.drawRoundedRectangle(bounds.reduced(1.0f), 6.0f, borderWidth);
+			g.drawRoundedRectangle(bounds.reduced(1.0f), ObsidianSizes::CORNER, borderWidth);
 		}
 
 	  private:
@@ -214,8 +198,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	std::unique_ptr<WaveformDisplay> waveformDisplay;
 	std::unique_ptr<SequencerComponent> sequencer;
 	std::unique_ptr<DrawingCanvas> drawingCanvas;
-
-	CustomInfoLabelLookAndFeel customLookAndFeel;
 
 	MidiLearnableButton pageButtons[4];
 

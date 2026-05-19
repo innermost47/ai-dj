@@ -372,7 +372,14 @@ void TrackComponent::resized()
 	layoutPagesButtons(pagesArea);
 
 	{
-		const int selectorsWidth = 120;
+		const int rightElementsWidth = 36 + ObsidianSizes::SPACER_SM + 36 + ObsidianSizes::SPACER_SM +
+		                               ObsidianSizes::SPACER_SM + 34 + ObsidianSizes::SPACER_SM + 34 +
+		                               ObsidianSizes::SPACER_SM + 38 + ObsidianSizes::SPACER_SM + (32 * 4);
+
+		const int pagesWidth = 38;
+		const int availableForSelectors =
+		    headerArea.getWidth() - pagesWidth - rightElementsWidth - ObsidianSizes::SPACER_SM * 2;
+		const int selectorsWidth = std::max(availableForSelectors, 120);
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 		selectorsArea.removeFromTop(2);
 		const int selectorHeight = 16;
