@@ -44,8 +44,8 @@ DjIaVstProcessor::DjIaVstProcessor()
 	static auto safeCallback = std::make_shared<std::function<void(int, TrackData *)>>(
 	    [this](int slot, TrackData *track)
 	    {
-		    handleSampleParams(slot, track);
-		    handleSendsParams();
+		    parameterManager.handleSampleParams(slot, track);
+		    parameterManager.handleSendsParams();
 	    });
 	trackManager.parameterUpdateCallback.store(safeCallback.get());
 
@@ -772,54 +772,6 @@ void DjIaVstProcessor::playTrack(const juce::MidiMessage &message, double hostBp
 	}
 }
 
-void DjIaVstProcessor::handleSampleParams(int slot, TrackData *track)
-{
-	auto &pm = parameterManager;
-	float paramRandomRetrigger = pm.getRandomRetrigger(slot);
-	int slotNumber = slot + 1;
-	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
-
-	if (track->lastFeedbackBeatRepeat.load() != isRetriggerEnabled)
-	{
-		track->lastFeedbackBeatRepeat = isRetriggerEnabled;
-		midiManager.sendMidiFeedback(MidiMapping::ccFeedbackBeatRepeat(slotNumber),
-		                             isRetriggerEnabled ? MidiMapping::feedbackActive : MidiMapping::feedbackIdle);
-	}
-}
-
-void DjIaVstProcessor::handleSendsParams()
-{
-	auto &pm = parameterManager;
-	const int ch = MidiMapping::feedbackChannelSends;
-
-	auto pushFloatIfChanged = [&](std::atomic<float> &last, float cur, int cc)
-	{
-		if (std::abs(last.load() - cur) > 0.001f)
-		{
-			last.store(cur);
-			midiManager.sendMidiFeedback(cc, MidiMapping::normalizedToMidi(cur), ch);
-		}
-	};
-
-	auto pushIntIfChanged = [&](std::atomic<int> &last, int cur, int cc, int total)
-	{
-		if (last.load() != cur)
-		{
-			last.store(cur);
-			midiManager.sendMidiFeedback(cc, MidiMapping::indexToMidi(cur, total), ch);
-		}
-	};
-
-	pushFloatIfChanged(lastFeedbackDelayFeedback, pm.getFeedback(), MidiMapping::ccFeedbackDelayFeedback);
-	pushFloatIfChanged(lastFeedbackReverbSize, pm.getReverbSize(), MidiMapping::ccFeedbackReverbSize);
-	pushFloatIfChanged(lastFeedbackReverbDamping, pm.getReverbDamping(), MidiMapping::ccFeedbackReverbDamping);
-	pushFloatIfChanged(lastFeedbackReverbWidth, pm.getReverbWidth(), MidiMapping::ccFeedbackReverbWidth);
-	pushFloatIfChanged(lastFeedbackReverbMix, pm.getReverbMix(), MidiMapping::ccFeedbackReverbMix);
-
-	pushIntIfChanged(lastFeedbackDelayDivision, pm.getDelayDivisionIndex(), MidiMapping::ccFeedbackDelayDivision, 8);
-	pushIntIfChanged(lastFeedbackDelayMode, pm.getDelayModeIndex(), MidiMapping::ccFeedbackDelayMode, 3);
-}
-
 void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double /*hostBpm*/)
 {
 	TrackData *track = trackManager.getTrack(trackId);
@@ -1056,108 +1008,27 @@ void DjIaVstProcessor::setStateInformation(const void *data, int sizeInBytes)
 	stateManager.setStateInformation(data, sizeInBytes);
 }
 
+TrackData *DjIaVstProcessor::getTrackFromParamId(const juce::String &parameterID)
+{
+	if (!parameterID.startsWith("slot"))
+		return nullptr;
+
+	int slotNum = parameterID.substring(4, 5).getIntValue();
+	if (slotNum < 1 || slotNum > ObsidianDataConst::MAX_TRACKS)
+		return nullptr;
+
+	for (const auto &tid : getAllTrackIds())
+	{
+		TrackData *t = getTrack(tid);
+		if (t && t->slotIndex == slotNum - 1)
+			return t;
+	}
+	return nullptr;
+}
+
 void DjIaVstProcessor::parameterChanged(const juce::String &parameterID, float newValue)
 {
-	if (parameterID == "generate" && newValue > 0.5f)
-	{
-		juce::MessageManager::callAsync(
-		    [this]() { parameterManager.getAPVTS().getParameter("generate")->setValueNotifyingHost(0.0f); });
-	}
-	else if (parameterID.startsWith("slot") && parameterID.contains("Page") && newValue > 0.5f)
-	{
-		sequencerManager.handlePageChange(parameterID);
-		juce::MessageManager::callAsync(
-		    [this, parameterID]()
-		    {
-			    if (auto *param = parameterManager.getAPVTS().getParameter(parameterID))
-				    param->setValueNotifyingHost(0.0f);
-		    });
-	}
-	else if (parameterID.startsWith("slot") && parameterID.contains("Seq"))
-	{
-		if (auto *param =
-		        dynamic_cast<juce::AudioParameterInt *>(parameterManager.getAPVTS().getParameter(parameterID)))
-		{
-			int targetSequence = param->get();
-			int slotNum = parameterID.substring(4, 5).getIntValue();
-			sequencerManager.handleSequenceChange(slotNum, targetSequence);
-		}
-	}
-	else if (parameterID == "globalCrossfader")
-	{
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-			    {
-				    if (auto *mixer = editor->getMixerPanel())
-					    if (auto *cf = mixer->getCrossfader())
-						    cf->refreshFromProcessor();
-			    }
-		    });
-	}
-	else if (parameterID.startsWith("pairCrossfader"))
-	{
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-			    {
-				    if (auto *mixer = editor->getMixerPanel())
-					    if (auto *cf = mixer->getCrossfader())
-						    cf->refreshFromProcessor();
-			    }
-		    });
-	}
-	else if (parameterID == "crossfaderCurveMode")
-	{
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-			    {
-				    if (auto *mixer = editor->getMixerPanel())
-					    if (auto *cf = mixer->getCrossfader())
-						    cf->refreshCurveButtons();
-			    }
-		    });
-	}
-	else if (parameterID.startsWith("slot") &&
-	         (parameterID.endsWith("AdsrAttack") || parameterID.endsWith("AdsrDecay") ||
-	          parameterID.endsWith("AdsrSustain") || parameterID.endsWith("AdsrRelease")))
-	{
-		int slotNum = parameterID.substring(4, 5).getIntValue();
-		if (slotNum < 1 || slotNum > 8)
-			return;
-
-		auto trackIds = trackManager.getAllTrackIds();
-		for (const auto &tid : trackIds)
-		{
-			TrackData *t = trackManager.getTrack(tid);
-			if (!t || t->slotIndex != slotNum - 1)
-				continue;
-
-			auto &page = t->getCurrentPage();
-
-			if (parameterID.endsWith("AdsrAttack"))
-			{
-				page.adsrAttack.store(newValue);
-			}
-			else if (parameterID.endsWith("AdsrDecay"))
-			{
-				page.adsrDecay.store(newValue);
-			}
-			else if (parameterID.endsWith("AdsrSustain"))
-			{
-				page.adsrSustain.store(newValue);
-			}
-			else if (parameterID.endsWith("AdsrRelease"))
-			{
-				page.adsrRelease.store(newValue);
-			}
-			break;
-		}
-	}
+	parameterManager.parameterChanged(parameterID, newValue);
 }
 
 void DjIaVstProcessor::removeCustomPrompt(const juce::String &prompt)

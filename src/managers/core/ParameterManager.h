@@ -1,11 +1,14 @@
 #pragma once
 #include "DataConst.h"
+#include "TrackData.h"
 #include <JuceHeader.h>
+
+class DjIaVstProcessor;
 
 class ParameterManager
 {
   public:
-	explicit ParameterManager(juce::AudioProcessor &processor);
+	explicit ParameterManager(DjIaVstProcessor &processor);
 	~ParameterManager() = default;
 
 	juce::AudioProcessorValueTreeState &getAPVTS()
@@ -172,8 +175,16 @@ class ParameterManager
 		return safeLoadIndexed(slotReverbSendParams, slot);
 	}
 
+	void parameterChanged(const juce::String &parameterID, float newValue);
+	void handleSampleParams(int slot, TrackData *track);
+	void applyPlayState(bool shouldArm, TrackData *track);
+	void handleSendsParams();
+
   private:
 	juce::AudioProcessorValueTreeState apvts;
+	DjIaVstProcessor &audioProcessor;
+
+	bool isApplyingPlayState = false;
 
 	std::atomic<float> *masterVolumeParam = nullptr;
 	std::atomic<float> *masterPanParam = nullptr;
@@ -214,6 +225,14 @@ class ParameterManager
 
 	std::atomic<float> *nextTrackParam = nullptr;
 	std::atomic<float> *prevTrackParam = nullptr;
+
+	std::atomic<float> lastFeedbackDelayFeedback{0.0f};
+	std::atomic<float> lastFeedbackReverbSize{0.0f};
+	std::atomic<float> lastFeedbackReverbDamping{0.0f};
+	std::atomic<float> lastFeedbackReverbWidth{0.0f};
+	std::atomic<float> lastFeedbackReverbMix{0.0f};
+	std::atomic<int> lastFeedbackDelayDivision{-1};
+	std::atomic<int> lastFeedbackDelayMode{-1};
 
 	static juce::StringArray buildFloatParamIds()
 	{

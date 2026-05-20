@@ -133,8 +133,7 @@ void MixerChannel::wireParameters()
 	registerSliderParam("DelaySend", sendDelayKnob);
 	registerSliderParam("ReverbSend", sendReverbKnob);
 
-	subscribeToParam("Play");
-
+	registerButtonParam("Play", playButton);
 	registerButtonParam("Mute", muteButton);
 	registerButtonParam("Solo", soloButton);
 
@@ -166,11 +165,6 @@ void MixerChannel::stopTrackImmediatly()
 	auto *t = getTrack();
 	if (t)
 	{
-		t->pendingAction = TrackData::PendingAction::None;
-		t->isArmed.store(false);
-		t->isArmedToStop.store(false);
-		t->isPlaying.store(false);
-		t->isCurrentlyPlaying.store(false);
 		playButton.setToggleState(false, juce::dontSendNotification);
 		playButton.setColour(juce::TextButton::buttonOnColourId, ColourPalette::buttonInactive);
 		stopButton.setColour(juce::TextButton::buttonColourId, ColourPalette::buttonInactive);
@@ -365,14 +359,9 @@ void MixerChannel::updateVUMeter()
 {
 	auto *t = getTrack();
 	if (t)
-	{
-		auto &currentPage = t->getCurrentPage();
-		vuMeter.updateMeter(&currentPage.audioBuffer, t->readPosition.load(), t->volume.load(), t->isPlaying.load());
-	}
+		vuMeter.updateFromRawLevels(t->audioLevelLeft.load(), t->audioLevelRight.load());
 	else
-	{
-		vuMeter.updateMeter(nullptr, 0.0, 0.0f, false);
-	}
+		vuMeter.updateFromRawLevels(0.0f, 0.0f);
 }
 
 void MixerChannel::setupUI()
@@ -518,21 +507,6 @@ void MixerChannel::addEventListeners()
 			onTrackRenamed(trackNameLabel.getText());
 	};
 
-	playButton.onClick = [this]()
-	{
-		auto *t = getTrack();
-		if (!t)
-			return;
-
-		bool currentlyActive = t->isArmed.load() || t->isCurrentlyPlaying.load();
-		bool desiredState = !currentlyActive;
-
-		applyPlayState(desiredState);
-
-		if (auto *p = getParam("Play"))
-			p->setValueNotifyingHost(desiredState ? 1.0f : 0.0f);
-	};
-
 	stopButton.onClick = [this]()
 	{
 		auto *t = getTrack();
@@ -543,20 +517,6 @@ void MixerChannel::addEventListeners()
 		if (auto *p = getParam("Play"))
 			p->setValueNotifyingHost(0.0f);
 	};
-}
-
-bool MixerChannel::allSequencerStepsAreFalse() const
-{
-	auto *t = getTrack();
-	if (!t)
-		return true;
-
-	auto &seqData = t->getCurrentSequencerData();
-	for (const auto &measure : seqData.steps)
-		for (bool step : measure)
-			if (step)
-				return false;
-	return true;
 }
 
 void MixerChannel::applyPlayState(bool shouldArm)
@@ -574,29 +534,12 @@ void MixerChannel::applyPlayState(bool shouldArm)
 	}
 
 	const bool isPlaying = t->isCurrentlyPlaying.load();
-	const bool emptySeq = allSequencerStepsAreFalse();
+	const bool emptySeq = t->allSequencerStepsAreFalse();
 
-	if (shouldArm && !isPlaying)
-	{
-		if (emptySeq)
-		{
-			t->setArmedToStop(false);
-			t->pendingAction = TrackData::PendingAction::None;
-		}
-		t->setArmed(true);
-	}
-	else if (!shouldArm && !isPlaying)
-	{
-		t->pendingAction = TrackData::PendingAction::None;
-		t->setArmed(false);
-	}
-	else if (!shouldArm && isPlaying && !emptySeq)
+	if (!shouldArm && isPlaying && !emptySeq)
 	{
 		if (t->isArmedToStop.load())
 			return;
-		t->pendingAction = TrackData::PendingAction::StopOnNextMeasure;
-		t->setArmed(false);
-		t->setArmedToStop(true);
 		isBlinking = true;
 		startTimer(300);
 	}
@@ -686,65 +629,13 @@ void MixerChannel::onParameterChangedUI(const juce::String &paramSuffix, float n
 	if (isApplyingPlayState)
 		return;
 
-	auto &pm = audioProcessor.getParameterManager();
-	auto &apvts = audioProcessor.getParameterTreeState();
-	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
-	int slot = track->slotIndex + 1;
-	int slotIdx = track->slotIndex;
-
-	if (paramSuffix == "Mute")
+	auto &currentPage = t->getCurrentPage();
+	if (currentPage.numSamples <= 0)
 	{
-		t->isMuted.store(newValue > 0.5f);
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackMute(slot),
-		                                                 t->isMuted.load() ? MidiMapping::feedbackActive
-		                                                                   : MidiMapping::feedbackIdle);
+		return;
 	}
-	else if (paramSuffix == "Volume")
+	if (paramSuffix == "Play")
 	{
-		t->volume.store(newValue);
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackVolume(slot),
-		                                                 MidiMapping::volumeToMidi(pm.getVolume(slotIdx)));
-	}
-	else if (paramSuffix == "Pan")
-	{
-		t->pan.store(range.convertFrom0to1(newValue));
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
-		                                                 MidiMapping::panToMidi(pm.getPan(slotIdx)));
-	}
-	else if (paramSuffix == "Solo")
-	{
-		t->isSolo.store(newValue > 0.5f);
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackSolo(slot),
-		                                                 t->isSolo.load() ? MidiMapping::feedbackActive
-		                                                                  : MidiMapping::feedbackIdle);
-	}
-	else if (paramSuffix == "Play")
-	{
-		applyPlayState(newValue > 0.5f);
-		if (track->isCurrentlyPlaying.load())
-			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
-			                                                 MidiMapping::feedbackActive);
-		else if (track->isArmed.load())
-			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
-			                                                 MidiMapping::feedbackPending);
-		else
-			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
-			                                                 MidiMapping::feedbackIdle);
-	}
-	else if (paramSuffix == "DelaySend")
-		t->delaySend.store(newValue);
-	else if (paramSuffix == "ReverbSend")
-		t->reverbSend.store(newValue);
-	else if (paramSuffix == "Pitch")
-	{
-		t->getCurrentPage().pitchSemitones.store(range.convertFrom0to1(newValue));
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPitch(slot),
-		                                                 MidiMapping::pitchToMidi(pm.getPitch(slotIdx)));
-	}
-	else if (paramSuffix == "Fine")
-	{
-		t->getCurrentPage().fineOffset.store(range.convertFrom0to1(newValue));
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackFine(slot),
-		                                                 MidiMapping::fineToMidi(pm.getFine(slotIdx)));
+		applyPlayState(newValue < 0.5f);
 	}
 }
