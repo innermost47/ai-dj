@@ -37,12 +37,12 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 - **16-step sequencer** with multi-measure support
 - **Quantized page changes** - Seamless transitions locked to measure boundaries
 - **4 pair crossfaders** - Blend each deck A/B pair independently with model-aware color morphing
-- **Plug-and-play MIDI mapping** - Auto-configured for the [companion mobile controller](https://github.com/innermost47/obsidian-neural-controller), with bidirectional feedback (LED states, knob positions) on dedicated MIDI channels
+- **Plug-and-play MIDI mapping** — Auto-configured for the [companion mobile controller](https://github.com/innermost47/obsidian-neural-controller), with bidirectional feedback (LED states, knob positions) on dedicated MIDI channels.
+  *To use: open the MIDI panel (piano icon, bottom-right) → Load Default Mapping.*
 - **MIDI learn on every parameter** - Map any control to any hardware override, with persistent user mappings
 
 ### Sound design
 - **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
-- **Automatic tempo sync** - Incoming samples are BPM-detected with [MiniBPM](https://breakfastquay.com/minibpm/) and time-stretched on load via Signalsmith Stretch to lock to your host tempo, with zero pitch drift
 - **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
 - **Reverb send** - Per-track reverb with size, damping, width and mix controls
 - **Airwindows Console6 master bus** - Analog-modeled saturation for cohesive mix glue
@@ -72,9 +72,9 @@ All models are hosted on [Hugging Face](https://huggingface.co/innermost47/obsid
 
 > ⚠️ AI generation can produce unexpected results. Feedback welcome on [Issues](https://github.com/innermost47/ai-dj/issues) or [Discussions](https://github.com/innermost47/ai-dj/discussions).
 
-### Sync
+### DAW & Standalone
 
-- **Perfect DAW sync** - Auto time-stretch to project tempo
+- **Automatic tempo sync** - Incoming samples are BPM-detected with [MiniBPM](https://breakfastquay.com/minibpm/) and time-stretched on load via [Signalsmith](https://github.com/Signalsmith-Audio/signalsmith-stretch) Stretch to lock to your host tempo, with zero pitch drift
 - **Standalone version** - Run OBSIDIAN Neural without a DAW, with built-in transport and tempo control
 - **Ableton Link** (Standalone) - Bidirectional network sync of tempo and start/stop with any Link-enabled app
 
