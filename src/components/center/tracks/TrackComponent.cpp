@@ -64,7 +64,9 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 {
 	if (paramSuffix == "Generate")
 	{
-		if (newValue > 0.5f && audioProcessor.getIsGenerating() || newValue < 0.5f)
+		if (newValue < 0.5f)
+			return;
+		if (audioProcessor.getIsGenerating())
 			return;
 		if (onGenerateForTrack)
 		{
@@ -85,18 +87,8 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 		auto *t = getTrack();
 		if (t)
 		{
-			bool isEnabled = newValue > 0.5f;
-			t->randomRetriggerEnabled = isEnabled;
-			if (isEnabled)
-			{
-				t->beatRepeatPending.store(true);
-			}
-			else
-			{
-				t->beatRepeatStopPending.store(true);
-			}
 			updateBeatRepeatButtonColor();
-			statusCallback("Beat Repeat " + juce::String(isEnabled ? "ON" : "OFF"));
+			statusCallback("Beat Repeat " + juce::String(track->randomRetriggerEnabled.load() ? "ON" : "OFF"));
 		}
 	}
 	else if (paramSuffix == "RetriggerInterval")
@@ -1273,40 +1265,6 @@ void TrackComponent::onIntervalChanged()
 		return;
 
 	int value = (int)juce::roundToInt(intervalKnob.getValue());
-
-	if (t->randomRetriggerInterval.load() != value)
-	{
-		t->randomRetriggerInterval = value;
-
-		if (t->beatRepeatActive.load())
-		{
-			double hostBpm = audioProcessor.getHostBpm();
-			if (hostBpm <= 0.0)
-				hostBpm = 120.0;
-
-			double startPosition = t->beatRepeatStartPosition.load();
-			double repeatDuration = audioProcessor.getSequencerManager().calculateRetriggerInterval(value, hostBpm);
-			double repeatDurationSamples = repeatDuration * t->getCurrentPage().sampleRate;
-
-			const double GATE_SAMPLES = 64.0;
-			double newEnd = startPosition + repeatDurationSamples - GATE_SAMPLES;
-
-			double maxSamples = t->getCurrentPage().numSamples;
-			if (newEnd > maxSamples)
-				newEnd = maxSamples;
-			if (newEnd <= startPosition)
-				newEnd = startPosition + 1.0;
-
-			t->beatRepeatEndPosition.store(newEnd);
-
-			double currentPos = t->readPosition.load();
-			if (currentPos >= newEnd)
-			{
-				t->readPosition.store(startPosition);
-				t->brFadeInPending.store(64);
-			}
-		}
-	}
 
 	juce::String intervalName = getIntervalName(value);
 	intervalLabel.setText(intervalName, juce::dontSendNotification);

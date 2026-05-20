@@ -35,7 +35,7 @@ LeftPanelWrapper::LeftPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &e
 	collapseButton.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 	collapseButton.setClickingTogglesState(true);
 	collapseButton.setToggleState(true, juce::dontSendNotification);
-	collapseButton.onClick = [this]() { collapseExpand(); };
+	collapseButton.onClick = [this]() { collapseExpand(collapseButton.getToggleState()); };
 	addAndMakeVisible(collapseButton);
 
 	promptTabButton.setCompactMode(true);
@@ -87,9 +87,9 @@ void LeftPanelWrapper::paint(juce::Graphics &g)
 	}
 }
 
-void LeftPanelWrapper::collapseExpand()
+void LeftPanelWrapper::collapseExpand(bool expanded)
 {
-	isExpanded = collapseButton.getToggleState();
+	isExpanded = expanded;
 
 	promptTabButton.setVisible(isExpanded);
 	sampleTabButton.setVisible(isExpanded);
@@ -175,6 +175,7 @@ juce::var LeftPanelWrapper::saveUIState() const
 {
 	juce::DynamicObject::Ptr o = new juce::DynamicObject();
 	o->setProperty("activeTab", (int)activeTab);
+	o->setProperty("isExpanded", (bool)isExpanded);
 
 	if (promptBank)
 		o->setProperty("promptBankState", promptBank->saveUIState(promptBank->getSortType()));
@@ -193,6 +194,7 @@ void LeftPanelWrapper::restoreUIState(const juce::var &state)
 		return;
 
 	int tab = (int)o->getProperty("activeTab");
+
 	setActiveTab(static_cast<Tab>(tab));
 
 	if (promptBank)
@@ -205,4 +207,12 @@ void LeftPanelWrapper::restoreUIState(const juce::var &state)
 		    SampleBankPanel::firstSort, SampleBankPanel::lastSort,
 		    [this](ObsidianAccordion *acc, const juce::String &name)
 		    { sampleBank->ensureAccordionItemsCreated(acc, name); });
+
+	if (o->hasProperty("isExpanded"))
+	{
+		collapseExpand((bool)o->getProperty("isExpanded"));
+		collapseButton.setToggleState(isExpanded, juce::dontSendNotification);
+	}
+	else
+		isExpanded = true;
 }

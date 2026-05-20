@@ -49,7 +49,7 @@ class LeftPanelWrapper : public ObsidianComponent
 	DjIaVstEditor &editor;
 
 	void updateTabVisibility();
-	void collapseExpand();
+	void collapseExpand(bool expanded);
 
 	std::unique_ptr<SampleBankPanel> sampleBank;
 	std::unique_ptr<PromptBankPanel> promptBank;

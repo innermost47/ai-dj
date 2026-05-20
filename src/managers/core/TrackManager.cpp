@@ -589,7 +589,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	{
 		brFadeInCounter = pendingFadeIn;
 	}
-
+	float peakLeft = 0.0f;
+	float peakRight = 0.0f;
 	for (int i = 0; i < numSamples; ++i)
 	{
 		if (beatRepeatActive)
@@ -727,6 +728,13 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		leftSample *= volume * leftGain * totalGain;
 		rightSample *= volume * rightGain * totalGain;
 
+		float absLeft = std::abs(leftSample);
+		float absRight = std::abs(rightSample);
+		if (absLeft > peakLeft)
+			peakLeft = absLeft;
+		if (absRight > peakRight)
+			peakRight = absRight;
+
 		mixOutput.addSample(0, i, leftSample);
 		mixOutput.addSample(1, i, rightSample);
 		individualOutput.setSample(0, i, leftSample);
@@ -734,8 +742,9 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		currentPosition += playbackRatio;
 	}
-
-	track.readPosition = currentPosition;
+	track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, peakLeft));
+	track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, peakRight));
+	track.readPosition.store(currentPosition);
 }
 
 float TrackManager::interpolateLinear(const float *buffer, double position, int bufferSize) const

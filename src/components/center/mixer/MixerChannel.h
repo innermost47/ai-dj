@@ -92,7 +92,6 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 
 	bool isApplyingPlayState = false;
 
-	bool allSequencerStepsAreFalse() const;
 	void applyPlayState(bool shouldArm);
 
 	void paint(juce::Graphics &g) override;

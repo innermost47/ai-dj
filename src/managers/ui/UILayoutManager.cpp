@@ -165,4 +165,5 @@ void UILayoutManager::resized()
 	int contentHeight = editor.mainViewport.getHeight();
 
 	mainContainer->setSize(contentWidth, contentHeight);
+	audioProcessor.setWindowSize(editor.getWidth(), editor.getHeight());
 }

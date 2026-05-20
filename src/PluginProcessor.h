@@ -84,6 +84,8 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		return promptBank.get();
 	}
 
+	TrackData *getTrackFromParamId(const juce::String &parameterID);
+
 	TrackManager &getTrackManager()
 	{
 		return trackManager;
@@ -805,8 +807,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void handleAsyncUpdate() override;
 	void checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages);
 	void getDawInformations(juce::AudioPlayHead *playHead, bool &isPlaying, double &bpm, double &ppq);
-	void handleSampleParams(int slot, TrackData *track);
-	void handleSendsParams();
 
 	std::atomic<float> lastFeedbackDelayFeedback{0.0f};
 	std::atomic<float> lastFeedbackReverbSize{0.0f};

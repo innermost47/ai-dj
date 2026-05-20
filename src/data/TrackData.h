@@ -144,6 +144,9 @@ struct TrackPage
 
 struct TrackData
 {
+	TrackData();
+	~TrackData();
+
 	TrackPage pages[4];
 
 	juce::AudioSampleBuffer stagingBuffer;
@@ -175,37 +178,6 @@ struct TrackData
 		A,
 		B
 	};
-
-	DeckSide getDeckSide() const
-	{
-		return (slotIndex >= 0 && slotIndex < ObsidianDataConst::MAX_CROSSFADER_PAIR) ? DeckSide::A : DeckSide::B;
-	}
-
-	int getPairIndex() const
-	{
-		if (slotIndex < 0 || slotIndex >= 8)
-			return -1;
-		return slotIndex % 4;
-	}
-
-	int getPartnerSlotIndex() const
-	{
-		if (slotIndex < 0 || slotIndex >= 8)
-			return -1;
-		return (slotIndex < ObsidianDataConst::MAX_CROSSFADER_PAIR)
-		           ? slotIndex + ObsidianDataConst::MAX_CROSSFADER_PAIR
-		           : slotIndex - ObsidianDataConst::MAX_CROSSFADER_PAIR;
-	}
-
-	bool isDeckA() const
-	{
-		return getDeckSide() == DeckSide::A;
-	}
-
-	bool isDeckB() const
-	{
-		return getDeckSide() == DeckSide::B;
-	}
 
 	std::atomic<int> currentPageIndex{0};
 	int midiNote = 60;
@@ -274,6 +246,8 @@ struct TrackData
 
 	std::atomic<float> volume{0.8f};
 	std::atomic<float> pan{0.0f};
+	std::atomic<float> audioLevelLeft{0.0f};
+	std::atomic<float> audioLevelRight{0.0f};
 
 	std::atomic<int64_t> pendingBeatNumber{-1};
 	std::atomic<int64_t> pendingStopBeatNumber{-1};
@@ -302,9 +276,6 @@ struct TrackData
 		return getCurrentPage().getCurrentSequence();
 	}
 
-	TrackData();
-	~TrackData();
-
 	TrackPage &getCurrentPage()
 	{
 		int idx = juce::jlimit(0, 3, currentPageIndex.load());
@@ -315,19 +286,6 @@ struct TrackData
 	{
 		int idx = juce::jlimit(0, 3, currentPageIndex.load());
 		return pages[idx];
-	}
-
-	void setCurrentPage(int pageIndex)
-	{
-		if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
-			return;
-		if (currentPageIndex.load() == pageIndex)
-			return;
-
-		currentPageIndex.store(pageIndex);
-
-		if (onPageChanged)
-			onPageChanged();
 	}
 
 	DjIaClient::LoopRequest createLoopRequest() const
@@ -343,98 +301,21 @@ struct TrackData
 		return request;
 	}
 
-	void updateFromRequest(const DjIaClient::LoopRequest &request)
-	{
-		auto &currentPage = getCurrentPage();
-		currentPage.generationPrompt = request.prompt;
-		currentPage.generationBpm = request.bpm;
-		currentPage.generationKey = request.key;
-		currentPage.generationDuration = static_cast<int>(request.generationDuration);
-		currentPage.selectedModel = request.model;
-	}
+	void updateFromRequest(const DjIaClient::LoopRequest &request);
+	void reset();
+	void setPlaying(bool playing);
+	void setArmed(bool armed);
+	void setArmedToStop(bool armedToStop);
+	void setStop();
+	bool allSequencerStepsAreFalse() const;
 
-	void reset()
-	{
-		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
-			pages[i].reset();
+	DeckSide getDeckSide() const;
+	int getPairIndex() const;
+	int getPartnerSlotIndex() const;
+	bool isDeckA() const;
+	bool isDeckB() const;
 
-		currentPageIndex.store(0);
-
-		readPosition = 0.0;
-		isEnabled = true;
-		isMuted = false;
-		isSolo = false;
-		volume = 0.8f;
-		pan = 0.0f;
-		isVersionSwitch = false;
-		preservedLoopStart = 0.0;
-		preservedLoopEnd = 4.0;
-		preservedLoopLocked = false;
-	}
-
-	void setPlaying(bool playing)
-	{
-		bool wasPlaying = isPlaying.load();
-		isPlaying = playing;
-		if (wasPlaying != playing && onPlayStateChanged && getCurrentPage().audioBuffer.getNumChannels() > 0 &&
-		    isPlaying.load())
-		{
-			juce::WeakReference<TrackData> weakThis(this);
-			juce::MessageManager::callAsync(
-			    [weakThis, playing]()
-			    {
-				    if (auto *self = weakThis.get())
-					    if (self->onPlayStateChanged)
-						    self->onPlayStateChanged(playing);
-			    });
-		}
-	}
-
-	void setArmed(bool armed)
-	{
-		bool wasArmed = isArmed.load();
-		isArmed = armed;
-		if (wasArmed != armed && onArmedStateChanged && getCurrentPage().audioBuffer.getNumChannels() > 0 &&
-		    isPlaying.load())
-		{
-			juce::WeakReference<TrackData> weakThis(this);
-			juce::MessageManager::callAsync(
-			    [weakThis, armed]()
-			    {
-				    if (auto *self = weakThis.get())
-					    if (self->onArmedStateChanged)
-						    self->onArmedStateChanged(armed);
-			    });
-		}
-	}
-
-	void setArmedToStop(bool armedToStop)
-	{
-		isArmedToStop = armedToStop;
-		if (onArmedToStopStateChanged && getCurrentPage().audioBuffer.getNumChannels() > 0 && isCurrentlyPlaying.load())
-		{
-			juce::WeakReference<TrackData> weakThis(this);
-			juce::MessageManager::callAsync(
-			    [weakThis, armedToStop]()
-			    {
-				    if (auto *self = weakThis.get())
-					    if (self->onArmedToStopStateChanged)
-						    self->onArmedToStopStateChanged(armedToStop);
-			    });
-		}
-	}
-
-	void setStop()
-	{
-		juce::WeakReference<TrackData> weakThis(this);
-		juce::MessageManager::callAsync(
-		    [weakThis]()
-		    {
-			    if (auto *self = weakThis.get())
-				    if (self->onPlayStateChanged)
-					    self->onPlayStateChanged(false);
-		    });
-	}
+	void setCurrentPage(int pageIndex);
 
   private:
 	JUCE_DECLARE_WEAK_REFERENCEABLE(TrackData)
