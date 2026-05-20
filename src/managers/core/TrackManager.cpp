@@ -499,7 +499,14 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	adsrRelease = currentPage.adsrRelease.load();
 
 	if (numSamplesToUse == 0 || !track.isPlaying.load() || !bufferToUse)
+	{
+		track.audioLevelLeft.store(0.0f);
+		track.audioLevelRight.store(0.0f);
+		track.meterAccumPeakLeft = 0.0f;
+		track.meterAccumPeakRight = 0.0f;
+		track.meterSampleCounter = 0;
 		return;
+	}
 
 	const float volume = juce::jlimit(0.0f, 1.0f, track.volume.load());
 	const float pan = juce::jlimit(-1.0f, 1.0f, track.pan.load());
