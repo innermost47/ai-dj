@@ -393,6 +393,7 @@ void DjIaVstEditor::resized()
 {
 	if (uiLayoutManager)
 		uiLayoutManager->resized();
+	audioProcessor.setWindowSize(getWidth(), getHeight());
 }
 
 void *DjIaVstEditor::getSequencerForTrack(const juce::String &trackId)
