@@ -66,11 +66,11 @@ class AudioManager
 
 	float getPeakLevelLeft() const
 	{
-		return peakLeft.load();
+		return meterAccumPeakLeft;
 	}
 	float getPeakLevelRight() const
 	{
-		return peakRight.load();
+		return meterAccumPeakRight;
 	}
 	void setPeakLevels(float l, float r)
 	{
