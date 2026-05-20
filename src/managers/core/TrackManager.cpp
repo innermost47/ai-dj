@@ -79,10 +79,13 @@ void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 	audioPrepared = true;
 
 	perTrackFxBuffer.setSize(2, maxBlockSize, false, false, true);
+
+	int interval = static_cast<int>(sampleRate * 0.05);
 	for (const auto &pair : tracks)
 	{
 		if (pair.second)
 		{
+			pair.second->meterUpdateInterval = interval;
 			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
 			pair.second->reverbSendProcessor.prepare(sampleRate, maxBlockSize);
 		}
@@ -589,10 +592,10 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	{
 		brFadeInCounter = pendingFadeIn;
 	}
-	float peakLeft = 0.0f;
-	float peakRight = 0.0f;
+
 	for (int i = 0; i < numSamples; ++i)
 	{
+		double absolutePosition = startSample + currentPosition;
 		if (beatRepeatActive)
 		{
 			double absolutePos = startSample + currentPosition;
@@ -600,14 +603,11 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			{
 				currentPosition = beatRepeatStart - startSample;
 				track.readPosition.store(beatRepeatStart);
-
 				brFadeInCounter = BR_FADE_IN_LENGTH;
 				double samplesSourceUntilBREnd = beatRepeatEnd - (startSample + currentPosition);
 				samplesUntilBeatRepeatEnd = (samplesSourceUntilBREnd / playbackRatio) + i;
 			}
 		}
-
-		double absolutePosition = startSample + currentPosition;
 
 		if (absolutePosition >= endSample)
 		{
@@ -681,13 +681,12 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		float safetyFade = 1.0f;
 
-		if (posInLoop < fadeLength)
+		if (!beatRepeatActive)
 		{
-			safetyFade = static_cast<float>(posInLoop) * fadeRcp;
-		}
-		else if (posInLoop > loopLength - fadeLength)
-		{
-			safetyFade = static_cast<float>(loopLength - posInLoop) * fadeRcp;
+			if (posInLoop < fadeLength)
+				safetyFade = static_cast<float>(posInLoop) * fadeRcp;
+			else if (posInLoop > loopLength - fadeLength)
+				safetyFade = static_cast<float>(loopLength - posInLoop) * fadeRcp;
 		}
 
 		if (beatRepeatActive && samplesUntilBeatRepeatEnd > 0)
@@ -708,7 +707,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			brFadeInCounter--;
 		}
 
-		if (fadeOutThisBuffer)
+		if (fadeOutThisBuffer && !beatRepeatActive)
 		{
 			double samplesUntilTrigger = samplesUntilLoopEnd - i;
 			if (samplesUntilTrigger > 0 && samplesUntilTrigger <= FADE_DURATION)
@@ -730,10 +729,23 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		float absLeft = std::abs(leftSample);
 		float absRight = std::abs(rightSample);
-		if (absLeft > peakLeft)
-			peakLeft = absLeft;
-		if (absRight > peakRight)
-			peakRight = absRight;
+
+		if (absLeft > track.meterAccumPeakLeft)
+			track.meterAccumPeakLeft = absLeft;
+		if (absRight > track.meterAccumPeakRight)
+			track.meterAccumPeakRight = absRight;
+
+		track.meterSampleCounter++;
+
+		if (track.meterSampleCounter >= track.meterUpdateInterval)
+		{
+			track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakLeft));
+			track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakRight));
+
+			track.meterAccumPeakLeft = 0.0f;
+			track.meterAccumPeakRight = 0.0f;
+			track.meterSampleCounter = 0;
+		}
 
 		mixOutput.addSample(0, i, leftSample);
 		mixOutput.addSample(1, i, rightSample);
@@ -741,9 +753,21 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		individualOutput.setSample(1, i, rightSample);
 
 		currentPosition += playbackRatio;
+
+		if (beatRepeatActive)
+		{
+			double newTheoretical = track.theoreticalPosition.load() + playbackRatio;
+
+			if (newTheoretical >= endSampleLoop)
+			{
+				double loopLen = endSampleLoop - startSample;
+				double overshoot = newTheoretical - endSampleLoop;
+				newTheoretical = startSample + std::fmod(overshoot, loopLen);
+			}
+
+			track.theoreticalPosition.store(newTheoretical);
+		}
 	}
-	track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, peakLeft));
-	track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, peakRight));
 	track.readPosition.store(currentPosition);
 }
 

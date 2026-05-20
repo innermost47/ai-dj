@@ -24,6 +24,8 @@ void AudioManager::prepareToPlay(double newSampleRate, int samplesPerBlock)
 		buffer.clear();
 	}
 	masterEQ.prepare(newSampleRate, samplesPerBlock);
+	int interval = static_cast<int>(newSampleRate * 0.05);
+	meterUpdateInterval = interval;
 }
 
 void AudioManager::releaseResources()
@@ -1113,9 +1115,6 @@ void AudioManager::renderPreviewToOutput(juce::AudioBuffer<float> &previewBus, j
 
 void AudioManager::computeAndSetPeakLevels(const juce::AudioBuffer<float> &buffer)
 {
-	float currentPeakL = 0.0f;
-	float currentPeakR = 0.0f;
-
 	const float *leftData = buffer.getReadPointer(0);
 	const float *rightData = buffer.getNumChannels() > 1 ? buffer.getReadPointer(1) : leftData;
 
@@ -1123,13 +1122,23 @@ void AudioManager::computeAndSetPeakLevels(const juce::AudioBuffer<float> &buffe
 	{
 		float absL = std::abs(leftData[s]);
 		float absR = std::abs(rightData[s]);
-		if (absL > currentPeakL)
-			currentPeakL = absL;
-		if (absR > currentPeakR)
-			currentPeakR = absR;
-	}
 
-	setPeakLevels(currentPeakL, currentPeakR);
+		if (absL > meterAccumPeakLeft)
+			meterAccumPeakLeft = absL;
+		if (absR > meterAccumPeakRight)
+			meterAccumPeakRight = absR;
+
+		meterSampleCounter++;
+
+		if (meterSampleCounter >= meterUpdateInterval)
+		{
+			setPeakLevels(meterAccumPeakLeft, meterAccumPeakRight);
+
+			meterAccumPeakLeft = 0.0f;
+			meterAccumPeakRight = 0.0f;
+			meterSampleCounter = 0;
+		}
+	}
 }
 
 void AudioManager::stopSamplePreview()

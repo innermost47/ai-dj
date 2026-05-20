@@ -162,7 +162,7 @@ class KeywordsContainerComponent : public ObsidianComponent
 			juce::Font labelFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 			g.setFont(labelFont);
 
-			g.setColour(ColourPalette::cyan);
+			g.setColour(ColourPalette::slate);
 			g.drawText(gl.label, gl.bounds, juce::Justification::left, false);
 		}
 	}
