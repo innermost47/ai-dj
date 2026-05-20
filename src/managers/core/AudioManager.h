@@ -74,8 +74,8 @@ class AudioManager
 	}
 	void setPeakLevels(float l, float r)
 	{
-		peakLeft.store(l);
-		peakRight.store(r);
+		meterAccumPeakLeft = l;
+		meterAccumPeakRight = r;
 	}
 	std::vector<juce::AudioBuffer<float>> &getIndividualOutputBuffers()
 	{
@@ -106,13 +106,10 @@ class AudioManager
 	juce::CriticalSection previewLock;
 	juce::String currentPreviewTrackId;
 
-	std::atomic<float> peakLeft{0.0f};
-	std::atomic<float> peakRight{0.0f};
-
-  float meterAccumPeakLeft { 0.0f };
-  float meterAccumPeakRight { 0.0f };
-  int meterSampleCounter { 0 };
-  int meterUpdateInterval { 2400 };
+	float meterAccumPeakLeft{0.0f};
+	float meterAccumPeakRight{0.0f};
+	int meterSampleCounter{0};
+	int meterUpdateInterval{2400};
 
 	std::vector<juce::AudioBuffer<float>> individualOutputBuffers;
 

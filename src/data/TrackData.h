@@ -194,11 +194,13 @@ struct TrackData
 	int pitchTransitionCounter = 0;
 	bool pitchTransitionToActive = false;
 	int pitchTransitionLength = 4096;
- 
-  float meterAccumPeakLeft { 0.0f };
-  float meterAccumPeakRight { 0.0f };
-  int meterSampleCounter { 0 };
-  int meterUpdateInterval { 2400 };
+
+	float meterAccumPeakLeft{0.0f};
+	float meterAccumPeakRight{0.0f};
+	int meterSampleCounter{0};
+	int meterUpdateInterval{2400};
+
+	std::atomic<double> theoreticalPosition{0.0};
 
 	double timeStretchRatio = 1.0;
 	double preservedLoopStart = 0.0;

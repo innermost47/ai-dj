@@ -485,7 +485,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 				{
 					track->beatRepeatEndPosition.store(gatedEnd);
 				}
-
+				track->theoreticalPosition.store(currentPosition);
 				track->beatRepeatActive.store(true);
 				track->beatRepeatPending.store(false);
 				track->pendingBeatNumber.store(-1);
@@ -516,7 +516,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 				track->randomRetriggerActive.store(false);
 				track->lastRetriggerTime.store(-1.0);
 				track->brFadeInPending.store(64);
-				track->readPosition.store(track->originalReadPosition.load());
+				track->readPosition.store(track->theoreticalPosition.load());
 				track->pendingStopBeatNumber.store(-1);
 			}
 		}
