@@ -79,6 +79,13 @@ void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 	audioPrepared = true;
 
 	perTrackFxBuffer.setSize(2, maxBlockSize, false, false, true);
+
+  int interval = static_cast<int>(sampleRate * 0.05);
+  for (auto& track : tracks)
+  {
+  
+      track->meterUpdateInterval = interval;
+  }
 	for (const auto &pair : tracks)
 	{
 		if (pair.second)
