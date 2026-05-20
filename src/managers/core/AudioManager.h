@@ -109,6 +109,11 @@ class AudioManager
 	std::atomic<float> peakLeft{0.0f};
 	std::atomic<float> peakRight{0.0f};
 
+  float meterAccumPeakLeft { 0.0f };
+  float meterAccumPeakRight { 0.0f };
+  int meterSampleCounter { 0 };
+  int meterUpdateInterval { 2400 };
+
 	std::vector<juce::AudioBuffer<float>> individualOutputBuffers;
 
 	float smoothedMasterVol = 1.0f;
