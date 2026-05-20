@@ -728,12 +728,25 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		leftSample *= volume * leftGain * totalGain;
 		rightSample *= volume * rightGain * totalGain;
 
-		float absLeft = std::abs(leftSample);
-		float absRight = std::abs(rightSample);
-		if (absLeft > peakLeft)
-			peakLeft = absLeft;
-		if (absRight > peakRight)
-			peakRight = absRight;
+   float absLeft = std::abs(leftSample);
+   float absRight = std::abs(rightSample);
+
+   if (absLeft > track.meterAccumPeakLeft)
+      track.meterAccumPeakLeft = absLeft;
+   if (absRight > track.meterAccumPeakRight)
+    track.meterAccumPeakRight = absRight;
+
+   track.meterSampleCounter++;
+
+   if (track.meterSampleCounter >=        track.meterUpdateInterval)
+   {
+       track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakLeft));
+       track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakRight));
+    
+       track.meterAccumPeakLeft = 0.0f;
+       track.meterAccumPeakRight = 0.0f;
+       track.meterSampleCounter = 0;
+   }
 
 		mixOutput.addSample(0, i, leftSample);
 		mixOutput.addSample(1, i, rightSample);
@@ -742,8 +755,6 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		currentPosition += playbackRatio;
 	}
-	track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, peakLeft));
-	track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, peakRight));
 	track.readPosition.store(currentPosition);
 }
 
