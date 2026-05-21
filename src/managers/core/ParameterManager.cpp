@@ -434,13 +434,10 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			applyPlayState(newValue > 0.5f, track);
 			if (track->isCurrentlyPlaying.load())
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
-				                                                 MidiMapping::feedbackActive);
+				                                                 MidiMapping::feedbackPending);
 			else if (track->isArmed.load())
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
 				                                                 MidiMapping::feedbackPending);
-			else
-				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
-				                                                 MidiMapping::feedbackIdle);
 		}
 		else if (parameterID.endsWith("DelaySend"))
 			track->delaySend.store(newValue);
