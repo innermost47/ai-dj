@@ -98,6 +98,16 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 			onIntervalChanged();
 		}
 	}
+	else if (paramSuffix == "Gain")
+	{
+		if (auto *t = getTrack())
+		{
+			if (waveformDisplay)
+			{
+				refreshWaveformDisplay();
+			}
+		}
+	}
 	else if (paramSuffix == "AdsrAttack" || paramSuffix == "AdsrDecay" || paramSuffix == "AdsrSustain" ||
 	         paramSuffix == "AdsrRelease")
 	{
@@ -669,6 +679,12 @@ void TrackComponent::setupPagesUI()
 		pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 
+		juce::String tooltip =
+		    "Page " + juce::String(pageLabels[i]) + " - holds its own sample, prompt, sequence and settings.\n" +
+		    "In performance mode, page switch is quantized to the next bar for sync.\n" +
+		    "Switching to an empty page stops the track.\n" + "(Inspired by ReBirth RB-338's pattern banking)";
+		pageButtons[i].setTooltip(tooltip);
+
 		registerMidiLearn(pageNames[i], &pageButtons[i]);
 	}
 }
@@ -748,11 +764,6 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	if (newPage.numSamples == 0)
 	{
-		t->isPlaying.store(false);
-		t->isCurrentlyPlaying.store(false);
-		t->isArmed.store(false);
-		t->isArmedToStop.store(false);
-		t->readPosition.store(0.0);
 		if (t->onPlayStateChanged)
 		{
 			t->onPlayStateChanged(false);
@@ -1759,4 +1770,6 @@ void TrackComponent::wireParameters()
 	registerMidiLearn("RetriggerInterval", &intervalKnob);
 	registerMidiLearn("RandomRetrigger", &beatRepeatButton);
 	registerMidiLearn("Generate", &generateButton);
+
+	subscribeToParam("Gain");
 }

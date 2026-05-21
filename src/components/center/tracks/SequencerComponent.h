@@ -5,7 +5,7 @@
 
 class DjIaVstProcessor;
 
-class SequencerComponent : public ObsidianComponent
+class SequencerComponent : public ObsidianComponent, public juce::SettableTooltipClient
 {
   public:
 	SequencerComponent(const juce::String &trackId, DjIaVstProcessor &processor);

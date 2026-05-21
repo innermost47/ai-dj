@@ -198,7 +198,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    std::vector<juce::AudioBuffer<float>> &individualOutputs,
                                    juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
                                    const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-                                   int timeSignatureNumerator, int timeSignatureDenominator)
+                                   int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate)
 {
 	const int numSamples = outputBuffer.getNumSamples();
 	bool anyTrackSolo = false;
@@ -232,7 +232,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			tempMixBuffer.clear();
 			tempIndividualBuffer.clear();
 			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, previewOutput, numSamples, bufferIndex,
-			                  hostBpm, timeSignatureNumerator, timeSignatureDenominator);
+			                  hostBpm, timeSignatureNumerator, timeSignatureDenominator, sampleRate);
 
 			track->consoleChannel.process(tempIndividualBuffer, 0, numSamples);
 
@@ -453,7 +453,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
                                      juce::AudioBuffer<float> &individualOutput,
                                      juce::AudioBuffer<float> & /* previewOutput */, int numSamples,
                                      int /* trackIndex */, double hostBpm, int timeSignatureNumerator,
-                                     int timeSignatureDenominator) const
+                                     int timeSignatureDenominator, double sampleRate) const
 {
 
 	auto *safeCallback = parameterUpdateCallback.load();
@@ -489,7 +489,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	const auto &currentPage = track.getCurrentPage();
 	bufferToUse = &currentPage.audioBuffer;
 	numSamplesToUse = currentPage.numSamples;
-	sampleRateToUse = currentPage.sampleRate;
+	sampleRateToUse = sampleRate;
 	loopStartToUse = currentPage.loopStart;
 	loopEndToUse = currentPage.loopEnd;
 	originalBpmToUse = currentPage.originalBpm;
@@ -731,8 +731,11 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
 		float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
 
-		leftSample *= volume * leftGain * totalGain;
-		rightSample *= volume * rightGain * totalGain;
+		float gainDb = juce::jlimit(-60.0f, 12.0f, track.getCurrentPage().gain.load());
+		float gainLinear = std::pow(10.0f, gainDb / 20.0f);
+
+		leftSample *= volume * leftGain * totalGain * gainLinear;
+		rightSample *= volume * rightGain * totalGain * gainLinear;
 
 		float absLeft = std::abs(leftSample);
 		float absRight = std::abs(rightSample);

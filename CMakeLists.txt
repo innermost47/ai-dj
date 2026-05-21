@@ -191,6 +191,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/caret-left.svg
         src/assets/icons/caret-right.svg
         src/assets/icons/caret-up.svg
+        src/assets/icons/cassette-tape.svg
         src/assets/icons/chat-text.svg
         src/assets/icons/collapse.svg
         src/assets/icons/cpu.svg
@@ -241,6 +242,7 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/volume.svg
         src/assets/icons/warning.svg
         src/assets/icons/waveform.svg
+        src/assets/icons/wave-sine.svg
         src/assets/icons/wind.svg
         src/assets/icons/x.svg
         src/assets/icons/zap.svg

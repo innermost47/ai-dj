@@ -370,15 +370,18 @@ void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
 			    juce::String s = "slot" + juce::String(t->slotIndex + 1);
 			    auto &apvts = parameterManager.getAPVTS();
 
-			    float pitchValue =
-			        juce::jlimit(-12.0f, 12.0f, (float(page.pitchSemitones.load()) - page.fineOffset.load()) / 8.0f);
-			    float fineValue = juce::jlimit(-50.0f, 50.0f, page.fineOffset.load() * 10.0f);
+			    auto pitchRange = apvts.getParameterRange(s + "Pitch");
+			    auto fineRange = apvts.getParameterRange(s + "Fine");
+			    auto gainRange = apvts.getParameterRange(s + "Gain");
 
 			    if (auto *p = apvts.getParameter(s + "Pitch"))
-				    p->setValueNotifyingHost((pitchValue + 12.0f) / 24.0f);
+				    p->setValueNotifyingHost(pitchRange.convertTo0to1(page.pitchSemitones.load()));
 
 			    if (auto *p = apvts.getParameter(s + "Fine"))
-				    p->setValueNotifyingHost((fineValue + 50.0f) / 100.0f);
+				    p->setValueNotifyingHost(fineRange.convertTo0to1(page.fineOffset.load()));
+
+			    if (auto *p = apvts.getParameter(s + "Gain"))
+				    p->setValueNotifyingHost(gainRange.convertTo0to1(page.gain.load()));
 		    });
 	};
 }
@@ -588,7 +591,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, hostBpm, pairPrev,
 	                             pairCurrent, globalPrev, globalCurrent, curveMode, timeSignatureNumerator.load(),
-	                             timeSignatureDenominator.load());
+	                             timeSignatureDenominator.load(), getSampleRate());
 
 	trackManager.processPerTrackDelays(
 	    audioManager.getIndividualOutputBuffers(), mainOutput, hostBpm,

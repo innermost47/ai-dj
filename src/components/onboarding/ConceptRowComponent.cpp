@@ -55,8 +55,10 @@ std::unique_ptr<juce::Drawable> ConceptRowComponent::loadIconByName(const juce::
 		return load(BinaryData::sliders_svg, BinaryData::sliders_svgSize);
 	if (name == "map")
 		return load(BinaryData::map_svg, BinaryData::map_svgSize);
-	if (name == "dice")
+	if (name == "repeat")
 		return load(BinaryData::repeat_svg, BinaryData::repeat_svgSize);
+	if (name == "dice")
+		return load(BinaryData::dice_svg, BinaryData::dice_svgSize);
 	if (name == "dragndrop")
 		return load(BinaryData::handgrabbing_svg, BinaryData::handgrabbing_svgSize);
 	if (name == "export")

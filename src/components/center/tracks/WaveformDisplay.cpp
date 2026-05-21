@@ -17,6 +17,13 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData *trackDa
 	horizontalScrollBar->setRangeLimits(0.0, 1.0);
 	horizontalScrollBar->addListener(this);
 	cachedModelColour = getModelAccentColour();
+
+	setTooltip("Drag the triangles to set loop points\n"
+	           "Drag the ADSR dots to shape the envelope\n"
+	           "Click the waveform area to move loop points\n"
+	           "Ctrl+Wheel: zoom | Wheel: scroll\n"
+	           "Right-click: lock/unlock loop points\n"
+	           "Ctrl+Click+Drag: drag sample to your DAW");
 }
 
 WaveformDisplay::~WaveformDisplay()
@@ -269,16 +276,21 @@ void WaveformDisplay::paint(juce::Graphics &g)
 
 	if (thumbnailLeft.empty() && thumbnailRight.empty())
 	{
-		g.setColour(ColourPalette::backgroundMid);
+		g.setColour(ColourPalette::backgroundDark);
 		g.fillRect(bounds);
-		g.setColour(ColourPalette::textSecondary);
-		g.setFont(12.0f);
-		g.drawText("No audio data", bounds.reduced(5).removeFromTop(20), juce::Justification::centred);
+
+		bounds.removeFromTop(ObsidianSizes::GAP);
+		bounds.removeFromBottom(ObsidianSizes::GAP_4);
+
+		g.setColour(ColourPalette::textSecondary.withAlpha(ObsidianShades::ALPHA_04));
+		g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XS));
+		g.drawText("NO AUDIO DATA", bounds.removeFromTop((int)ObsidianSizes::TEXT_XS), juce::Justification::centred);
 
 		g.setColour(ColourPalette::textSecondary);
-		g.setFont(10.0f);
-		g.drawText("Ctrl+Wheel: Zoom | Wheel: Scroll | Right-click: Lock/Unlock | Ctrl+Click: Drag and Drop in DAW",
-		           bounds.reduced(5).removeFromBottom(15), juce::Justification::centred);
+		g.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_XXS));
+		g.drawFittedText("Pick a prompt in the Prompt Bank, drag & drop it onto the track, click Generate,\n"
+		                 "arm Play on the mixer channel, hit Play in your DAW - let's go!",
+		                 bounds.removeFromBottom((int)ObsidianSizes::TEXT_XXS * 2), juce::Justification::centred, 2);
 		return;
 	}
 
@@ -852,10 +864,16 @@ void WaveformDisplay::drawWaveform(juce::Graphics &g)
 	juce::Path leftPathTop, leftPathBottom;
 	bool leftTopStarted = false, leftBottomStarted = false;
 
+	float gainDb = juce::jlimit(-12.0f, 12.0f, track->getCurrentPage().gain.load());
+	float gainLinear = std::pow(10.0f, gainDb / 20.0f);
+
 	for (size_t i = 0; i < thumbnailSize; ++i)
 	{
 		float x = i * pixelsPerPoint;
-		float amplitude = thumbnailLeft[i];
+		float amplitude = thumbnailLeft[i] * gainLinear;
+
+		amplitude = juce::jlimit(-0.9f, 0.9f, amplitude);
+
 		float waveHeight = amplitude * quarterY * 0.9f;
 
 		float topY = quarterY - waveHeight;
@@ -909,7 +927,10 @@ void WaveformDisplay::drawWaveform(juce::Graphics &g)
 	for (size_t i = 0; i < thumbnailSize; ++i)
 	{
 		float x = i * pixelsPerPoint;
-		float amplitude = thumbnailRight[i];
+		float amplitude = thumbnailRight[i] * gainLinear;
+
+		amplitude = juce::jlimit(-0.9f, 0.9f, amplitude);
+
 		float waveHeight = amplitude * quarterY * 0.9f;
 
 		float topY = threeQuarterY - waveHeight;

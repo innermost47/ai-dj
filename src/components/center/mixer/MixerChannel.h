@@ -80,12 +80,17 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	MidiLearnableSlider panKnob;
 	juce::Label panLabel;
 
+	MidiLearnableSlider gainKnob;
+	juce::Label gainLabel;
+
 	float currentAudioLevelLeft = 0.0f;
 	float currentAudioLevelRight = 0.0f;
 	float peakHoldLeft = 0.0f;
 	float peakHoldRight = 0.0f;
 	int peakHoldTimerLeft = 0;
 	int peakHoldTimerRight = 0;
+
+	juce::Component vuMeterContainer;
 
 	std::vector<float> levelHistoryLeft;
 	std::vector<float> levelHistoryRight;

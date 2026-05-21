@@ -53,6 +53,8 @@ struct TrackPage
 
 	std::atomic<float> fineOffset{0.0f};
 	std::atomic<float> pitchSemitones{0.0f};
+	std::atomic<float> gain{0.0f};
+
 	float stagingOriginalBpm = 126.0f;
 	float bpm = 126.0f;
 	float originalBpm = 126.0f;
@@ -92,6 +94,7 @@ struct TrackPage
 		adsrSustain.store(other.adsrSustain.load());
 		adsrRelease.store(other.adsrRelease.load());
 		pitchSemitones.store(other.pitchSemitones.load());
+		gain.store(other.gain.load());
 	}
 
 	void reset()
@@ -120,6 +123,7 @@ struct TrackPage
 		adsrSustain.store(1.0f);
 		adsrRelease.store(0.0f);
 		pitchSemitones.store(0.0);
+		gain.store(0.0);
 		savedModelBeforeLocal.clear();
 	}
 
