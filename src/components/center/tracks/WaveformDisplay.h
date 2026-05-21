@@ -26,6 +26,7 @@ class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listen
 	void setLoopPoints(double startTime, double endTime);
 	void setAudioFile(const juce::File &file);
 	void setAdsrParams(float attack, float decay, float sustain, float release);
+	void drawWaveform(juce::Graphics &g);
 	void setTrack(TrackData *trackData)
 	{
 		track = trackData;
@@ -107,7 +108,6 @@ class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listen
 	float timeToX(double time);
 	void generateThumbnail();
 	void feedThumbnailStereo(int startSample, int point, int samplesPerPoint, int &retFlag);
-	void drawWaveform(juce::Graphics &g);
 	void setColorDependingTimeStretchRatio(juce::Colour &waveformColor) const;
 	void drawLoopMarkers(juce::Graphics &g);
 	void drawLoopTimeLabels(juce::Graphics &g, float startX, float endX);

@@ -311,8 +311,6 @@ void MixerChannel::resized()
 {
 	auto area = getLocalBounds().reduced(2);
 
-	int width = area.getWidth();
-
 	area.removeFromTop(ObsidianSizes::GAP_2);
 	trackNameLabel.setBounds(area.removeFromTop(12));
 	area.removeFromTop(ObsidianSizes::GAP_4);
@@ -488,7 +486,7 @@ void MixerChannel::setupUI()
 	panLabel.setJustificationType(juce::Justification::centred);
 
 	addAndMakeVisible(gainKnob);
-	gainKnob.setRange(-1.0, 1.0, 0.01);
+	gainKnob.setRange(-12.0, 12.0, 0.1);
 	gainKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	gainKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	gainKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);

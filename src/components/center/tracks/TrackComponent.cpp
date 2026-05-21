@@ -98,6 +98,16 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 			onIntervalChanged();
 		}
 	}
+	else if (paramSuffix == "Gain")
+	{
+		if (auto *t = getTrack())
+		{
+			if (waveformDisplay)
+			{
+				refreshWaveformDisplay();
+			}
+		}
+	}
 	else if (paramSuffix == "AdsrAttack" || paramSuffix == "AdsrDecay" || paramSuffix == "AdsrSustain" ||
 	         paramSuffix == "AdsrRelease")
 	{
@@ -748,11 +758,6 @@ void TrackComponent::performPageChange(int pageIndex)
 
 	if (newPage.numSamples == 0)
 	{
-		t->isPlaying.store(false);
-		t->isCurrentlyPlaying.store(false);
-		t->isArmed.store(false);
-		t->isArmedToStop.store(false);
-		t->readPosition.store(0.0);
 		if (t->onPlayStateChanged)
 		{
 			t->onPlayStateChanged(false);
@@ -1759,4 +1764,6 @@ void TrackComponent::wireParameters()
 	registerMidiLearn("RetriggerInterval", &intervalKnob);
 	registerMidiLearn("RandomRetrigger", &beatRepeatButton);
 	registerMidiLearn("Generate", &generateButton);
+
+	subscribeToParam("Gain");
 }

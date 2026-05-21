@@ -82,6 +82,7 @@ juce::ValueTree StateManager::saveState() const
 			    pageState.setProperty("adsrRelease", page.adsrRelease.load(), nullptr);
 			    pageState.setProperty("pitchSemitones", page.pitchSemitones.load(), nullptr);
 			    pageState.setProperty("fineOffset", page.fineOffset.load(), nullptr);
+			    pageState.setProperty("gain", page.gain.load(), nullptr);
 			    pageState.setProperty("loopPointsLocked", page.loopPointsLocked.load(), nullptr);
 			    pageState.setProperty("savedModelBeforeLocal", page.savedModelBeforeLocal, nullptr);
 
@@ -219,6 +220,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.adsrDecay.store(pageState.getProperty("adsrDecay", 4.0f));
 				page.adsrSustain.store(pageState.getProperty("adsrSustain", 1.0f));
 				page.adsrRelease.store(pageState.getProperty("adsrRelease", 0.0f));
+				page.gain.store(pageState.getProperty("gain", 0.0f));
 
 				for (int seqIdx = 0; seqIdx < ObsidianDataConst::MAX_SEQUENCES; ++seqIdx)
 				{

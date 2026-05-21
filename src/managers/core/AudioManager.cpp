@@ -3,6 +3,7 @@
 #include "MiniBpm.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "SampleBank.h"
 #include "TrackData.h"
 #include "TrackStretchImpl.h"
 #include "signalsmith-stretch.h"
@@ -761,8 +762,37 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		}
 		auto &currentPage = track->getCurrentPage();
 
-		track->stagingNumSamples.store(numSamples);
-		track->stagingSampleRate.store(reader->sampleRate);
+		double fileSampleRate = reader->sampleRate;
+		double dawSampleRate = audioProcessor.getSampleRate();
+
+		juce::AudioBuffer<float> tempBuffer(2, numSamples);
+		reader->read(&tempBuffer, 0, numSamples, 0, true, true);
+		if (numChannels == 1)
+			tempBuffer.copyFrom(1, 0, tempBuffer, 0, 0, numSamples);
+
+		if (std::abs(fileSampleRate - dawSampleRate) > 0.1)
+		{
+			double ratio = dawSampleRate / fileSampleRate;
+			int newNumSamples = static_cast<int>(numSamples * ratio);
+
+			track->stagingBuffer.setSize(2, newNumSamples);
+
+			juce::LagrangeInterpolator interpolatorL, interpolatorR;
+			interpolatorL.process(1.0 / ratio, tempBuffer.getReadPointer(0), track->stagingBuffer.getWritePointer(0),
+			                      newNumSamples);
+			interpolatorR.process(1.0 / ratio, tempBuffer.getReadPointer(1), track->stagingBuffer.getWritePointer(1),
+			                      newNumSamples);
+
+			track->stagingNumSamples.store(newNumSamples);
+			track->stagingSampleRate.store(dawSampleRate);
+		}
+		else
+		{
+			track->stagingBuffer = tempBuffer;
+			track->stagingNumSamples.store(numSamples);
+			track->stagingSampleRate.store(fileSampleRate);
+		}
+
 		currentPage.stagingOriginalBpm = 126.0f;
 
 		processAudioBPMAndSync(track);
@@ -967,7 +997,7 @@ void AudioManager::loadSampleFromBank(const juce::String &sampleId, const juce::
 	if (!bank)
 		return;
 
-	auto *sampleEntry = bank->getSample(sampleId);
+	SampleBankEntry *sampleEntry = bank->getSample(sampleId);
 	if (!sampleEntry)
 		return;
 

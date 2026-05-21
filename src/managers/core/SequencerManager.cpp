@@ -27,12 +27,16 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 			if (track->pages[pageIndex].numSamples == 0)
 			{
 				track->setCurrentPage(pageIndex);
-				if (!audioProcessor.getActiveEditor())
-				{
-					track->isPlaying.store(false);
-					track->isCurrentlyPlaying.store(false);
-					track->readPosition.store(0.0);
-				}
+				track->isPlaying.store(false);
+				track->isCurrentlyPlaying.store(false);
+				track->isArmed.store(false);
+				track->isArmedToStop.store(false);
+				track->readPosition.store(0.0);
+
+				juce::String playParam = "slot" + juce::String(slotNumber) + "Play";
+				if (auto *p = audioProcessor.getParameterTreeState().getParameter(playParam))
+					p->setValueNotifyingHost(0.0f);
+
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slotNumber),
 				                                                 MidiMapping::feedbackIdle);
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPage(slotNumber), pageIndex);

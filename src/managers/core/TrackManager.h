@@ -22,7 +22,7 @@ class TrackManager
 	                     std::vector<juce::AudioBuffer<float>> &individualOutputs,
 	                     juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
 	                     const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-	                     int timeSignatureNumerator, int timeSignatureDenominator);
+	                     int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate);
 
 	void loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile);
 	void addTrack(const std::string &trackId, std::unique_ptr<TrackData> track);
@@ -63,7 +63,7 @@ class TrackManager
 	void renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
 	                       juce::AudioBuffer<float> &individualOutput, juce::AudioBuffer<float> & /* previewOutput */,
 	                       int numSamples, int /* trackIndex */, double hostBpm, int timeSignatureNumerator,
-	                       int timeSignatureDenominator) const;
+	                       int timeSignatureDenominator, double sampleRate) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 
