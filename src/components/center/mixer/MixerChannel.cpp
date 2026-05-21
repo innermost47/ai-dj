@@ -130,6 +130,7 @@ void MixerChannel::wireParameters()
 	registerSliderParam("Pitch", pitchKnob);
 	registerSliderParam("Fine", fineKnob);
 	registerSliderParam("Pan", panKnob);
+	registerSliderParam("Gain", gainKnob);
 	registerSliderParam("DelaySend", sendDelayKnob);
 	registerSliderParam("ReverbSend", sendReverbKnob);
 
@@ -141,6 +142,7 @@ void MixerChannel::wireParameters()
 	registerMidiLearn("Pitch", &pitchKnob);
 	registerMidiLearn("Fine", &fineKnob);
 	registerMidiLearn("Pan", &panKnob);
+	registerMidiLearn("Gain", &gainKnob);
 	registerMidiLearn("Mute", &muteButton);
 	registerMidiLearn("Solo", &soloButton);
 	registerMidiLearn("Play", &playButton);
@@ -148,6 +150,7 @@ void MixerChannel::wireParameters()
 	registerMidiLearn("ReverbSend", &sendReverbKnob);
 
 	syncSliderRange(pitchKnob, fullParamId("Pitch"));
+	syncSliderRange(gainKnob, fullParamId("Gain"));
 	syncSliderRange(fineKnob, fullParamId("Fine"));
 	syncSliderRange(panKnob, fullParamId("Pan"));
 	syncSliderRange(volumeSlider, fullParamId("Volume"));
@@ -156,6 +159,7 @@ void MixerChannel::wireParameters()
 	sendReverbKnob.setDoubleClickReturnValue(true, 0.0);
 	volumeSlider.setDoubleClickReturnValue(true, 0.8);
 	pitchKnob.setDoubleClickReturnValue(true, 0.0);
+	gainKnob.setDoubleClickReturnValue(true, 0.0);
 	fineKnob.setDoubleClickReturnValue(true, 0.0);
 	panKnob.setDoubleClickReturnValue(true, 0.0);
 }
@@ -257,6 +261,7 @@ void MixerChannel::updateModelUI()
 	pitchKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	fineKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	panKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	gainKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	sendDelayKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	sendReverbKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 
@@ -305,54 +310,85 @@ void MixerChannel::paint(juce::Graphics &g)
 void MixerChannel::resized()
 {
 	auto area = getLocalBounds().reduced(2);
-	const int width = area.getWidth();
 
-	area.removeFromTop(2);
+	int width = area.getWidth();
+
+	area.removeFromTop(ObsidianSizes::GAP_2);
 	trackNameLabel.setBounds(area.removeFromTop(12));
+	area.removeFromTop(ObsidianSizes::GAP_4);
 
-	auto bottomRow2 = area.removeFromBottom(18);
-	int btnW = width / 2 - 2;
-	int totalW = btnW * 2 + 2;
-	int offsetX = (width - totalW) / 2;
-	bottomRow2.removeFromLeft(offsetX);
-	muteButton.setBounds(bottomRow2.removeFromLeft(btnW));
-	bottomRow2.removeFromLeft(1);
-	soloButton.setBounds(bottomRow2.removeFromLeft(btnW));
+	using FlexBox = juce::FlexBox;
+	using FlexItem = juce::FlexItem;
 
-	auto bottomRow1 = area.removeFromBottom(18);
-	bottomRow1.removeFromLeft(offsetX);
-	playButton.setBounds(bottomRow1.removeFromLeft(btnW));
-	bottomRow1.removeFromLeft(1);
-	stopButton.setBounds(bottomRow1.removeFromLeft(btnW));
+	const float labelH = 0.2f;
+	const float knobSize = 0.8f;
+	const float volVuHeight = (labelH + knobSize) * 3;
+	const float vuMeterWidth = 12.0f;
+	const int triggerBtnSize = 18;
 
-	const int knobColumnWidth = juce::jmin(60, width * 2 / 5);
-	auto knobsColumn = area.removeFromRight(knobColumnWidth);
-	area.removeFromRight(8);
+	FlexBox bottomRow3;
+	bottomRow3.flexDirection = FlexBox::Direction::row;
 
-	int sliderBottom = area.getBottom();
-	int sliderTop = area.getY();
-	sliderBounds = juce::Rectangle<int>(area.getX(), sliderTop, area.getWidth() * 3 / 4, sliderBottom - sliderTop);
-	volumeSlider.setBounds(sliderBounds);
+	bottomRow3.items.add(FlexItem(muteButton).withFlex(1.0f));
+	bottomRow3.items.add(FlexItem(soloButton).withFlex(1.0f));
 
-	int meterTotalWidth = 12;
+	auto muteSoloArea = area.removeFromBottom(triggerBtnSize);
+	bottomRow3.performLayout(muteSoloArea);
 
-	int customHeight = sliderBounds.getHeight() - 12;
-	int customY = sliderBounds.getY() + 8;
+	FlexBox bottomRow2;
+	bottomRow2.flexDirection = FlexBox::Direction::row;
 
-	vuMeter.setBounds(sliderBounds.getRight() + 3, customY, meterTotalWidth, customHeight);
+	bottomRow2.items.add(FlexItem(playButton).withFlex(1.0f));
+	bottomRow2.items.add(FlexItem(stopButton).withFlex(1.0f));
 
-	const int knobSectionH = ObsidianSizes::MIXER_CHANNEL_KNOB;
-	auto placeKnobSection = [&](juce::Rectangle<int> secArea, juce::Label &label, juce::Slider &knob)
-	{
-		label.setBounds(secArea.removeFromTop(6));
-		knob.setBounds(secArea.withTrimmedTop(-4));
-	};
-	knobsColumn.removeFromTop(4);
-	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), sendDelayLabel, sendDelayKnob);
-	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), sendReverbLabel, sendReverbKnob);
-	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), pitchLabel, pitchKnob);
-	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), fineLabel, fineKnob);
-	placeKnobSection(knobsColumn.removeFromTop(knobSectionH), panLabel, panKnob);
+	auto playStopArea = area.removeFromBottom(triggerBtnSize);
+	bottomRow2.performLayout(playStopArea);
+
+	FlexBox volumeGainColumn;
+	volumeGainColumn.flexDirection = FlexBox::Direction::column;
+	volumeGainColumn.justifyContent = FlexBox::JustifyContent::center;
+
+	volumeGainColumn.items.add(FlexItem(volumeSlider).withFlex(volVuHeight));
+	volumeGainColumn.items.add(FlexItem(gainLabel).withFlex(labelH));
+	volumeGainColumn.items.add(FlexItem(gainKnob).withFlex(knobSize));
+
+	FlexBox vuMeterPanColumn;
+	vuMeterPanColumn.flexDirection = FlexBox::Direction::column;
+	vuMeterPanColumn.justifyContent = FlexBox::JustifyContent::center;
+
+	vuMeterPanColumn.items.add(FlexItem(vuMeterContainer)
+	                               .withFlex(volVuHeight)
+	                               .withWidth(vuMeterWidth)
+	                               .withAlignSelf(FlexItem::AlignSelf::center));
+	vuMeterPanColumn.items.add(FlexItem(panLabel).withFlex(labelH));
+	vuMeterPanColumn.items.add(FlexItem(panKnob).withFlex(knobSize));
+
+	FlexBox knobsColumn;
+	knobsColumn.flexDirection = FlexBox::Direction::column;
+	knobsColumn.justifyContent = FlexBox::JustifyContent::center;
+
+	knobsColumn.items.add(FlexItem(sendDelayLabel).withFlex(labelH));
+	knobsColumn.items.add(FlexItem(sendDelayKnob).withFlex(knobSize));
+	knobsColumn.items.add(FlexItem(sendReverbLabel).withFlex(labelH));
+	knobsColumn.items.add(FlexItem(sendReverbKnob).withFlex(knobSize));
+	knobsColumn.items.add(FlexItem(pitchLabel).withFlex(labelH));
+	knobsColumn.items.add(FlexItem(pitchKnob).withFlex(knobSize));
+	knobsColumn.items.add(FlexItem(fineLabel).withFlex(labelH));
+	knobsColumn.items.add(FlexItem(fineKnob).withFlex(knobSize));
+
+	FlexBox control;
+	control.flexDirection = FlexBox::Direction::row;
+	control.justifyContent = FlexBox::JustifyContent::center;
+	control.alignContent = FlexBox::AlignContent::center;
+
+	control.items.add(FlexItem(volumeGainColumn).withFlex(1.0f));
+	control.items.add(FlexItem(vuMeterPanColumn).withFlex(1.0f));
+	control.items.add(FlexItem(knobsColumn).withFlex(1.0f));
+
+	control.performLayout(area);
+
+	auto cb = vuMeterContainer.getLocalBounds();
+	vuMeter.setBounds(cb.reduced(0, ObsidianSizes::GAP_4).withX(cb.getX()));
 }
 
 void MixerChannel::updateVUMeter()
@@ -451,6 +487,19 @@ void MixerChannel::setupUI()
 	panLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	panLabel.setJustificationType(juce::Justification::centred);
 
+	addAndMakeVisible(gainKnob);
+	gainKnob.setRange(-1.0, 1.0, 0.01);
+	gainKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+	gainKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+	gainKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+	gainKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	gainKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+
+	addAndMakeVisible(gainLabel);
+	gainLabel.setText("GAIN", juce::dontSendNotification);
+	gainLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	gainLabel.setJustificationType(juce::Justification::centred);
+
 	addAndMakeVisible(sendDelayKnob);
 	sendDelayKnob.setRange(0.0, 1.0, 0.001);
 	sendDelayKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -458,7 +507,6 @@ void MixerChannel::setupUI()
 	sendDelayKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
 	sendDelayKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
 	sendDelayKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
-	sendDelayKnob.setTooltip("Delay send level (post-fader)");
 
 	addAndMakeVisible(sendReverbKnob);
 	sendReverbKnob.setRange(0.0, 1.0, 0.001);
@@ -467,7 +515,6 @@ void MixerChannel::setupUI()
 	sendReverbKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
 	sendReverbKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
 	sendReverbKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
-	sendReverbKnob.setTooltip("Reverb send level (post-fader)");
 
 	addAndMakeVisible(sendDelayLabel);
 	sendDelayLabel.setText("DLY", juce::dontSendNotification);
@@ -484,8 +531,10 @@ void MixerChannel::setupUI()
 	ObsidianFonts::applyFontSize(sendReverbLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 	ObsidianFonts::applyFontSize(panLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 	ObsidianFonts::applyFontSize(fineLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	ObsidianFonts::applyFontSize(gainLabel, ObsidianSizes::MIXER_KNOB_LABEL);
 
-	addAndMakeVisible(vuMeter);
+	addAndMakeVisible(vuMeterContainer);
+	vuMeterContainer.addAndMakeVisible(vuMeter);
 
 	playButton.setTooltip("Arm/disarm track for playback");
 	stopButton.setTooltip("Stop track playback");
@@ -495,6 +544,8 @@ void MixerChannel::setupUI()
 	pitchKnob.setTooltip("Pitch adjustment (-12 to +12 semitones)");
 	fineKnob.setTooltip("Fine pitch adjustment (-50 to +50 cents)");
 	panKnob.setTooltip("Pan position (left/right balance)");
+	sendReverbKnob.setTooltip("Reverb send level (post-fader)");
+	sendDelayKnob.setTooltip("Delay send level (post-fader)");
 
 	addEventListeners();
 }

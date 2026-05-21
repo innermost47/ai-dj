@@ -45,6 +45,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 
 		slotVolumeParams[i] = apvts.getRawParameterValue(s + "Volume");
 		slotPanParams[i] = apvts.getRawParameterValue(s + "Pan");
+		slotGainParams[i] = apvts.getRawParameterValue(s + "Gain");
 		slotMuteParams[i] = apvts.getRawParameterValue(s + "Mute");
 		slotSoloParams[i] = apvts.getRawParameterValue(s + "Solo");
 		slotPlayParams[i] = apvts.getRawParameterValue(s + "Play");
@@ -141,6 +142,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "Solo", listener);
 		apvts.removeParameterListener(s + "Volume", listener);
 		apvts.removeParameterListener(s + "Pan", listener);
+		apvts.removeParameterListener(s + "Gain", listener);
 		apvts.removeParameterListener(s + "RandomRetrigger", listener);
 		apvts.removeParameterListener(s + "RetriggerInterval", listener);
 	}
@@ -206,6 +208,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Volume", slotName + " Volume", 0.0f, 1.0f, 0.8f));
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Pan", slotName + " Pan", -1.0f, 1.0f, 0.0f));
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "Gain", slotName + " Gain", -1.0f, 1.0f, 0.0f));
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "Mute", slotName + " Mute", false));
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "Solo", slotName + " Solo", false));
 		params.push_back(
@@ -413,6 +417,10 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
 			                                                 MidiMapping::panToMidi(getPan(slotIdx)));
 		}
+		else if (parameterID.endsWith("Gain"))
+		{
+			track->pan.store(newValue);
+		}
 		else if (parameterID.endsWith("Solo"))
 		{
 			track->isSolo.store(newValue > 0.5f);
@@ -545,7 +553,6 @@ void ParameterManager::handleSendsParams()
 	pushFloatIfChanged(lastFeedbackReverbDamping, getReverbDamping(), MidiMapping::ccFeedbackReverbDamping);
 	pushFloatIfChanged(lastFeedbackReverbWidth, getReverbWidth(), MidiMapping::ccFeedbackReverbWidth);
 	pushFloatIfChanged(lastFeedbackReverbMix, getReverbMix(), MidiMapping::ccFeedbackReverbMix);
-
 	pushIntIfChanged(lastFeedbackDelayDivision, getDelayDivisionIndex(), MidiMapping::ccFeedbackDelayDivision, 8);
 	pushIntIfChanged(lastFeedbackDelayMode, getDelayModeIndex(), MidiMapping::ccFeedbackDelayMode, 3);
 }

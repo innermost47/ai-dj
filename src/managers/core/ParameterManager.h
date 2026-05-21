@@ -28,6 +28,10 @@ class ParameterManager
 	{
 		return safeLoadIndexed(slotPanParams, slot);
 	}
+	float getGain(int slot) const
+	{
+		return safeLoadIndexed(slotGainParams, slot);
+	}
 	float getPitch(int slot) const
 	{
 		return safeLoadIndexed(slotPitchParams, slot);
@@ -203,6 +207,7 @@ class ParameterManager
 
 	std::atomic<float> *slotVolumeParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotPanParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotGainParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotMuteParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotSoloParams[ObsidianDataConst::MAX_TRACKS] = {};
 	std::atomic<float> *slotPlayParams[ObsidianDataConst::MAX_TRACKS] = {};
@@ -257,8 +262,8 @@ class ParameterManager
 		                         "crossfaderCurveMode"};
 
 		static const juce::StringArray perSlotParams = {
-		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",        "ReverbSend",
-		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval"};
+		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",         "ReverbSend",
+		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval", "Gain"};
 
 		for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
 		{

@@ -447,15 +447,15 @@ void CustomLookAndFeel::drawLinearSlider(juce::Graphics &g, int x, int y, int wi
 		float capsuleW, capsuleH;
 		if (isVertical)
 		{
-			capsuleW = juce::jmax(14.0f, juce::jmin(20.0f, (float)width * 0.7f));
-			capsuleH = 14.0f;
+			capsuleW = 20.0f;
+			capsuleH = 12.0f;
 		}
 		else
 		{
 			capsuleW = 22.0f;
 			capsuleH = juce::jmax(20.0f, juce::jmin(30.0f, (float)height * 0.75f));
 		}
-		const float capsuleR = 4.0f;
+		const float capsuleR = ObsidianSizes::CORNER * 2;
 
 		juce::Rectangle<float> capsule;
 		if (isVertical)
