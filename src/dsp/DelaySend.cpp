@@ -20,6 +20,13 @@ void DelaySend::prepare(double sampleRate, int maxBlockSize)
 	delayLineL.setMaximumDelayInSamples(maxDelaySamples);
 	delayLineR.setMaximumDelayInSamples(maxDelaySamples);
 
+	highPassL.prepare(spec);
+	highPassR.prepare(spec);
+	lowPassL.prepare(spec);
+	lowPassR.prepare(spec);
+
+	updateFilterCoefficients();
+
 	reset();
 	updateDelayTime();
 }
@@ -28,6 +35,21 @@ void DelaySend::reset()
 {
 	delayLineL.reset();
 	delayLineR.reset();
+	highPassL.reset();
+	highPassR.reset();
+	lowPassL.reset();
+	lowPassR.reset();
+}
+
+void DelaySend::updateFilterCoefficients()
+{
+	auto hpCoeffs = juce::dsp::IIR::Coefficients<float>::makeHighPass(currentSampleRate, highPassFreq);
+	*highPassL.coefficients = *hpCoeffs;
+	*highPassR.coefficients = *hpCoeffs;
+
+	auto lpCoeffs = juce::dsp::IIR::Coefficients<float>::makeLowPass(currentSampleRate, lowPassFreq);
+	*lowPassL.coefficients = *lpCoeffs;
+	*lowPassR.coefficients = *lpCoeffs;
 }
 
 void DelaySend::updateDelayTime()
@@ -91,27 +113,30 @@ void DelaySend::process(juce::AudioBuffer<float> &buffer, int startSample, int n
 		float delayedL = delayLineL.popSample(0);
 		float delayedR = delayLineR.popSample(0);
 
+		float filteredFeedbackL = lowPassL.processSample(highPassL.processSample(delayedL));
+		float filteredFeedbackR = lowPassR.processSample(highPassR.processSample(delayedR));
+
 		switch (mode)
 		{
 		case Mode::Stereo:
-			delayLineL.pushSample(0, inputL + delayedL * feedback);
-			delayLineR.pushSample(0, inputR + delayedR * feedback);
+			delayLineL.pushSample(0, inputL + filteredFeedbackL * feedback);
+			delayLineR.pushSample(0, inputR + filteredFeedbackR * feedback);
 			break;
 
 		case Mode::PingPong:
-			delayLineL.pushSample(0, inputL + delayedR * feedback);
-			delayLineR.pushSample(0, inputR + delayedL * feedback);
+			delayLineL.pushSample(0, inputL + filteredFeedbackR * feedback);
+			delayLineR.pushSample(0, inputR + filteredFeedbackL * feedback);
 			break;
 
 		case Mode::Mono:
 		{
 			float mono = (inputL + inputR) * 0.5f;
-			float delayedMono = (delayedL + delayedR) * 0.5f;
-			delayLineL.pushSample(0, mono + delayedMono * feedback);
-			delayLineR.pushSample(0, mono + delayedMono * feedback);
+			float filteredMono = (filteredFeedbackL + filteredFeedbackR) * 0.5f;
+			delayLineL.pushSample(0, mono + filteredMono * feedback);
+			delayLineR.pushSample(0, mono + filteredMono * feedback);
 
-			delayedL = delayedMono;
-			delayedR = delayedMono;
+			delayedL = filteredMono;
+			delayedR = filteredMono;
 			break;
 		}
 		}

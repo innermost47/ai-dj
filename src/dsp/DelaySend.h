@@ -59,12 +59,19 @@ class DelaySend
 
   private:
 	void updateDelayTime();
+	void updateFilterCoefficients();
 
 	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
 	double currentBpm = 120.0;
 	TimeDivision timeDivision = TimeDivision::Quarter;
 	float feedback = 0.4f;
 	Mode mode = Mode::Stereo;
+
+	juce::dsp::IIR::Filter<float> highPassL, highPassR;
+	juce::dsp::IIR::Filter<float> lowPassL, lowPassR;
+
+	float highPassFreq = 150.0f;
+	float lowPassFreq = 6000.0f;
 
 	juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineL;
 	juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delayLineR;
