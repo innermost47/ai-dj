@@ -182,14 +182,12 @@ void MidiManager::handlePlayAndStop(bool /*hostIsPlaying*/)
 				if (paramPlay)
 				{
 					track->setArmed(true);
-					sendMidiFeedback(MidiMapping::ccFeedbackPlay(changedSlot + 1), MidiMapping::feedbackPending);
 				}
 				else
 				{
 					track->pendingAction = TrackData::PendingAction::StopOnNextMeasure;
 					track->setArmedToStop(true);
 					track->setArmed(false);
-					sendMidiFeedback(MidiMapping::ccFeedbackPlay(changedSlot + 1), MidiMapping::feedbackPending);
 				}
 				break;
 			}

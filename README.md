@@ -43,6 +43,7 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ### Sound design
 - **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
+- **Per-track gain control** - Adjust each sample's level (-12 / +12 dB) before mixing, with visual waveform feedback
 - **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
 - **Reverb send** - Per-track reverb with size, damping, width and mix controls
 - **Airwindows Console6 master bus** - Analog-modeled saturation for cohesive mix glue
