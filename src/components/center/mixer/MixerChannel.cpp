@@ -544,6 +544,7 @@ void MixerChannel::setupUI()
 	panKnob.setTooltip("Pan position (left/right balance)");
 	sendReverbKnob.setTooltip("Reverb send level (post-fader)");
 	sendDelayKnob.setTooltip("Delay send level (post-fader)");
+	gainKnob.setTooltip("Gain (-12 to +12 dB) - adjust sample level before mixing");
 
 	addEventListeners();
 }

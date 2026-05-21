@@ -679,6 +679,12 @@ void TrackComponent::setupPagesUI()
 		pageButtons[i].setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		pageButtons[i].setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
 
+		juce::String tooltip =
+		    "Page " + juce::String(pageLabels[i]) + " - holds its own sample, prompt, sequence and settings.\n" +
+		    "In performance mode, page switch is quantized to the next bar for sync.\n" +
+		    "Switching to an empty page stops the track.\n" + "(Inspired by ReBirth RB-338's pattern banking)";
+		pageButtons[i].setTooltip(tooltip);
+
 		registerMidiLearn(pageNames[i], &pageButtons[i]);
 	}
 }

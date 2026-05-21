@@ -32,6 +32,8 @@ SequencerComponent::~SequencerComponent()
 
 void SequencerComponent::setupUI()
 {
+	setTooltip("Click steps to toggle them on/off.\nInspired by FruityLoops' iconic step sequencer.");
+
 	for (int i = 0; i < ObsidianDataConst::MAX_MEASURES; ++i)
 	{
 		measureButtons[i].setButtonText(juce::String(i + 1));

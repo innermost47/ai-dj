@@ -6,7 +6,10 @@ class DjIaVstProcessor;
 
 struct TrackData;
 
-class WaveformDisplay : public ObsidianComponent, public juce::ScrollBar::Listener, public juce::DragAndDropContainer
+class WaveformDisplay : public ObsidianComponent,
+                        public juce::ScrollBar::Listener,
+                        public juce::DragAndDropContainer,
+                        public juce::SettableTooltipClient
 {
   public:
 	WaveformDisplay(DjIaVstProcessor &processor, TrackData *trackData);

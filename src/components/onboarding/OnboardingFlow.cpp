@@ -68,7 +68,7 @@ void OnboardingFlow::buildSteps()
 		s.rows = {{"lightning", "Hit GEN",
 		           "Click GEN to generate audio for the current page. The track pulses while the AI works. When done, "
 		           "the waveform appears."},
-		          {"lightning", "Roll the dice",
+		          {"dice", "Roll the dice",
 		           "Not happy with the result? Hit GEN again - fresh roll. Switch pages (A/B/C/D) to keep the previous "
 		           "take and try something new."}};
 		steps.push_back(s);
@@ -112,7 +112,7 @@ void OnboardingFlow::buildSteps()
 		s.rows = {
 		    {"sliders", "ADSR knobs",
 		     "Attack, decay, sustain, release. Standard envelope applied to the sample playback."},
-		    {"dice", "Beat repeat",
+		    {"repeat", "Beat repeat",
 		     "The button between preview and ADSR. Triggers stutter and repeat effects. RND randomizes the pattern."},
 		    {"waveform", "Waveform editor",
 		     "Drag on the waveform to set loop in/out points. Mouse wheel zooms, Ctrl+Wheel for finer zoom."},
