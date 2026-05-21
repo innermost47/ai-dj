@@ -736,7 +736,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
                                             bool currentUseLocal, int currentTimeoutMs, bool isFirstTime,
                                             std::function<void(const ConfigDialogResult &)> callback)
 {
-	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 420);
+	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 300);
 
 	class ConfigContent : public ObsidianComponent
 	{
@@ -745,7 +745,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 		EscapableTextEditor urlEditor, keyEditor;
 		juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
 
-		ConfigContent(bool useLocal, const juce::String &url, const juce::String & /*key */, int timeout,
+		ConfigContent(bool /*useLocal*/, const juce::String &url, const juce::String & /*key */, int timeout,
 		              bool firstTime)
 		{
 			auto styleEditor = [](EscapableTextEditor &te, const juce::String &text)
@@ -772,13 +772,6 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 				lbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
 				addAndMakeVisible(lbl);
 			};
-
-			styleLabel(modeLbl, "Generation Mode:");
-			modeCombo.addItem("Server/API", 1);
-			modeCombo.addItem("Local Model", 2);
-			modeCombo.setSelectedId(useLocal ? 2 : 1);
-			styleCombo(modeCombo);
-			addAndMakeVisible(modeCombo);
 
 			styleLabel(urlLbl, "Server URL:");
 			styleEditor(urlEditor, url.isEmpty() ? "http://localhost:8000" : url);
@@ -813,10 +806,6 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			auto bounds = getLocalBounds().reduced(10);
 			int rowH = 30;
 			int spacing = 15;
-
-			modeLbl.setBounds(bounds.removeFromTop(20));
-			modeCombo.setBounds(bounds.removeFromTop(rowH));
-			bounds.removeFromTop(spacing);
 
 			urlLbl.setBounds(bounds.removeFromTop(20));
 			urlEditor.setBounds(bounds.removeFromTop(rowH));
@@ -853,7 +842,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 	                                {
 		                                ConfigDialogResult res;
 		                                res.confirmed = true;
-		                                res.useLocalModel = formPtr->modeCombo.getSelectedId() == 2;
+		                                res.useLocalModel = false;
 		                                res.serverUrl = formPtr->urlEditor.getText();
 		                                res.apiKey = formPtr->keyEditor.getText();
 
