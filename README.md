@@ -5,55 +5,24 @@
 | Repository                                                                              | Description                                  |
 | --------------------------------------------------------------------------------------- | -------------------------------------------- |
 | [obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)       | Central inference server                     |
-| [obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)     | Provider kit — run a GPU node on the network |
+| [obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)     | Provider kit - run a GPU node on the network |
 | [obsidian-neural-frontend](https://github.com/innermost47/obsidian-neural-frontend)     | Storefront & dashboard                       |
 | [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                   |
-| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3/AU plugin (client)                      |
+| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                       |
 
-## 🎵 AI music generation VST3 plugin designed for live performance
+## AI music generation for live performance - VST3, AU, Standalone
 
 <div align="center">
-  <img src="assets/screenshot.png" alt="OBSIDIAN-Neural Interface" width="800"/>
-  <p><i>Live AI music generation in your DAW</i></p>
+    <img src="screenshot.png" alt="OBSIDIAN-Neural Interface" width="800"/>
+    <p><i>Live AI music generation. Standalone or in your DAW (VST3 / AU).</i></p>
 </div>
 
 ---
 
 > _"I've cycled through almost every AI music tool on the market, but Obsidian is the first one that actually feels like a **real production tool** rather than a novelty. While other AI apps try to replace the songwriter, Obsidian treats AI like a powerful, playable instrument. The 8-track MIDI-triggering is a total game-changer. Because it lives directly in my DAW, there is **zero latency** and zero break in my workflow. It stays perfectly locked to my project's tempo and vibe, serving as the ultimate **intelligent jam partner VST**."_
 >
-> **— Moteka, Electronic Music Producer**
+> **- Moteka, Electronic Music Producer**
 > [SoundCloud](https://soundcloud.com/moteka) · [Instagram](https://www.instagram.com/pmoteka/)
-
-## 🔥 What's New — April 2026: The Multi-Model Era
-
-OBSIDIAN Neural now features **8 specialized AI engines** in a single interface. You can now assign a different "brain" to each of your 8 tracks, each optimized for specific tempos and styles:
-
-1.  **[stabilityai/stable-audio-open-1.0](https://huggingface.co/stabilityai/stable-audio-open-1.0)** — The versatile foundation for full-mix textures and drum loops.
-    - _Best BPM: Versatile (80–160 BPM)._
-2.  **[RoyalCities/Foundation-1](https://huggingface.co/RoyalCities/Foundation-1)** — Surgical tag-based control for melodic and harmonic phrasing.
-    - _Best BPM: 100–150 BPM (Sweet spots: 120, 128)._
-3.  **[adlb/Audialab_EDM_Elements](https://huggingface.co/adlb/Audialab_EDM_Elements)** — High-energy EDM leads, supersaws, and plucks.
-    - _Best BPM: 100–150 BPM (Ideal at 128)._
-4.  **[RoyalCities/RC_Infinite_Pianos](https://huggingface.co/RoyalCities/RC_Infinite_Pianos)** — High-fidelity grand and electric piano performances.
-    - _Best BPM: 100–150 BPM (Optimal at 120)._
-5.  **[RoyalCities/Vocal_Textures_Main](https://huggingface.co/RoyalCities/Vocal_Textures_Main)** — Choral, operatic, and atmospheric vocal chord progressions.
-    - _Best BPM: 100–150 BPM (Best for atmospheric pads)._
-6.  **[santifiorino/SAO-Instrumental-Finetune](https://huggingface.co/santifiorino/SAO-Instrumental-Finetune)** — Melodic trap, lofi jazz rap, and modern indie stems.
-    - _Best BPM: 75–160 BPM (Great for 90 BPM Lofi)._
-7.  **[gab-gdp/StableBeaT](https://huggingface.co/gab-gdp/StableBeaT)** — The drum machine: specialized in trap beats and 808 grooves.
-    - _Best BPM: 75–160 BPM (Tightest at 140)._
-8.  **[atoof/gluten_v1](https://huggingface.co/atoof/gluten_v1)** — Specialized engine for loopable melodic trap and wavy motifs.
-    - _Best BPM: 90–160 BPM (Optimal at 135)._
-
-⚠️ **Disclaimer:** This is a first implementation of the multi-model architecture. While I strive for the highest audio quality, AI generation can sometimes produce unexpected results. I am very much **open to feedback**! If you notice any issues with sound consistency or tempo sync for a specific model, please open a [GitHub Issue](https://github.com/innermost47/ai-dj/issues) or join the [Discussions](https://github.com/innermost47/ai-dj/discussions). Your feedback helps me fine-tune the engine!
-
-🎁 New accounts now receive **20 free credits** on signup — no credit card required.
-
----
-
-**⚡ Quick Start:** [Get your API key](https://obsidian-neural.com) and start generating in minutes.  
-📄 **[Late Breaking Paper — AIMLA 2025](https://drive.google.com/file/d/1cwqmrV0_qC462LLQgQUz-5Cd422gL-8F/view)** — Presented at the AES International Conference on AI and Machine Learning for Audio, Queen Mary University London.  
-🎓 **[Tutorial](https://youtu.be/-qdFo_PcKoY)** — From DAW setup to live performance (French + English subtitles)
 
 ---
 
@@ -61,22 +30,107 @@ OBSIDIAN Neural now features **8 specialized AI engines** in a single interface.
 
 Type words → Get musical loops in ~30s. No stopping your creative flow.
 
+### Performance
 - **8-track sampler** with MIDI triggering (C3-B3)
-- **4 pages per track** (A/B/C/D) — Switch variations instantly
-- **Per-page ADSR envelope** — Shape the dynamics of each variation independently, editable directly on the waveform
-- **8 sequences per page** — 256 total patterns for complex live sets
+- **4 pages per track** (A/B/C/D) - Switch variations instantly
+- **8 sequences per page** - 256 total patterns for complex live sets
 - **16-step sequencer** with multi-measure support
-- **Quantized page changes** — Seamless transitions locked to measure boundaries
-- **Draw-to-sound** — Sketch your ideas visually and let AI interpret them musically
-- **Perfect DAW sync** — Auto time-stretch to project tempo
-- **Non-blocking generation** — No pre-recorded samples, renders in background
-- **4 pair crossfaders** — Blend each deck A/B pair independently with model-aware color morphing
+- **Quantized page changes** - Seamless transitions locked to measure boundaries
+- **4 pair crossfaders** - Blend each deck A/B pair independently with model-aware color morphing
+- **Plug-and-play MIDI mapping** - Auto-configured for the [companion mobile controller](https://github.com/innermost47/obsidian-neural-controller), with bidirectional feedback (LED states, knob positions) on dedicated MIDI channels.
+  *To use: open the MIDI panel (piano icon, bottom-right) → Load Default Mapping.*
+- **MIDI learn on every parameter** - Map any control to any hardware override, with persistent user mappings
+
+### Sound design
+- **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
+- **Per-track gain control** - Adjust each sample's level (-12 / +12 dB) before mixing, with visual waveform feedback
+- **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
+- **Reverb send** - Per-track reverb with size, damping, width and mix controls
+- **Airwindows Console6 master bus** - Analog-modeled saturation for cohesive mix glue
+
+### AI generation
+
+- **Prompt bank with editor** - Build, organize and reuse your prompts with model-aware keywords (genres, elements, moods, negatives)
+- **Drag-and-drop prompts** - Drop a prompt on a track to assign both prompt and AI model in one gesture
+- **Sample bank with drag-and-drop** - Every generation is automatically saved and can be reused across tracks and projects
+- **LLM bypass mode** - Skip prompt enhancement for faster generation when you already know what you want
+- **Non-blocking generation** - No pre-recorded samples, renders in background
+
+### Multi-model engine
+
+OBSIDIAN Neural ships with **8 specialized AI engines** - assign a different one to each track for its strengths:
+
+1. **stable-audio-open-1.0** - Versatile foundation, drums and full-mix textures (80–160 BPM)
+2. **Foundation-1** - Tag-based melodic and harmonic phrasing (100–150 BPM)
+3. **Audialab EDM Elements** - High-energy EDM leads, supersaws, plucks (100–150 BPM)
+4. **RC Infinite Pianos** - Grand and electric piano performances (100–150 BPM)
+5. **RC Vocal Textures** - Choral, operatic and atmospheric vocals (100–150 BPM)
+6. **SAO Instrumental** - Melodic trap, lofi jazz rap, indie stems (75–160 BPM)
+7. **StableBeaT** - Trap beats and 808 grooves (75–160 BPM)
+8. **gluten_v1** - Loopable melodic trap and wavy motifs (90–160 BPM)
+
+All models are hosted on [Hugging Face](https://huggingface.co/innermost47/obsidian-neural-models).
+
+> ⚠️ AI generation can produce unexpected results. Feedback welcome on [Issues](https://github.com/innermost47/ai-dj/issues) or [Discussions](https://github.com/innermost47/ai-dj/discussions).
+
+### DAW & Standalone
+
+- **Automatic tempo sync** - Incoming samples are BPM-detected with [MiniBPM](https://breakfastquay.com/minibpm/) and time-stretched on load via [Signalsmith](https://github.com/Signalsmith-Audio/signalsmith-stretch) Stretch to lock to your host tempo, with zero pitch drift
+- **Standalone version** - Run OBSIDIAN Neural without a DAW, with built-in transport and tempo control
+- **Ableton Link** (Standalone) - Bidirectional network sync of tempo and start/stop with any Link-enabled app
 
 **OBSIDIAN Neural is NOT a song generator** like Suno or Udio. It's a performance tool: you build your track loop by loop, you're the composer, AI is your loop generator.
 
 ---
 
-## How it works — The Distributed GPU Network
+### Windows: low-latency audio
+
+For best performance and sync accuracy with Ableton Link, select
+**"Windows Audio (Exclusive Mode)"** in the audio settings, then your
+audio interface. The default shared mode adds 20-50ms of latency.
+
+If you have ASIO drivers from your audio interface vendor, those will
+work even better - but require a separate build with the Steinberg
+ASIO SDK (not redistributable).
+
+---
+
+## Quick Start
+
+> ☁️ **No GPU required** - Generation runs on our servers. Any laptop can run the plugin.
+
+1. Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
+2. Get your API key from [obsidian-neural.com](https://obsidian-neural.com)
+3. Load the VST in your DAW → Settings → Enter Server URL + API key
+
+**Pricing:**
+
+| Plan    | Price        | Credits/month |
+| ------- | ------------ | ------------- |
+| Free    | -            | 20 samples    |
+| Base    | €7.99/month  | 150 samples   |
+| Starter | €11.99/month | 300 samples   |
+| Pro     | €14.99/month | 500 samples   |
+
+---
+
+## Download
+
+| Platform           | Install path                            |
+| ------------------ | --------------------------------------- |
+| Windows VST3       | `C:\Program Files\Common Files\VST3\`   |
+| Windows Standalone | Run `OBSIDIAN-Neural.exe` from anywhere |
+| macOS VST3         | `~/Library/Audio/Plug-Ins/VST3/`        |
+| macOS AU           | `~/Library/Audio/Plug-Ins/Components/`  |
+| macOS Standalone   | `/Applications/` (drag the `.app`)      |
+| Linux VST3         | `~/.vst3/`                              |
+| Linux Standalone   | Run the binary from anywhere            |
+
+→ **[Download from Releases](https://github.com/innermost47/ai-dj/releases)**
+
+---
+
+## How it works - The Distributed GPU Network
 
 OBSIDIAN Neural runs on a **distributed GPU provider network**. When you generate a loop, the request is routed to an available community provider. If none is available, the system falls back to a cloud inference service.
 
@@ -86,10 +140,10 @@ VST Plugin → Central server → Provider GPU pool → WAV returned to DAW
                                Cloud inference fallback
 ```
 
-**Revenue sharing — full transparency:**  
+**Revenue sharing - full transparency:**  
 Subscription revenue is redistributed **strictly equally** among all eligible providers each month via Stripe Connect, after a 15% platform fee covering infrastructure costs. Redistribution history is public:
 
-**[obsidian-neural.com/public.html](https://obsidian-neural.com/public.html)**
+**[obsidian-neural.com/public.php](https://obsidian-neural.com/public.php)**
 
 No authentication required. No data is ever deleted.
 
@@ -103,127 +157,23 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 
 ---
 
-## Quick Start
-
-### 🟣 Cloud API (Recommended)
-
-> ☁️ **No GPU required** — Generation runs on our servers. Any laptop can run the plugin.
-
-1. Download VST3 from [Releases](https://github.com/innermost47/ai-dj/releases)
-2. Get your API key from [obsidian-neural.com](https://obsidian-neural.com)
-3. Load the VST in your DAW → Settings → Enter Server URL + API key
-
-**Pricing:**
-
-| Plan    | Price        | Credits/month |
-| ------- | ------------ | ------------- |
-| Free    | —            | 20 samples    |
-| Base    | €7.99/month  | 150 samples   |
-| Starter | €11.99/month | 300 samples   |
-| Pro     | €14.99/month | 500 samples   |
-
-### 🔵 Self-Hosted (Advanced)
-
-Best for privacy, customization, and unlimited generations.
-
-1. Get [Stability AI access](https://huggingface.co/stabilityai/stable-audio-open-1.0)
-2. Follow [INSTALLATION.md](INSTALLATION.md)
-3. Run `python server_interface.py` → point the plugin to `http://localhost:8000`
-
-**Windows:** `install-win.bat` · **macOS:** `./install-mac.sh` · **Linux:** `./install-lnx.sh`
-
-### 🟢 Local Models (Offline — Windows only)
-
-Runs completely offline. No GPU required, 16GB+ RAM.
-
-1. Get [Stability AI access](https://huggingface.co/stabilityai/stable-audio-open-small)
-2. Download models from [innermost47/stable-audio-open-small-tflite](https://huggingface.co/innermost47/stable-audio-open-small-tflite)
-3. Copy to `%APPDATA%\OBSIDIAN-Neural\stable-audio\` → choose "Local Model" in plugin
-
-_Note: Fixed 10s generation, higher RAM usage, some timing limitations._
-
----
-
-## Which option should I choose?
-
-| Feature           | Cloud API    | Self-Hosted      | Local Models  |
-| ----------------- | ------------ | ---------------- | ------------- |
-| Setup             | ⭐ Easy      | ⭐⭐⭐ Advanced  | ⭐⭐ Moderate |
-| Hardware          | None         | GPU + CUDA/Metal | 16GB+ RAM     |
-| Quality           | ⭐⭐⭐ Best  | ⭐⭐ Good        | ⭐ Basic      |
-| Variable duration | ✅ Up to 30s | ✅ Yes           | ❌ Fixed 10s  |
-| Cost              | Subscription | Free after setup | Free          |
-| Internet          | Required     | Not required     | Not required  |
-
----
-
-## 🌍 Press Coverage
-
-Featured in **8 countries** and **6 languages**:
-
-- 🇺🇸 **[Synthtopia](https://www.synthtopia.com/content/2025/12/22/obsidian-neural-brings-ai-generated-samples-to-your-daw/)** — "Brings AI-Generated Samples To Your DAW"
-- 🇨🇳 **[MIDIFAN](https://www.midifan.com/modulenews-detailview-57259.htm)** — Leading Chinese music tech publication
-- 🇳🇱 **[Rekkerd](https://rekkerd.org/obsidian-neural-real-time-ai-music-generation-vst3/)** — "Real-time AI music generation VST3"
-- 🇫🇷 **[Audiofanzine](https://fr.audiofanzine.com/sequenceur-divers/obsidian-neural/obsidian-neural/news/a.play,n.78783.html)** — Major French music tech publication
-- 🇪🇸 **[FutureMusic](https://www.futuremusic-es.com/obsidian-neural-vst3-ia-generativa/)** — Spanish coverage
-- 🇰🇷 **[S1 Forum](https://s1forum.kr/news/innermost47%EC%97%90%EC%84%9C-obsidian-neural-%EA%B3%B5%EA%B0%9C/)** — Korean music production community
-- 🇯🇵 **[DTM Plugin Sale](https://projectofnapskint.com/obsidian-2/)** — Japanese music production community
-- 🇺🇸 **[Bedroom Producers Blog](https://bedroomproducersblog.com/2025/06/06/obsidian-neural-sound-engine/)** — "FREE AI-powered jam partner"
-
-> _"Too many AI projects focus on the things AI can save you from doing rather than how AI can help you get better at what you do."_  
-> **— James Nugent, Bedroom Producers Blog**
-
-**[See all press coverage →](PRESS.md)**
-
----
-
-## 🎉 200 Stars Milestone — Giveaway Completed!
-
-We hit **200 stars**! 🌟 Huge thanks to the entire community.
-
-The winner of the 1-year Starter Pack (€143.88 value) was randomly drawn from all stargazers: congratulations **@mxmilkiib**!
-
----
-
-## Download
-
-| Platform   | Install path                           |
-| ---------- | -------------------------------------- |
-| Windows    | `C:\Program Files\Common Files\VST3\`  |
-| macOS VST3 | `~/Library/Audio/Plug-Ins/VST3/`       |
-| macOS AU   | `~/Library/Audio/Plug-Ins/Components/` |
-| Linux      | `~/.vst3/`                             |
-
-→ **[Download from Releases](https://github.com/innermost47/ai-dj/releases)**
-
----
-
-## 📚 Documentation
-
-- **[Installation Guide](INSTALLATION.md)**
-- **[Video Tutorial](https://youtu.be/-qdFo_PcKoY)** — French + English subtitles
-- **[Online Documentation](https://obsidian-neural.com/documentation.html)**
-- **[Press Coverage](PRESS.md)**
-
----
-
 ## Community
 
-📧 [Contact](https://obsidian-neural.com/contact.html) · 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🌐 [obsidian-neural.com](https://obsidian-neural.com)
+📧 [Contact](https://obsidian-neural.com/contact.php) · 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🌐 [obsidian-neural.com](https://obsidian-neural.com)
 
 ---
 
 ## More Projects
 
-🥁 **[BeatCrafter](https://github.com/innermost47/beatcrafter)** — Intelligent MIDI drum pattern generator VST3  
-🎛️ **[Randomizer](https://randomizer.anthony-charretier.fr/)** — Generative music studio  
-🎵 **[YouTube](https://www.youtube.com/@innermost9675)** — Original compositions (electronic, ambient, metal, experimental)
+🥁 **[BeatCrafter](https://github.com/innermost47/beatcrafter)** - Intelligent MIDI drum pattern generator VST3  
+🎛️ **[Randomizer](https://randomizer.anthony-charretier.fr/)** - Generative music studio  
+🎵 **[YouTube](https://www.youtube.com/@innermost9675)** - Original compositions (electronic, ambient, metal, experimental)
 
 ---
 
 ## License
 
-🆓 **GNU Affero General Public License v3.0** — Stability AI Community License for the AI model.
+🆓 **GNU Affero General Public License v3.0** - Stability AI Community License for the AI model.
 
 ---
 
@@ -231,7 +181,7 @@ The winner of the 1-year Starter Pack (€143.88 value) was randomly drawn from 
 
 **Developed by InnerMost47 (Anthony Charretier)**
 
-Special thanks to **A.D** for the original draw-to-audio concept, **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
+Special thanks to **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
 
 ---
 

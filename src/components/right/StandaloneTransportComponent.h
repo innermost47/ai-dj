@@ -1,0 +1,90 @@
+#pragma once
+#include "ObsidianBase.h"
+#include "StandaloneTransport.h"
+#include <JuceHeader.h>
+
+class DjIaVstProcessor;
+
+class StandaloneTransportComponent : public ObsidianComponent, private juce::Timer
+{
+  public:
+	StandaloneTransportComponent(StandaloneTransport &transport, DjIaVstProcessor &processor);
+	~StandaloneTransportComponent() override;
+
+	void resized() override;
+	void paint(juce::Graphics &g) override;
+	void udpatePlayButtonDisplay(bool isPlaying);
+	void syncFromTransport();
+
+	std::function<void(double)> onBpmChanged;
+	std::function<void()> onTimeSignatureChanged;
+
+  private:
+	void setupUI();
+	void timerCallback() override;
+	void updateBeatDisplay();
+	void onBpmEditorChanged();
+	void handleTimeSigChange();
+
+	class BeatLcd : public juce::Component
+	{
+	  public:
+		void paint(juce::Graphics &g) override;
+		void setBarBeatSub(int b, int beat, int sub);
+		void setPlaying(bool p);
+		void setBeatPulse(float intensity);
+		void setIsDownbeat(bool d);
+		void setTimeSignature(int num, int den);
+		void setPaused(bool p);
+
+	  private:
+		int bar = 1, beat = 1, sub = 1;
+		int sigNum = 4, sigDen = 4;
+		bool playing = false;
+		bool downbeat = false;
+		float pulse = 0.0f;
+		bool paused = false;
+	};
+
+	class BpmField : public juce::Component
+	{
+	  public:
+		BpmField();
+		void resized() override;
+		void paint(juce::Graphics &g) override;
+		void mouseWheelMove(const juce::MouseEvent &, const juce::MouseWheelDetails &) override;
+		void mouseDoubleClick(const juce::MouseEvent &) override;
+
+		std::function<void(double)> onValueChanged;
+		std::function<void()> onResetRequested;
+
+		void setBpmValue(double bpm);
+		double getBpmValue() const;
+
+		EscapableTextEditor editor;
+	};
+
+	StandaloneTransport &transport;
+	DjIaVstProcessor &audioProcessor;
+
+	IconButton playButton{"play"};
+	IconButton stopButton{"stop"};
+	IconButton linkButton{"link", "ABLETON LINK"};
+
+	BeatLcd lcd;
+	BpmField bpmField;
+
+	EscapableTextEditor timeSigEditor;
+
+	int currentBeat = 0;
+	int currentSubBeat = 0;
+	bool beatFlash = false;
+	float currentPulse = 0.0f;
+	bool isPaused = false;
+	float pauseBlinkPhase = 0.0f;
+	bool wasBlinking = false;
+
+	juce::Array<juce::int64> tapTimes;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StandaloneTransportComponent)
+};
