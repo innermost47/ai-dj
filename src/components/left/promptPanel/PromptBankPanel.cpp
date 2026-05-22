@@ -240,7 +240,7 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 	for (const auto &catName : categoryOrder)
 	{
 		juce::Colour colour =
-		    catName == "Uncategorized" ? ColourPalette::backgroundLight : resolveCategoryColour(catName);
+		    catName == "Uncategorized" ? ColourPalette::textSecondary : resolveCategoryColour(catName);
 
 		auto accordion = std::make_unique<PromptCategoryAccordion>(catName, colour);
 

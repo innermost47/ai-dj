@@ -48,8 +48,8 @@ DetailPanel::DetailPanel()
 		}
 	};
 	playButton.setCompactMode(true);
-
 	playButton.setTooltip("Preview sound on Output 9");
+	playButton.setVisible(false);
 	setVisible(false);
 }
 
@@ -163,7 +163,17 @@ void DetailPanel::generateThumbnail()
 	thumbL.clear();
 	thumbR.clear();
 	if (audioBuf.getNumSamples() == 0 || waveformBounds.isEmpty())
+	{
+		playButton.setVisible(false);
 		return;
+	}
+	else
+	{
+		if (!playButton.isVisible())
+		{
+			playButton.setVisible(true);
+		}
+	}
 
 	int n = audioBuf.getNumSamples();
 	int ch = audioBuf.getNumChannels();
@@ -200,11 +210,12 @@ void DetailPanel::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds();
 	g.fillAll(ColourPalette::backgroundDark);
 
-	if (entry && !entry->category.isEmpty())
+	if (entry)
 	{
 		const float ellipseSize = 8.0f;
-		juce::Colour col = this->categoryColourResolver ? this->categoryColourResolver(entry->category)
-		                                                : getCategoryColor(entry->category);
+		juce::Colour col = entry->category.isEmpty()      ? ColourPalette::textSecondary
+		                   : this->categoryColourResolver ? this->categoryColourResolver(entry->category)
+		                                                  : getCategoryColor(entry->category);
 		g.setColour(col);
 		g.fillEllipse(ellipseSize, Obsidian::GAP_4 + ellipseSize + 1.0f, ellipseSize, ellipseSize);
 	}
@@ -416,24 +427,26 @@ juce::String DetailPanel::formatDuration(float s)
 
 juce::Colour DetailPanel::getCategoryColor(const juce::String &category)
 {
-	static const std::map<juce::String, juce::Colour> colors = {{"Drums", ColourPalette::indigo},
-	                                                            {"Bass", ColourPalette::teal},
-	                                                            {"Melody", ColourPalette::coral},
-	                                                            {"Ambient", ColourPalette::emerald},
-	                                                            {"Percussion", ColourPalette::slate},
-	                                                            {"Vocal", ColourPalette::amber},
-	                                                            {"FX", ColourPalette::backgroundLight},
-	                                                            {"Loops", ColourPalette::buttonSuccess},
-	                                                            {"One-shots", ColourPalette::buttonSecondary},
-	                                                            {"House", ColourPalette::buttonDangerDark},
-	                                                            {"Techno", ColourPalette::lime},
-	                                                            {"Hip-Hop", ColourPalette::violet},
-	                                                            {"Jazz", ColourPalette::amber},
-	                                                            {"Rock", ColourPalette::buttonDanger},
-	                                                            {"Electronic", ColourPalette::cyan},
-	                                                            {"Piano", ColourPalette::textSecondary},
-	                                                            {"Guitar", ColourPalette::textWarning},
-	                                                            {"Synth", ColourPalette::textSecondary}};
+	static const std::map<juce::String, juce::Colour> colors = {
+	    {"Drums", ColourPalette::indigo},
+	    {"Bass", ColourPalette::teal},
+	    {"Melody", ColourPalette::coral},
+	    {"Ambient", ColourPalette::emerald},
+	    {"Percussion", ColourPalette::slate},
+	    {"Vocal", ColourPalette::amber},
+	    {"FX", ColourPalette::backgroundLight},
+	    {"Loops", ColourPalette::buttonSuccess},
+	    {"One-shots", ColourPalette::buttonSecondary},
+	    {"House", ColourPalette::buttonDangerDark},
+	    {"Techno", ColourPalette::lime},
+	    {"Hip-Hop", ColourPalette::violet},
+	    {"Jazz", ColourPalette::amber},
+	    {"Rock", ColourPalette::buttonDanger},
+	    {"Electronic", ColourPalette::cyan},
+	    {"Piano", ColourPalette::textSecondary},
+	    {"Guitar", ColourPalette::textWarning},
+	    {"Synth", ColourPalette::textSecondary},
+	};
 	auto it = colors.find(category);
 	return it != colors.end() ? it->second : ColourPalette::backgroundLight;
 }
