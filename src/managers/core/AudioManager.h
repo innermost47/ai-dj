@@ -41,7 +41,7 @@ class AudioManager
 	void performAtomicSwap(TrackData *track, const juce::String &trackId);
 	void updateWaveformDisplay(const juce::String &trackId);
 	void loadAudioFileAsync(const juce::String &trackId, const juce::File &audioFile);
-	void processAudioBPMAndSync(TrackData *track);
+	void processAudioBPMAndSync(TrackData *track, float sampleBpm = -1.0f);
 	void updateMasterEQ();
 	void saveBufferToFile(const juce::AudioBuffer<float> &buffer, const juce::File &outputFile, double sampleRate);
 	void saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float> &originalBuffer,
@@ -49,7 +49,7 @@ class AudioManager
 	                                     double sampleRate);
 	void loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile);
 	void loadSampleToBankPage(const juce::String &trackId, int pageIndex, const juce::File &sampleFile,
-	                          const juce::String &sampleId);
+	                          const juce::String &sampleId, float sampleBpm, double fileSampleRate);
 	void loadSampleFromBank(const juce::String &sampleId, const juce::String &trackId);
 
 	juce::File getExportDirectory();

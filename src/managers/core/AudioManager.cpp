@@ -407,15 +407,15 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 	}
 }
 
-void AudioManager::processAudioBPMAndSync(TrackData *track)
+void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
 {
 	track->nextHasOriginalVersion.store(false);
 	auto &currentPage = track->getCurrentPage();
-	float serverSnappedBpm = audioProcessor.getPendingSnappedBpm();
+	float snappedBpm = sampleBpm == -1.0f ? audioProcessor.getPendingSnappedBpm() : sampleBpm;
 	double hostBpm = audioProcessor.getCachedHostBpm();
 	double tempo = 0.0;
 
-	if (serverSnappedBpm <= 0.0f)
+	if (snappedBpm <= 0.0f)
 	{
 		breakfastquay::MiniBPM bpm(static_cast<float>(track->stagingSampleRate.load()));
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
@@ -442,7 +442,7 @@ void AudioManager::processAudioBPMAndSync(TrackData *track)
 	}
 	else
 	{
-		tempo = static_cast<double>(serverSnappedBpm);
+		tempo = static_cast<double>(snappedBpm);
 		if (tempo == hostBpm)
 		{
 			track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
@@ -733,7 +733,7 @@ void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int p
 }
 
 void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageIndex, const juce::File &sampleFile,
-                                        const juce::String &sampleId)
+                                        const juce::String &sampleId, float sampleBpm, double fileSampleRate)
 {
 	TrackData *track = trackManager.getTrack(trackId);
 	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
@@ -762,7 +762,6 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		}
 		auto &currentPage = track->getCurrentPage();
 
-		double fileSampleRate = reader->sampleRate;
 		double dawSampleRate = audioProcessor.getSampleRate();
 
 		juce::AudioBuffer<float> tempBuffer(2, numSamples);
@@ -785,6 +784,9 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 			track->stagingNumSamples.store(newNumSamples);
 			track->stagingSampleRate.store(dawSampleRate);
+
+			interpolatorL.reset();
+			interpolatorR.reset();
 		}
 		else
 		{
@@ -795,7 +797,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 		currentPage.stagingOriginalBpm = 126.0f;
 
-		processAudioBPMAndSync(track);
+		processAudioBPMAndSync(track, sampleBpm);
 
 		auto permanentFile = getTrackPageAudioFile(trackId, pageIndex);
 		permanentFile.getParentDirectory().createDirectory();
@@ -948,17 +950,6 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 		}
 
 		juce::File permanentFile = getTrackPageAudioFile(trackId, targetPageIndex);
-		permanentFile.getParentDirectory().createDirectory();
-
-		if (track->nextHasOriginalVersion.load())
-		{
-			saveOriginalAndStretchedBuffers(track->originalStagingBuffer, track->stagingBuffer, trackId,
-			                                track->stagingSampleRate.load());
-		}
-		else
-		{
-			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate.load());
-		}
 
 		track->pages[targetPageIndex].audioFilePath = permanentFile.getFullPathName();
 		track->hasStagingData.store(true, std::memory_order_release);
@@ -1025,13 +1016,14 @@ void AudioManager::loadSampleFromBank(const juce::String &sampleId, const juce::
 	}
 
 	juce::Thread::launch(
-	    [this, trackId, sampleFile, sampleId]()
+	    [this, trackId, sampleFile, sampleId, sampleEntry]()
 	    {
 		    TrackData *track = trackManager.getTrack(trackId);
 		    if (!track)
 			    return;
 
-		    loadSampleToBankPage(trackId, track->currentPageIndex.load(), sampleFile, sampleId);
+		    loadSampleToBankPage(trackId, track->currentPageIndex.load(), sampleFile, sampleId, sampleEntry->bpm,
+		                         sampleEntry->sampleRate);
 
 		    juce::Timer::callAfterDelay(2000,
 		                                [this]()
