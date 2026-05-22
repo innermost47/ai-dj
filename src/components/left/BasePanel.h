@@ -39,6 +39,7 @@ class BasePanel : public ObsidianComponent
 	juce::String currentSearch;
 
 	bool isExpanded{false};
+	juce::String selectedId;
 
 	DjIaVstProcessor &audioProcessor;
 };

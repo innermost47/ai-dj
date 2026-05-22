@@ -39,6 +39,7 @@ void BasePanel::expandAll(std::function<void(ObsidianAccordion *accordion, const
 
 void BasePanel::collapseAll()
 {
+	selectedId.clear();
 	openCategories.clear();
 	for (auto &acc : accordions)
 		acc->setExpanded(false, false);
@@ -49,7 +50,6 @@ void BasePanel::collapseAll()
 		isExpanded = false;
 		header.setExpanded(isExpanded);
 	}
-
 	resized();
 }
 
@@ -79,6 +79,7 @@ juce::var BasePanel::saveUIState(int sortType) const
 	o->setProperty("openCategories", juce::var(openArr));
 	o->setProperty("sort", sortType);
 	o->setProperty("expanded", isExpanded);
+	o->setProperty("selectedId", selectedId);
 	return juce::var(o.get());
 }
 
@@ -91,6 +92,9 @@ void BasePanel::restoreUIState(const juce::var &state, std::function<void()> ref
 	auto *o = state.getDynamicObject();
 	if (o == nullptr)
 		return;
+
+	if (o->hasProperty("selectedId"))
+		selectedId = o->getProperty("selectedId").toString();
 
 	openCategories.clear();
 	auto arr = o->getProperty("openCategories");

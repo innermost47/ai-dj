@@ -1,5 +1,4 @@
 ﻿#include "AudioManager.h"
-#include "AudioAnalyzer.h"
 #include "MiniBpm.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"

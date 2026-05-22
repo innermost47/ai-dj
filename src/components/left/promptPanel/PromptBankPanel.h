@@ -59,5 +59,6 @@ class PromptBankPanel : public BasePanel
 
 	PromptBankEntry *selectedEntry = nullptr;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PromptBankPanel)
+	JUCE_DECLARE_WEAK_REFERENCEABLE(PromptBankPanel);
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PromptBankPanel);
 };

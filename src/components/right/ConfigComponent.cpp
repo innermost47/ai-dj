@@ -80,22 +80,22 @@ void ConfigComponent::setupUI()
 	configButton.loadIcon(BinaryData::gear_svg, BinaryData::gear_svgSize);
 	configButton.setTooltip("Configure settings globally");
 
-	auto setupControlBtn = [this](IconButtonSimple &btn, bool hasAccentBar = true)
+	auto setupControlBtn = [this](IconButtonSimple &btn)
 	{
 		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
 		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::backgroundMid);
 		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		btn.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
-		btn.setHasAccentBar(hasAccentBar);
+		btn.setHasAccentBar(false);
 		btn.setShowBackground(false);
 		btn.setShowBorder(false);
 		addAndMakeVisible(btn);
 	};
 
 	setupControlBtn(bypassSequencerButton);
-	setupControlBtn(openMidiEditorButton, false);
-	setupControlBtn(configButton, false);
-	setupControlBtn(helpButton, false);
+	setupControlBtn(openMidiEditorButton);
+	setupControlBtn(configButton);
+	setupControlBtn(helpButton);
 	setupControlBtn(bypassLLMButton);
 
 	addAndMakeVisible(scaleAndDurationPanel.get());
@@ -208,7 +208,9 @@ void ConfigComponent::resized()
 	                     .withFlex(1));
 
 	column.items.add(juce::FlexItem(*scaleAndDurationPanel).withMinHeight(Obsidian::SCALE_AND_DURATION_HEIGHT));
-	column.items.add(juce::FlexItem(configLabel).withMinHeight(26));
+	column.items.add(juce::FlexItem(configLabel)
+	                     .withMinHeight(26)
+	                     .withMargin(juce::FlexItem::Margin(Obsidian::GAP_4, 0.0f, 0.0f, 0.0f)));
 	column.items.add(juce::FlexItem(btnBox).withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT));
 
 	column.performLayout(configArea);

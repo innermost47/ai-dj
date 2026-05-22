@@ -35,6 +35,10 @@ if(MSVC)
     )
     
     message(STATUS "MSVC optimizations enabled for Release builds")
+
+string(REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+add_compile_options($<$<CONFIG:Debug>:/ZI>)
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /EDITANDCONTINUE")
     
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
     
@@ -94,18 +98,6 @@ if(NOT JUCE_FOUND)
         GIT_PROGRESS TRUE  
     )
     FetchContent_MakeAvailable(JUCE)
-endif()
-
-find_package(SoundTouch QUIET)
-if(NOT SoundTouch_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(soundtouch
-        GIT_REPOSITORY https://github.com/innermost47/soundtouch.git
-        GIT_TAG 2.4.0
-        GIT_SHALLOW TRUE     
-        GIT_PROGRESS TRUE
-    )
-    FetchContent_MakeAvailable(soundtouch)
 endif()
 
 find_package(nlohmann_json QUIET)
@@ -296,7 +288,6 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/data/TrackData.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
-    src/dsp/AudioAnalyzer.cpp
     src/dsp/DelaySend.cpp
     src/dsp/MiniBpm.cpp
     src/dsp/ReverbSend.cpp
@@ -364,7 +355,6 @@ target_include_directories(ObsidianNeuralVST PRIVATE
 
 target_include_directories(ObsidianNeuralVST SYSTEM PRIVATE
     ${signalsmith_dsp_SOURCE_DIR}
-    ${soundtouch_SOURCE_DIR}/include
 )
 
 target_compile_definitions(ObsidianNeuralVST 
@@ -397,7 +387,6 @@ target_link_libraries(ObsidianNeuralVST
         juce::juce_audio_processors
         juce::juce_dsp
         juce::juce_gui_extra
-        SoundTouch
         nlohmann_json::nlohmann_json
         Ableton::Link
     

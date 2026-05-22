@@ -21,8 +21,8 @@ DjIaVstProcessor::DjIaVstProcessor()
 	midiLearnManager.setProcessor(this);
 	parameterManager.resolveParameters(this);
 	projectId = "legacy";
-	loadGlobalConfig();
 	promptBank = std::make_unique<PromptBank>();
+	loadGlobalConfig();
 	if (!promptBank->hasMigrated() && !customPrompts.isEmpty())
 	{
 		promptBank->migrateFromCustomPrompts(customPrompts);
@@ -283,15 +283,14 @@ void DjIaVstProcessor::initTracks()
 {
 
 	trackManager.isInitializing.store(true);
-
 	juce::String defaultPrompt;
-	if (promptBank)
+	auto all = promptBank->getAllPrompts();
+	if (!all.empty())
 	{
-		auto all = promptBank->getAllPrompts();
-		if (!all.empty())
-			defaultPrompt = all[0]->text;
+		std::sort(all.begin(), all.end(), [](const PromptBankEntry *a, const PromptBankEntry *b)
+		          { return a->text.compareIgnoreCase(b->text) < 0; });
+		defaultPrompt = all[0]->text;
 	}
-
 	for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
 	{
 		juce::String newTrackId = trackManager.createTrack();
@@ -302,22 +301,26 @@ void DjIaVstProcessor::initTracks()
 			auto serverModels = AiModelDefinitions::getModelsForMode(false);
 			juce::String modelName = serverModels[i % serverModels.size()];
 
-			juce::String promptForThisModel = defaultPrompt;
-			if (promptBank)
-			{
-				auto modelPrompts = promptBank->getPromptsByCategory("");
-				for (auto *p : promptBank->getAllPrompts())
-				{
-					if (p->modelName == modelName)
-					{
-						promptForThisModel = p->text;
-						break;
-					}
-				}
-			}
-
 			for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 			{
+				juce::String promptForThisModel;
+				if (promptBank)
+				{
+					promptForThisModel = defaultPrompt;
+					for (auto *prompt : all)
+					{
+						if (prompt->modelName == modelName)
+						{
+							promptForThisModel = prompt->text;
+							if (all.size() > 1)
+							{
+								auto it = std::find(all.begin(), all.end(), prompt);
+								all.erase(it);
+							}
+							break;
+						}
+					}
+				}
 				auto &page = track->pages[p];
 				page.selectedModel = modelName;
 				page.prompt = promptForThisModel;

@@ -198,9 +198,11 @@ void LeftPanelWrapper::restoreUIState(const juce::var &state)
 	setActiveTab(static_cast<Tab>(tab));
 
 	if (promptBank)
+	{
 		promptBank->restoreUIState(
 		    o->getProperty("promptBankState"), [this]() { promptBank->refreshList(); }, PromptBankPanel::firstSort,
 		    PromptBankPanel::lastSort);
+	}
 	if (sampleBank)
 		sampleBank->restoreUIState(
 		    o->getProperty("sampleBankState"), [this]() { sampleBank->refreshSampleList(); },

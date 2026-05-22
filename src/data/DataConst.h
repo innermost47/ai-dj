@@ -17,5 +17,4 @@ inline constexpr int RNDM_RTRGR_INTRVL = 3;
 
 inline constexpr double SAMPLERATE = 48000.0;
 } // namespace Obsidian
-
 #endif

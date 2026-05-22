@@ -12,8 +12,6 @@ PromptBankPanel::PromptBankPanel(DjIaVstProcessor &processor, DjIaVstEditor &edi
 
 	if (auto *bank = audioProcessor.getPromptBank())
 		bank->onBankChanged = [this]() { juce::MessageManager::callAsync([this]() { refreshList(); }); };
-
-	refreshList();
 }
 
 PromptBankPanel::~PromptBankPanel()
@@ -165,29 +163,6 @@ void PromptBankPanel::applyFilterAndSort()
 	filteredPrompts = all;
 }
 
-void PromptBankPanel::addPromptDialog()
-{
-	auto *bank = audioProcessor.getPromptBank();
-	if (!bank)
-		return;
-
-	juce::StringArray availCats;
-	for (const auto &c : bank->getCategories())
-		availCats.add(c.name);
-
-	ObsidianAlertManager::showPromptEditor(this, "", "stable-audio-open-1.0", "", availCats,
-	                                       [this](const ObsidianAlertManager::PromptEditorResult &res)
-	                                       {
-		                                       if (!res.confirmed)
-			                                       return;
-		                                       if (auto *bank = audioProcessor.getPromptBank())
-		                                       {
-			                                       bank->addPrompt(res.text, res.modelName, res.category);
-			                                       refreshList();
-		                                       }
-	                                       });
-}
-
 void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 {
 	if (filteredPrompts.empty())
@@ -198,7 +173,9 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 	}
 	auto *bank = audioProcessor.getPromptBank();
 	if (!bank)
+	{
 		return;
+	}
 
 	accordionContainer.removeAllChildren();
 	accordions.clear();
@@ -235,8 +212,21 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 	if (byCategory.count("Uncategorized") > 0)
 		categoryOrder.push_back("Uncategorized");
 
-	bool autoExpandOnSearch = currentSearch.isNotEmpty();
+	if (selectedId.isNotEmpty())
+	{
+		for (auto *entry : filteredPrompts)
+		{
+			if (entry->id == selectedId)
+			{
+				juce::String cat = entry->category.isEmpty() ? "Uncategorized" : entry->category;
+				openCategories.insert(cat);
+				break;
+			}
+		}
+	}
 
+	bool autoExpandOnSearch = currentSearch.isNotEmpty();
+	bool shouldExpandIfAllAreOpened = true;
 	for (const auto &catName : categoryOrder)
 	{
 		juce::Colour colour =
@@ -249,10 +239,9 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		{
 			auto item = std::make_unique<PromptBankItem>(entry);
 			item->setCategoryColourResolver([this](const juce::String &n) { return resolveCategoryColour(n); });
-
 			item->onItemClicked = [this, entry]() { onPromptClicked(entry); };
 			item->onItemDoubleClicked = [this, entry]() { onPromptEditRequested(entry); };
-
+			item->setSelected(entry->id == selectedId);
 			item->onEditRequested = [this, entry]() { onPromptEditRequested(entry); };
 			item->onDeleteRequested = [this, entry]() { onPromptDeleteRequested(entry); };
 
@@ -261,9 +250,9 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		accordion->setItems(std::move(items));
 
 		bool shouldExpand = autoExpandOnSort || autoExpandOnSearch || (openCategories.count(catName) > 0);
+		if (!shouldExpand)
+			shouldExpandIfAllAreOpened = false;
 		accordion->setExpanded(shouldExpand, false);
-		header.setExpanded(shouldExpand);
-		isExpanded = shouldExpand;
 
 		juce::String catNameCopy = catName;
 
@@ -289,6 +278,8 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		accordionContainer.addAndMakeVisible(*accordion);
 		accordions.push_back(std::move(accordion));
 	}
+	isExpanded = shouldExpandIfAllAreOpened;
+	header.setExpanded(isExpanded);
 	header.setChildNum(accordionContainer.getNumChildComponents());
 	resized();
 }
@@ -304,12 +295,53 @@ void PromptBankPanel::onAccordionExpanded(const juce::String &categoryName, bool
 
 void PromptBankPanel::onPromptClicked(PromptBankEntry *entry)
 {
+	if (selectedEntry == entry)
+		return;
 	selectedEntry = entry;
+	selectedId = entry->id;
 
 	for (auto &acc : accordions)
 		for (int i = 0; i < acc->getNumChildComponents(); ++i)
 			if (auto *item = dynamic_cast<PromptBankItem *>(acc->getChildComponent(i)))
-				item->setSelected(item->getEntry() == entry);
+			{
+				bool isSelected = item->getEntry() == entry;
+				item->setSelected(isSelected);
+			}
+}
+
+void PromptBankPanel::addPromptDialog()
+{
+	auto *bank = audioProcessor.getPromptBank();
+	if (!bank)
+		return;
+
+	juce::StringArray availCats;
+	for (const auto &c : bank->getCategories())
+		availCats.add(c.name);
+
+	auto safeThis = juce::Component::SafePointer<PromptBankPanel>(this);
+
+	ObsidianAlertManager::showPromptEditor(this, "", "stable-audio-open-1.0", "", availCats,
+	                                       [this, safeThis](const ObsidianAlertManager::PromptEditorResult &res)
+	                                       {
+		                                       if (!res.confirmed)
+			                                       return;
+		                                       if (auto *bank = audioProcessor.getPromptBank())
+		                                       {
+			                                       PromptBankEntry *newEntry =
+			                                           bank->addPrompt(res.text, res.modelName, res.category);
+			                                       selectedId = newEntry->id;
+			                                       /* juce::String cat = res.category.isEmpty() ? "Uncategorized" :
+			                                        res.category; openCategories.insert(cat);
+
+			                                        juce::Timer::callAfterDelay(100,
+			                                                                    [safeThis, newEntry]()
+			                                                                    {
+			                                                                        if (safeThis && newEntry)
+			                                                                            safeThis->onPromptClicked(newEntry);
+			                                                                    });*/
+		                                       }
+	                                       });
 }
 
 void PromptBankPanel::onPromptEditRequested(PromptBankEntry *entry)
@@ -327,17 +359,21 @@ void PromptBankPanel::onPromptEditRequested(PromptBankEntry *entry)
 
 	juce::String entryId = entry->id;
 
-	ObsidianAlertManager::showPromptEditor(this, entry->text, entry->modelName, entry->category, availCats,
-	                                       [this, entryId](const ObsidianAlertManager::PromptEditorResult &res)
-	                                       {
-		                                       if (!res.confirmed)
-			                                       return;
-		                                       if (auto *bank = audioProcessor.getPromptBank())
-		                                       {
-			                                       bank->updatePrompt(entryId, res.text, res.modelName, res.category);
-			                                       refreshList();
-		                                       }
-	                                       });
+	auto safeThis = juce::Component::SafePointer<PromptBankPanel>(this);
+
+	ObsidianAlertManager::showPromptEditor(
+	    this, entry->text, entry->modelName, entry->category, availCats,
+	    [this, entryId, safeThis, entry](const ObsidianAlertManager::PromptEditorResult &res)
+	    {
+		    if (!res.confirmed)
+			    return;
+		    if (auto *bank = audioProcessor.getPromptBank())
+		    {
+			    bank->updatePrompt(entryId, res.text, res.modelName, res.category);
+			    selectedId = entryId;
+			    refreshList();
+		    }
+	    });
 }
 
 void PromptBankPanel::onPromptDeleteRequested(PromptBankEntry *entry)
