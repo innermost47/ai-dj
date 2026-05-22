@@ -107,6 +107,12 @@ void MasterChannel::setupUI()
 	highKnob.setTooltip("High frequency EQ (-12dB to +12dB)");
 	midKnob.setTooltip("Mid frequency EQ (-12dB to +12dB)");
 	lowKnob.setTooltip("Low frequency EQ (-12dB to +12dB)");
+
+	masterVolumeSlider.setDoubleClickReturnValue(true, 0.8);
+	masterPanKnob.setDoubleClickReturnValue(true, 0.0);
+	highKnob.setDoubleClickReturnValue(true, 0.0);
+	midKnob.setDoubleClickReturnValue(true, 0.0);
+	lowKnob.setDoubleClickReturnValue(true, 0.0);
 }
 
 void MasterChannel::paint(juce::Graphics &g)
