@@ -4,7 +4,7 @@
 #ifndef OBSIDIAN_FONTS_H
 #define OBSIDIAN_FONTS_H
 
-namespace ObsidianFonts
+namespace Obsidian
 {
 inline static auto NOTO_BOLD =
     juce::Typeface::createSystemTypefaceFor(BinaryData::notobold_ttf, BinaryData::notobold_ttfSize);
@@ -19,6 +19,6 @@ inline static void applyFontSize(juce::Label &l, float newSize)
 {
 	l.setFont(l.getFont().withHeight(newSize));
 }
-} // namespace ObsidianFonts
+} // namespace Obsidian
 
 #endif

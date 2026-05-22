@@ -41,9 +41,9 @@ void AudioManager::initBuffers(int numTracks)
 {
 	individualOutputBuffers.resize(numTracks);
 	for (auto &buffer : individualOutputBuffers)
-		buffer.setSize(2, ObsidianDataConst::MAX_BLOCK_SIZE);
+		buffer.setSize(2, Obsidian::MAX_BLOCK_SIZE);
 
-	previewBuffer.setSize(2, ObsidianDataConst::MAX_BLOCK_SIZE);
+	previewBuffer.setSize(2, Obsidian::MAX_BLOCK_SIZE);
 }
 
 void AudioManager::initDummySynth()
@@ -153,7 +153,7 @@ void AudioManager::clearOutputBuffers(juce::AudioSampleBuffer &buffer)
 {
 	for (int busIndex = 0; busIndex < audioProcessor.getTotalNumOutputChannels() / 2; ++busIndex)
 	{
-		if (busIndex * 2 + 1 < audioProcessor.getTotalNumOutputChannels() && busIndex <= ObsidianDataConst::MAX_TRACKS)
+		if (busIndex * 2 + 1 < audioProcessor.getTotalNumOutputChannels() && busIndex <= Obsidian::MAX_TRACKS)
 		{
 			auto busBuffer = audioProcessor.getBusBuffer(buffer, false, busIndex);
 			busBuffer.clear();
@@ -337,7 +337,7 @@ void AudioManager::checkAndSwapStagingBuffers()
 void AudioManager::performAtomicSwap(TrackData *track, const juce::String &trackId)
 {
 	int targetPageIndex = track->stagingTargetPageIndex.load();
-	if (targetPageIndex < 0 || targetPageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (targetPageIndex < 0 || targetPageIndex >= Obsidian::MAX_PAGES)
 		targetPageIndex = track->currentPageIndex.load();
 
 	auto &targetPage = track->pages[targetPageIndex];
@@ -674,7 +674,7 @@ void AudioManager::saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float
 void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile)
 {
 	TrackData *track = trackManager.getTrack(trackId);
-	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (!track || pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 
 	auto &page = track->pages[pageIndex];
@@ -736,7 +736,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
                                         const juce::String &sampleId, float sampleBpm, double fileSampleRate)
 {
 	TrackData *track = trackManager.getTrack(trackId);
-	if (!track || pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (!track || pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 
 	auto &page = track->pages[pageIndex];
@@ -933,7 +933,7 @@ void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::F
 		}
 
 		int targetPageIndex = track->stagingTargetPageIndex.load();
-		if (targetPageIndex < 0 || targetPageIndex >= ObsidianDataConst::MAX_PAGES)
+		if (targetPageIndex < 0 || targetPageIndex >= Obsidian::MAX_PAGES)
 			targetPageIndex = track->currentPageIndex.load();
 
 		loadAudioToStaging(reader, track);

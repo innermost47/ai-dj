@@ -39,7 +39,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	apvts.addParameterListener("reverbWidth", listener);
 	apvts.addParameterListener("reverbMix", listener);
 
-	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
 	{
 		juce::String s = "slot" + juce::String(i + 1);
 
@@ -84,7 +84,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
 
-		for (int seq = 1; seq <= ObsidianDataConst::MAX_TRACKS; ++seq)
+		for (int seq = 1; seq <= Obsidian::MAX_TRACKS; ++seq)
 			apvts.addParameterListener(s + "Seq" + juce::String(seq), listener);
 	}
 
@@ -94,7 +94,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	apvts.addParameterListener("globalCrossfader", listener);
 	apvts.addParameterListener("crossfaderCurveMode", listener);
 
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		juce::String pairId = "pairCrossfader" + juce::String(i + 1);
 		pairCrossfaderParams[i] = apvts.getRawParameterValue(pairId);
@@ -121,7 +121,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 	apvts.removeParameterListener("reverbWidth", listener);
 	apvts.removeParameterListener("reverbMix", listener);
 
-	for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
+	for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 	{
 		juce::String s = "slot" + juce::String(slot);
 
@@ -190,7 +190,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("reverbWidth", "Reverb Width", 0.0f, 1.0f, 1.0f));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("reverbMix", "Reverb Mix", 0.0f, 1.0f, 0.3f));
 
-	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS / 2; ++i)
+	for (int i = 1; i <= Obsidian::MAX_TRACKS / 2; ++i)
 	{
 		juce::String pairId = "pairCrossfader" + juce::String(i);
 		juce::String pairName = "Crossfader " + juce::String(i) + " <-> " + juce::String(i + 4);
@@ -200,7 +200,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 	params.push_back(std::make_unique<juce::AudioParameterChoice>("crossfaderCurveMode", "Crossfader Curve",
 	                                                              juce::StringArray{"Linear", "Equal Power", "DJ"}, 1));
 
-	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 1; i <= Obsidian::MAX_TRACKS; ++i)
 	{
 		juce::String slotId = "slot" + juce::String(i);
 		juce::String slotName = "Slot " + juce::String(i);
@@ -239,7 +239,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(makeTrigg(slotId + "PageD", slotName + " Page D"));
 
 		params.push_back(std::make_unique<juce::AudioParameterInt>(slotId + "Seq", slotName + " Sequence", 1,
-		                                                           ObsidianDataConst::MAX_TRACKS, 1));
+		                                                           Obsidian::MAX_TRACKS, 1));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "AdsrAttack", slotName + " ADSR Attack", juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));

@@ -10,7 +10,7 @@ WaveformDisplay::WaveformDisplay(DjIaVstProcessor &processor, TrackData *trackDa
 	setAccessible(false);
 	zoomFactor = 1.0;
 	viewStartTime = 0.0;
-	sampleRate = ObsidianDataConst::SAMPLERATE;
+	sampleRate = Obsidian::SAMPLERATE;
 	auto &currentPage = track->getCurrentPage();
 	loopPointsLocked = currentPage.loopPointsLocked.load();
 	horizontalScrollBar = std::make_unique<juce::ScrollBar>(false);
@@ -279,18 +279,18 @@ void WaveformDisplay::paint(juce::Graphics &g)
 		g.setColour(ColourPalette::backgroundDark);
 		g.fillRect(bounds);
 
-		bounds.removeFromTop(ObsidianSizes::GAP);
-		bounds.removeFromBottom(ObsidianSizes::GAP_4);
+		bounds.removeFromTop(Obsidian::GAP);
+		bounds.removeFromBottom(Obsidian::GAP_4);
 
-		g.setColour(ColourPalette::textSecondary.withAlpha(ObsidianShades::ALPHA_04));
-		g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XS));
-		g.drawText("NO AUDIO DATA", bounds.removeFromTop((int)ObsidianSizes::TEXT_XS), juce::Justification::centred);
+		g.setColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_04));
+		g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XS));
+		g.drawText("NO AUDIO DATA", bounds.removeFromTop((int)Obsidian::TEXT_XS), juce::Justification::centred);
 
 		g.setColour(ColourPalette::textSecondary);
-		g.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_XXS));
+		g.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_XXS));
 		g.drawFittedText("Pick a prompt in the Prompt Bank, drag & drop it onto the track, click Generate,\n"
 		                 "arm Play on the mixer channel, hit Play in your DAW - let's go!",
-		                 bounds.removeFromBottom((int)ObsidianSizes::TEXT_XXS * 2), juce::Justification::centred, 2);
+		                 bounds.removeFromBottom((int)Obsidian::TEXT_XXS * 2), juce::Justification::centred, 2);
 		return;
 	}
 

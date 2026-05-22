@@ -15,7 +15,7 @@ ObsidianSvgButton::ObsidianSvgButton(const juce::String &name, const juce::Strin
 void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
 	auto bounds = getLocalBounds().toFloat().reduced(0.5f);
-	const float corner = ObsidianSizes::CORNER;
+	const float corner = Obsidian::CORNER;
 
 	juce::Colour bgColour = colour;
 	if (shouldDrawButtonAsDown)
@@ -40,7 +40,7 @@ void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHi
 	}
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_REGULAR));
+	g.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_REGULAR));
 	g.drawText(getButtonText(), contentBounds, juce::Justification::centredLeft, true);
 }
 
@@ -68,7 +68,7 @@ void ObsidianModalWindow::addButton(const juce::String &text, const juce::String
 void ObsidianModalWindow::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	const float corner = ObsidianSizes::CORNER;
+	const float corner = Obsidian::CORNER;
 	const float titleHeight = 38.0f;
 
 	g.setColour(ColourPalette::backgroundDark);
@@ -85,11 +85,11 @@ void ObsidianModalWindow::paint(juce::Graphics &g)
 	    juce::Rectangle<float>(bounds.getX() + 30.0f, bounds.getY(), bounds.getWidth() - 60.0f, titleHeight);
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XL));
+	g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XL));
 	g.drawText(title, titleBounds, juce::Justification::centredLeft, true);
 
 	float lineY = bounds.getY() + titleHeight;
-	g.setColour(ColourPalette::modalHeader.withAlpha(ObsidianShades::ALPHA_04));
+	g.setColour(ColourPalette::modalHeader.withAlpha(Obsidian::ALPHA_04));
 	g.fillRect(bounds.getX(), lineY, bounds.getWidth(), 1.0f);
 }
 

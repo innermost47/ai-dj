@@ -318,7 +318,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 					else if (mapping.parameterName.contains("PageD"))
 						pageIndex = 3;
 
-					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS && pageIndex >= 0)
+					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS && pageIndex >= 0)
 					{
 						auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 						if (param)
@@ -363,7 +363,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				{
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
+					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
 					{
 						changedPlaySlotIndex.store(slotNumber - 1);
 						mustCheckForMidiEvent.store(true);
@@ -375,7 +375,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 						return;
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
+					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
 					{
 						changedGenerateSlotIndex.store(slotNumber - 1);
 						mustCheckForMidiEvent.store(true);
@@ -385,7 +385,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				{
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
+					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
 					{
 						mustCheckForMidiEvent.store(true);
 					}
@@ -395,7 +395,7 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 				{
 					juce::String slotStr = mapping.parameterName.substring(4, 5);
 					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= ObsidianDataConst::MAX_TRACKS)
+					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
 					{
 						mustCheckForMidiEvent.store(true);
 					}
@@ -549,7 +549,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 	addCC("reverbWidth", 25, CH_FX, "Reverb Width");
 	addCC("reverbMix", 26, CH_FX, "Reverb Mix");
 
-	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 1; i <= Obsidian::MAX_TRACKS; ++i)
 	{
 		const juce::String s = "slot" + juce::String(i);
 		const juce::String d = "Slot " + juce::String(i);
@@ -563,7 +563,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 		addCC(s + "Generate", 59 + i, CH_PERF, d + " Generate");
 	}
 
-	for (int i = 1; i <= ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 1; i <= Obsidian::MAX_TRACKS; ++i)
 	{
 		const juce::String s = "slot" + juce::String(i);
 		const juce::String d = "Slot " + juce::String(i);

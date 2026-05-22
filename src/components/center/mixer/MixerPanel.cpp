@@ -135,13 +135,13 @@ void MixerPanel::paint(juce::Graphics & /*g*/)
 
 void MixerPanel::resized()
 {
-	auto bounds = getLocalBounds().withTrimmedBottom(ObsidianSizes::GAP);
+	auto bounds = getLocalBounds().withTrimmedBottom(Obsidian::GAP);
 
 	juce::Grid grid;
 	grid.templateRows = {juce::Grid::TrackInfo(juce::Grid::Fr(1))};
 	grid.templateColumns = {juce::Grid::TrackInfo(juce::Grid::Fr(6)), juce::Grid::TrackInfo(juce::Grid::Fr(3)),
 	                        juce::Grid::TrackInfo(juce::Grid::Fr(6))};
-	grid.columnGap = juce::Grid::Px(ObsidianSizes::GAP);
+	grid.columnGap = juce::Grid::Px(Obsidian::GAP);
 
 	grid.items.add(juce::GridItem(deckAViewport));
 	if (crossfader)

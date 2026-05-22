@@ -22,13 +22,13 @@ void TrackRecapPanel::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(bounds, ObsidianSizes::LIST_PANEL_CORNER_SIZE);
+	g.fillRoundedRectangle(bounds, Obsidian::LIST_PANEL_CORNER_SIZE);
 	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::LIST_PANEL_CORNER_SIZE, 1.0f);
+	g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::LIST_PANEL_CORNER_SIZE, 1.0f);
 
 	auto titleArea = getLocalBounds().reduced(8, 4).removeFromTop(18);
 	g.setColour(ColourPalette::textAccent);
-	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_INFO));
+	g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
 	g.drawText("TRACKS", titleArea, juce::Justification::centredLeft, false);
 
 	auto cardsArea = getLocalBounds().reduced(6, 4);
@@ -48,7 +48,7 @@ void TrackRecapPanel::paint(juce::Graphics &g)
 	          });
 
 	int y = cardsArea.getY();
-	for (size_t i = 0; i < sortedIds.size() && i < ObsidianDataConst::MAX_TRACKS; ++i)
+	for (size_t i = 0; i < sortedIds.size() && i < Obsidian::MAX_TRACKS; ++i)
 	{
 		auto cardBounds = juce::Rectangle<int>(cardsArea.getX(), y, cardsArea.getWidth(), CARD_HEIGHT);
 		paintTrackCard(g, cardBounds, (int)i);
@@ -83,7 +83,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 
 	auto bgRect = bounds.toFloat();
 	g.setColour(ColourPalette::backgroundDark.withAlpha(0.5f));
-	g.fillRoundedRectangle(bgRect, ObsidianSizes::LIST_PANEL_CORNER_SIZE);
+	g.fillRoundedRectangle(bgRect, Obsidian::LIST_PANEL_CORNER_SIZE);
 
 	g.setColour(modelColour);
 	g.fillRect(bounds.getX(), bounds.getY(), 3, bounds.getHeight());
@@ -95,12 +95,12 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 
 	auto labelArea = headerLine.removeFromLeft(12);
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO, juce::Font::bold));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_INFO, juce::Font::bold));
 	g.drawText("T" + juce::String(track->slotIndex + 1), labelArea, juce::Justification::centredLeft, false);
 
 	headerLine.removeFromLeft(4);
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.85f));
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL, juce::Font::italic));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_SMALL, juce::Font::italic));
 	juce::String modelText = currentPage.selectedModel.isEmpty() ? "(no model)" : currentPage.selectedModel;
 	g.drawText(modelText, headerLine, juce::Justification::centredLeft, true);
 
@@ -109,7 +109,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 	static const char pageLetters[] = {'A', 'B', 'C', 'D'};
 	int activePage = track->currentPageIndex.load();
 
-	for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
+	for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 	{
 		if (inner.getHeight() < 13)
 			break;
@@ -139,7 +139,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 			g.drawEllipse(badgeRect, 1.0f);
 		}
 
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_XS, juce::Font::bold));
+		g.setFont(juce::FontOptions(Obsidian::TEXT_XS, juce::Font::bold));
 		g.drawText(juce::String::charToString(pageLetters[p]), badgeRect.toNearestInt(), juce::Justification::centred,
 		           false);
 
@@ -150,7 +150,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 
 		g.setColour(isActive ? ColourPalette::textPrimary
 		                     : ColourPalette::textPrimary.withAlpha(hasContent ? 0.65f : 0.35f));
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL, isActive ? juce::Font::bold : juce::Font::plain));
+		g.setFont(juce::FontOptions(Obsidian::TEXT_SMALL, isActive ? juce::Font::bold : juce::Font::plain));
 		g.drawText(promptText, pageLine, juce::Justification::centredLeft, true);
 	}
 }

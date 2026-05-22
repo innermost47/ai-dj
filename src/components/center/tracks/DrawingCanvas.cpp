@@ -27,17 +27,17 @@ void ColorSwatch::paintButton(juce::Graphics &g, bool /*shouldDrawButtonAsHighli
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(buttonColor);
-	g.fillRoundedRectangle(bounds.reduced(3), ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(bounds.reduced(3), Obsidian::CORNER);
 
 	if (getToggleState())
 	{
 		g.setColour(ColourPalette::buttonPrimary);
-		g.drawRoundedRectangle(bounds.reduced(1), ObsidianSizes::CORNER, 3.0f);
+		g.drawRoundedRectangle(bounds.reduced(1), Obsidian::CORNER, 3.0f);
 	}
 	else
 	{
 		g.setColour(ColourPalette::backgroundLight);
-		g.drawRoundedRectangle(bounds.reduced(3), ObsidianSizes::CORNER, 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(3), Obsidian::CORNER, 1.0f);
 	}
 }
 
@@ -98,7 +98,7 @@ void DrawingCanvas::setGenerating(bool generating)
 
 void DrawingCanvas::paint(juce::Graphics &g)
 {
-	const float corner = ObsidianSizes::CORNER;
+	const float corner = Obsidian::CORNER;
 
 	auto canvasFrame = canvasAreaBounds.expanded(6).toFloat();
 
@@ -607,10 +607,10 @@ void DrawingCanvas::setupKeywordsUI()
 	addAndMakeVisible(keywordsLabel);
 	keywordsLabel.setText("Keywords", juce::dontSendNotification);
 	keywordsLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	keywordsLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+	keywordsLabel.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 
 	addAndMakeVisible(keywordInput);
-	keywordInput.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	keywordInput.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR));
 	keywordInput.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundLight);
 	keywordInput.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
 	keywordInput.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundDeep);

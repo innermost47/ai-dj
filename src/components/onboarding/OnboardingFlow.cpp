@@ -154,9 +154,9 @@ void OnboardingFlow::showStep(int stepIndex)
 	const bool isLastStep = (stepIndex == (int)steps.size() - 1);
 
 	auto stepContent = std::make_unique<OnboardingStep>(stepData, variant);
-	const int contentHeight = stepContent->getPreferredHeight(ObsidianSizes::BASE_MODAL_WIDTH) + 120;
+	const int contentHeight = stepContent->getPreferredHeight(Obsidian::BASE_MODAL_WIDTH) + 120;
 
-	auto modal = std::make_unique<ObsidianModalWindow>(stepData.title, ObsidianSizes::BASE_MODAL_WIDTH, contentHeight);
+	auto modal = std::make_unique<ObsidianModalWindow>(stepData.title, Obsidian::BASE_MODAL_WIDTH, contentHeight);
 	modal->setContent(std::move(stepContent));
 
 	auto overlayOwned = std::make_unique<ObsidianModalOverlay>(std::move(modal));

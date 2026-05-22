@@ -63,21 +63,18 @@ void RightPanelWrapper::resized()
 	                               : (juce::Component *)masterWaveform;
 
 	if (topComp != nullptr)
-		mainStack.items.add(
-		    FlexItem(*topComp).withFlex(0.4f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
+		mainStack.items.add(FlexItem(*topComp).withFlex(0.4f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
+
+	mainStack.items.add(FlexItem(*lcdScreen).withFlex(0.2f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
 
 	mainStack.items.add(
-	    FlexItem(*lcdScreen).withFlex(0.2f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
+	    FlexItem(contentViewport).withFlex(1.25f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_8, 0)));
 
-	mainStack.items.add(
-	    FlexItem(contentViewport).withFlex(1.25f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_8, 0)));
-
-	mainStack.items.add(
-	    FlexItem(*sendsPanel).withFlex(0.7f).withMargin(FlexItem::Margin(0, 0, ObsidianSizes::GAP_4, 0)));
+	mainStack.items.add(FlexItem(*sendsPanel).withFlex(0.7f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
 
 	mainStack.items.add(FlexItem(bottomRow).withFlex(1.0f));
 
-	mainStack.performLayout(getLocalBounds().reduced(ObsidianSizes::PADDING));
+	mainStack.performLayout(getLocalBounds().reduced(Obsidian::PADDING));
 
 	const int viewportW = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
 	const int recapH = trackRecap->getPreferredHeight();

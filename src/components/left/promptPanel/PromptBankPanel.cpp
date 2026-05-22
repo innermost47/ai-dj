@@ -71,17 +71,17 @@ void PromptBankPanel::resized()
 {
 	auto area = getLocalBounds();
 
-	area.removeFromBottom(ObsidianSizes::GAP_XL);
+	area.removeFromBottom(Obsidian::GAP_XL);
 
 	header.setBounds(area.removeFromTop(header.getPreferredHeight()));
 
-	area.removeFromTop(ObsidianSizes::GAP);
+	area.removeFromTop(Obsidian::GAP);
 	accordionViewport.setBounds(area);
 
 	int containerWidth = accordionViewport.getWidth() - 12;
 	int totalHeight = 0;
 	for (auto &acc : accordions)
-		totalHeight += acc->getPreferredHeight() + ObsidianSizes::SPACER;
+		totalHeight += acc->getPreferredHeight() + Obsidian::SPACER;
 
 	accordionContainer.setSize(containerWidth, juce::jmax(totalHeight, area.getHeight()));
 
@@ -90,19 +90,19 @@ void PromptBankPanel::resized()
 	{
 		int h = acc->getPreferredHeight();
 		acc->setBounds(0, y, containerWidth, h);
-		y += h + ObsidianSizes::SPACER_XS;
+		y += h + Obsidian::SPACER_XS;
 	}
 }
 
 void PromptBankPanel::paint(juce::Graphics &g)
 {
 	g.fillAll(ColourPalette::backgroundDark);
-	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::ALPHA_08));
-	g.fillRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE);
+	g.setColour(ColourPalette::backgroundDeep.withAlpha(Obsidian::ALPHA_08));
+	g.fillRoundedRectangle(accordionViewport.getBounds().toFloat(), Obsidian::LIST_PANEL_CORNER_SIZE);
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRoundedRectangle(accordionViewport.getBounds().toFloat(), ObsidianSizes::LIST_PANEL_CORNER_SIZE,
-	                       ObsidianSizes::BORDER_WIDTH);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
+	g.drawRoundedRectangle(accordionViewport.getBounds().toFloat(), Obsidian::LIST_PANEL_CORNER_SIZE,
+	                       Obsidian::BORDER_WIDTH);
 
 	if (accordions.empty() || filteredPrompts.empty())
 	{

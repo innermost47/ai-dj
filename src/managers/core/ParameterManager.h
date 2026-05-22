@@ -205,27 +205,27 @@ class ParameterManager
 	std::atomic<float> *reverbWidthParam = nullptr;
 	std::atomic<float> *reverbMixParam = nullptr;
 
-	std::atomic<float> *slotVolumeParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotPanParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotGainParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotMuteParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotSoloParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotPlayParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotStopParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotGenerateParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotPitchParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotFineParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotRandomRetriggerParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotRetriggerIntervalParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotAdsrAttackParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotAdsrDecayParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotAdsrSustainParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotAdsrReleaseParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotDelaySendParams[ObsidianDataConst::MAX_TRACKS] = {};
-	std::atomic<float> *slotReverbSendParams[ObsidianDataConst::MAX_TRACKS] = {};
+	std::atomic<float> *slotVolumeParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPanParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotMuteParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotSoloParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPlayParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotStopParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotGenerateParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPitchParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFineParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotRandomRetriggerParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotRetriggerIntervalParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrAttackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrDecayParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrSustainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotAdsrReleaseParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDelaySendParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotReverbSendParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
-	std::atomic<float> *pairCrossfaderParams[ObsidianDataConst::MAX_CROSSFADER_PAIR] = {};
+	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
 
 	std::atomic<float> *nextTrackParam = nullptr;
@@ -265,7 +265,7 @@ class ParameterManager
 		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",         "ReverbSend",
 		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval", "Gain"};
 
-		for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
+		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
 			const juce::String prefix = "slot" + juce::String(slot);
 			for (const auto &param : perSlotParams)
@@ -284,7 +284,7 @@ class ParameterManager
 		static const juce::StringArray perSlotParams = {
 		    "Mute", "Solo", "Play", "Stop", "Generate", "RandomRetrigger", "PageA", "PageB", "PageC", "PageD"};
 
-		for (int slot = 1; slot <= ObsidianDataConst::MAX_TRACKS; ++slot)
+		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
 			const juce::String prefix = "slot" + juce::String(slot);
 			for (const auto &param : perSlotParams)

@@ -14,7 +14,7 @@ std::unique_ptr<juce::Drawable> IconButtonBase::loadSVG(const char *data, size_t
 void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool isMouseOver, bool isButtonDown)
 {
 	auto fullBounds = btn.getLocalBounds().toFloat();
-	const float cornerSize = ObsidianSizes::CORNER;
+	const float cornerSize = Obsidian::CORNER;
 	bool toggled = btn.getToggleState();
 	bool enabled = btn.isEnabled();
 
@@ -166,7 +166,7 @@ void IconButtonBase::paintIconButton(juce::Graphics &g, juce::Button &btn, bool 
 		g.setColour(enabled ? labelCol : labelCol.withAlpha(0.3f));
 
 		const float fontSize =
-		    hasIcon ? (isCompact ? 6.5f : 8.5f) : (isCompact ? ObsidianSizes::TEXT_INFO : ObsidianSizes::TEXT_REGULAR);
+		    hasIcon ? (isCompact ? 6.5f : 8.5f) : (isCompact ? Obsidian::TEXT_INFO : Obsidian::TEXT_REGULAR);
 
 		g.setFont(juce::FontOptions(fontSize, juce::Font::bold));
 		g.drawText(labelText, labelArea.toNearestInt(), juce::Justification::centred, false);

@@ -32,7 +32,7 @@ class Console6Buss
 	}
 
   private:
-	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
+	double currentSampleRate = Obsidian::SAMPLERATE;
 
 	uint32_t fpdL = 1;
 	uint32_t fpdR = 1;

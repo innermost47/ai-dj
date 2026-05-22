@@ -24,10 +24,10 @@ void LCDScreen::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(juce::Colours::black.withAlpha(0.35f));
-	g.fillRoundedRectangle(bounds.reduced(2.0f), ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(bounds.reduced(2.0f), Obsidian::CORNER);
 
 	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(bounds.reduced(1.0f), ObsidianSizes::CORNER, 1.0f);
+	g.drawRoundedRectangle(bounds.reduced(1.0f), Obsidian::CORNER, 1.0f);
 
 	g.setColour(juce::Colour::fromRGBA(0, 0, 0, 20));
 	for (int y = (int)bounds.getY(); y < (int)bounds.getBottom(); y += 2)
@@ -36,17 +36,17 @@ void LCDScreen::paint(juce::Graphics &g)
 	auto textArea = getLocalBounds().reduced(6, 4);
 	const int lineH = twoLineMode ? textArea.getHeight() / 2 : textArea.getHeight() / 3;
 
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_XS, juce::Font::bold));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_XS, juce::Font::bold));
 	g.setColour(ColourPalette::textSecondary);
 	g.drawText(lineTop, textArea.removeFromTop(lineH), juce::Justification::centredLeft, true);
 
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_XS, juce::Font::bold));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_XS, juce::Font::bold));
 	g.setColour(ColourPalette::textPrimary);
 	g.drawText(lineMid, textArea.removeFromTop(lineH), juce::Justification::centredLeft, true);
 
 	if (!twoLineMode)
 	{
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_XS, juce::Font::bold));
+		g.setFont(juce::FontOptions(Obsidian::TEXT_XS, juce::Font::bold));
 		g.setColour(ColourPalette::textAccent);
 		g.drawText(lineBot, textArea, juce::Justification::centredLeft, true);
 	}

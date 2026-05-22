@@ -58,9 +58,9 @@ void MasterWaveformDisplay::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(ColourPalette::backgroundDeep);
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.6f));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
+	g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::CORNER, 0.8f);
 
 	auto inner = bounds.reduced(4.0f, 3.0f);
 	int w = (int)inner.getWidth();
@@ -81,14 +81,14 @@ void MasterWaveformDisplay::paint(juce::Graphics &g)
 	}
 
 	g.setColour(ColourPalette::sequencerSubBeat.withAlpha(0.5f));
-	for (int i = 1; i < ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 1; i < Obsidian::MAX_TRACKS; ++i)
 	{
 		float gx = inner.getX() + (inner.getWidth() * (float)i / 8.0f);
 		g.drawLine(gx, inner.getY() + 2.0f, gx, inner.getBottom() - 2.0f, 0.5f);
 	}
 
 	g.setColour(ColourPalette::amber.withAlpha(0.7f));
-	for (int i = 1; i < ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 1; i < Obsidian::MAX_TRACKS; ++i)
 	{
 		float gx = inner.getX() + (inner.getWidth() * (float)i / 8.0f);
 		float r = (i == 4) ? 2.0f : 1.2f;

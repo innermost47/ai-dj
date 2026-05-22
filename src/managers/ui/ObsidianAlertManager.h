@@ -20,7 +20,7 @@ class ObsidianAlertManager
 		{
 			label.setText(text, juce::dontSendNotification);
 			label.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-			label.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
+			label.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
 			label.setJustificationType(juce::Justification::centredLeft);
 			addAndMakeVisible(label);
 		}

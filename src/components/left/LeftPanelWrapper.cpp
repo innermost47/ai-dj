@@ -54,7 +54,7 @@ void LeftPanelWrapper::paint(juce::Graphics &g)
 	if (!isExpanded)
 	{
 		g.setColour(ColourPalette::textSecondary);
-		g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_TITLE));
+		g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_TITLE));
 
 		auto area = getLocalBounds();
 
@@ -80,7 +80,7 @@ void LeftPanelWrapper::paint(juce::Graphics &g)
 			g.setColour(colour);
 			g.fillEllipse(startX, static_cast<float>((area.getCentreY() - ellipseSize / 2) + 1.0f), ellipseSize,
 			              ellipseSize);
-			startX += ellipseSize + ObsidianSizes::PADDING;
+			startX += ellipseSize + Obsidian::PADDING;
 		}
 
 		g.restoreState();
@@ -117,19 +117,19 @@ void LeftPanelWrapper::collapseExpand(bool expanded)
 
 void LeftPanelWrapper::resized()
 {
-	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
+	auto area = getLocalBounds().reduced(Obsidian::PADDING);
 
-	auto tabBar = area.removeFromTop(ObsidianSizes::TAB_BAR_HEIGHT);
+	auto tabBar = area.removeFromTop(Obsidian::TAB_BAR_HEIGHT);
 
 	if (isExpanded)
 	{
 
 		const int collapseButtonWidth = 28;
-		const int tabW = (tabBar.getWidth() - collapseButtonWidth - ObsidianSizes::SPACER_MD * 2) / 2;
+		const int tabW = (tabBar.getWidth() - collapseButtonWidth - Obsidian::SPACER_MD * 2) / 2;
 		promptTabButton.setBounds(tabBar.removeFromLeft(tabW));
-		tabBar.removeFromLeft(ObsidianSizes::SPACER_MD);
+		tabBar.removeFromLeft(Obsidian::SPACER_MD);
 		sampleTabButton.setBounds(tabBar.removeFromLeft(tabW));
-		tabBar.removeFromLeft(ObsidianSizes::SPACER_MD);
+		tabBar.removeFromLeft(Obsidian::SPACER_MD);
 		collapseButton.setBounds(tabBar.removeFromLeft(collapseButtonWidth));
 	}
 	else

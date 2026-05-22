@@ -26,19 +26,19 @@ void ConfigComponent::setupUI()
 	configLabel.setText("Settings", juce::dontSendNotification);
 	configLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	configLabel.setJustificationType(juce::Justification::left);
-	configLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_REGULAR));
+	configLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
 
 	addAndMakeVisible(versionLabel);
 	versionLabel.setText("OBSIDIAN Neural - " + Version::VERSION, juce::dontSendNotification);
 	versionLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	versionLabel.setJustificationType(juce::Justification::right);
-	versionLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XXS));
+	versionLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XXS));
 
 	addAndMakeVisible(buildLabel);
 	buildLabel.setText(Version::BUILD, juce::dontSendNotification);
 	buildLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	buildLabel.setJustificationType(juce::Justification::right);
-	buildLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_XXS));
+	buildLabel.setFont(juce::FontOptions(Obsidian::TEXT_XXS));
 
 	addAndMakeVisible(bypassSequencerButton);
 	bypassSequencerButton.setClickingTogglesState(true);
@@ -166,12 +166,12 @@ void ConfigComponent::paint(juce::Graphics & /*g*/)
 
 void ConfigComponent::resized()
 {
-	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
+	auto area = getLocalBounds().reduced(Obsidian::PADDING);
 
-	buildLabel.setBounds(area.removeFromBottom((int)ObsidianSizes::TEXT_XS));
-	versionLabel.setBounds(area.removeFromBottom((int)ObsidianSizes::TEXT_XS));
+	buildLabel.setBounds(area.removeFromBottom((int)Obsidian::TEXT_XS));
+	versionLabel.setBounds(area.removeFromBottom((int)Obsidian::TEXT_XS));
 
-	auto configArea = area.removeFromTop(ObsidianSizes::CONFIG_AREA_HEIGHT);
+	auto configArea = area.removeFromTop(Obsidian::CONFIG_AREA_HEIGHT);
 
 	juce::FlexBox column;
 	column.flexDirection = juce::FlexBox::Direction::column;
@@ -185,31 +185,31 @@ void ConfigComponent::resized()
 	if (!juce::JUCEApplicationBase::isStandaloneApp())
 	{
 		btnBox.items.add(juce::FlexItem(bypassSequencerButton)
-		                     .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-		                     .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
+		                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
+		                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
 		                     .withFlex(1));
 	}
 
 	btnBox.items.add(juce::FlexItem(bypassLLMButton)
-	                     .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
+	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
+	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
 	                     .withFlex(1));
 	btnBox.items.add(juce::FlexItem(configButton)
-	                     .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
+	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
+	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
 	                     .withFlex(1));
 	btnBox.items.add(juce::FlexItem(helpButton)
-	                     .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
+	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
+	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
 	                     .withFlex(1));
 	btnBox.items.add(juce::FlexItem(openMidiEditorButton)
-	                     .withMinWidth(ObsidianSizes::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT)
+	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
+	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
 	                     .withFlex(1));
 
-	column.items.add(juce::FlexItem(*scaleAndDurationPanel).withMinHeight(ObsidianSizes::SCALE_AND_DURATION_HEIGHT));
+	column.items.add(juce::FlexItem(*scaleAndDurationPanel).withMinHeight(Obsidian::SCALE_AND_DURATION_HEIGHT));
 	column.items.add(juce::FlexItem(configLabel).withMinHeight(26));
-	column.items.add(juce::FlexItem(btnBox).withMinHeight(ObsidianSizes::MIN_SMALL_BTN_HEIGHT));
+	column.items.add(juce::FlexItem(btnBox).withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT));
 
 	column.performLayout(configArea);
 }

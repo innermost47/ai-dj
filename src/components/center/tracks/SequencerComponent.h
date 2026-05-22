@@ -25,7 +25,7 @@ class SequencerComponent : public ObsidianComponent, public juce::SettableToolti
   private:
 	struct RoundedLabelLF : public juce::LookAndFeel_V4
 	{
-		float radius = ObsidianSizes::CORNER;
+		float radius = Obsidian::CORNER;
 		void drawLabel(juce::Graphics &g, juce::Label &label) override
 		{
 			g.setColour(label.findColour(juce::Label::backgroundColourId));

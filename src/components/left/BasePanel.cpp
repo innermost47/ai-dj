@@ -137,10 +137,10 @@ void BasePanel::drawEmptyBank(juce::Graphics &g, juce::Drawable &iconSvg, juce::
 	iconSvg.drawWithin(g, iconBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
 
 	g.setColour(ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE, juce::Font::bold));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_SUBTITLE, juce::Font::bold));
 	g.drawText(noItemYet, b.withSizeKeepingCentre(300, 28).translated(0, 35), juce::Justification::centred);
 
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR));
 	g.drawText(tip, b.withSizeKeepingCentre(300, 28).translated(0, 60), juce::Justification::centred);
 }
 
@@ -151,6 +151,6 @@ void BasePanel::drawNoSearchResults(juce::Graphics &g, juce::String &noMatch)
 	auto messageArea = b.withTrimmedTop(40).withHeight(40);
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::italic));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::italic));
 	g.drawText(noMatch + "\"" + currentSearch + "\"", messageArea, juce::Justification::centred);
 }

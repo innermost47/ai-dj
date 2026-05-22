@@ -5,7 +5,7 @@
 void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	const float corner = ObsidianSizes::CORNER;
+	const float corner = Obsidian::CORNER;
 
 	g.setColour(juce::Colours::black.withAlpha(0.4f));
 	g.fillRoundedRectangle(bounds.translated(0, 1.5f), corner);
@@ -71,7 +71,7 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 	auto drawLabelValue = [&](juce::Rectangle<float> col, const juce::String &lbl, const juce::String &val, bool isHero)
 	{
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.8f));
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO, juce::Font::plain));
+		g.setFont(juce::FontOptions(Obsidian::TEXT_INFO, juce::Font::plain));
 		auto labelArea = col.removeFromLeft(col.getWidth() * 0.4f);
 		g.drawFittedText(lbl, labelArea.toNearestInt(), juce::Justification::centredRight, 1);
 
@@ -83,7 +83,7 @@ void StandaloneTransportComponent::BeatLcd::paint(juce::Graphics &g)
 
 		g.setColour(valueColour);
 		const float valSize =
-		    isHero ? juce::jmin(h * 0.95f, ObsidianSizes::TEXT_XXL) : juce::jmin(h * 0.8f, ObsidianSizes::TEXT_XL);
+		    isHero ? juce::jmin(h * 0.95f, Obsidian::TEXT_XXL) : juce::jmin(h * 0.8f, Obsidian::TEXT_XL);
 		g.setFont(juce::FontOptions(valSize, juce::Font::bold));
 		g.drawFittedText(val, col.toNearestInt(), juce::Justification::centredLeft, 1);
 	};
@@ -137,7 +137,7 @@ StandaloneTransportComponent::BpmField::BpmField()
 	editor.setInputRestrictions(6, "0123456789.");
 	editor.setJustification(juce::Justification::centred);
 	editor.setColour(EscapableTextEditor::textColourId, ColourPalette::textAccent);
-	editor.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_XXL));
+	editor.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XXL));
 	editor.setTooltip("BPM\nScroll: +/-1\nShift+Scroll: +/-5\nCmd+Scroll: +/-0.1\nDouble-clic: reset 120");
 }
 
@@ -315,7 +315,7 @@ void StandaloneTransportComponent::setupUI()
 	timeSigEditor.setColour(EscapableTextEditor::backgroundColourId, juce::Colours::transparentBlack);
 	timeSigEditor.setColour(EscapableTextEditor::outlineColourId, juce::Colours::transparentBlack);
 	timeSigEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
-	timeSigEditor.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+	timeSigEditor.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 
 	timeSigEditor.setInputRestrictions(5, "0123456789/");
 
@@ -383,7 +383,7 @@ void StandaloneTransportComponent::handleTimeSigChange()
 		else
 			stepsPerBeat = 4;
 
-		const int maxNumerator = ObsidianDataConst::MAX_STEPS_PER_MEASURE / stepsPerBeat;
+		const int maxNumerator = Obsidian::MAX_STEPS_PER_MEASURE / stepsPerBeat;
 		num = juce::jlimit(1, maxNumerator, num);
 
 		transport.setTimeSignature(num, den);
@@ -407,17 +407,17 @@ void StandaloneTransportComponent::resized()
 	auto lcdWidth = (lcdRow.getWidth() / 3) * 2;
 
 	lcd.setBounds(lcdRow.removeFromLeft(lcdWidth));
-	lcdRow.removeFromLeft(ObsidianSizes::GAP_4);
+	lcdRow.removeFromLeft(Obsidian::GAP_4);
 	bpmField.setBounds(lcdRow.removeFromTop(juce::roundToInt(lcdHeight / 1.5f)));
-	lcdRow.removeFromTop(ObsidianSizes::GAP_4);
+	lcdRow.removeFromTop(Obsidian::GAP_4);
 	linkButton.setBounds(lcdRow);
 
-	area.removeFromTop(ObsidianSizes::GAP_4);
+	area.removeFromTop(Obsidian::GAP_4);
 
 	auto transportRow = area.removeFromTop(transportH);
 	auto transportWidth = (transportRow.getWidth() / 3) * 2;
 
-	const int btnGap = ObsidianSizes::GAP_4;
+	const int btnGap = Obsidian::GAP_4;
 	const int transportBtnWidth = (transportWidth - btnGap) / 2;
 
 	playButton.setBounds(transportRow.removeFromLeft(transportBtnWidth));

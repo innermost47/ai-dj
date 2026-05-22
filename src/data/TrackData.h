@@ -11,8 +11,8 @@ struct TrackStretchImpl;
 
 struct SequencerData
 {
-	bool steps[ObsidianDataConst::MAX_MEASURES][ObsidianDataConst::MAX_STEPS_PER_MEASURE] = {};
-	float velocities[ObsidianDataConst::MAX_MEASURES][ObsidianDataConst::MAX_STEPS_PER_MEASURE] = {};
+	bool steps[Obsidian::MAX_MEASURES][Obsidian::MAX_STEPS_PER_MEASURE] = {};
+	float velocities[Obsidian::MAX_MEASURES][Obsidian::MAX_STEPS_PER_MEASURE] = {};
 	bool isPlaying = false;
 	int currentStep = 0;
 	int currentMeasure = 0;
@@ -47,7 +47,7 @@ struct TrackPage
 	int numSamples = 0;
 	int generationDuration = 6;
 
-	double sampleRate = ObsidianDataConst::SAMPLERATE;
+	double sampleRate = Obsidian::SAMPLERATE;
 	double loopStart = 0.0;
 	double loopEnd = 4.0;
 
@@ -102,7 +102,7 @@ struct TrackPage
 		audioBuffer.setSize(0, 0);
 		audioFilePath.clear();
 		numSamples = 0;
-		sampleRate = ObsidianDataConst::SAMPLERATE;
+		sampleRate = Obsidian::SAMPLERATE;
 		originalBpm = 126.0f;
 		prompt.clear();
 		selectedPrompt.clear();
@@ -235,7 +235,7 @@ struct TrackData
 	std::atomic<bool> isPreviewMode{false};
 	std::atomic<bool> previewEndPending{false};
 
-	std::atomic<double> stagingSampleRate{ObsidianDataConst::SAMPLERATE};
+	std::atomic<double> stagingSampleRate{Obsidian::SAMPLERATE};
 	std::atomic<double> readPosition{0.0};
 	std::atomic<double> beatRepeatStartPosition{0.0};
 	std::atomic<double> beatRepeatEndPosition{0.0};
@@ -251,7 +251,7 @@ struct TrackData
 	std::atomic<float> lastFeedbackFine{-999.0f};
 	std::atomic<int> brFadeInPending{0};
 	std::atomic<int> stagingNumSamples{0};
-	std::atomic<int> randomRetriggerInterval{3};
+	std::atomic<int> randomRetriggerInterval{Obsidian::RNDM_RTRGR_INTRVL};
 	std::atomic<int> pendingPageIndex{-1};
 	std::atomic<int> stagingTargetPageIndex{-1};
 

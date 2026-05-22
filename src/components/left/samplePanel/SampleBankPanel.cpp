@@ -308,24 +308,24 @@ void SampleBankPanel::showChangeCategoryDialog(SampleBankEntry *entry)
 void SampleBankPanel::resized()
 {
 	auto area = getLocalBounds();
-	int removeBot = ObsidianSizes::SAMPLE_DETAIL_HEIGHT_VST;
+	int removeBot = Obsidian::SAMPLE_DETAIL_HEIGHT_VST;
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
-		removeBot = ObsidianSizes::SAMPLE_DETAIL_HEIGHT_STANDALONE;
+		removeBot = Obsidian::SAMPLE_DETAIL_HEIGHT_STANDALONE;
 	}
 
 	auto detailPanelArea = area.removeFromBottom(removeBot);
 	detailPanel.setBounds(detailPanelArea);
 
 	header.setBounds(area.removeFromTop(header.getPreferredHeight()));
-	area.removeFromTop(ObsidianSizes::GAP);
+	area.removeFromTop(Obsidian::GAP);
 
 	accordionViewport.setBounds(area);
 
 	int containerWidth = accordionViewport.getWidth() - 12;
 	int totalHeight = 0;
 	for (auto &acc : accordions)
-		totalHeight += acc->getPreferredHeight() + ObsidianSizes::SPACER;
+		totalHeight += acc->getPreferredHeight() + Obsidian::SPACER;
 
 	accordionContainer.setSize(containerWidth, juce::jmax(totalHeight, area.getHeight()));
 
@@ -334,7 +334,7 @@ void SampleBankPanel::resized()
 	{
 		int h = acc->getPreferredHeight();
 		acc->setBounds(0, y, containerWidth, h);
-		y += h + ObsidianSizes::SPACER_XS;
+		y += h + Obsidian::SPACER_XS;
 	}
 }
 
@@ -404,12 +404,11 @@ void SampleBankPanel::paint(juce::Graphics &g)
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.8f));
 	juce::Path listBg;
 	auto lb = accordionViewport.getBounds().toFloat();
-	listBg.addRoundedRectangle(lb.getX(), lb.getY(), lb.getWidth(), lb.getHeight(),
-	                           ObsidianSizes::LIST_PANEL_CORNER_SIZE);
+	listBg.addRoundedRectangle(lb.getX(), lb.getY(), lb.getWidth(), lb.getHeight(), Obsidian::LIST_PANEL_CORNER_SIZE);
 	g.fillPath(listBg);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
-	g.drawRoundedRectangle(lb, ObsidianSizes::CORNER, 1);
+	g.drawRoundedRectangle(lb, Obsidian::CORNER, 1);
 
 	if (filteredSamples.empty() && hasEverLoaded.load())
 	{
@@ -601,7 +600,7 @@ void SampleBankPanel::showDeleteConfirmation(const juce::String &id, const juce:
 		if (!used && !samplePath.isEmpty())
 		{
 			static const char pageLetters[] = {'A', 'B', 'C', 'D'};
-			for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
+			for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 			{
 				if (track->pages[p].audioFilePath == samplePath)
 				{

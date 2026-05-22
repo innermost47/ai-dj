@@ -36,7 +36,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 	obsidianEngine->initialize();
 
 	audioManager.initDummySynth();
-	audioManager.initBuffers(ObsidianDataConst::MAX_TRACKS);
+	audioManager.initBuffers(Obsidian::MAX_TRACKS);
 
 	trackManager.onPreviewEnded = [this](const juce::String &trackId)
 	{ juce::MessageManager::callAsync([this, trackId]() { audioManager.stopTrackPreview(trackId); }); };
@@ -176,7 +176,7 @@ juce::AudioProcessor::BusesProperties DjIaVstProcessor::createBusLayout()
 {
 	auto layout = juce::AudioProcessor::BusesProperties();
 	layout = layout.withOutput("Main", juce::AudioChannelSet::stereo(), true);
-	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS + 1; ++i)
+	for (int i = 0; i < Obsidian::MAX_TRACKS + 1; ++i)
 	{
 		layout = layout.withOutput("Track " + juce::String(i + 1), juce::AudioChannelSet::stereo(), false);
 	}
@@ -292,7 +292,7 @@ void DjIaVstProcessor::initTracks()
 			defaultPrompt = all[0]->text;
 	}
 
-	for (int i = 0; i < ObsidianDataConst::MAX_TRACKS; ++i)
+	for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
 	{
 		juce::String newTrackId = trackManager.createTrack();
 		if (auto *track = trackManager.getTrack(newTrackId))
@@ -316,7 +316,7 @@ void DjIaVstProcessor::initTracks()
 				}
 			}
 
-			for (int p = 0; p < ObsidianDataConst::MAX_PAGES; ++p)
+			for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 			{
 				auto &page = track->pages[p];
 				page.selectedModel = modelName;
@@ -577,7 +577,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	previewBus.clear();
 	float pairCurrent[4];
 	float pairPrev[4];
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		pairCurrent[i] = parameterManager.getPairCrossfader(i);
 		pairPrev[i] = pairCrossfaderPrevious[i];
@@ -1017,7 +1017,7 @@ TrackData *DjIaVstProcessor::getTrackFromParamId(const juce::String &parameterID
 		return nullptr;
 
 	int slotNum = parameterID.substring(4, 5).getIntValue();
-	if (slotNum < 1 || slotNum > ObsidianDataConst::MAX_TRACKS)
+	if (slotNum < 1 || slotNum > Obsidian::MAX_TRACKS)
 		return nullptr;
 
 	for (const auto &tid : getAllTrackIds())

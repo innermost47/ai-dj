@@ -180,7 +180,7 @@ void UITrackManager::refreshUIForMode()
 			continue;
 		auto *track = tc->getTrack();
 
-		for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+		for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 		{
 			auto &page = track->pages[i];
 			if (isLocalMode)

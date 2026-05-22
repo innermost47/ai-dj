@@ -37,7 +37,7 @@ class ReverbSend
 
 	juce::Reverb reverbL;
 	juce::Reverb reverbR;
-	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
+	double currentSampleRate = Obsidian::SAMPLERATE;
 
 	float size = 0.5f;
 	float damping = 0.5f;

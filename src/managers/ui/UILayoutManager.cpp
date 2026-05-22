@@ -33,8 +33,8 @@ void LeftContainer::resized()
 
 	grid.templateRows = {Track(Fr(1))};
 	grid.templateColumns = {Track(Fr(1))};
-	grid.columnGap = GridPx(ObsidianSizes::GAP);
-	grid.rowGap = GridPx(ObsidianSizes::GAP);
+	grid.columnGap = GridPx(Obsidian::GAP);
+	grid.rowGap = GridPx(Obsidian::GAP);
 
 	GridItem bankPanel(leftPanelWrapper);
 
@@ -56,8 +56,8 @@ void TracksContainer::resized()
 
 	grid.templateRows = {Track(Fr(1)), Track(Fr(1)), Track(Fr(1)), Track(Fr(1))};
 	grid.templateColumns = {Track(Fr(1)), Track(Fr(1))};
-	grid.columnGap = GridPx(ObsidianSizes::GAP);
-	grid.rowGap = GridPx(ObsidianSizes::GAP);
+	grid.columnGap = GridPx(Obsidian::GAP);
+	grid.rowGap = GridPx(Obsidian::GAP);
 
 	for (auto &comp : editor.uiTrackManager->getTrackComponents())
 	{
@@ -80,7 +80,7 @@ void TracksContainer::resized()
 		grid.items.add(item);
 	}
 
-	grid.performLayout(getLocalBounds().reduced(0, ObsidianSizes::GAP));
+	grid.performLayout(getLocalBounds().reduced(0, Obsidian::GAP));
 }
 
 MainContainer::MainContainer(TracksContainer &tc, MixerPanel &mp) : tracksContainer(tc), mixerPanel(mp)
@@ -150,7 +150,7 @@ void UILayoutManager::resized()
 
 	grid.templateRows = {Track(Fr(1))};
 	grid.templateColumns = {Track(Fr(leftPanelWidth)), Track(Fr(mainWidth)), Track(Fr(rightPanelWidth))};
-	grid.columnGap = GridPx(ObsidianSizes::GAP);
+	grid.columnGap = GridPx(Obsidian::GAP);
 
 	GridItem leftPanel(leftPanelWrapper.get());
 	GridItem main(editor.mainViewport);

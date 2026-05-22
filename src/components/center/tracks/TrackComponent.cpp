@@ -17,7 +17,7 @@ TrackComponent::~TrackComponent()
 	markForDestruction();
 	stopTimer();
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].onClick = nullptr;
 	}
@@ -202,7 +202,7 @@ void TrackComponent::updateFromTrackData()
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
 	updateModelUI();
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setVisible(true);
 	}
@@ -282,8 +282,8 @@ float TrackComponent::calculateEffectiveBpm()
 void TrackComponent::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDark.withAlpha(ObsidianShades::ALPHA_08));
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+	g.setColour(ColourPalette::backgroundDark.withAlpha(Obsidian::ALPHA_08));
+	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 }
 
 void TrackComponent::setSamplePending(bool pending)
@@ -314,10 +314,10 @@ void TrackComponent::setupAdsrKnobs()
 		label.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	};
 
-	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.0f, "ADSR Attack time (seconds)");
+	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.001f, "ADSR Attack time (seconds)");
 	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", 0.001f, 4.0f, 4.0f, "ADSR Decay time (seconds)");
 	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", 0.0f, 1.0f, 1.0f, "ADSR Sustain level (0-1)");
-	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.0f, "ADSR Release time (seconds)");
+	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.001f, "ADSR Release time (seconds)");
 
 	adsrSustainKnob.setSkewFactor(1.0);
 }
@@ -356,20 +356,20 @@ void TrackComponent::resized()
 	auto headerArea = area.removeFromTop(32);
 	auto &currentPage = t->getCurrentPage();
 	auto pagesArea = headerArea.removeFromLeft(38);
-	int pagesGridHeight = ObsidianSizes::PAGE_BUTTON_SIZE * 2 + 2;
+	int pagesGridHeight = Obsidian::PAGE_BUTTON_SIZE * 2 + 2;
 	int yOffset = (pagesArea.getHeight() - pagesGridHeight) / 2;
 	pagesArea.removeFromTop(yOffset);
 	pagesArea.setHeight(pagesGridHeight);
 	layoutPagesButtons(pagesArea);
 
 	{
-		const int rightElementsWidth = 36 + ObsidianSizes::SPACER_SM + 36 + ObsidianSizes::SPACER_SM +
-		                               ObsidianSizes::SPACER_SM + 34 + ObsidianSizes::SPACER_SM + 34 +
-		                               ObsidianSizes::SPACER_SM + 38 + ObsidianSizes::SPACER_SM + (32 * 4);
+		const int rightElementsWidth = 36 + Obsidian::SPACER_SM + 36 + Obsidian::SPACER_SM + Obsidian::SPACER_SM + 34 +
+		                               Obsidian::SPACER_SM + 34 + Obsidian::SPACER_SM + 38 + Obsidian::SPACER_SM +
+		                               (32 * 4);
 
 		const int pagesWidth = 38;
 		const int availableForSelectors =
-		    headerArea.getWidth() - pagesWidth - rightElementsWidth - ObsidianSizes::SPACER_SM * 2;
+		    headerArea.getWidth() - pagesWidth - rightElementsWidth - Obsidian::SPACER_SM * 2;
 		const int selectorsWidth = std::max(availableForSelectors, 120);
 		auto selectorsArea = headerArea.removeFromLeft(selectorsWidth);
 		selectorsArea.removeFromTop(2);
@@ -385,28 +385,28 @@ void TrackComponent::resized()
 		                        selectorsArea.getWidth(), selectorHeight);
 	}
 
-	headerArea.removeFromLeft(ObsidianSizes::SPACER_SM);
+	headerArea.removeFromLeft(Obsidian::SPACER_SM);
 
 	{
 		const int createButtonWidth = 34;
 		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
-	headerArea.removeFromRight(ObsidianSizes::SPACER_MD);
+	headerArea.removeFromRight(Obsidian::SPACER_MD);
 
 	{
 		const int labelledButtonWidth = 36;
 		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
-		headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
+		headerArea.removeFromRight(Obsidian::SPACER_SM);
 		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
 	}
-	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
+	headerArea.removeFromRight(Obsidian::SPACER_SM);
 
 	const int iconBtnWidth = 34;
 	beatRepeatButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
+	headerArea.removeFromRight(Obsidian::SPACER_SM);
 
 	randomDurationToggle.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(ObsidianSizes::SPACER_SM);
+	headerArea.removeFromRight(Obsidian::SPACER_SM);
 
 	{
 		auto knobArea = headerArea.removeFromRight(38);
@@ -420,7 +420,7 @@ void TrackComponent::resized()
 		                        labelHeight);
 	}
 
-	headerArea.removeFromLeft(ObsidianSizes::SPACER_SM);
+	headerArea.removeFromLeft(Obsidian::SPACER_SM);
 	{
 		const int adsrKnobDiam = 32;
 		const int adsrLabelH = 8;
@@ -533,7 +533,7 @@ void TrackComponent::resized()
 	if (waveformDisplay)
 	{
 		area.removeFromTop(8);
-		waveformDisplay->setBounds(area.removeFromTop(ObsidianSizes::WAVEFORM_HEIGHT));
+		waveformDisplay->setBounds(area.removeFromTop(Obsidian::WAVEFORM_HEIGHT));
 		waveformDisplay->setVisible(true);
 	}
 
@@ -561,7 +561,7 @@ void TrackComponent::resized()
 	if (sequencer)
 	{
 		area.removeFromTop(5);
-		sequencer->setBounds(area.removeFromTop(ObsidianSizes::SEQUENCER_HEIGHT));
+		sequencer->setBounds(area.removeFromTop(Obsidian::SEQUENCER_HEIGHT));
 		sequencer->setVisible(true);
 	}
 
@@ -634,7 +634,7 @@ void TrackComponent::openDrawingCanvas()
 
 void TrackComponent::layoutPagesButtons(juce::Rectangle<int> area)
 {
-	int buttonSize = ObsidianSizes::PAGE_BUTTON_SIZE;
+	int buttonSize = Obsidian::PAGE_BUTTON_SIZE;
 	int spacing = 2;
 
 	area.removeFromTop(spacing);
@@ -660,7 +660,7 @@ void TrackComponent::setupPagesUI()
 	const char *pageLabels[4] = {"A", "B", "C", "D"};
 	const char *pageNames[4] = {"PageA", "PageB", "PageC", "PageD"};
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		addChildComponent(pageButtons[i]);
 		pageButtons[i].setButtonText(pageLabels[i]);
@@ -694,7 +694,7 @@ void TrackComponent::onPageSelected(int pageIndex)
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 
 	if (t->currentPageIndex.load() == pageIndex && !t->pageChangePending.load())
@@ -703,7 +703,7 @@ void TrackComponent::onPageSelected(int pageIndex)
 		return;
 	}
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setToggleState(i == t->currentPageIndex.load(), juce::dontSendNotification);
 	}
@@ -737,7 +737,7 @@ void TrackComponent::performPageChange(int pageIndex)
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 
 	if (isPreviewPlaying)
@@ -803,7 +803,7 @@ void TrackComponent::performPageChange(int pageIndex)
 		{
 			juce::AudioBuffer<float> emptyBuffer;
 			emptyBuffer.setSize(2, 0);
-			waveformDisplay->setAudioData(emptyBuffer, ObsidianDataConst::SAMPLERATE);
+			waveformDisplay->setAudioData(emptyBuffer, Obsidian::SAMPLERATE);
 			waveformDisplay->setLoopPoints(0.0, 0.0);
 		}
 	}
@@ -829,7 +829,7 @@ void TrackComponent::updatePagesDisplay()
 
 	int pendingPage = t->pageChangePending.load() ? t->pendingPageIndex.load() : -1;
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		PageButtonState newState;
 		newState.isActive = (i == t->currentPageIndex.load());
@@ -878,7 +878,7 @@ void TrackComponent::loadPageIfNeeded(int pageIndex)
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 
 	auto &page = t->pages[pageIndex];
@@ -907,7 +907,7 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File &audioFil
 	auto *t = getTrack();
 	if (!t)
 		return;
-	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 
 	auto &page = t->pages[pageIndex];
@@ -966,7 +966,7 @@ void TrackComponent::startGeneratingAnimation()
 {
 	isGenerating = true;
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setEnabled(false);
 	}
@@ -986,7 +986,7 @@ void TrackComponent::stopGeneratingAnimation()
 		return;
 	isGenerating = false;
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setEnabled(true);
 	}
@@ -1060,7 +1060,7 @@ void TrackComponent::refreshWaveformDisplay()
 	{
 		juce::AudioBuffer<float> emptyBuffer;
 		emptyBuffer.setSize(2, 0);
-		waveformDisplay->setAudioData(emptyBuffer, ObsidianDataConst::SAMPLERATE);
+		waveformDisplay->setAudioData(emptyBuffer, Obsidian::SAMPLERATE);
 		waveformDisplay->setLoopPoints(0.0, 0.0);
 	}
 }
@@ -1075,7 +1075,7 @@ void TrackComponent::setupUI()
 	addAndMakeVisible(infoLabel);
 	infoLabel.setText("Empty track - Generate your sample!", juce::dontSendNotification);
 	infoLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	infoLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	infoLabel.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR));
 
 	promptPresetSelector.setTooltip("Select prompt for this page");
 	promptPresetSelector.onChange = [this]() { onTrackPresetSelected(); };
@@ -1126,6 +1126,7 @@ void TrackComponent::setupUI()
 	intervalKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	intervalKnob.setRange(1, 10, 1);
 	intervalKnob.setSize(40, 40);
+	intervalKnob.setDoubleClickReturnValue(true, Obsidian::RNDM_RTRGR_INTRVL);
 	intervalKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	intervalKnob.setTooltip("Beat repeat duration: 4 Beats, 2 Beats, 1 Beat, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128");
 	intervalKnob.onValueChange = [this]() { onIntervalChanged(); };
@@ -1135,7 +1136,7 @@ void TrackComponent::setupUI()
 	intervalLabel.setFont(juce::FontOptions(9.0f));
 	intervalLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setVisible(true);
 	}
@@ -1603,7 +1604,7 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		}
 	}
 
-	if (t->slotIndex >= 0 && t->slotIndex < ObsidianDataConst::MAX_TRACKS)
+	if (t->slotIndex >= 0 && t->slotIndex < Obsidian::MAX_TRACKS)
 	{
 		auto &apvts = audioProcessor.getParameterManager().getAPVTS();
 		juce::String s = "slot" + juce::String(t->slotIndex + 1);

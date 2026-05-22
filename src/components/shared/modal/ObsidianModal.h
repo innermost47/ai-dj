@@ -16,8 +16,8 @@ class ObsidianSvgButton : public juce::Button
 class ObsidianModalWindow : public ObsidianComponent
 {
   public:
-	ObsidianModalWindow(const juce::String &titleText, int width = ObsidianSizes::BASE_MODAL_WIDTH,
-	                    int height = ObsidianSizes::BASE_MODAL_HEIGHT);
+	ObsidianModalWindow(const juce::String &titleText, int width = Obsidian::BASE_MODAL_WIDTH,
+	                    int height = Obsidian::BASE_MODAL_HEIGHT);
 	int targetWidth;
 	int targetHeight;
 

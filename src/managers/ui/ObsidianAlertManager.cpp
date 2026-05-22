@@ -47,10 +47,10 @@ class ModelCard : public ObsidianComponent
 		    selected ? colour.withAlpha(0.25f)
 		             : (hovered ? ColourPalette::backgroundDeep.brighter(0.05f) : ColourPalette::backgroundDeep);
 		g.setColour(bg);
-		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 
 		g.setColour(selected ? colour : ColourPalette::backgroundLight.withAlpha(0.4f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, selected ? 2.0f : 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::CORNER, selected ? 2.0f : 1.0f);
 
 		const float dotSize = 8.0f;
 		auto dotRect = juce::Rectangle<float>(8.0f, bounds.getCentreY() - dotSize * 0.5f, dotSize, dotSize);
@@ -58,7 +58,7 @@ class ModelCard : public ObsidianComponent
 		g.fillEllipse(dotRect);
 		auto textArea = bounds.withTrimmedLeft(22).reduced(4, 0);
 		g.setColour(selected ? ColourPalette::textPrimary : ColourPalette::textSecondary);
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, selected ? juce::Font::bold : juce::Font::plain));
+		g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, selected ? juce::Font::bold : juce::Font::plain));
 		g.drawText(modelName, textArea.toNearestInt(), juce::Justification::centredLeft, true);
 	}
 
@@ -105,17 +105,16 @@ class ExampleCard : public ObsidianComponent
 		auto bounds = getLocalBounds().toFloat();
 
 		g.setColour(hovered ? ColourPalette::backgroundDeep.brighter(0.08f) : ColourPalette::backgroundDeep);
-		g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 
 		g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
-		g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
+		g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::CORNER, 1.0f);
 
 		g.setColour(ColourPalette::textPrimary);
-		g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
+		g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
 
 		juce::AttributedString attr;
-		attr.append(text, juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain),
-		            ColourPalette::textPrimary);
+		attr.append(text, juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain), ColourPalette::textPrimary);
 		attr.setWordWrap(juce::AttributedString::byWord);
 		attr.setJustification(juce::Justification::centredLeft);
 		attr.draw(g, bounds.reduced(10, 6));
@@ -123,7 +122,7 @@ class ExampleCard : public ObsidianComponent
 
 	int getPreferredHeight(int width) const
 	{
-		juce::Font f(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
+		juce::Font f(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
 		juce::AttributedString attr;
 		attr.append(text, f);
 		attr.setWordWrap(juce::AttributedString::byWord);
@@ -159,7 +158,7 @@ class KeywordsContainerComponent : public ObsidianComponent
 			g.setColour(ColourPalette::backgroundDeep.withAlpha(0.15f));
 			g.drawLine(0.0f, lineY, (float)gl.bounds.getWidth(), lineY, 0.5f);
 
-			juce::Font labelFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+			juce::Font labelFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 			g.setFont(labelFont);
 
 			g.setColour(ColourPalette::slate);
@@ -190,7 +189,7 @@ class PromptEditorContent : public ObsidianComponent
 	{
 		categoryLbl.setText("Category:", juce::dontSendNotification);
 		categoryLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-		categoryLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+		categoryLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(categoryLbl);
 
 		categoryCombo.addItem("Uncategorized", 1);
@@ -224,12 +223,12 @@ class PromptEditorContent : public ObsidianComponent
 		}
 
 		descLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-		descLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::italic));
+		descLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::italic));
 		addAndMakeVisible(descLbl);
 
 		promptLbl.setText("Prompt:", juce::dontSendNotification);
 		promptLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-		promptLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+		promptLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(promptLbl);
 
 		promptEditor.setText(text);
@@ -238,17 +237,17 @@ class PromptEditorContent : public ObsidianComponent
 		promptEditor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
 		promptEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
 		promptEditor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
-		promptEditor.applyFontToAllText(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
+		promptEditor.applyFontToAllText(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
 		addAndMakeVisible(promptEditor);
 
 		examplesLbl.setText("Examples (click to use):", juce::dontSendNotification);
 		examplesLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-		examplesLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+		examplesLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(examplesLbl);
 
 		keywordsLbl.setText("Keywords (click to insert):", juce::dontSendNotification);
 		keywordsLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-		keywordsLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+		keywordsLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(keywordsLbl);
 
 		examplesViewport.setViewedComponent(&examplesContainer, false);
@@ -308,7 +307,7 @@ class PromptEditorContent : public ObsidianComponent
 
 		if (info)
 		{
-			const int padding = ObsidianSizes::PADDING;
+			const int padding = Obsidian::PADDING;
 			int containerW = keywordsViewport.getWidth();
 			int y = padding;
 			const int kwH = 26;
@@ -328,14 +327,14 @@ class PromptEditorContent : public ObsidianComponent
 
 				GroupLabelInfo gl;
 				gl.label = group.label;
-				gl.bounds = juce::Rectangle<int>(0, y, containerW, groupLabelH).reduced(ObsidianSizes::PADDING);
+				gl.bounds = juce::Rectangle<int>(0, y, containerW, groupLabelH).reduced(Obsidian::PADDING);
 				groupLabels.push_back(gl);
 
 				y += groupLabelH + groupBottomSpacing;
 
 				int x = startX;
 
-				juce::Font kwFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
+				juce::Font kwFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
 				for (const auto &kw : group.keywords)
 				{
 					int textW = (int)juce::GlyphArrangement::getStringWidth(kwFont, kw);
@@ -461,21 +460,21 @@ class PromptEditorContent : public ObsidianComponent
 		auto rightCol = area;
 
 		categoryLbl.setBounds(leftCol.removeFromTop(16));
-		leftCol.removeFromTop(ObsidianSizes::GAP_4);
+		leftCol.removeFromTop(Obsidian::GAP_4);
 		categoryCombo.setBounds(leftCol.removeFromTop(28));
 		leftCol.removeFromTop(12);
 
 		promptLbl.setBounds(leftCol.removeFromTop(16));
-		leftCol.removeFromTop(ObsidianSizes::GAP_4);
+		leftCol.removeFromTop(Obsidian::GAP_4);
 		promptEditor.setBounds(leftCol.removeFromTop(140));
 		leftCol.removeFromTop(12);
 
 		examplesLbl.setBounds(leftCol.removeFromTop(16));
-		leftCol.removeFromTop(ObsidianSizes::GAP_4);
+		leftCol.removeFromTop(Obsidian::GAP_4);
 		examplesViewport.setBounds(leftCol);
 
 		keywordsLbl.setBounds(rightCol.removeFromTop(16));
-		rightCol.removeFromTop(ObsidianSizes::GAP_4);
+		rightCol.removeFromTop(Obsidian::GAP_4);
 		keywordsViewport.setBounds(rightCol);
 
 		rebuildModelContent();
@@ -529,7 +528,7 @@ void ObsidianAlertManager::showAddCategoryDialog(
 		{
 			nameLbl.setText("Name:", juce::dontSendNotification);
 			nameLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-			nameLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+			nameLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(nameLbl);
 
 			nameEditor.setText(initialName);
@@ -541,7 +540,7 @@ void ObsidianAlertManager::showAddCategoryDialog(
 
 			colourLbl.setText("Colour:", juce::dontSendNotification);
 			colourLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-			colourLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+			colourLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(colourLbl);
 
 			colourPicker.setSelectedColour(initialColour);
@@ -609,7 +608,7 @@ void ObsidianAlertManager::showEditCategoryDialog(
 		{
 			nameLbl.setText("Name:", juce::dontSendNotification);
 			nameLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-			nameLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+			nameLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(nameLbl);
 
 			nameEditor.setText(initialName);
@@ -620,7 +619,7 @@ void ObsidianAlertManager::showEditCategoryDialog(
 
 			colourLbl.setText("Colour:", juce::dontSendNotification);
 			colourLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-			colourLbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+			colourLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 			addAndMakeVisible(colourLbl);
 
 			colourPicker.setSelectedColour(initialColour);
@@ -754,7 +753,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 				te.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
 				te.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
 				te.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
-				te.applyFontToAllText(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain));
+				te.applyFontToAllText(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
 			};
 
 			auto styleCombo = [](juce::ComboBox &cb)
@@ -769,7 +768,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			{
 				lbl.setText(text, juce::dontSendNotification);
 				lbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-				lbl.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+				lbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 				addAndMakeVisible(lbl);
 			};
 

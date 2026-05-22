@@ -5,7 +5,7 @@ TrackData::TrackData()
     : stretchImpl(std::make_unique<TrackStretchImpl>()), trackId(juce::Uuid().toString()), readPosition(0.0),
       onPlayStateChanged(nullptr)
 {
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 		pages[i].reset();
 }
 
@@ -104,7 +104,7 @@ void TrackData::updateFromRequest(const DjIaClient::LoopRequest &request)
 
 void TrackData::reset()
 {
-	for (int i = 0; i < ObsidianDataConst::MAX_PAGES; ++i)
+	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 		pages[i].reset();
 
 	currentPageIndex.store(0);
@@ -123,7 +123,7 @@ void TrackData::reset()
 
 void TrackData::setCurrentPage(int pageIndex)
 {
-	if (pageIndex < 0 || pageIndex >= ObsidianDataConst::MAX_PAGES)
+	if (pageIndex < 0 || pageIndex >= Obsidian::MAX_PAGES)
 		return;
 	if (currentPageIndex.load() == pageIndex)
 		return;
@@ -136,7 +136,7 @@ void TrackData::setCurrentPage(int pageIndex)
 
 TrackData::DeckSide TrackData::getDeckSide() const
 {
-	return (slotIndex >= 0 && slotIndex < ObsidianDataConst::MAX_CROSSFADER_PAIR) ? DeckSide::A : DeckSide::B;
+	return (slotIndex >= 0 && slotIndex < Obsidian::MAX_CROSSFADER_PAIR) ? DeckSide::A : DeckSide::B;
 }
 
 int TrackData::getPairIndex() const
@@ -150,8 +150,8 @@ int TrackData::getPartnerSlotIndex() const
 {
 	if (slotIndex < 0 || slotIndex >= 8)
 		return -1;
-	return (slotIndex < ObsidianDataConst::MAX_CROSSFADER_PAIR) ? slotIndex + ObsidianDataConst::MAX_CROSSFADER_PAIR
-	                                                            : slotIndex - ObsidianDataConst::MAX_CROSSFADER_PAIR;
+	return (slotIndex < Obsidian::MAX_CROSSFADER_PAIR) ? slotIndex + Obsidian::MAX_CROSSFADER_PAIR
+	                                                   : slotIndex - Obsidian::MAX_CROSSFADER_PAIR;
 }
 
 bool TrackData::isDeckA() const

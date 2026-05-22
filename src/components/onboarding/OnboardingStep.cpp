@@ -8,13 +8,13 @@ OnboardingStep::OnboardingStep(const OnboardingStepData &dataIn, OnboardingVaria
 {
 	addAndMakeVisible(headlineLabel);
 	headlineLabel.setText(data.headline, juce::dontSendNotification);
-	headlineLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_XL));
+	headlineLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_XL));
 	headlineLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	headlineLabel.setJustificationType(juce::Justification::topLeft);
 
 	addAndMakeVisible(leadLabel);
 	leadLabel.setText(data.getLeadForVariant(variant), juce::dontSendNotification);
-	leadLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
+	leadLabel.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
 	leadLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	leadLabel.setJustificationType(juce::Justification::topLeft);
 
@@ -34,9 +34,9 @@ void OnboardingStep::resized()
 	const int width = bounds.getWidth();
 
 	headlineLabel.setBounds(bounds.removeFromTop(28));
-	bounds.removeFromTop(ObsidianSizes::GAP);
+	bounds.removeFromTop(Obsidian::GAP);
 
-	juce::Font leadFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
+	juce::Font leadFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
 	juce::AttributedString attr;
 	attr.append(leadLabel.getText(), leadFont);
 	attr.setWordWrap(juce::AttributedString::byWord);
@@ -45,13 +45,13 @@ void OnboardingStep::resized()
 	const int leadHeight = (int)std::ceil(layout.getHeight());
 
 	leadLabel.setBounds(bounds.removeFromTop(leadHeight));
-	bounds.removeFromTop(ObsidianSizes::GAP_XL);
+	bounds.removeFromTop(Obsidian::GAP_XL);
 
 	for (auto &rowComp : rowComponents)
 	{
 		const int rowHeight = rowComp->getPreferredHeight(width);
 		rowComp->setBounds(bounds.removeFromTop(rowHeight));
-		bounds.removeFromTop(ObsidianSizes::GAP_4);
+		bounds.removeFromTop(Obsidian::GAP_4);
 	}
 }
 
@@ -64,11 +64,11 @@ int OnboardingStep::getPreferredHeight(int width) const
 
 	int total = paddingV;
 
-	total += 28 + ObsidianSizes::GAP;
+	total += 28 + Obsidian::GAP;
 
 	if (data.lead.isNotEmpty() || data.getLeadForVariant(variant).isNotEmpty())
 	{
-		juce::Font leadFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
+		juce::Font leadFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
 		juce::AttributedString attr;
 		attr.append(data.getLeadForVariant(variant), leadFont);
 		attr.setWordWrap(juce::AttributedString::byWord);
@@ -76,17 +76,17 @@ int OnboardingStep::getPreferredHeight(int width) const
 		juce::TextLayout layout;
 		layout.createLayout(attr, (float)innerWidth);
 
-		total += (int)std::ceil(layout.getHeight()) + ObsidianSizes::GAP_XL;
+		total += (int)std::ceil(layout.getHeight()) + Obsidian::GAP_XL;
 	}
 
 	for (const auto &rowComp : rowComponents)
 	{
 		total += rowComp->getPreferredHeight(innerWidth);
-		total += ObsidianSizes::GAP_4;
+		total += Obsidian::GAP_4;
 	}
 
 	if (!rowComponents.empty())
-		total -= ObsidianSizes::GAP_4;
+		total -= Obsidian::GAP_4;
 
 	total += paddingV;
 

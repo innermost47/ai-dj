@@ -26,8 +26,7 @@ struct SampleBankEntry
 	int numChannels;
 	int numSamples;
 
-	SampleBankEntry()
-	    : duration(0.0f), bpm(126.0f), sampleRate(ObsidianDataConst::SAMPLERATE), numChannels(2), numSamples(0)
+	SampleBankEntry() : duration(0.0f), bpm(126.0f), sampleRate(Obsidian::SAMPLERATE), numChannels(2), numSamples(0)
 	{
 	}
 };

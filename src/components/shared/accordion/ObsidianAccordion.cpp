@@ -3,14 +3,14 @@
 ObsidianAccordion::ObsidianAccordion(const juce::String &name, juce::Colour colour)
     : accordionName(name), accentColour(colour)
 {
-	setSize(100, ObsidianSizes::ACCORDION_HEADER_HEIGHT);
+	setSize(100, Obsidian::ACCORDION_HEADER_HEIGHT);
 }
 
 ObsidianAccordion::~ObsidianAccordion() = default;
 
 juce::Rectangle<int> ObsidianAccordion::getHeaderBounds() const
 {
-	return getLocalBounds().withHeight(ObsidianSizes::ACCORDION_HEADER_HEIGHT);
+	return getLocalBounds().withHeight(Obsidian::ACCORDION_HEADER_HEIGHT);
 }
 
 void ObsidianAccordion::paint(juce::Graphics &g)
@@ -27,12 +27,12 @@ void ObsidianAccordion::paint(juce::Graphics &g)
 	if (renameEditor != nullptr)
 		return;
 
-	auto textArea = headerBounds.withTrimmedLeft(ObsidianSizes::ACCORDION_TEXT_LEFT_PADDING);
+	auto textArea = headerBounds.withTrimmedLeft(Obsidian::ACCORDION_TEXT_LEFT_PADDING);
 
-	auto folderArea = textArea.removeFromLeft(ObsidianSizes::ACCORDION_FOLDER_AREA_WIDTH);
+	auto folderArea = textArea.removeFromLeft(Obsidian::ACCORDION_FOLDER_AREA_WIDTH);
 
-	auto folderBounds = folderArea.withSizeKeepingCentre(ObsidianSizes::ACCORDION_FOLDER_ICON_SIZE,
-	                                                     ObsidianSizes::ACCORDION_FOLDER_ICON_SIZE);
+	auto folderBounds =
+	    folderArea.withSizeKeepingCentre(Obsidian::ACCORDION_FOLDER_ICON_SIZE, Obsidian::ACCORDION_FOLDER_ICON_SIZE);
 	if (expanded)
 	{
 		auto folderOpenSvg =
@@ -53,9 +53,9 @@ void ObsidianAccordion::paint(juce::Graphics &g)
 			folderClosedSvg->drawWithin(g, folderBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
 		}
 	}
-	textArea.removeFromLeft(ObsidianSizes::SPACER_SM);
+	textArea.removeFromLeft(Obsidian::SPACER_SM);
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 	g.drawText(accordionName, textArea, juce::Justification::centredLeft, true);
 }
 
@@ -64,20 +64,20 @@ void ObsidianAccordion::resized()
 	if (renameEditor != nullptr)
 	{
 		auto editorBounds = getHeaderBounds()
-		                        .withTrimmedLeft(ObsidianSizes::ACCORDION_TEXT_LEFT_PADDING)
-		                        .withTrimmedRight(ObsidianSizes::ACCORDION_CHEVRON_AREA_WIDTH);
+		                        .withTrimmedLeft(Obsidian::ACCORDION_TEXT_LEFT_PADDING)
+		                        .withTrimmedRight(Obsidian::ACCORDION_CHEVRON_AREA_WIDTH);
 		renameEditor->setBounds(editorBounds.reduced(0, 4));
 	}
 
 	if (!expanded)
 		return;
 
-	int y = ObsidianSizes::ACCORDION_HEADER_HEIGHT + ObsidianSizes::ACCORDION_ITEM_SPACING;
+	int y = Obsidian::ACCORDION_HEADER_HEIGHT + Obsidian::ACCORDION_ITEM_SPACING;
 	for (auto &item : items)
 	{
 		int h = item->getPreferredHeight(getWidth());
 		item->setBounds(0, y, getWidth(), h);
-		y += h + ObsidianSizes::ACCORDION_ITEM_SPACING;
+		y += h + Obsidian::ACCORDION_ITEM_SPACING;
 	}
 }
 
@@ -93,7 +93,7 @@ void ObsidianAccordion::mouseExit(const juce::MouseEvent &)
 
 void ObsidianAccordion::mouseDown(const juce::MouseEvent &e)
 {
-	if (e.y > ObsidianSizes::ACCORDION_HEADER_HEIGHT)
+	if (e.y > Obsidian::ACCORDION_HEADER_HEIGHT)
 		return;
 
 	if (renameEditor != nullptr)
@@ -111,7 +111,7 @@ void ObsidianAccordion::mouseDown(const juce::MouseEvent &e)
 
 void ObsidianAccordion::mouseDoubleClick(const juce::MouseEvent &e)
 {
-	if (e.y > ObsidianSizes::ACCORDION_HEADER_HEIGHT)
+	if (e.y > Obsidian::ACCORDION_HEADER_HEIGHT)
 		return;
 	if (!isEditable || onRenameRequested == nullptr)
 		return;
@@ -185,7 +185,7 @@ void ObsidianAccordion::startInlineRename()
 
 	renameEditor = std::make_unique<juce::TextEditor>();
 	renameEditor->setText(accordionName, juce::dontSendNotification);
-	renameEditor->setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+	renameEditor->setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 	renameEditor->setColour(juce::TextEditor::backgroundColourId, ColourPalette::backgroundDeep);
 	renameEditor->setColour(juce::TextEditor::textColourId, ColourPalette::textPrimary);
 	renameEditor->setColour(juce::TextEditor::outlineColourId, accentColour.withAlpha(0.5f));
@@ -288,10 +288,10 @@ void ObsidianAccordion::setName(const juce::String &newName)
 int ObsidianAccordion::getPreferredHeight() const
 {
 	if (!expanded || items.empty())
-		return ObsidianSizes::ACCORDION_HEADER_HEIGHT;
+		return Obsidian::ACCORDION_HEADER_HEIGHT;
 
-	int total = ObsidianSizes::ACCORDION_HEADER_HEIGHT + ObsidianSizes::ACCORDION_ITEM_SPACING;
+	int total = Obsidian::ACCORDION_HEADER_HEIGHT + Obsidian::ACCORDION_ITEM_SPACING;
 	for (auto &item : items)
-		total += item->getPreferredHeight(getWidth()) + ObsidianSizes::ACCORDION_ITEM_SPACING;
+		total += item->getPreferredHeight(getWidth()) + Obsidian::ACCORDION_ITEM_SPACING;
 	return total;
 }

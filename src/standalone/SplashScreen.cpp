@@ -36,14 +36,14 @@ void SplashScreen::paint(juce::Graphics &g)
 		                  (int)logoArea.getHeight(), juce::RectanglePlacement::centred);
 	}
 
-	g.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_XS));
-	g.setColour(ColourPalette::textAccent.withAlpha(ObsidianShades::ALPHA_08));
+	g.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_XS));
+	g.setColour(ColourPalette::textAccent.withAlpha(Obsidian::ALPHA_08));
 	g.drawText(Version::BUILD, contentBounds.removeFromBottom(40.0f), juce::Justification::centred);
 
 	contentBounds.removeFromBottom(20.0f);
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_SPLASH));
+	g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_SPLASH));
 	auto titleArea = contentBounds.removeFromBottom(60.0f);
 	g.drawText("OBSIDIAN Neural - " + Version::VERSION, titleArea, juce::Justification::centred);
 
