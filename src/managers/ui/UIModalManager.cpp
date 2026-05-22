@@ -36,19 +36,20 @@ void UIModalManager::showFirstTimeSetup()
 	                                       editor.audioProcessor.getRequestTimeout(), true,
 	                                       [this](const ObsidianAlertManager::ConfigDialogResult &res)
 	                                       {
-		                                       if (!res.confirmed)
-			                                       return;
-		                                       editor.audioProcessor.setUseLocalModel(res.useLocalModel);
-		                                       if (res.useLocalModel)
-			                                       editor.uiTrackManager->checkLocalModelsAndNotify();
-		                                       else
+		                                       if (res.confirmed)
 		                                       {
-			                                       editor.audioProcessor.setServerUrl(res.serverUrl);
-			                                       editor.audioProcessor.setApiKey(res.apiKey);
+			                                       editor.audioProcessor.setUseLocalModel(res.useLocalModel);
+			                                       if (res.useLocalModel)
+				                                       editor.uiTrackManager->checkLocalModelsAndNotify();
+			                                       else
+			                                       {
+				                                       editor.audioProcessor.setServerUrl(res.serverUrl);
+				                                       editor.audioProcessor.setApiKey(res.apiKey);
+			                                       }
+			                                       editor.audioProcessor.setRequestTimeout(res.timeoutMs);
+			                                       editor.audioProcessor.saveGlobalConfig();
+			                                       editor.uiTrackManager->refreshUIForMode();
 		                                       }
-		                                       editor.audioProcessor.setRequestTimeout(res.timeoutMs);
-		                                       editor.audioProcessor.saveGlobalConfig();
-		                                       editor.uiTrackManager->refreshUIForMode();
 		                                       juce::Timer::callAfterDelay(400, [this]() { showOnboardingTour(); });
 	                                       });
 }

@@ -54,8 +54,8 @@ class TrackManager
 	std::vector<std::string> trackOrder;
 	juce::AudioBuffer<float> perTrackFxBuffer;
 
-	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
-	int currentMaxBlockSize = ObsidianDataConst::MAX_BLOCK_SIZE;
+	double currentSampleRate = Obsidian::SAMPLERATE;
+	int currentMaxBlockSize = Obsidian::MAX_BLOCK_SIZE;
 	bool audioPrepared = false;
 
 	std::array<bool, 8> usedSlots{false};

@@ -20,7 +20,7 @@ CrossfaderComponent::~CrossfaderComponent()
 
 void CrossfaderComponent::timerCallback()
 {
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		if (!pairRowBounds[i].isEmpty())
 		{
@@ -33,7 +33,7 @@ void CrossfaderComponent::timerCallback()
 
 void CrossfaderComponent::wireParameters()
 {
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		const juce::String paramId = "pairCrossfader" + juce::String(i + 1);
 		registerSliderParam(paramId, pairSliders[i]);
@@ -59,7 +59,7 @@ void CrossfaderComponent::wireParameters()
 
 void CrossfaderComponent::setupUI()
 {
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		addAndMakeVisible(pairSliders[i]);
 		setupSlider(pairSliders[i], "Crossfader " + juce::String(i + 1) + " <-> " + juce::String(i + 5) +
@@ -135,7 +135,7 @@ void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	if (paramSuffix.startsWith("pairCrossfader"))
 	{
 		int idx = paramSuffix.getTrailingIntValue() - 1;
-		if (idx >= 0 && idx < ObsidianDataConst::MAX_CROSSFADER_PAIR)
+		if (idx >= 0 && idx < Obsidian::MAX_CROSSFADER_PAIR)
 		{
 			updateSliderColour(pairSliders[idx], idx);
 			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(idx),
@@ -188,7 +188,7 @@ void CrossfaderComponent::updateSliderColour(MidiLearnableSlider &slider, int pa
 
 void CrossfaderComponent::updatePairColours()
 {
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 		updateSliderColour(pairSliders[i], i);
 	repaint();
 }
@@ -206,10 +206,10 @@ void CrossfaderComponent::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 
 	g.setColour(ColourPalette::backgroundDark);
-	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(bounds.toFloat(), Obsidian::CORNER);
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
+	g.drawRoundedRectangle(bounds.toFloat().reduced(1), Obsidian::CORNER, Obsidian::BORDER_WIDTH);
 
 	drawSegmentedCurveBackground(g);
 }
@@ -284,10 +284,10 @@ void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics &g) const
 	auto sliderTrack = curveButtonsRowBounds.toFloat();
 
 	g.setColour(juce::Colours::black.withAlpha(0.4f));
-	g.fillRoundedRectangle(sliderTrack, ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(sliderTrack, Obsidian::CORNER);
 
 	g.setColour(ColourPalette::backgroundLight);
-	g.drawRoundedRectangle(sliderTrack.reduced(0.5f), ObsidianSizes::CORNER, 0.8f);
+	g.drawRoundedRectangle(sliderTrack.reduced(0.5f), Obsidian::CORNER, 0.8f);
 
 	int activeMode = audioProcessor.getCrossfaderCurveMode();
 	juce::Rectangle<int> activeBounds;
@@ -303,19 +303,19 @@ void CrossfaderComponent::drawSegmentedCurveBackground(juce::Graphics &g) const
 		auto active = activeBounds.toFloat().reduced(2.0f);
 
 		g.setColour(juce::Colours::black.withAlpha(0.4f));
-		g.fillRoundedRectangle(active.translated(0, 1.0f), ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(active.translated(0, 1.0f), Obsidian::CORNER);
 
 		juce::ColourGradient bodyGrad(ColourPalette::lightGrey.withAlpha(0.45f), active.getX(), active.getY(),
 		                              ColourPalette::lightGrey.withAlpha(0.20f), active.getX(), active.getBottom(),
 		                              false);
 		g.setGradientFill(bodyGrad);
-		g.fillRoundedRectangle(active, ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(active, Obsidian::CORNER);
 
 		g.setColour(juce::Colours::white.withAlpha(0.06f));
-		g.fillRoundedRectangle(active.withHeight(active.getHeight() * 0.45f), ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(active.withHeight(active.getHeight() * 0.45f), Obsidian::CORNER);
 
 		g.setColour(ColourPalette::lightGrey.withAlpha(0.7f));
-		g.drawRoundedRectangle(active.reduced(0.5f), ObsidianSizes::CORNER, 1.0f);
+		g.drawRoundedRectangle(active.reduced(0.5f), Obsidian::CORNER, 1.0f);
 	}
 }
 
@@ -354,7 +354,7 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics &g)
 	float deckAGain = 1.0f - globalX;
 	float deckBGain = globalX;
 
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		auto rowBounds = pairRowBounds[i];
 		if (rowBounds.isEmpty())
@@ -425,7 +425,7 @@ void CrossfaderComponent::resized()
 	const int rowSpacing = 2;
 	const int rowHeight = (area.getHeight() - rowSpacing * 3) / 4;
 
-	for (int i = 0; i < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++i)
+	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		auto rowArea = (i == 3) ? area : area.removeFromTop(rowHeight);
 		pairRowBounds[i] = rowArea;

@@ -9,13 +9,13 @@ MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *man
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
 	parameterLabel.setJustificationType(juce::Justification::centredLeft);
 	parameterLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	parameterLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(13.5f));
+	parameterLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(13.5f));
 	addAndMakeVisible(parameterLabel);
 
 	midiInfoLabel.setText(getMidiInfoString(), juce::dontSendNotification);
 	midiInfoLabel.setJustificationType(juce::Justification::centredLeft);
 	midiInfoLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
-	midiInfoLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(12.0f));
+	midiInfoLabel.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(12.0f));
 	addAndMakeVisible(midiInfoLabel);
 
 	deleteButton.loadIcon(BinaryData::trash_svg, BinaryData::trash_svgSize);
@@ -38,7 +38,7 @@ MidiMappingRow::~MidiMappingRow()
 void MidiMappingRow::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	const float corner = ObsidianSizes::CORNER;
+	const float corner = Obsidian::CORNER;
 
 	bool isEven = (getY() / juce::jmax(1, getHeight())) % 2 == 0;
 
@@ -73,12 +73,12 @@ void MidiMappingRow::paint(juce::Graphics &g)
 	if (!badgeBounds.isEmpty())
 	{
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.18f));
-		g.fillRoundedRectangle(badgeBounds, ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(badgeBounds, Obsidian::CORNER);
 		g.setColour(ColourPalette::buttonPrimary.withAlpha(0.5f));
-		g.drawRoundedRectangle(badgeBounds, ObsidianSizes::CORNER, 0.6f);
+		g.drawRoundedRectangle(badgeBounds, Obsidian::CORNER, 0.6f);
 
 		g.setColour(ColourPalette::textAccent);
-		g.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(10.5f));
+		g.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(10.5f));
 		g.drawText(getMidiTypeShort(), badgeBounds, juce::Justification::centred);
 	}
 }
@@ -90,7 +90,7 @@ void MidiMappingRow::resized()
 
 	auto buttonArea = bounds.removeFromRight(56);
 	deleteButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(26, 26));
-	buttonArea.removeFromRight(ObsidianSizes::SPACER_XS);
+	buttonArea.removeFromRight(Obsidian::SPACER_XS);
 	learnButton.setBounds(buttonArea.removeFromRight(40).withSizeKeepingCentre(26, 26));
 
 	bounds.removeFromRight(8);
@@ -176,12 +176,12 @@ juce::String MidiMappingRow::getMidiTypeShort() const
 MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager) : midiLearnManager(manager)
 {
 	subtitleLabel.setText("Manage mappings or ReLearn to reassign.", juce::dontSendNotification);
-	subtitleLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_REGULAR).withHeight(ObsidianSizes::TEXT_REGULAR));
+	subtitleLabel.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
 	subtitleLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	subtitleLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(subtitleLabel);
 
-	countLabel.setFont(juce::FontOptions(ObsidianFonts::NOTO_BOLD).withHeight(ObsidianSizes::TEXT_INFO));
+	countLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_INFO));
 	countLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	countLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(countLabel);
@@ -234,9 +234,9 @@ void MidiMappingEditorWindow::paint(juce::Graphics &g)
 {
 	auto listF = listBackgroundBounds.toFloat();
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.4f));
-	g.fillRoundedRectangle(listF, ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(listF, Obsidian::CORNER);
 	g.setColour(ColourPalette::backgroundDeep.withAlpha(0.4f));
-	g.fillRoundedRectangle(listF.reduced(0.5f), ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(listF.reduced(0.5f), Obsidian::CORNER);
 }
 
 void MidiMappingEditorWindow::resized()
@@ -248,18 +248,18 @@ void MidiMappingEditorWindow::resized()
 
 	int buttonHeight = 26;
 	int buttonWidth = 26;
-	auto buttonsArea = headerContent.removeFromRight(buttonWidth * 2 + ObsidianSizes::SPACER_XS);
+	auto buttonsArea = headerContent.removeFromRight(buttonWidth * 2 + Obsidian::SPACER_XS);
 
 	buttonsArea.removeFromTop(headerContent.getHeight() / 2 - buttonHeight / 2);
 	reloadDefaultsButton.setBounds(buttonsArea.removeFromRight(buttonWidth).removeFromTop(buttonHeight));
-	buttonsArea.removeFromRight(ObsidianSizes::SPACER_XS);
+	buttonsArea.removeFromRight(Obsidian::SPACER_XS);
 	clearAllButton.setBounds(buttonsArea.removeFromRight(buttonWidth).removeFromTop(buttonHeight));
 
 	auto subtitleArea = headerContent.removeFromTop(headerContent.getHeight() / 2 + 2);
 	subtitleLabel.setBounds(subtitleArea);
 	countLabel.setBounds(headerContent);
 
-	bounds.removeFromTop(ObsidianSizes::GAP);
+	bounds.removeFromTop(Obsidian::GAP);
 
 	listBackgroundBounds = bounds;
 	mappingsViewport.setBounds(bounds.reduced(2));

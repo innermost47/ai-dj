@@ -127,14 +127,14 @@ ScaleAndDurationPanel::ScaleAndDurationPanel(DjIaVstProcessor &processor) : audi
 
 	addAndMakeVisible(titleLabel);
 	titleLabel.setText("Key and duration", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_REGULAR));
+	titleLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	titleLabel.setJustificationType(juce::Justification::centredLeft);
 
 	addAndMakeVisible(helpLabel);
 	helpLabel.setText("These settings apply to every generation. They will be saved with the project.",
 	                  juce::dontSendNotification);
-	helpLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
+	helpLabel.setFont(juce::FontOptions(Obsidian::TEXT_INFO));
 	helpLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	helpLabel.setJustificationType(juce::Justification::topLeft);
 
@@ -163,14 +163,14 @@ void ScaleAndDurationPanel::paint(juce::Graphics &g)
 void ScaleAndDurationPanel::resized()
 {
 	auto area = getLocalBounds();
-	titleLabel.setBounds(area.removeFromTop((int)ObsidianSizes::TEXT_REGULAR));
-	area.removeFromTop(ObsidianSizes::GAP_4);
+	titleLabel.setBounds(area.removeFromTop((int)Obsidian::TEXT_REGULAR));
+	area.removeFromTop(Obsidian::GAP_4);
 	helpLabel.setBounds(area.removeFromTop(46));
-	area.removeFromTop(ObsidianSizes::GAP_4);
+	area.removeFromTop(Obsidian::GAP_4);
 
-	keySelector.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
-	area.removeFromTop(ObsidianSizes::GAP_4);
-	durationSelector.setBounds(area.removeFromTop(ObsidianSizes::COMBO_BOX_BASE_HEIGHT));
+	keySelector.setBounds(area.removeFromTop(Obsidian::COMBO_BOX_BASE_HEIGHT));
+	area.removeFromTop(Obsidian::GAP_4);
+	durationSelector.setBounds(area.removeFromTop(Obsidian::COMBO_BOX_BASE_HEIGHT));
 }
 
 void ScaleAndDurationPanel::update()

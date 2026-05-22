@@ -39,12 +39,12 @@ class ColourPicker : public ObsidianComponent
 		{
 			auto bounds = getLocalBounds().toFloat().reduced(2.0f);
 			g.setColour(colour);
-			g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+			g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 
 			if (selected)
 			{
 				g.setColour(juce::Colours::white);
-				g.drawRoundedRectangle(bounds.expanded(1.5f), ObsidianSizes::CORNER + 1.0f, 2.0f);
+				g.drawRoundedRectangle(bounds.expanded(1.5f), Obsidian::CORNER + 1.0f, 2.0f);
 			}
 		}
 

@@ -107,12 +107,19 @@ void ObsidianBaseMidiComponent::pushSliderToParam(Binding &b)
 	p->setValueNotifyingHost(range.convertTo0to1(value));
 }
 
-void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, juce::String paramId)
+void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, const juce::String &paramId)
 {
 	auto range = audioProcessor.getParameterTreeState().getParameterRange(paramId);
-	auto value = audioProcessor.getParameterTreeState().getParameter(paramId)->getValue();
+	auto param = audioProcessor.getParameterTreeState().getParameter(paramId);
+
+	if (param == nullptr)
+		return;
+	float normalizedValue = param->getValue();
+	float actualValue = range.convertFrom0to1(normalizedValue);
+
 	s.setRange(range.start, range.end, range.interval);
-	s.setValue(value);
+	s.setValue(actualValue, juce::dontSendNotification);
+	s.setDoubleClickReturnValue(true, actualValue);
 }
 
 void ObsidianBaseMidiComponent::pushButtonToParam(Binding &b)

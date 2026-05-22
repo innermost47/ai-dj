@@ -4,14 +4,14 @@
 SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(processor)
 {
 	delayTitleLbl.setText("DELAY", juce::dontSendNotification);
-	delayTitleLbl.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_INFO));
+	delayTitleLbl.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
 	delayTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	addAndMakeVisible(delayTitleLbl);
 
 	auto styleSubLbl = [](juce::Label &l, const juce::String &txt)
 	{
 		l.setText(txt, juce::dontSendNotification);
-		l.setFont(juce::FontOptions(ObsidianSizes::SEND_KNOB_LABEL, juce::Font::bold));
+		l.setFont(juce::FontOptions(Obsidian::SEND_KNOB_LABEL, juce::Font::bold));
 		l.setColour(juce::Label::textColourId, ColourPalette::textSecondary.withAlpha(0.8f));
 		l.setJustificationType(juce::Justification::centred);
 	};
@@ -32,7 +32,7 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(
 	addAndMakeVisible(delayFeedbackKnob);
 
 	reverbTitleLbl.setText("REVERB", juce::dontSendNotification);
-	reverbTitleLbl.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_INFO));
+	reverbTitleLbl.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
 	reverbTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	addAndMakeVisible(reverbTitleLbl);
 
@@ -215,10 +215,10 @@ void SendsPanel::setupDelayModeButtons()
 void SendsPanel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundDeep.withAlpha(ObsidianShades::ALPHA_08));
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-	g.setColour(ColourPalette::sliderTrack.withAlpha(ObsidianShades::ALPHA_03));
-	g.drawRoundedRectangle(bounds.reduced(0.5f), ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
+	g.setColour(ColourPalette::backgroundDeep.withAlpha(Obsidian::ALPHA_08));
+	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
+	g.setColour(ColourPalette::sliderTrack.withAlpha(Obsidian::ALPHA_03));
+	g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::CORNER, Obsidian::BORDER_WIDTH);
 
 	int y = getHeight() / 2;
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.2f));
@@ -227,7 +227,7 @@ void SendsPanel::paint(juce::Graphics &g)
 
 void SendsPanel::resized()
 {
-	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
+	auto area = getLocalBounds().reduced(Obsidian::PADDING);
 
 	int fxPart = area.getHeight() / 2;
 	auto delayArea = area.removeFromTop(fxPart);

@@ -72,7 +72,7 @@ void MidiManager::sendFullStateFeedback()
 		                 MidiMapping::feedbackChannelSends);
 	}
 
-	for (int p = 0; p < ObsidianDataConst::MAX_CROSSFADER_PAIR; ++p)
+	for (int p = 0; p < Obsidian::MAX_CROSSFADER_PAIR; ++p)
 	{
 		sendMidiFeedback(MidiMapping::ccFeedbackPairCrossfader(p),
 		                 MidiMapping::volumeToMidi(audioProcessor.getPairCrossfaderValue(p)),

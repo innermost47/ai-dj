@@ -4,15 +4,15 @@ DetailPanel::DetailPanel()
 {
 	addAndMakeVisible(nameLabel);
 	nameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	nameLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::bold));
+	nameLabel.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 
 	addAndMakeVisible(modelLabel);
 	modelLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	modelLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
+	modelLabel.setFont(juce::FontOptions(Obsidian::TEXT_INFO));
 
 	addAndMakeVisible(metaLabel);
 	metaLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	metaLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_INFO));
+	metaLabel.setFont(juce::FontOptions(Obsidian::TEXT_INFO));
 
 	infoSvg = juce::Drawable::createFromImageData(BinaryData::warning_svg, BinaryData::warning_svgSize);
 	if (!juce::JUCEApplicationBase::isStandaloneApp())
@@ -23,7 +23,7 @@ DetailPanel::DetailPanel()
 
 	addAndMakeVisible(tipLabel);
 	tipLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	tipLabel.setFont(juce::FontOptions(ObsidianSizes::TEXT_XXS, juce::Font::italic));
+	tipLabel.setFont(juce::FontOptions(Obsidian::TEXT_XXS, juce::Font::italic));
 	tipLabel.setText("Preview routed to Output 9. Ensure Multi-Output mode is enabled in your DAW.",
 	                 juce::dontSendNotification);
 
@@ -48,8 +48,8 @@ DetailPanel::DetailPanel()
 		}
 	};
 	playButton.setCompactMode(true);
-
 	playButton.setTooltip("Preview sound on Output 9");
+	playButton.setVisible(false);
 	setVisible(false);
 }
 
@@ -163,7 +163,17 @@ void DetailPanel::generateThumbnail()
 	thumbL.clear();
 	thumbR.clear();
 	if (audioBuf.getNumSamples() == 0 || waveformBounds.isEmpty())
+	{
+		playButton.setVisible(false);
 		return;
+	}
+	else
+	{
+		if (!playButton.isVisible())
+		{
+			playButton.setVisible(true);
+		}
+	}
 
 	int n = audioBuf.getNumSamples();
 	int ch = audioBuf.getNumChannels();
@@ -200,13 +210,14 @@ void DetailPanel::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds();
 	g.fillAll(ColourPalette::backgroundDark);
 
-	if (entry && !entry->category.isEmpty())
+	if (entry)
 	{
 		const float ellipseSize = 8.0f;
-		juce::Colour col = this->categoryColourResolver ? this->categoryColourResolver(entry->category)
-		                                                : getCategoryColor(entry->category);
+		juce::Colour col = entry->category.isEmpty()      ? ColourPalette::textSecondary
+		                   : this->categoryColourResolver ? this->categoryColourResolver(entry->category)
+		                                                  : getCategoryColor(entry->category);
 		g.setColour(col);
-		g.fillEllipse(ellipseSize, ObsidianSizes::GAP_4 + ellipseSize + 1.0f, ellipseSize, ellipseSize);
+		g.fillEllipse(ellipseSize, Obsidian::GAP_4 + ellipseSize + 1.0f, ellipseSize, ellipseSize);
 	}
 
 	drawWaveform(g);
@@ -219,7 +230,7 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 
 	g.saveState();
 	juce::Path clip;
-	clip.addRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER);
+	clip.addRoundedRectangle(waveformBounds.toFloat(), Obsidian::HALF_CORNER);
 	g.reduceClipRegion(clip);
 
 	g.setColour(ColourPalette::backgroundDeep);
@@ -276,7 +287,7 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 		float hH = innerBounds.getHeight() * 0.22f;
 		drawChannel(thumbL, qY, hH);
 		drawChannel(thumbR, tqY, hH);
-		g.setColour(ColourPalette::textPrimary.withAlpha(ObsidianShades::ALPHA_06));
+		g.setColour(ColourPalette::textPrimary.withAlpha(Obsidian::ALPHA_06));
 		g.drawLine((float)innerBounds.getX(), (float)innerBounds.getCentreY(), (float)innerBounds.getRight(),
 		           (float)innerBounds.getCentreY(), 0.5f);
 	}
@@ -297,15 +308,15 @@ void DetailPanel::drawWaveform(juce::Graphics &g)
 
 	g.restoreState();
 
-	g.setColour(ColourPalette::textSecondary.withAlpha(ObsidianShades::ALPHA_04));
-	g.drawRoundedRectangle(waveformBounds.toFloat(), ObsidianSizes::HALF_CORNER, ObsidianSizes::BORDER_WIDTH_XS);
+	g.setColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_04));
+	g.drawRoundedRectangle(waveformBounds.toFloat(), Obsidian::HALF_CORNER, Obsidian::BORDER_WIDTH_XS);
 }
 
 void DetailPanel::resized()
 {
 	auto area = getLocalBounds().reduced(6, 4);
-	area.removeFromTop(ObsidianSizes::GAP_4);
-	area.removeFromBottom(ObsidianSizes::GAP);
+	area.removeFromTop(Obsidian::GAP_4);
+	area.removeFromBottom(Obsidian::GAP);
 	auto titleRow = area.removeFromTop(18);
 	auto modelRow = area.removeFromTop(14);
 	auto metaRow = area.removeFromTop(14);
@@ -315,8 +326,8 @@ void DetailPanel::resized()
 	if (!juce::JUCEApplicationBase::isStandaloneApp())
 	{
 		tipRow = area.removeFromBottom(22);
-		area.removeFromBottom(ObsidianSizes::GAP_4);
-		tipRow.removeFromLeft(ObsidianSizes::GAP_4);
+		area.removeFromBottom(Obsidian::GAP_4);
+		tipRow.removeFromLeft(Obsidian::GAP_4);
 		iconArea = tipRow.removeFromLeft(iconSize).removeFromTop(tipRow.getHeight());
 	}
 	auto bottomRow = area;
@@ -335,13 +346,13 @@ void DetailPanel::resized()
 		tipLabel.setBounds(tipRow);
 	}
 
-	bottomRow.removeFromTop(ObsidianSizes::GAP_4);
+	bottomRow.removeFromTop(Obsidian::GAP_4);
 
 	auto btnCol = bottomRow.removeFromRight(30);
 
 	playButton.setBounds(btnCol.removeFromTop(bottomRow.getHeight()));
-	bottomRow.removeFromRight(ObsidianSizes::GAP_4);
-	bottomRow.removeFromLeft(ObsidianSizes::GAP_4);
+	bottomRow.removeFromRight(Obsidian::GAP_4);
+	bottomRow.removeFromLeft(Obsidian::GAP_4);
 	waveformBounds = bottomRow.reduced(0, 2);
 	generateThumbnail();
 	repaint();
@@ -416,24 +427,26 @@ juce::String DetailPanel::formatDuration(float s)
 
 juce::Colour DetailPanel::getCategoryColor(const juce::String &category)
 {
-	static const std::map<juce::String, juce::Colour> colors = {{"Drums", ColourPalette::indigo},
-	                                                            {"Bass", ColourPalette::teal},
-	                                                            {"Melody", ColourPalette::coral},
-	                                                            {"Ambient", ColourPalette::emerald},
-	                                                            {"Percussion", ColourPalette::slate},
-	                                                            {"Vocal", ColourPalette::amber},
-	                                                            {"FX", ColourPalette::backgroundLight},
-	                                                            {"Loops", ColourPalette::buttonSuccess},
-	                                                            {"One-shots", ColourPalette::buttonSecondary},
-	                                                            {"House", ColourPalette::buttonDangerDark},
-	                                                            {"Techno", ColourPalette::lime},
-	                                                            {"Hip-Hop", ColourPalette::violet},
-	                                                            {"Jazz", ColourPalette::amber},
-	                                                            {"Rock", ColourPalette::buttonDanger},
-	                                                            {"Electronic", ColourPalette::cyan},
-	                                                            {"Piano", ColourPalette::textSecondary},
-	                                                            {"Guitar", ColourPalette::textWarning},
-	                                                            {"Synth", ColourPalette::textSecondary}};
+	static const std::map<juce::String, juce::Colour> colors = {
+	    {"Drums", ColourPalette::indigo},
+	    {"Bass", ColourPalette::teal},
+	    {"Melody", ColourPalette::coral},
+	    {"Ambient", ColourPalette::emerald},
+	    {"Percussion", ColourPalette::slate},
+	    {"Vocal", ColourPalette::amber},
+	    {"FX", ColourPalette::backgroundLight},
+	    {"Loops", ColourPalette::buttonSuccess},
+	    {"One-shots", ColourPalette::buttonSecondary},
+	    {"House", ColourPalette::buttonDangerDark},
+	    {"Techno", ColourPalette::lime},
+	    {"Hip-Hop", ColourPalette::violet},
+	    {"Jazz", ColourPalette::amber},
+	    {"Rock", ColourPalette::buttonDanger},
+	    {"Electronic", ColourPalette::cyan},
+	    {"Piano", ColourPalette::textSecondary},
+	    {"Guitar", ColourPalette::textWarning},
+	    {"Synth", ColourPalette::textSecondary},
+	};
 	auto it = colors.find(category);
 	return it != colors.end() ? it->second : ColourPalette::backgroundLight;
 }

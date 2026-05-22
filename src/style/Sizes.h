@@ -4,7 +4,7 @@
 #ifndef OBSIDIAN_SIZES_H
 #define OBSIDIAN_SIZES_H
 
-namespace ObsidianSizes
+namespace Obsidian
 {
 inline constexpr int BASE_MODAL_WIDTH = 600;
 inline constexpr int BASE_MODAL_HEIGHT = 400;
@@ -75,6 +75,6 @@ inline constexpr int ACCORDION_ITEM_MAX_LINES = 4;
 
 inline constexpr int ACCORDION_FOLDER_ICON_SIZE = 12;
 inline constexpr int ACCORDION_FOLDER_AREA_WIDTH = 18;
-} // namespace ObsidianSizes
+} // namespace Obsidian
 
 #endif

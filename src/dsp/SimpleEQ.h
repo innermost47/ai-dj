@@ -15,7 +15,7 @@ class SimpleEQ
 	void reset();
 
   private:
-	double sampleRate = ObsidianDataConst::SAMPLERATE;
+	double sampleRate = Obsidian::SAMPLERATE;
 
 	float highGain = 0.0f;
 	float midGain = 0.0f;

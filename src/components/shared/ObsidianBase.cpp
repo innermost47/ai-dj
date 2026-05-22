@@ -17,25 +17,25 @@ void ObsidianComponent::paintBaseRoundedBackground(juce::Graphics &g, juce::Colo
 {
 	auto bounds = getLocalBounds().toFloat();
 	g.setColour(colour);
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
+	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
+	g.drawRoundedRectangle(bounds, Obsidian::CORNER, Obsidian::BORDER_WIDTH);
 }
 
 void ObsidianComponent::paintBaseRoundedBackgroundMidWithAlpha06(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(ColourPalette::backgroundMid.withAlpha(ObsidianShades::ALPHA_06));
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, ObsidianSizes::BORDER_WIDTH);
+	g.setColour(ColourPalette::backgroundMid.withAlpha(Obsidian::ALPHA_06));
+	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
+	g.drawRoundedRectangle(bounds, Obsidian::CORNER, Obsidian::BORDER_WIDTH);
 }
 
 void ObsidianComponent::paintBaseLocalBackground(juce::Graphics &g, juce::Rectangle<int> bounds)
 {
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillAll();
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
 	g.drawRect(bounds.toFloat(), 1);
 }
 
@@ -46,8 +46,8 @@ void ObsidianComponent::paintBaseBackgroundWithLeftBorder(juce::Graphics &g)
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRect(bounds);
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawLine(0.0f, 0.0f, 0.0f, bounds.getHeight(), ObsidianSizes::BORDER_WIDTH);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
+	g.drawLine(0.0f, 0.0f, 0.0f, bounds.getHeight(), Obsidian::BORDER_WIDTH);
 }
 
 void ObsidianComponent::paintBaseBackgroundWithRightBorder(juce::Graphics &g)
@@ -57,8 +57,8 @@ void ObsidianComponent::paintBaseBackgroundWithRightBorder(juce::Graphics &g)
 	g.setColour(ColourPalette::backgroundDark);
 	g.fillRect(bounds);
 
-	g.setColour(ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER));
-	g.drawLine(bounds.getWidth(), 0.0f, bounds.getWidth(), bounds.getHeight(), ObsidianSizes::BORDER_WIDTH);
+	g.setColour(ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER));
+	g.drawLine(bounds.getWidth(), 0.0f, bounds.getWidth(), bounds.getHeight(), Obsidian::BORDER_WIDTH);
 }
 
 void ObsidianComponent::drawCircleWithEllipse(juce::Graphics &g, juce::Rectangle<int> area, juce::Colour colour)

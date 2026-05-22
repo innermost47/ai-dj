@@ -8,7 +8,7 @@ static float measureTextWidth(const juce::Font &font, const juce::String &text)
 
 PromptBankItem::PromptBankItem(PromptBankEntry *entryIn) : entry(entryIn)
 {
-	setSize(400, ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT);
+	setSize(400, Obsidian::ACCORDION_ITEM_MIN_HEIGHT);
 
 	dragPayloadProvider = [this]() -> juce::String
 	{
@@ -56,10 +56,10 @@ void PromptBankItem::paint(juce::Graphics &g)
 	auto textArea = bounds.withTrimmedLeft(12).withTrimmedRight(rightPad).withTrimmedTop(6);
 	auto promptArea = textArea.removeFromTop(bounds.getHeight() - 30);
 
-	const float fontSize = ObsidianSizes::TEXT_REGULAR;
+	const float fontSize = Obsidian::TEXT_REGULAR;
 	juce::Font promptFont(juce::FontOptions(fontSize, juce::Font::plain));
 	const float lineHeight = promptFont.getHeight();
-	const int maxLines = ObsidianSizes::ACCORDION_ITEM_MAX_LINES;
+	const int maxLines = Obsidian::ACCORDION_ITEM_MAX_LINES;
 	const float maxWidth = (float)promptArea.getWidth();
 
 	juce::StringArray words;
@@ -138,7 +138,7 @@ void PromptBankItem::paint(juce::Graphics &g)
 		parts.add(juce::String(days / 365) + " years ago");
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.75f));
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL, juce::Font::italic));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_SMALL, juce::Font::italic));
 	g.drawText(parts.joinIntoString(" - "), metaArea, juce::Justification::centredLeft, true);
 
 	g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
@@ -149,14 +149,14 @@ void PromptBankItem::paint(juce::Graphics &g)
 int PromptBankItem::getPreferredHeight(int width) const
 {
 	if (!entry)
-		return ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT;
+		return Obsidian::ACCORDION_ITEM_MIN_HEIGHT;
 
-	const float fontSize = ObsidianSizes::TEXT_REGULAR;
+	const float fontSize = Obsidian::TEXT_REGULAR;
 	juce::Font promptFont(juce::FontOptions(fontSize, juce::Font::plain));
 	const float maxWidth = (float)(width);
 
 	if (maxWidth <= 0)
-		return ObsidianSizes::ACCORDION_ITEM_MIN_HEIGHT;
+		return Obsidian::ACCORDION_ITEM_MIN_HEIGHT;
 
 	juce::AttributedString attr;
 	attr.append(entry->text, promptFont);
@@ -166,7 +166,7 @@ int PromptBankItem::getPreferredHeight(int width) const
 	juce::TextLayout layout;
 	layout.createLayout(attr, maxWidth);
 
-	int lineCount = juce::jlimit(1, (int)ObsidianSizes::ACCORDION_ITEM_MAX_LINES, layout.getNumLines());
+	int lineCount = juce::jlimit(1, (int)Obsidian::ACCORDION_ITEM_MAX_LINES, layout.getNumLines());
 	const float lineHeight = promptFont.getHeight() * 1.15f;
 
 	return 6 + (int)(lineCount * lineHeight) + 20 + 4;

@@ -61,7 +61,7 @@ class DelaySend
 	void updateDelayTime();
 	void updateFilterCoefficients();
 
-	double currentSampleRate = ObsidianDataConst::SAMPLERATE;
+	double currentSampleRate = Obsidian::SAMPLERATE;
 	double currentBpm = 120.0;
 	TimeDivision timeDivision = TimeDivision::Quarter;
 	float feedback = 0.4f;

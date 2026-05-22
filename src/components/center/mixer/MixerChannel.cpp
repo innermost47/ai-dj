@@ -154,14 +154,8 @@ void MixerChannel::wireParameters()
 	syncSliderRange(fineKnob, fullParamId("Fine"));
 	syncSliderRange(panKnob, fullParamId("Pan"));
 	syncSliderRange(volumeSlider, fullParamId("Volume"));
-
-	sendDelayKnob.setDoubleClickReturnValue(true, 0.0);
-	sendReverbKnob.setDoubleClickReturnValue(true, 0.0);
-	volumeSlider.setDoubleClickReturnValue(true, 0.8);
-	pitchKnob.setDoubleClickReturnValue(true, 0.0);
-	gainKnob.setDoubleClickReturnValue(true, 0.0);
-	fineKnob.setDoubleClickReturnValue(true, 0.0);
-	panKnob.setDoubleClickReturnValue(true, 0.0);
+	syncSliderRange(sendDelayKnob, fullParamId("DelaySend"));
+	syncSliderRange(sendReverbKnob, fullParamId("ReverbSend"));
 }
 
 void MixerChannel::stopTrackImmediatly()
@@ -273,13 +267,13 @@ void MixerChannel::paint(juce::Graphics &g)
 	auto *t = getTrack();
 	auto bounds = getLocalBounds();
 
-	g.setColour(ColourPalette::backgroundMid.withAlpha(ObsidianShades::ALPHA_06));
-	g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+	g.setColour(ColourPalette::backgroundMid.withAlpha(Obsidian::ALPHA_06));
+	g.fillRoundedRectangle(bounds.toFloat(), Obsidian::CORNER);
 
 	if (hasSamplePending && !isGenerating)
 	{
 		g.setColour(ColourPalette::samplePending.withAlpha(0.15f));
-		g.fillRoundedRectangle(bounds.toFloat(), ObsidianSizes::CORNER);
+		g.fillRoundedRectangle(bounds.toFloat(), Obsidian::CORNER);
 	}
 
 	juce::Colour borderColour;
@@ -299,21 +293,21 @@ void MixerChannel::paint(juce::Graphics &g)
 	}
 	else
 	{
-		borderColour = ColourPalette::backgroundLight.withAlpha(ObsidianShades::LIGHT_BORDER);
-		borderWidth = ObsidianSizes::BORDER_WIDTH;
+		borderColour = ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER);
+		borderWidth = Obsidian::BORDER_WIDTH;
 	}
 
 	g.setColour(borderColour);
-	g.drawRoundedRectangle(bounds.toFloat().reduced(1), ObsidianSizes::CORNER, borderWidth);
+	g.drawRoundedRectangle(bounds.toFloat().reduced(1), Obsidian::CORNER, borderWidth);
 }
 
 void MixerChannel::resized()
 {
 	auto area = getLocalBounds().reduced(2);
 
-	area.removeFromTop(ObsidianSizes::GAP_2);
+	area.removeFromTop(Obsidian::GAP_2);
 	trackNameLabel.setBounds(area.removeFromTop(12));
-	area.removeFromTop(ObsidianSizes::GAP_4);
+	area.removeFromTop(Obsidian::GAP_4);
 
 	using FlexBox = juce::FlexBox;
 	using FlexItem = juce::FlexItem;
@@ -386,7 +380,7 @@ void MixerChannel::resized()
 	control.performLayout(area);
 
 	auto cb = vuMeterContainer.getLocalBounds();
-	vuMeter.setBounds(cb.reduced(0, ObsidianSizes::GAP_4).withX(cb.getX()));
+	vuMeter.setBounds(cb.reduced(0, Obsidian::GAP_4).withX(cb.getX()));
 }
 
 void MixerChannel::updateVUMeter()
@@ -404,7 +398,7 @@ void MixerChannel::setupUI()
 	trackNameLabel.setText("Track", juce::dontSendNotification);
 	trackNameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	trackNameLabel.setJustificationType(juce::Justification::centred);
-	trackNameLabel.setFont(juce::FontOptions(ObsidianSizes::MIXER_LABEL_NAME, juce::Font::bold));
+	trackNameLabel.setFont(juce::FontOptions(Obsidian::MIXER_LABEL_NAME, juce::Font::bold));
 	trackNameLabel.setEditable(false, true);
 
 	addAndMakeVisible(playButton);
@@ -437,7 +431,6 @@ void MixerChannel::setupUI()
 	soloButton.setCompactMode(true);
 
 	addAndMakeVisible(volumeSlider);
-	volumeSlider.setRange(0.0, 1.0, 0.01);
 	volumeSlider.setSliderStyle(juce::Slider::LinearVertical);
 	volumeSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	volumeSlider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
@@ -447,7 +440,6 @@ void MixerChannel::setupUI()
 	volumeSlider.getProperties().set(CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
 
 	addAndMakeVisible(pitchKnob);
-	pitchKnob.setRange(-12.0, 12.0, 0.01);
 	pitchKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	pitchKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	pitchKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -460,7 +452,6 @@ void MixerChannel::setupUI()
 	pitchLabel.setJustificationType(juce::Justification::centred);
 
 	addAndMakeVisible(fineKnob);
-	fineKnob.setRange(-50.0, 50.0, 1.0);
 	fineKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	fineKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	fineKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -473,7 +464,6 @@ void MixerChannel::setupUI()
 	fineLabel.setJustificationType(juce::Justification::centred);
 
 	addAndMakeVisible(panKnob);
-	panKnob.setRange(-1.0, 1.0, 0.01);
 	panKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	panKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	panKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -486,7 +476,6 @@ void MixerChannel::setupUI()
 	panLabel.setJustificationType(juce::Justification::centred);
 
 	addAndMakeVisible(gainKnob);
-	gainKnob.setRange(-12.0, 12.0, 0.1);
 	gainKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	gainKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	gainKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -499,7 +488,6 @@ void MixerChannel::setupUI()
 	gainLabel.setJustificationType(juce::Justification::centred);
 
 	addAndMakeVisible(sendDelayKnob);
-	sendDelayKnob.setRange(0.0, 1.0, 0.001);
 	sendDelayKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	sendDelayKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	sendDelayKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -507,7 +495,6 @@ void MixerChannel::setupUI()
 	sendDelayKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 
 	addAndMakeVisible(sendReverbKnob);
-	sendReverbKnob.setRange(0.0, 1.0, 0.001);
 	sendReverbKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	sendReverbKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	sendReverbKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
@@ -524,12 +511,12 @@ void MixerChannel::setupUI()
 	sendReverbLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	sendReverbLabel.setJustificationType(juce::Justification::centred);
 
-	ObsidianFonts::applyFontSize(pitchLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(sendDelayLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(sendReverbLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(panLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(fineLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(gainLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(pitchLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(sendDelayLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(sendReverbLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(panLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(fineLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(gainLabel, Obsidian::MIXER_KNOB_LABEL);
 
 	addAndMakeVisible(vuMeterContainer);
 	vuMeterContainer.addAndMakeVisible(vuMeter);

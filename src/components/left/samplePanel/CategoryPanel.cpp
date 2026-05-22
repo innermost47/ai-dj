@@ -12,14 +12,14 @@ void CategoryTag::paintButton(juce::Graphics &g, bool isMouseOverButton, bool /*
 	bool active = getToggleState();
 
 	g.setColour(active ? ColourPalette::slate : ColourPalette::backgroundLight.withAlpha(0.4f));
-	g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 	if (isMouseOverButton && !active)
 	{
 		g.setColour(ColourPalette::textPrimary.withAlpha(0.2f));
-		g.drawRoundedRectangle(bounds, ObsidianSizes::CORNER, 1.5f);
+		g.drawRoundedRectangle(bounds, Obsidian::CORNER, 1.5f);
 	}
 	g.setColour(active ? ColourPalette::textPrimary : ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, active ? juce::Font::bold : juce::Font::plain));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, active ? juce::Font::bold : juce::Font::plain));
 	g.drawText(getButtonText(), bounds, juce::Justification::centred, true);
 }
 
@@ -60,7 +60,7 @@ void CategoryPanel::resized()
 	fb.justifyContent = juce::FlexBox::JustifyContent::flexStart;
 	fb.alignContent = juce::FlexBox::AlignContent::flexStart;
 
-	juce::FontOptions fontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::plain);
+	juce::FontOptions fontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain);
 	juce::Font tagFont(fontOptions);
 
 	for (auto *tag : tags)

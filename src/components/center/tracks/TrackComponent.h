@@ -126,7 +126,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 			if (fillBg)
 			{
 				g.setColour(bgColour);
-				g.fillRoundedRectangle(bounds, ObsidianSizes::CORNER);
+				g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 			}
 
 			juce::Colour borderColour;
@@ -154,7 +154,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 			}
 
 			g.setColour(borderColour);
-			g.drawRoundedRectangle(bounds.reduced(1.0f), ObsidianSizes::CORNER, borderWidth);
+			g.drawRoundedRectangle(bounds.reduced(1.0f), Obsidian::CORNER, borderWidth);
 		}
 
 	  private:

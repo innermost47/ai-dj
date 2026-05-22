@@ -35,7 +35,7 @@ void LedRadioButton::paintButton(juce::Graphics &g, bool isMouseOver, bool /*isB
 	auto textArea = bounds.withTrimmedLeft(ledSize + 6.0f);
 	g.setColour(on ? ColourPalette::textPrimary
 	               : (isMouseOver ? ColourPalette::textSecondary : ColourPalette::textSecondary.withAlpha(0.9f)));
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SMALL, on ? juce::Font::bold : juce::Font::plain));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_SMALL, on ? juce::Font::bold : juce::Font::plain));
 	g.drawText(getButtonText(), textArea.toNearestInt(), juce::Justification::centredLeft, false);
 }
 

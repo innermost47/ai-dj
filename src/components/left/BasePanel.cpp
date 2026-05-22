@@ -39,6 +39,7 @@ void BasePanel::expandAll(std::function<void(ObsidianAccordion *accordion, const
 
 void BasePanel::collapseAll()
 {
+	selectedId.clear();
 	openCategories.clear();
 	for (auto &acc : accordions)
 		acc->setExpanded(false, false);
@@ -49,7 +50,6 @@ void BasePanel::collapseAll()
 		isExpanded = false;
 		header.setExpanded(isExpanded);
 	}
-
 	resized();
 }
 
@@ -79,6 +79,7 @@ juce::var BasePanel::saveUIState(int sortType) const
 	o->setProperty("openCategories", juce::var(openArr));
 	o->setProperty("sort", sortType);
 	o->setProperty("expanded", isExpanded);
+	o->setProperty("selectedId", selectedId);
 	return juce::var(o.get());
 }
 
@@ -91,6 +92,9 @@ void BasePanel::restoreUIState(const juce::var &state, std::function<void()> ref
 	auto *o = state.getDynamicObject();
 	if (o == nullptr)
 		return;
+
+	if (o->hasProperty("selectedId"))
+		selectedId = o->getProperty("selectedId").toString();
 
 	openCategories.clear();
 	auto arr = o->getProperty("openCategories");
@@ -137,10 +141,10 @@ void BasePanel::drawEmptyBank(juce::Graphics &g, juce::Drawable &iconSvg, juce::
 	iconSvg.drawWithin(g, iconBounds.toFloat(), juce::RectanglePlacement::centred, 1.0f);
 
 	g.setColour(ColourPalette::textSecondary);
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_SUBTITLE, juce::Font::bold));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_SUBTITLE, juce::Font::bold));
 	g.drawText(noItemYet, b.withSizeKeepingCentre(300, 28).translated(0, 35), juce::Justification::centred);
 
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR));
 	g.drawText(tip, b.withSizeKeepingCentre(300, 28).translated(0, 60), juce::Justification::centred);
 }
 
@@ -151,6 +155,6 @@ void BasePanel::drawNoSearchResults(juce::Graphics &g, juce::String &noMatch)
 	auto messageArea = b.withTrimmedTop(40).withHeight(40);
 
 	g.setColour(ColourPalette::textSecondary.withAlpha(0.7f));
-	g.setFont(juce::FontOptions(ObsidianSizes::TEXT_REGULAR, juce::Font::italic));
+	g.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::italic));
 	g.drawText(noMatch + "\"" + currentSearch + "\"", messageArea, juce::Justification::centred);
 }

@@ -195,12 +195,17 @@ void DjIaVstEditor::initUI()
 
 	setupUI();
 	uiTrackManager->refreshUIForMode();
+	juce::WeakReference<DjIaVstEditor> weakThis(this);
 	if (audioProcessor.getServerUrl().isEmpty())
 	{
-		juce::Timer::callAfterDelay(500, [this]() { uiModalManager->showFirstTimeSetup(); });
+		juce::Timer::callAfterDelay(500,
+		                            [weakThis]()
+		                            {
+			                            if (weakThis != nullptr)
+				                            weakThis->uiModalManager->showFirstTimeSetup();
+		                            });
 	}
 	isInitialized.store(true);
-	juce::WeakReference<DjIaVstEditor> weakThis(this);
 
 	audioProcessor.setMidiIndicatorCallback(
 	    [weakThis](const juce::String &noteInfo)

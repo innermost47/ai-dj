@@ -91,9 +91,9 @@ bool UIMidiManager::keyPressed(const juce::KeyPress &key)
 		break;
 	}
 
-	for (int slotIndex = 0; slotIndex < ObsidianDataConst::MAX_TRACKS; ++slotIndex)
+	for (int slotIndex = 0; slotIndex < Obsidian::MAX_TRACKS; ++slotIndex)
 	{
-		for (int page = 0; page < ObsidianDataConst::MAX_PAGES; ++page)
+		for (int page = 0; page < Obsidian::MAX_PAGES; ++page)
 		{
 			if (keyMatches(key, layoutKeys[slotIndex][page]))
 			{

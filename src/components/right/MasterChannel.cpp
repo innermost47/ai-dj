@@ -27,8 +27,6 @@ MasterChannel::~MasterChannel()
 void MasterChannel::setupUI()
 {
 	addAndMakeVisible(masterVolumeSlider);
-	masterVolumeSlider.setRange(0.0, 1.0, 0.01);
-	masterVolumeSlider.setValue(0.8);
 	masterVolumeSlider.setSliderStyle(juce::Slider::LinearVertical);
 	masterVolumeSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	masterVolumeSlider.setColour(juce::Slider::thumbColourId, ColourPalette::playArmed);
@@ -38,32 +36,24 @@ void MasterChannel::setupUI()
 	masterVolumeSlider.getProperties().set(CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
 
 	addAndMakeVisible(masterPanKnob);
-	masterPanKnob.setRange(-1.0, 1.0, 0.01);
-	masterPanKnob.setValue(0.0);
 	masterPanKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	masterPanKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	masterPanKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::playArmed);
 	masterPanKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 
 	addAndMakeVisible(highKnob);
-	highKnob.setRange(-12.0, 12.0, 0.1);
-	highKnob.setValue(0.0);
 	highKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	highKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	highKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::playArmed);
 	highKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 
 	addAndMakeVisible(midKnob);
-	midKnob.setRange(-12.0, 12.0, 0.1);
-	midKnob.setValue(0.0);
 	midKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	midKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	midKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::playArmed);
 	midKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 
 	addAndMakeVisible(lowKnob);
-	lowKnob.setRange(-12.0, 12.0, 0.1);
-	lowKnob.setValue(0.0);
 	lowKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	lowKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
 	lowKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::playArmed);
@@ -73,7 +63,7 @@ void MasterChannel::setupUI()
 	masterLabel.setText("MASTER", juce::dontSendNotification);
 	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	masterLabel.setJustificationType(juce::Justification::left);
-	masterLabel.setFont(juce::FontOptions(ObsidianFonts::MICHROMA).withHeight(ObsidianSizes::TEXT_SUBTITLE));
+	masterLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_SUBTITLE));
 
 	addAndMakeVisible(highLabel);
 	highLabel.setText("HIGH", juce::dontSendNotification);
@@ -95,10 +85,10 @@ void MasterChannel::setupUI()
 	panLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	panLabel.setJustificationType(juce::Justification::centred);
 
-	ObsidianFonts::applyFontSize(panLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(lowLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(midLabel, ObsidianSizes::MIXER_KNOB_LABEL);
-	ObsidianFonts::applyFontSize(highLabel, ObsidianSizes::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(panLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(lowLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(midLabel, Obsidian::MIXER_KNOB_LABEL);
+	Obsidian::applyFontSize(highLabel, Obsidian::MIXER_KNOB_LABEL);
 
 	addAndMakeVisible(vuMeter);
 
@@ -116,7 +106,7 @@ void MasterChannel::paint(juce::Graphics &g)
 
 void MasterChannel::resized()
 {
-	auto area = getLocalBounds().reduced(ObsidianSizes::PADDING);
+	auto area = getLocalBounds().reduced(Obsidian::PADDING);
 	int width = area.getWidth();
 
 	masterLabel.setBounds(area.removeFromTop(20));
@@ -195,5 +185,9 @@ void MasterChannel::wireParameters()
 	registerMidiLearn("masterMid", &midKnob);
 	registerMidiLearn("masterLow", &lowKnob);
 
-	masterVolumeSlider.setDoubleClickReturnValue(true, 0.8);
+	syncSliderRange(masterVolumeSlider, fullParamId("masterVolume"));
+	syncSliderRange(masterPanKnob, fullParamId("masterPan"));
+	syncSliderRange(highKnob, fullParamId("masterHigh"));
+	syncSliderRange(midKnob, fullParamId("masterMid"));
+	syncSliderRange(lowKnob, fullParamId("masterLow"));
 }
