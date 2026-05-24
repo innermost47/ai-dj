@@ -22,6 +22,7 @@ class AudioManager
 		bool hasOriginalVersion = false;
 		float originalBpm = 126.0f;
 		bool success = false;
+		bool stagingFilled = false;
 	};
 
 	PreprocessResult preprocessAudioFile(const juce::File &rawFile, float serverSnappedBpm,
@@ -40,7 +41,6 @@ class AudioManager
 	void checkAndSwapStagingBuffers();
 	void performAtomicSwap(TrackData *track, const juce::String &trackId);
 	void updateWaveformDisplay(const juce::String &trackId);
-	void loadAudioFileAsync(const juce::String &trackId, const juce::File &audioFile);
 	void processAudioBPMAndSync(TrackData *track, float sampleBpm = -1.0f);
 	void updateMasterEQ();
 	void saveBufferToFile(const juce::AudioBuffer<float> &buffer, const juce::File &outputFile, double sampleRate);

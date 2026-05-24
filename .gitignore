@@ -28,3 +28,4 @@ deps
 CPTCMakeBuild/
 unused_functions.txt
 to_do.md
+CMakeSettings.json

@@ -104,6 +104,8 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 		track->preprocessHasOriginal.store(preprocessResult.hasOriginalVersion);
 		track->preprocessOriginalBpm.store(preprocessResult.originalBpm);
 		track->skipBpmSync.store(true);
+		track->skipDiskReload.store(preprocessResult.stagingFilled);
+
 		auto &currentPage = track->getCurrentPage();
 		currentPage.prompt = request.prompt;
 		currentPage.bpm = request.bpm;

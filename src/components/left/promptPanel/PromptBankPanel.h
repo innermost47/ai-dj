@@ -50,6 +50,7 @@ class PromptBankPanel : public BasePanel
 	void deleteCategoryDialog(const juce::String &categoryName);
 
 	void addPromptDialog();
+	void scrollToSelected();
 
 	DjIaVstEditor &editor;
 

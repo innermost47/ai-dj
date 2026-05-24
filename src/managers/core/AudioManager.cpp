@@ -89,9 +89,40 @@ void AudioManager::processIncomingAudio(bool hostIsPlaying)
 		    }
 	    });
 
-	juce::Thread::launch(
-	    [this, trackId = audioProcessor.getPendingTrackId(), audioFile = audioProcessor.getPendingAudioFile()]()
-	    { loadAudioFileAsync(trackId, audioFile); });
+	int targetPageIndex = track->stagingTargetPageIndex.load();
+	if (targetPageIndex < 0 || targetPageIndex >= Obsidian::MAX_PAGES)
+		targetPageIndex = track->currentPageIndex.load();
+
+	auto &targetPage = track->pages[targetPageIndex];
+	auto &currentPage = track->getCurrentPage();
+
+	currentPage.stagingOriginalBpm = track->preprocessOriginalBpm.load();
+	track->nextHasOriginalVersion.store(track->preprocessHasOriginal.load());
+
+	juce::File permanentFile = getTrackPageAudioFile(audioProcessor.getPendingTrackId(), targetPageIndex);
+	targetPage.audioFilePath = permanentFile.getFullPathName();
+
+	track->hasStagingData.store(true, std::memory_order_release);
+	track->swapRequested.store(true, std::memory_order_release);
+
+	juce::MessageManager::callAsync(
+	    [this]()
+	    {
+		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+		    {
+			    editor->statusLabel.setText("Sample loaded! Ready to play.", juce::dontSendNotification);
+			    juce::Timer::callAfterDelay(2000,
+			                                [this]()
+			                                {
+				                                if (auto *editor =
+				                                        dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
+				                                {
+					                                editor->statusLabel.setText("Ready", juce::dontSendNotification);
+					                                editor->uiStatusManager->updateLCD();
+				                                }
+			                                });
+		    }
+	    });
 
 	generationManager.clearPendingAudio();
 	audioProcessor.setHasUnloadedSample(false);
@@ -198,7 +229,8 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	}
 
 	int targetPageIndex = 0;
-	if (TrackData *track = trackManager.getTrack(trackId))
+	TrackData *track = trackManager.getTrack(trackId);
+	if (track)
 		targetPageIndex = track->currentPageIndex.load();
 
 	auto stretchedFile = getTrackPageAudioFile(trackId, targetPageIndex);
@@ -207,6 +239,15 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	if (tempo <= 0.0 || hostBpm <= 0.0 || std::abs(hostBpm - tempo) < 0.1)
 	{
 		saveBufferToFile(rawBuffer, stretchedFile, sampleRate);
+
+		if (track)
+		{
+			track->stagingBuffer.makeCopyOf(rawBuffer);
+			track->stagingNumSamples.store(rawBuffer.getNumSamples());
+			track->stagingSampleRate.store(sampleRate);
+			result.stagingFilled = true;
+		}
+
 		result.stretchedFile = stretchedFile;
 		result.hasOriginalVersion = false;
 		result.originalBpm = static_cast<float>(hostBpm > 0 ? hostBpm : 126.0);
@@ -254,6 +295,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 			break;
 		}
 	}
+
 	juce::AudioBuffer<float> finalBuffer;
 	int cleanedSize = outputSamples - firstValidSample;
 	if (cleanedSize > 0)
@@ -273,6 +315,15 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	saveBufferToFile(rawBuffer, originalFile, sampleRate);
 	saveBufferToFile(finalBuffer, stretchedFile, sampleRate);
+
+	if (track)
+	{
+		track->stagingBuffer.makeCopyOf(finalBuffer);
+		track->stagingNumSamples.store(finalBuffer.getNumSamples());
+		track->stagingSampleRate.store(sampleRate);
+		track->originalStagingBuffer.makeCopyOf(rawBuffer);
+		result.stagingFilled = true;
+	}
 
 	result.stretchedFile = stretchedFile;
 	result.originalFile = originalFile;
@@ -915,70 +966,6 @@ juce::File AudioManager::getTrackPageAudioFile(const juce::String &trackId, int 
 	char pageName = static_cast<char>('A' + pageIndex);
 	juce::String filename = trackId + "_" + juce::String(pageName) + ".wav";
 	return audioDir.getChildFile(filename);
-}
-
-void AudioManager::loadAudioFileAsync(const juce::String &trackId, const juce::File &audioFile)
-{
-	TrackData *track = trackManager.getTrack(trackId);
-	if (!track)
-		return;
-
-	try
-	{
-		std::unique_ptr<juce::AudioFormatReader> reader(audioProcessor.sharedFormatManager.createReaderFor(audioFile));
-		if (!reader)
-		{
-			return;
-		}
-
-		int targetPageIndex = track->stagingTargetPageIndex.load();
-		if (targetPageIndex < 0 || targetPageIndex >= Obsidian::MAX_PAGES)
-			targetPageIndex = track->currentPageIndex.load();
-
-		loadAudioToStaging(reader, track);
-		if (track->skipBpmSync.exchange(false))
-		{
-			auto &currentPage = track->getCurrentPage();
-			track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
-			currentPage.stagingOriginalBpm = track->preprocessOriginalBpm.load();
-			track->nextHasOriginalVersion.store(track->preprocessHasOriginal.load());
-		}
-		else
-		{
-			processAudioBPMAndSync(track);
-		}
-
-		juce::File permanentFile = getTrackPageAudioFile(trackId, targetPageIndex);
-
-		track->pages[targetPageIndex].audioFilePath = permanentFile.getFullPathName();
-		track->hasStagingData.store(true, std::memory_order_release);
-		track->swapRequested.store(true, std::memory_order_release);
-
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			    {
-				    editor->statusLabel.setText("Sample loaded! Ready to play.", juce::dontSendNotification);
-				    juce::Timer::callAfterDelay(
-				        2000,
-				        [this]()
-				        {
-					        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-					        {
-						        editor->statusLabel.setText("Ready", juce::dontSendNotification);
-						        editor->uiStatusManager->updateLCD();
-					        }
-				        });
-			    }
-		    });
-	}
-	catch (const std::exception & /*e*/)
-	{
-		track->hasStagingData = false;
-		track->swapRequested = false;
-		track->stagingTargetPageIndex.store(-1);
-	}
 }
 
 void AudioManager::loadSampleFromBank(const juce::String &sampleId, const juce::String &trackId)

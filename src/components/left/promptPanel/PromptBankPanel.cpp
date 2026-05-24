@@ -117,6 +117,7 @@ void PromptBankPanel::refreshList()
 	applyFilterAndSort();
 	rebuildAccordions();
 	editor.uiPresetManager->notifyTracksPromptUpdate();
+	juce::MessageManager::callAsync([this]() { scrollToSelected(); });
 }
 
 void PromptBankPanel::applyFilterAndSort()
@@ -309,6 +310,79 @@ void PromptBankPanel::onPromptClicked(PromptBankEntry *entry)
 			}
 }
 
+void PromptBankPanel::scrollToSelected()
+{
+	if (selectedId.isEmpty())
+		return;
+
+	PromptBankEntry *targetEntry = nullptr;
+	for (auto *entry : filteredPrompts)
+	{
+		if (entry->id == selectedId)
+		{
+			targetEntry = entry;
+			break;
+		}
+	}
+
+	if (targetEntry == nullptr)
+		return;
+
+	juce::String categoryName = targetEntry->category.isEmpty() ? "Uncategorized" : targetEntry->category;
+
+	ObsidianAccordion *targetAccordion = nullptr;
+	for (auto &acc : accordions)
+	{
+		if (acc->getName() == categoryName)
+		{
+			targetAccordion = acc.get();
+			break;
+		}
+	}
+
+	if (targetAccordion == nullptr)
+		return;
+
+	if (!targetAccordion->isExpanded())
+	{
+		targetAccordion->setExpanded(true, false);
+		openCategories.insert(categoryName);
+		resized();
+	}
+
+	PromptBankItem *targetItem = nullptr;
+	for (int i = 0; i < targetAccordion->getNumChildComponents(); ++i)
+	{
+		if (auto *item = dynamic_cast<PromptBankItem *>(targetAccordion->getChildComponent(i)))
+		{
+			if (item->getEntry() == targetEntry)
+			{
+				targetItem = item;
+				break;
+			}
+		}
+	}
+
+	if (targetItem == nullptr)
+		return;
+
+	auto itemBoundsInContainer = accordionContainer.getLocalArea(targetItem, targetItem->getLocalBounds());
+
+	int itemTop = itemBoundsInContainer.getY();
+	int itemBottom = itemBoundsInContainer.getBottom();
+	int viewportHeight = accordionViewport.getHeight();
+	int currentScrollY = accordionViewport.getViewPositionY();
+
+	if (itemTop < currentScrollY)
+	{
+		accordionViewport.setViewPosition(0, itemTop - Obsidian::GAP);
+	}
+	else if (itemBottom > currentScrollY + viewportHeight)
+	{
+		accordionViewport.setViewPosition(0, itemBottom - viewportHeight + Obsidian::GAP);
+	}
+}
+
 void PromptBankPanel::addPromptDialog()
 {
 	auto *bank = audioProcessor.getPromptBank();
@@ -331,15 +405,6 @@ void PromptBankPanel::addPromptDialog()
 			                                       PromptBankEntry *newEntry =
 			                                           bank->addPrompt(res.text, res.modelName, res.category);
 			                                       selectedId = newEntry->id;
-			                                       /* juce::String cat = res.category.isEmpty() ? "Uncategorized" :
-			                                        res.category; openCategories.insert(cat);
-
-			                                        juce::Timer::callAfterDelay(100,
-			                                                                    [safeThis, newEntry]()
-			                                                                    {
-			                                                                        if (safeThis && newEntry)
-			                                                                            safeThis->onPromptClicked(newEntry);
-			                                                                    });*/
 		                                       }
 	                                       });
 }

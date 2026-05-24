@@ -67,6 +67,7 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 
 	void deleteCategoryDialog(const juce::String &categoryName);
 	void editCategoryDialog(const juce::String &categoryName);
+	void scrollToSelected();
 
 	std::map<juce::String, std::vector<SampleBankEntry *>> samplesByCategory;
 

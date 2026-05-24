@@ -370,6 +370,7 @@ void SampleBankPanel::selectEntry(SampleBankEntry *entry)
 	}
 
 	detailPanel.setEntry(entry);
+	juce::MessageManager::callAsync([this]() { scrollToSelected(); });
 }
 
 void SampleBankPanel::onAccordionExpanded(const juce::String &categoryName, bool expanded)
@@ -472,6 +473,12 @@ void SampleBankPanel::refreshSampleList()
 
 	hasEverLoaded.store(true);
 	repaint();
+	juce::Timer::callAfterDelay(50,
+	                            [safeThis = juce::Component::SafePointer<SampleBankPanel>(this)]()
+	                            {
+		                            if (safeThis)
+			                            safeThis->scrollToSelected();
+	                            });
 }
 
 void SampleBankPanel::refreshSampleListSilent()
@@ -561,6 +568,14 @@ void SampleBankPanel::setVisible(bool v)
 	if (v)
 	{
 		hasEverLoaded.store(false);
+		refreshSampleList();
+
+		juce::Timer::callAfterDelay(50,
+		                            [safeThis = juce::Component::SafePointer<SampleBankPanel>(this)]()
+		                            {
+			                            if (safeThis)
+				                            safeThis->scrollToSelected();
+		                            });
 	}
 	else
 	{
@@ -584,6 +599,80 @@ void SampleBankPanel::deleteSample(const juce::String &id)
 	if (auto *bank = audioProcessor.getSampleBank())
 		if (bank->removeSample(id))
 			refreshSampleList();
+}
+
+void SampleBankPanel::scrollToSelected()
+{
+	if (selectedId.isEmpty())
+		return;
+
+	SampleBankEntry *targetEntry = nullptr;
+	for (auto *entry : filteredSamples)
+	{
+		if (entry->id == selectedId)
+		{
+			targetEntry = entry;
+			break;
+		}
+	}
+
+	if (targetEntry == nullptr)
+		return;
+
+	juce::String categoryName = targetEntry->category.isEmpty() ? "Uncategorized" : targetEntry->category;
+
+	ObsidianAccordion *targetAccordion = nullptr;
+	for (auto &acc : accordions)
+	{
+		if (acc->getName() == categoryName)
+		{
+			targetAccordion = acc.get();
+			break;
+		}
+	}
+
+	if (targetAccordion == nullptr)
+		return;
+
+	if (!targetAccordion->isExpanded())
+	{
+		targetAccordion->setExpanded(true, false);
+		ensureAccordionItemsCreated(targetAccordion, categoryName);
+		openCategories.insert(categoryName);
+		resized();
+	}
+
+	SampleBankItem *targetItem = nullptr;
+	for (const auto &item : targetAccordion->getItems())
+	{
+		if (auto *sampleItem = dynamic_cast<SampleBankItem *>(item.get()))
+		{
+			if (sampleItem->getSampleEntry() == targetEntry)
+			{
+				targetItem = sampleItem;
+				break;
+			}
+		}
+	}
+
+	if (targetItem == nullptr)
+		return;
+
+	auto itemBoundsInContainer = accordionContainer.getLocalArea(targetItem, targetItem->getLocalBounds());
+
+	int itemTop = itemBoundsInContainer.getY();
+	int itemBottom = itemBoundsInContainer.getBottom();
+	int viewportHeight = accordionViewport.getHeight();
+	int currentScrollY = accordionViewport.getViewPositionY();
+
+	if (itemTop < currentScrollY)
+	{
+		accordionViewport.setViewPosition(0, itemTop - Obsidian::GAP);
+	}
+	else if (itemBottom > currentScrollY + viewportHeight)
+	{
+		accordionViewport.setViewPosition(0, itemBottom - viewportHeight + Obsidian::GAP);
+	}
 }
 
 void SampleBankPanel::cleanupUnusedSamples()

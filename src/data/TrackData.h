@@ -234,6 +234,7 @@ struct TrackData
 	std::atomic<bool> lastFeedbackBeatRepeat{false};
 	std::atomic<bool> isPreviewMode{false};
 	std::atomic<bool> previewEndPending{false};
+	std::atomic<bool> skipDiskReload{false};
 
 	std::atomic<double> stagingSampleRate{Obsidian::SAMPLERATE};
 	std::atomic<double> readPosition{0.0};
