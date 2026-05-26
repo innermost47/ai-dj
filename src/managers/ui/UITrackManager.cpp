@@ -156,7 +156,7 @@ void UITrackManager::onSampleLoaded(const juce::String &trackId)
 	{
 		if (trackComp->getTrackId() == trackId)
 		{
-			trackComp->setSamplePending(false);
+			trackComp->syncBorderOverlay();
 			trackComp->updateFromTrackData();
 			trackComp->repaint();
 			if (editor.mixerPanel)

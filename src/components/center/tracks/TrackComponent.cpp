@@ -172,7 +172,8 @@ void TrackComponent::syncBorderOverlay()
 	if (isDragOver && isDraggingPrompt)
 		overlayColour = ColourPalette::violet;
 
-	borderOverlay.setVisualState(isGenerating, hasSamplePending, isSelected, isDragOver, blinkState, overlayColour);
+	borderOverlay.setVisualState(isGenerating, track->hasSamplePending.load(), isSelected, isDragOver, blinkState,
+	                             overlayColour);
 }
 
 void TrackComponent::updateFromTrackData()
@@ -284,14 +285,6 @@ void TrackComponent::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 	g.setColour(ColourPalette::backgroundDark.withAlpha(Obsidian::ALPHA_08));
 	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
-}
-
-void TrackComponent::setSamplePending(bool pending)
-{
-	if (hasSamplePending == pending)
-		return;
-	hasSamplePending = pending;
-	syncBorderOverlay();
 }
 
 void TrackComponent::setupAdsrKnobs()

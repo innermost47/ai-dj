@@ -58,9 +58,11 @@ void ObsidianBaseMidiComponent::registerButtonParam(const juce::String &paramSuf
 	bindings.push_back(std::make_unique<Binding>(Binding{paramSuffix, nullptr, &button, momentary}));
 	Binding *b = bindings.back().get();
 
-	button.onClick = [this, b]()
+	button.onClick = [this, b, paramSuffix]()
 	{
 		if (isDestroyed.load())
+			return;
+		if (paramSuffix == "Play" && track->getCurrentPage().numSamples == 0)
 			return;
 		pushButtonToParam(*b);
 	};

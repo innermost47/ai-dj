@@ -268,6 +268,7 @@ void ParameterManager::applyPlayState(bool shouldArm, TrackData *track)
 
 	const bool isPlaying = track->isCurrentlyPlaying.load();
 	const bool emptySeq = track->allSequencerStepsAreFalse();
+	int slot = track->slotIndex + 1;
 
 	if (shouldArm && !isPlaying)
 	{
@@ -277,11 +278,14 @@ void ParameterManager::applyPlayState(bool shouldArm, TrackData *track)
 			track->pendingAction = TrackData::PendingAction::None;
 		}
 		track->setArmed(true);
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot),
+		                                                 MidiMapping::feedbackPending);
 	}
 	else if (!shouldArm && !isPlaying)
 	{
 		track->pendingAction = TrackData::PendingAction::None;
 		track->setArmed(false);
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(slot), MidiMapping::feedbackIdle);
 	}
 	else if (!shouldArm && isPlaying && !emptySeq)
 	{

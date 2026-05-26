@@ -356,56 +356,33 @@ void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 			auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
 			if (param)
 			{
+				if (mapping.parameterName.contains("slot"))
+				{
+					juce::String slotStr = mapping.parameterName.substring(4, 5);
+					int slotNumber = slotStr.getIntValue();
+					if (slotNumber > 1 && slotNumber > Obsidian::MAX_TRACKS)
+						return;
+					std::vector<juce::String> trackIds = mapping.processor->getTrackManager().getAllTrackIds();
+					juce::String trackId = trackIds[slotNumber - 1];
+					TrackData *track = mapping.processor->getTrack(trackId);
+
+					if (mapping.parameterName.contains("Play"))
+					{
+						if (track->getCurrentPage().numSamples > 0)
+							changedPlaySlotIndex.store(slotNumber - 1);
+						else
+							return;
+					}
+					if (mapping.parameterName.contains("Generate"))
+					{
+						if (mapping.processor->getIsGenerating())
+							return;
+						changedGenerateSlotIndex.store(slotNumber - 1);
+					}
+				}
+				mustCheckForMidiEvent.store(true);
 				param->setValueNotifyingHost(value);
 				showStatus(mapping, statusMessage, isWarning);
-
-				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Play"))
-				{
-					juce::String slotStr = mapping.parameterName.substring(4, 5);
-					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
-					{
-						changedPlaySlotIndex.store(slotNumber - 1);
-						mustCheckForMidiEvent.store(true);
-					}
-				}
-				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Generate"))
-				{
-					if (mapping.processor->getIsGenerating())
-						return;
-					juce::String slotStr = mapping.parameterName.substring(4, 5);
-					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
-					{
-						changedGenerateSlotIndex.store(slotNumber - 1);
-						mustCheckForMidiEvent.store(true);
-					}
-				}
-				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("RandomRetrigger"))
-				{
-					juce::String slotStr = mapping.parameterName.substring(4, 5);
-					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
-					{
-						mustCheckForMidiEvent.store(true);
-					}
-				}
-
-				if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("RetriggerInterval"))
-				{
-					juce::String slotStr = mapping.parameterName.substring(4, 5);
-					int slotNumber = slotStr.getIntValue();
-					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS)
-					{
-						mustCheckForMidiEvent.store(true);
-					}
-				}
-				if (mapping.parameterName.contains("slot") &&
-				    (mapping.parameterName.contains("AdsrAttack") || mapping.parameterName.contains("AdsrDecay") ||
-				     mapping.parameterName.contains("AdsrSustain") || mapping.parameterName.contains("AdsrRelease")))
-				{
-					mustCheckForMidiEvent.store(true);
-				}
 			}
 		}
 	}

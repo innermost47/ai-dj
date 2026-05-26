@@ -345,26 +345,6 @@ void AudioManager::resizeIndividualBuffers(juce::AudioSampleBuffer &buffer)
 	}
 }
 
-void AudioManager::loadAudioToStaging(std::unique_ptr<juce::AudioFormatReader> &reader, TrackData *track)
-{
-	int numChannels = reader->numChannels;
-	int numSamples = static_cast<int>(reader->lengthInSamples);
-	double sampleRate = reader->sampleRate;
-
-	track->stagingBuffer.setSize(2, numSamples, false, false, true);
-	track->stagingBuffer.clear();
-
-	reader->read(&track->stagingBuffer, 0, numSamples, 0, true, true);
-
-	if (numChannels == 1)
-	{
-		track->stagingBuffer.copyFrom(1, 0, track->stagingBuffer, 0, 0, numSamples);
-	}
-
-	track->stagingNumSamples.store(numSamples);
-	track->stagingSampleRate.store(sampleRate);
-}
-
 void AudioManager::checkAndSwapStagingBuffers()
 {
 	auto trackIds = trackManager.getAllTrackIds();
@@ -394,7 +374,7 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	bool preservedHasOriginal = targetPage.hasOriginalVersion.load();
 
 	std::swap(targetPage.audioBuffer, track->stagingBuffer);
-	track->stretchNeedsReset.store(true);
+
 	targetPage.numSamples = track->stagingNumSamples.load();
 	targetPage.sampleRate = track->stagingSampleRate.load();
 	targetPage.originalBpm = targetPage.stagingOriginalBpm;
@@ -431,6 +411,9 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	}
 
 	track->stagingTargetPageIndex.store(-1);
+	track->hasStagingData.store(false);
+	track->stagingBuffer.clear();
+	track->hasSamplePending.store(false);
 
 	juce::MessageManager::callAsync([this, trackId]() { updateWaveformDisplay(trackId); });
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
@@ -909,6 +892,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 							    break;
 						    }
 					    }
+					    editor->mixerPanel->refreshChannel(trackId);
 				    }
 			    }
 		    });

@@ -54,11 +54,11 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void onPageSelected(int pageIndex);
 	void performPageChange(int pageIndex);
 	void updatePagesDisplay();
-	void setSamplePending(bool pending);
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String &name);
 	void loadPromptPresets();
 	void detachWaveformTrack();
+	void syncBorderOverlay();
 
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
@@ -257,7 +257,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void openDrawingCanvas();
 	void updatePreviewButton();
 	void updateModelUI();
-	void syncBorderOverlay();
 	juce::Colour getCurrentModelColour() const;
 	void setupAdsrKnobs();
 	void updateAdsrKnobsFromPage();

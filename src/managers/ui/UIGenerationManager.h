@@ -3,11 +3,12 @@
 #include <JuceHeader.h>
 
 class DjIaVstEditor;
+class DjIaVstProcessor;
 
 class UIGenerationManager : public DjIaVstProcessor::GenerationListener
 {
   public:
-	explicit UIGenerationManager(DjIaVstEditor &editor);
+	explicit UIGenerationManager(DjIaVstEditor &editor, DjIaVstProcessor &processor);
 	~UIGenerationManager() = default;
 
 	void onGenerationComplete(const juce::String &trackId, const juce::String &message) override;
@@ -54,6 +55,8 @@ class UIGenerationManager : public DjIaVstProcessor::GenerationListener
 
   private:
 	DjIaVstEditor &editor;
+	DjIaVstProcessor &audioProcessor;
+
 	std::atomic<bool> isGenerating_{false};
 	std::atomic<bool> wasGenerating_{false};
 	juce::String generatingTrackId;

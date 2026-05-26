@@ -4,7 +4,8 @@
 #include "PluginProcessor.h"
 #include "TrackData.h"
 
-UIGenerationManager::UIGenerationManager(DjIaVstEditor &editor) : editor(editor)
+UIGenerationManager::UIGenerationManager(DjIaVstEditor &editor, DjIaVstProcessor &processor)
+    : editor(editor), audioProcessor(processor)
 {
 }
 
@@ -102,8 +103,6 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 
 			if (success)
 			{
-				trackComp->setSamplePending(true);
-
 				if (editor.audioProcessor.getAutoLoadEnabled())
 				{
 					editor.statusLabel.setText("Sample ready - Loading automatically...", juce::dontSendNotification);
@@ -124,7 +123,7 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 
 	if (editor.mixerPanel)
 	{
-		editor.mixerPanel->stopGeneratingAnimationForTrack(trackId, success);
+		editor.mixerPanel->stopGeneratingAnimationForTrack(trackId);
 	}
 
 	isGenerating_.store(false);

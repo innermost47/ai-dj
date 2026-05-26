@@ -235,6 +235,8 @@ void MixerChannel::updateFromTrackData()
 
 	syncBindingsFromParameters();
 
+	playButton.setClickingTogglesState(t->getCurrentPage().numSamples > 0);
+
 	updateButtonColors();
 	updateModelUI();
 }
@@ -406,7 +408,7 @@ void MixerChannel::setupUI()
 	playButton.loadIconToggled(BinaryData::pause_svg, BinaryData::pause_svgSize);
 	playButton.setHasToggledIcon(true);
 	playButton.setLabelText("");
-	playButton.setClickingTogglesState(true);
+	playButton.setClickingTogglesState(false);
 
 	addAndMakeVisible(stopButton);
 	stopButton.loadIcon(BinaryData::square_svg, BinaryData::square_svgSize);
