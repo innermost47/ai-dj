@@ -68,18 +68,19 @@ void PromptBankPanel::setupUI()
 void PromptBankPanel::resized()
 {
 	auto area = getLocalBounds();
-
 	area.removeFromBottom(Obsidian::GAP_XL);
-
 	header.setBounds(area.removeFromTop(header.getPreferredHeight()));
-
 	area.removeFromTop(Obsidian::GAP);
 	accordionViewport.setBounds(area);
 
 	int containerWidth = accordionViewport.getWidth() - 12;
+
+	for (auto &acc : accordions)
+		acc->setSize(containerWidth, acc->getHeight());
+
 	int totalHeight = 0;
 	for (auto &acc : accordions)
-		totalHeight += acc->getPreferredHeight() + Obsidian::SPACER;
+		totalHeight += acc->getPreferredHeight() + Obsidian::SPACER_XS;
 
 	accordionContainer.setSize(containerWidth, juce::jmax(totalHeight, area.getHeight()));
 
