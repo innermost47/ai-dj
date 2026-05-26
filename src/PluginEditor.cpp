@@ -25,7 +25,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	tooltipWindow = std::make_unique<juce::TooltipWindow>(this, 700);
 	uiStatusManager = std::make_unique<UIStatusManager>(*this);
 	uiModalManager = std::make_unique<UIModalManager>(*this);
-	uiGenerationManager = std::make_unique<UIGenerationManager>(*this);
+	uiGenerationManager = std::make_unique<UIGenerationManager>(*this, audioProcessor);
 	uiTrackManager = std::make_unique<UITrackManager>(*this);
 	uiPresetManager = std::make_unique<UIPresetManager>(*this);
 	uiMidiManager = std::make_unique<UIMidiManager>(*this);

@@ -37,7 +37,6 @@ class AudioManager
 	void copyToIndividualOutputs(juce::AudioSampleBuffer &buffer);
 	void clearOutputBuffers(juce::AudioSampleBuffer &buffer);
 	void resizeIndividualBuffers(juce::AudioSampleBuffer &buffer);
-	void loadAudioToStaging(std::unique_ptr<juce::AudioFormatReader> &reader, TrackData *track);
 	void checkAndSwapStagingBuffers();
 	void performAtomicSwap(TrackData *track, const juce::String &trackId);
 	void updateWaveformDisplay(const juce::String &trackId);

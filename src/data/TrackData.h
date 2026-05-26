@@ -172,6 +172,7 @@ struct TrackData
 	std::atomic<bool> showSequencer{true};
 	std::atomic<bool> isVersionSwitch{false};
 	std::atomic<bool> preservedLoopLocked{false};
+	std::atomic<bool> hasSamplePending{false};
 
 	std::atomic<float> lastFeedbackDelaySend{-1.0f};
 
@@ -188,7 +189,7 @@ struct TrackData
 	int customStepCounter = 0;
 
 	std::unique_ptr<TrackStretchImpl> stretchImpl;
-	std::atomic<bool> stretchNeedsReset{true};
+
 	int stretchConfiguredChannels = 0;
 	float stretchConfiguredSampleRate = 0.0f;
 	juce::AudioBuffer<float> pitchInputBuffer;

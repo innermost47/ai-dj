@@ -189,17 +189,17 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 		for (const auto &trackId : trackIds)
 		{
 			TrackData *track = trackManager.getTrack(trackId);
-			bool arm = false;
+			bool isArmed = false;
 			if (track->isCurrentlyPlaying.load())
-				arm = true;
+				isArmed = true;
 			if (track)
 			{
 				auto &seqData = track->getCurrentSequencerData();
 				seqData.isPlaying = false;
 				track->setStop();
-				track->isArmed = arm;
+				track->isArmed.store(isArmed);
 				track->isPlaying.store(false);
-				track->isCurrentlyPlaying = false;
+				track->isCurrentlyPlaying.store(false);
 				track->readPosition.store(0.0);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
@@ -207,7 +207,8 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->customStepCounter = 0;
 				track->lastPpqPosition = -1.0;
 				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
-				                                                 MidiMapping::feedbackIdle);
+				                                                 isArmed ? MidiMapping::feedbackPending
+				                                                         : MidiMapping::feedbackIdle);
 			}
 		}
 		audioProcessor.needsUIUpdate.store(true);
@@ -411,7 +412,7 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 	auto &seqData = track->getCurrentSequencerData();
 	int step = seqData.currentStep;
 	int measure = seqData.currentMeasure;
-	track->isArmed = false;
+	track->isArmed.store(false);
 
 	if (seqData.steps[measure][step])
 	{

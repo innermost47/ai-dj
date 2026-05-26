@@ -29,9 +29,9 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	void cleanup();
 	void startGeneratingAnimation();
 	void stopGeneratingAnimation();
-	void setSamplePending(bool pending)
+	void setSamplePending()
 	{
-		hasSamplePending = pending;
+		hasSamplePending = track->hasSamplePending.load();
 		repaint();
 	}
 	void setTrackName(const juce::String &name);

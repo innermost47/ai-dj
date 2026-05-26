@@ -172,7 +172,8 @@ void TrackComponent::syncBorderOverlay()
 	if (isDragOver && isDraggingPrompt)
 		overlayColour = ColourPalette::violet;
 
-	borderOverlay.setVisualState(isGenerating, hasSamplePending, isSelected, isDragOver, blinkState, overlayColour);
+	borderOverlay.setVisualState(isGenerating, track->hasSamplePending.load(), isSelected, isDragOver, blinkState,
+	                             overlayColour);
 }
 
 void TrackComponent::updateFromTrackData()
@@ -284,14 +285,6 @@ void TrackComponent::paint(juce::Graphics &g)
 	auto bounds = getLocalBounds().toFloat();
 	g.setColour(ColourPalette::backgroundDark.withAlpha(Obsidian::ALPHA_08));
 	g.fillRoundedRectangle(bounds, Obsidian::CORNER);
-}
-
-void TrackComponent::setSamplePending(bool pending)
-{
-	if (hasSamplePending == pending)
-		return;
-	hasSamplePending = pending;
-	syncBorderOverlay();
 }
 
 void TrackComponent::setupAdsrKnobs()
@@ -1154,7 +1147,7 @@ void TrackComponent::syncTrackName(const juce::String &name)
 
 void TrackComponent::setupIconButtons()
 {
-	auto setupToggleButton = [](IconButton &btn)
+	auto setupToggleButton = [](auto &btn)
 	{
 		btn.setClickingTogglesState(true);
 		btn.setHasAccentBar(true);
@@ -1163,7 +1156,7 @@ void TrackComponent::setupIconButtons()
 		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonPrimary);
 		btn.setColour(juce::TextButton::textColourOnId, ColourPalette::buttonPrimary);
 	};
-	auto setupActionButton = [](IconButton &btn)
+	auto setupActionButton = [](auto &btn)
 	{
 		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundMid);
 		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::buttonPrimary);
@@ -1676,7 +1669,7 @@ void TrackComponent::updateModelUI()
 	adsrReleaseKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	adsrReleaseKnob.setColour(juce::Slider::thumbColourId, modelColour);
 
-	auto setupToggleColours = [&](IconButton &btn)
+	auto setupToggleColours = [&](auto &btn)
 	{
 		btn.setColour(juce::TextButton::textColourOffId, modelColour);
 		btn.setColour(juce::TextButton::textColourOnId, modelColour);

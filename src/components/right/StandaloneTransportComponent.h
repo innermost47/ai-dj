@@ -67,9 +67,9 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	StandaloneTransport &transport;
 	DjIaVstProcessor &audioProcessor;
 
-	IconButton playButton{"play"};
-	IconButton stopButton{"stop"};
-	IconButton linkButton{"link", "ABLETON LINK"};
+	IconButtonSimple playButton{"play"};
+	IconButtonSimple stopButton{"stop"};
+	IconButtonSimple linkButton{"link", "ABLETON LINK"};
 
 	BeatLcd lcd;
 	BpmField bpmField;

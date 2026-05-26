@@ -54,11 +54,11 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void onPageSelected(int pageIndex);
 	void performPageChange(int pageIndex);
 	void updatePagesDisplay();
-	void setSamplePending(bool pending);
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String &name);
 	void loadPromptPresets();
 	void detachWaveformTrack();
+	void syncBorderOverlay();
 
 	bool isEditingLabel = false;
 	bool sequencerVisible = false;
@@ -201,14 +201,14 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 
 	MidiLearnableButton pageButtons[4];
 
-	IconButton drawButton{"DrawBtn", "DRAW"};
+	IconButtonSimple drawButton{"DrawBtn", "DRAW"};
 	IconButton generateButton{"GenerateBtn", "GEN"};
 
-	IconButton originalSyncButton{"OriginalSyncBtn", "ORIG"};
-	IconButton previewButton{"PreviewBtn", "PREVIEW"};
+	IconButtonSimple originalSyncButton{"OriginalSyncBtn", "ORIG"};
+	IconButtonSimple previewButton{"PreviewBtn", "PREVIEW"};
 
 	IconButton beatRepeatButton{"RandomRetriggerBtn", "REPEAT"};
-	IconButton randomDurationToggle{"RandomDurationBtn", "RND"};
+	IconButtonSimple randomDurationToggle{"RandomDurationBtn", "RND"};
 
 	MidiLearnableSlider intervalKnob;
 	MidiLearnableSlider adsrAttackKnob;
@@ -257,7 +257,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void openDrawingCanvas();
 	void updatePreviewButton();
 	void updateModelUI();
-	void syncBorderOverlay();
 	juce::Colour getCurrentModelColour() const;
 	void setupAdsrKnobs();
 	void updateAdsrKnobsFromPage();

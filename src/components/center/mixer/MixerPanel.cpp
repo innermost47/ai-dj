@@ -214,20 +214,21 @@ void MixerPanel::clearSamplePending(const juce::String &trackId)
 	{
 		if (channel->getTrackId() == trackId)
 		{
-			channel->setSamplePending(false);
+			channel->setSamplePending();
+			refreshChannel(trackId);
 			break;
 		}
 	}
 }
 
-void MixerPanel::stopGeneratingAnimationForTrack(const juce::String &trackId, bool pending)
+void MixerPanel::stopGeneratingAnimationForTrack(const juce::String &trackId)
 {
 	for (auto &channel : mixerChannels)
 	{
 		if (channel->getTrackId() == trackId)
 		{
 			channel->stopGeneratingAnimation();
-			channel->setSamplePending(pending);
+			channel->setSamplePending();
 			break;
 		}
 	}
