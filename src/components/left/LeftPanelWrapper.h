@@ -54,9 +54,9 @@ class LeftPanelWrapper : public ObsidianComponent
 	std::unique_ptr<SampleBankPanel> sampleBank;
 	std::unique_ptr<PromptBankPanel> promptBank;
 
-	IconButton promptTabButton{"prompt"};
-	IconButton sampleTabButton{"sample"};
-	IconButton collapseButton{"collapse"};
+	IconButtonSimple promptTabButton{"prompt"};
+	IconButtonSimple sampleTabButton{"sample"};
+	IconButtonSimple collapseButton{"collapse"};
 
 	bool isExpanded = true;
 
