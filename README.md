@@ -9,6 +9,8 @@
 | [obsidian-neural-frontend](https://github.com/innermost47/obsidian-neural-frontend)     | Storefront & dashboard                       |
 | [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                   |
 | **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                       |
+| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)    |
+| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                      |
 
 ## AI music generation for live performance - VST3, AU, Standalone
 
