@@ -23,14 +23,29 @@ DjIaVstProcessor::DjIaVstProcessor()
 	projectId = "legacy";
 	promptBank = std::make_unique<PromptBank>();
 	loadGlobalConfig();
+	bool needsSaveAndRefresh = false;
 	if (!promptBank->hasMigrated() && !customPrompts.isEmpty())
 	{
 		promptBank->migrateFromCustomPrompts(customPrompts);
 		customPrompts.clear();
 		saveGlobalConfig();
+		needsSaveAndRefresh = true;
 	}
-	if (!promptBank->hasSeeded())
-		promptBank->seedDefaultPromptsAndCategories();
+	if (promptBank->seedDefaultPromptsAndCategories())
+	{
+		needsSaveAndRefresh = true;
+	}
+	if (promptBank->seedStableAudio3Medium())
+	{
+		needsSaveAndRefresh = true;
+	}
+	if (needsSaveAndRefresh)
+	{
+		promptBank->saveToFile();
+
+		if (promptBank->onBankChanged)
+			promptBank->onBankChanged();
+	}
 
 	sharedFormatManager.registerBasicFormats();
 	obsidianEngine->initialize();

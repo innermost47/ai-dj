@@ -60,18 +60,17 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ### Multi-model engine
 
-OBSIDIAN Neural ships with **8 specialized AI engines** - assign a different one to each track for its strengths:
+OBSIDIAN Neural ships with **9 specialized AI engines** - assign a different one to each track for its strengths:
 
 1. **stable-audio-open-1.0** - Versatile foundation, drums and full-mix textures (80–160 BPM)
-2. **Foundation-1** - Tag-based melodic and harmonic phrasing (100–150 BPM)
-3. **Audialab EDM Elements** - High-energy EDM leads, supersaws, plucks (100–150 BPM)
-4. **RC Infinite Pianos** - Grand and electric piano performances (100–150 BPM)
-5. **RC Vocal Textures** - Choral, operatic and atmospheric vocals (100–150 BPM)
-6. **SAO Instrumental** - Melodic trap, lofi jazz rap, indie stems (75–160 BPM)
-7. **StableBeaT** - Trap beats and 808 grooves (75–160 BPM)
-8. **gluten_v1** - Loopable melodic trap and wavy motifs (90–160 BPM)
-
-All models are hosted on [Hugging Face](https://huggingface.co/innermost47/obsidian-neural-models).
+2. **Stable Audio 3 Medium** - Next-gen flexible full tracks, isolated stems, FX (80–160 BPM)
+3. **Foundation-1** - Tag-based melodic and harmonic phrasing (100–150 BPM)
+4. **Audialab EDM Elements** - High-energy EDM leads, supersaws, plucks (100–150 BPM)
+5. **RC Infinite Pianos** - Grand and electric piano performances (100–150 BPM)
+6. **RC Vocal Textures** - Choral, operatic and atmospheric vocals (100–150 BPM)
+7. **SAO Instrumental** - Melodic trap, lofi jazz rap, indie stems (75–160 BPM)
+8. **StableBeaT** - Trap beats and 808 grooves (75–160 BPM)
+9. **gluten_v1** - Loopable melodic trap and wavy motifs (90–160 BPM)
 
 > ⚠️ AI generation can produce unexpected results. Feedback welcome on [Issues](https://github.com/innermost47/ai-dj/issues) or [Discussions](https://github.com/innermost47/ai-dj/discussions).
 
