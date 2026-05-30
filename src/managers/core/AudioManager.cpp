@@ -203,12 +203,13 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 		return result;
 
 	const int numSamples = static_cast<int>(reader->lengthInSamples);
+	const int numChannels = static_cast<int>(reader->numChannels);
 	const double sampleRate = reader->sampleRate;
 
 	juce::AudioBuffer<float> rawBuffer(2, numSamples);
 	rawBuffer.clear();
 	reader->read(&rawBuffer, 0, numSamples, 0, true, true);
-	if (reader->numChannels == 1)
+	if (numChannels == 1)
 		rawBuffer.copyFrom(1, 0, rawBuffer, 0, 0, numSamples);
 
 	double hostBpm = audioProcessor.getCachedHostBpm();
@@ -268,41 +269,15 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	float *const *outPtrs = stretchedBuffer.getArrayOfWritePointers();
 	stretch.process(inPtrs, numSamples, outPtrs, outputSamples);
 
-	const float silenceThresholdRMS = 0.01f;
-	const int windowSize = 256;
-	int firstValidSample = 0;
-
-	for (int i = 0; i < outputSamples - windowSize; i += windowSize / 4)
-	{
-		double sumSquares = 0.0;
-		int countSamples = 0;
-
-		for (int j = 0; j < windowSize && (i + j) < outputSamples; ++j)
-		{
-			for (int c = 0; c < 2; ++c)
-			{
-				const float s = stretchedBuffer.getSample(c, i + j);
-				sumSquares += s * s;
-				countSamples++;
-			}
-		}
-
-		const float rms = std::sqrt(static_cast<float>(sumSquares / countSamples));
-
-		if (rms > silenceThresholdRMS)
-		{
-			firstValidSample = i;
-			break;
-		}
-	}
-
 	juce::AudioBuffer<float> finalBuffer;
-	int cleanedSize = outputSamples - firstValidSample;
-	if (cleanedSize > 0)
+
+	AudioData data = getAudioTrimmed(outputSamples, numChannels, stretchedBuffer, 0.06f);
+
+	if (data.cleanedSize > 0)
 	{
-		finalBuffer.setSize(2, cleanedSize);
+		finalBuffer.setSize(2, data.cleanedSize);
 		for (int c = 0; c < 2; ++c)
-			finalBuffer.copyFrom(c, 0, stretchedBuffer, c, firstValidSample, cleanedSize);
+			finalBuffer.copyFrom(c, 0, stretchedBuffer, c, data.firstValidSample, data.cleanedSize);
 	}
 	else
 	{
@@ -440,6 +415,33 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 	}
 }
 
+AudioManager::AudioData AudioManager::getAudioTrimmed(int outputSamples, int numChannels,
+                                                      juce::AudioBuffer<float> &finalStretchedAudio, float threshold)
+{
+	int firstValidSample = 0;
+
+	for (int i = 0; i < outputSamples; ++i)
+	{
+		float maxVal = 0.0f;
+		for (int channel = 0; channel < numChannels; ++channel)
+		{
+			float sampleVal = std::abs(finalStretchedAudio.getSample(channel, i));
+			if (sampleVal > maxVal)
+				maxVal = sampleVal;
+		}
+		if (maxVal > threshold)
+		{
+			firstValidSample = i;
+			break;
+		}
+	}
+
+	AudioData data;
+	data.cleanedSize = outputSamples - firstValidSample;
+	data.firstValidSample = firstValidSample;
+	return data;
+}
+
 void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
 {
 	track->nextHasOriginalVersion.store(false);
@@ -515,34 +517,15 @@ void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
 
 	stretch.process(inputPointers, inputSamples, outputPointers, outputSamples);
 
-	const float silenceThreshold = 0.001f;
-	int firstValidSample = 0;
+	AudioData data = getAudioTrimmed(outputSamples, numChannels, finalStretchedAudio);
 
-	for (int i = 0; i < outputSamples; ++i)
+	if (data.cleanedSize > 0)
 	{
-		float maxVal = 0.0f;
-		for (int channel = 0; channel < numChannels; ++channel)
-		{
-			float sampleVal = std::abs(finalStretchedAudio.getSample(channel, i));
-			if (sampleVal > maxVal)
-				maxVal = sampleVal;
-		}
-		if (maxVal > silenceThreshold)
-		{
-			firstValidSample = i;
-			break;
-		}
-	}
-
-	int cleanedSize = outputSamples - firstValidSample;
-
-	if (cleanedSize > 0)
-	{
-		juce::AudioBuffer<float> totalAudio(numChannels, cleanedSize);
+		juce::AudioBuffer<float> totalAudio(numChannels, data.cleanedSize);
 
 		for (int channel = 0; channel < numChannels; ++channel)
 		{
-			totalAudio.copyFrom(channel, 0, finalStretchedAudio, channel, firstValidSample, cleanedSize);
+			totalAudio.copyFrom(channel, 0, finalStretchedAudio, channel, data.firstValidSample, data.cleanedSize);
 		}
 		track->stagingBuffer.makeCopyOf(totalAudio);
 	}

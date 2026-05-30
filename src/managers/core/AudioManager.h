@@ -115,5 +115,14 @@ class AudioManager
 	float smoothedMasterVol = 1.0f;
 	float smoothedMasterPan = 0.0f;
 
+	struct AudioData
+	{
+		int cleanedSize;
+		int firstValidSample;
+	};
+
+	AudioData getAudioTrimmed(int outputSamples, int numChannels, juce::AudioBuffer<float> &finalStretchedAudio,
+	                          float threshold = 0.08f);
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioManager)
 };
