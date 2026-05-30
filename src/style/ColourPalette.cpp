@@ -135,7 +135,7 @@ juce::Colour ColourPalette::withAlpha(const juce::Colour &colour, float alpha)
 
 juce::Colour ColourPalette::getModelColourByIndex(int index)
 {
-	switch (index % 8)
+	switch (index % 9)
 	{
 	case 0:
 		return modelStableAudio;

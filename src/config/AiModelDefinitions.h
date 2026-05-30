@@ -9,8 +9,8 @@ static const juce::String LOCAL_MODEL_NAME = "stable-audio-open-small-tflite";
 
 inline const juce::StringArray &getAvailableModels()
 {
-	static const juce::StringArray models = {"stable-audio-3-medium",
-	                                         "stable-audio-open-1.0",
+	static const juce::StringArray models = {"stable-audio-open-1.0",
+	                                         "stable-audio-3-medium",
 	                                         "foundation-1",
 	                                         "audialab-edm-elements",
 	                                         "rc-infinite-pianos",
@@ -41,9 +41,9 @@ inline juce::Colour getColourForModel(const juce::String &modelName)
 		return ColourPalette::modelStableAudio;
 	auto &models = getAvailableModels();
 	if (modelName == models[0])
-		return ColourPalette::modelStableAudio3;
-	if (modelName == models[1])
 		return ColourPalette::modelStableAudio;
+	if (modelName == models[1])
+		return ColourPalette::modelStableAudio3;
 	if (modelName == models[2])
 		return ColourPalette::modelFoundation;
 	if (modelName == models[3])
