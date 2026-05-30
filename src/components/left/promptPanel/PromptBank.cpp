@@ -189,6 +189,7 @@ void PromptBank::loadFromFile()
 
 	migrated = obj->getProperty("migrated").toString() == "true";
 	seeded = obj->getProperty("seeded").toString() == "true";
+	seededSA3 = obj->getProperty("seededSA3").toString() == "true";
 
 	auto catVar = obj->getProperty("categories");
 	if (catVar.isArray())
@@ -257,6 +258,7 @@ void PromptBank::saveToFile()
 	juce::DynamicObject::Ptr root = new juce::DynamicObject();
 	root->setProperty("migrated", migrated ? "true" : "false");
 	root->setProperty("seeded", seeded ? "true" : "false");
+	root->setProperty("seededSA3", seededSA3 ? "true" : "false");
 
 	juce::Array<juce::var> catsArray;
 	for (const auto &c : categories)
@@ -325,10 +327,10 @@ void PromptBank::migrateFromCustomPrompts(const juce::StringArray &existing, con
 		onBankChanged();
 }
 
-void PromptBank::seedDefaultPromptsAndCategories()
+bool PromptBank::seedDefaultPromptsAndCategories()
 {
 	if (seeded)
-		return;
+		return false;
 	struct DefaultCat
 	{
 		const char *name;
@@ -360,13 +362,6 @@ void PromptBank::seedDefaultPromptsAndCategories()
 			categories.push_back(info);
 		}
 	}
-
-	struct DefaultPrompt
-	{
-		const char *text;
-		const char *model;
-		const char *category;
-	};
 
 	const DefaultPrompt defaults[] = {
 	    {"deep techno kick drum loop, solo kick pattern, driving 4/4 beat, dry, no background elements",
@@ -757,18 +752,30 @@ void PromptBank::seedDefaultPromptsAndCategories()
 	    {"Format: Solo | Genre: Pop | Sub-Genre: Pop | Instruments: Synth Lead, Bells | Moods: Catchy, Driving | "
 	     "Styles: Punchy, Rhythmic",
 	     "gluten-v1", "Lead"},
-
 	};
 
-	for (const auto &dp : defaults)
+	seeded = addDefaultPromptsArray(defaults, juce::numElementsInArray(defaults));
+	return seeded;
+}
+
+bool PromptBank::addDefaultPromptsArray(const DefaultPrompt *array, int arraySize)
+{
+	bool entriesAdded = false;
+
+	for (int i = 0; i < arraySize; ++i)
 	{
+		const auto &dp = array[i];
+
 		bool exists = false;
 		for (auto &pair : prompts)
+		{
 			if (pair.second->text == dp.text && pair.second->modelName == dp.model)
 			{
 				exists = true;
 				break;
 			}
+		}
+
 		if (exists)
 			continue;
 
@@ -782,10 +789,96 @@ void PromptBank::seedDefaultPromptsAndCategories()
 		entry->isBuiltIn = true;
 
 		prompts[entry->id] = std::move(entry);
+		entriesAdded = true;
 	}
 
-	seeded = true;
-	saveToFile();
-	if (onBankChanged)
-		onBankChanged();
+	return entriesAdded;
+}
+
+bool PromptBank::seedStableAudio3Medium()
+{
+	if (seededSA3)
+		return false;
+	const DefaultPrompt sa3Defaults[] = {
+	    {"TrackType: Instrument, Format: Solo, a raw delta blues slide guitar riff, resonator acoustic guitar, dusty "
+	     "vintage tone, fingerpicked with stompbox rhythm",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a smoky blues harmonica solo, soulful pitch bends, gritty amplifier "
+	     "distortion, intimate bar room acoustics",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, an aggressive heavy metal rhythm guitar riff, low-tuned seven-string "
+	     "guitar, chugging palm mutes, high-gain distortion",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a screaming electric guitar solo, sweep picking arpeggios, high gain, "
+	     "tapping technique, stadium rock reverb",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a driving hard rock bassline loop, played with a heavy pick, overdriven "
+	     "tube amplifier, punchy mid-range",
+	     "stable-audio-3-medium", "Bass"},
+	    {"TrackType: Instrument, Format: Solo, a rustic acoustic mandolin tremolo pattern, bright double-strings, "
+	     "traditional folk style, dry studio recording",
+	     "stable-audio-3-medium", "Lead"},
+
+	    {"TrackType: Instrument, Format: Solo, a hypnotic West African kora melody, intricate plucked string patterns, "
+	     "bright resonant wooden tones, polyrhythmic loop",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a meditative Indian sitar phrase, sympathetic string resonance, "
+	     "microtonal bends, mystical traditional vibe",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a haunting Middle Eastern oud loop, microtonal maqam fretless acoustic "
+	     "guitar vibe, deep wooden body resonance",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a soulful Japanese shakuhachi flute melody, breathy articulation, "
+	     "organic pitch inflections, cinematic zen temple acoustics",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, an energetic Celtic tin whistle reel, fast ornamentation, crisp high "
+	     "register, traditional Irish folk style",
+	     "stable-audio-3-medium", "Lead"},
+	    {"TrackType: Instrument, Format: Solo, a powerful dynamic Taiko drum rhythm, massive wooden barrel resonance, "
+	     "heavy accents, syncopated ritual pattern",
+	     "stable-audio-3-medium", "Drums"},
+	    {"TrackType: Instrument, Format: Solo, intricate Afro-Cuban conga patterns, open tones, slaps and heel-toe "
+	     "technique, crisp hand percussion loop",
+	     "stable-audio-3-medium", "Percussion"},
+	    {"TrackType: Instrument, Format: Solo, a mystic Australian didgeridoo drone, circular breathing textures, deep "
+	     "sub-harmonic rhythmic growls, vocal formants",
+	     "stable-audio-3-medium", "Bass"},
+
+	    {"TrackType: Instrument, Format: Solo, a heavy neurobass growl loop, modulated wavetable synthesis, aggressive "
+	     "tearing textures, sub-bass pressure, EDM style",
+	     "stable-audio-3-medium", "Bass"},
+	    {"TrackType: Instrument, Format: Solo, a rhythmic glitch percussion loop, bitcrushed micro-samples, "
+	     "micro-timing, modular synth blips, dry and sterile space",
+	     "stable-audio-3-medium", "Percussion"},
+	    {"TrackType: Instrument, Format: Solo, a cyberpunk industrial synth bassline, heavily distorted analog pulse "
+	     "wave, rhythmic step-sequencer sequence",
+	     "stable-audio-3-medium", "Bass"},
+	    {"TrackType: Instrument, Format: Solo, a cinematic modular synth arpeggio, opening low-pass filter sweep, "
+	     "cascading notes, dark electronic style",
+	     "stable-audio-3-medium", "Lead"},
+
+	    {"TrackType: Instrument, Format: Solo, a dark dystopian cinematic pad, low drone foundation, sweeping "
+	     "high-frequency harmonics, tension building",
+	     "stable-audio-3-medium", "Pads"},
+	    {"TrackType: Instrument, Format: Solo, an angelic ethereal vocal pad, lush multi-layered textures, "
+	     "non-intelligible choir harmony, wash of massive hall reverb",
+	     "stable-audio-3-medium", "Pads"},
+	    {"TrackType: SFX, a massive cinematic sub-bass boom, deep sub-sonic explosion drop, long decaying low-end "
+	     "tail, transient impact",
+	     "stable-audio-3-medium", "FX"},
+	    {"TrackType: SFX, a futuristic electronic riser effect, pitching up oscillator, accelerating noise modulation, "
+	     "building tension white noise swoop",
+	     "stable-audio-3-medium", "FX"},
+	    {"TrackType: SFX, a heavy industrial metal door slamming shut, fast decay, mechanical lock mechanism click, "
+	     "recorded in a dead concrete room",
+	     "stable-audio-3-medium", "FX"},
+	    {"TrackType: SFX, a glitchy digital transition, tape-stop effect artifact, pitch and speed dropping "
+	     "simultaneously, grinding to a halt into a sub frequency",
+	     "stable-audio-3-medium", "FX"},
+	    {"TrackType: SFX, cosmic sci-fi modular synth bleeps, granular delay texture, random pitch modulation, "
+	     "spacious echo space",
+	     "stable-audio-3-medium", "FX"}};
+
+	seededSA3 = addDefaultPromptsArray(sa3Defaults, juce::numElementsInArray(sa3Defaults));
+	return seededSA3;
 }
