@@ -119,9 +119,12 @@ void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, const juce::Str
 	float normalizedValue = param->getValue();
 	float actualValue = range.convertFrom0to1(normalizedValue);
 
+	float normalizedDefault = param->getDefaultValue();
+	float actualDefaultValue = range.convertFrom0to1(normalizedDefault);
+
 	s.setRange(range.start, range.end, range.interval);
 	s.setValue(actualValue, juce::dontSendNotification);
-	s.setDoubleClickReturnValue(true, actualValue);
+	s.setDoubleClickReturnValue(true, actualDefaultValue);
 }
 
 void ObsidianBaseMidiComponent::pushButtonToParam(Binding &b)
