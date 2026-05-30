@@ -117,6 +117,7 @@ const juce::Colour ColourPalette::modelInstrumental(EMERALD);
 const juce::Colour ColourPalette::modelBeats(INDIGO);
 const juce::Colour ColourPalette::modelGluten(ROSE);
 const juce::Colour ColourPalette::modelStableAudioTflite(CYAN);
+const juce::Colour ColourPalette::modelStableAudio3(LIME);
 
 const juce::Colour ColourPalette::modalHeader(DEEP_SLATE);
 
@@ -134,23 +135,25 @@ juce::Colour ColourPalette::withAlpha(const juce::Colour &colour, float alpha)
 
 juce::Colour ColourPalette::getModelColourByIndex(int index)
 {
-	switch (index % 8)
+	switch (index % 9)
 	{
 	case 0:
 		return modelStableAudio;
 	case 1:
-		return modelFoundation;
+		return modelStableAudio3;
 	case 2:
-		return modelEdm;
+		return modelFoundation;
 	case 3:
-		return modelPianos;
+		return modelEdm;
 	case 4:
-		return modelVocals;
+		return modelPianos;
 	case 5:
-		return modelInstrumental;
+		return modelVocals;
 	case 6:
-		return modelBeats;
+		return modelInstrumental;
 	case 7:
+		return modelBeats;
+	case 8:
 		return modelGluten;
 	default:
 		return modelFoundation;

@@ -68,20 +68,37 @@ class PromptBank
 	{
 		return seeded;
 	}
-	void seedDefaultPromptsAndCategories();
+	bool seedDefaultPromptsAndCategories();
+	bool hasSA3Seeded() const
+	{
+		return seededSA3;
+	}
+	bool seedStableAudio3Medium();
 
 	std::function<void()> onBankChanged;
 
   private:
+	struct DefaultPrompt
+	{
+		const char *text;
+		const char *model;
+		const char *category;
+	};
+
 	static juce::File getPromptBankFile();
 	static juce::String generateId();
+
+	bool addDefaultPromptsArray(const DefaultPrompt *array, int arraySize);
 
 	int getNextCategoryId();
 
 	std::map<juce::String, std::unique_ptr<PromptBankEntry>> prompts;
+
 	std::vector<PromptCategoryInfo> categories;
+
 	bool migrated = false;
 	bool seeded = false;
+	bool seededSA3 = false;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PromptBank)
 };
