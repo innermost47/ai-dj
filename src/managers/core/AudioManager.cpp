@@ -203,13 +203,30 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 		return result;
 
 	const int numSamples = static_cast<int>(reader->lengthInSamples);
+	const int numChannels = static_cast<int>(reader->numChannels);
 	const double sampleRate = reader->sampleRate;
 
 	juce::AudioBuffer<float> rawBuffer(2, numSamples);
 	rawBuffer.clear();
 	reader->read(&rawBuffer, 0, numSamples, 0, true, true);
-	if (reader->numChannels == 1)
+	if (numChannels == 1)
 		rawBuffer.copyFrom(1, 0, rawBuffer, 0, 0, numSamples);
+
+	juce::AudioBuffer<float> cleanedRawBuffer;
+	AudioData rawData = getAudioTrimmed(numSamples, numChannels, rawBuffer, 0.06f);
+
+	if (rawData.cleanedSize > 0)
+	{
+		cleanedRawBuffer.setSize(2, rawData.cleanedSize);
+		for (int c = 0; c < 2; ++c)
+			cleanedRawBuffer.copyFrom(c, 0, rawBuffer, c, rawData.firstValidSample, rawData.cleanedSize);
+	}
+	else
+	{
+		cleanedRawBuffer.makeCopyOf(rawBuffer);
+	}
+
+	const int cleanedNumSamples = cleanedRawBuffer.getNumSamples();
 
 	double hostBpm = audioProcessor.getCachedHostBpm();
 	double tempo = 0.0;
@@ -219,7 +236,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 		breakfastquay::MiniBPM bpm(static_cast<float>(sampleRate));
 		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
 		bpm.setBeatsPerBar(4);
-		bpm.process(rawBuffer.getReadPointer(0), numSamples);
+		bpm.process(cleanedRawBuffer.getReadPointer(0), cleanedNumSamples);
 		tempo = bpm.estimateTempo();
 		bpm.reset();
 	}
@@ -238,12 +255,12 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	if (tempo <= 0.0 || hostBpm <= 0.0 || std::abs(hostBpm - tempo) < 0.1)
 	{
-		saveBufferToFile(rawBuffer, stretchedFile, sampleRate);
+		saveBufferToFile(cleanedRawBuffer, stretchedFile, sampleRate);
 
 		if (track)
 		{
-			track->stagingBuffer.makeCopyOf(rawBuffer);
-			track->stagingNumSamples.store(rawBuffer.getNumSamples());
+			track->stagingBuffer.makeCopyOf(cleanedRawBuffer);
+			track->stagingNumSamples.store(cleanedRawBuffer.getNumSamples());
 			track->stagingSampleRate.store(sampleRate);
 			result.stagingFilled = true;
 		}
@@ -258,7 +275,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	double ratio = hostBpm / tempo;
 	ratio = juce::jlimit(0.25, 4.0, ratio);
 
-	const int outputSamples = static_cast<int>(numSamples / ratio);
+	const int outputSamples = static_cast<int>(cleanedNumSamples / ratio);
 	juce::AudioBuffer<float> stretchedBuffer(2, outputSamples);
 
 	signalsmith::stretch::SignalsmithStretch<float> stretch;
@@ -266,62 +283,36 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 
 	const float *const *inPtrs = rawBuffer.getArrayOfReadPointers();
 	float *const *outPtrs = stretchedBuffer.getArrayOfWritePointers();
-	stretch.process(inPtrs, numSamples, outPtrs, outputSamples);
+	stretch.process(inPtrs, cleanedNumSamples, outPtrs, outputSamples);
 
-	const float silenceThresholdRMS = 0.01f;
-	const int windowSize = 256;
-	int firstValidSample = 0;
+	juce::AudioBuffer<float> finalStretchedBuffer;
+	AudioData stretchedData = getAudioTrimmed(outputSamples, numChannels, stretchedBuffer, 0.06f);
 
-	for (int i = 0; i < outputSamples - windowSize; i += windowSize / 4)
+	if (stretchedData.cleanedSize > 0)
 	{
-		double sumSquares = 0.0;
-		int countSamples = 0;
-
-		for (int j = 0; j < windowSize && (i + j) < outputSamples; ++j)
-		{
-			for (int c = 0; c < 2; ++c)
-			{
-				const float s = stretchedBuffer.getSample(c, i + j);
-				sumSquares += s * s;
-				countSamples++;
-			}
-		}
-
-		const float rms = std::sqrt(static_cast<float>(sumSquares / countSamples));
-
-		if (rms > silenceThresholdRMS)
-		{
-			firstValidSample = i;
-			break;
-		}
-	}
-
-	juce::AudioBuffer<float> finalBuffer;
-	int cleanedSize = outputSamples - firstValidSample;
-	if (cleanedSize > 0)
-	{
-		finalBuffer.setSize(2, cleanedSize);
+		finalStretchedBuffer.setSize(2, stretchedData.cleanedSize);
 		for (int c = 0; c < 2; ++c)
-			finalBuffer.copyFrom(c, 0, stretchedBuffer, c, firstValidSample, cleanedSize);
+			finalStretchedBuffer.copyFrom(c, 0, stretchedBuffer, c, stretchedData.firstValidSample,
+			                              stretchedData.cleanedSize);
 	}
 	else
 	{
-		finalBuffer.makeCopyOf(stretchedBuffer);
+		finalStretchedBuffer.makeCopyOf(stretchedBuffer);
 	}
 
 	auto audioDir = stretchedFile.getParentDirectory();
 	char pageName = static_cast<char>('A' + targetPageIndex);
 	auto originalFile = audioDir.getChildFile(trackId + "_original_" + juce::String(pageName) + ".wav");
 
-	saveBufferToFile(rawBuffer, originalFile, sampleRate);
-	saveBufferToFile(finalBuffer, stretchedFile, sampleRate);
+	saveBufferToFile(cleanedRawBuffer, originalFile, sampleRate);
+	saveBufferToFile(finalStretchedBuffer, stretchedFile, sampleRate);
 
 	if (track)
 	{
-		track->stagingBuffer.makeCopyOf(finalBuffer);
-		track->stagingNumSamples.store(finalBuffer.getNumSamples());
+		track->stagingBuffer.makeCopyOf(cleanedRawBuffer);
+		track->stagingNumSamples.store(cleanedRawBuffer.getNumSamples());
 		track->stagingSampleRate.store(sampleRate);
-		track->originalStagingBuffer.makeCopyOf(rawBuffer);
+		track->originalStagingBuffer.makeCopyOf(cleanedRawBuffer);
 		result.stagingFilled = true;
 	}
 
@@ -394,7 +385,7 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	else
 	{
 		targetPage.hasOriginalVersion.store(track->nextHasOriginalVersion.load());
-		targetPage.useOriginalFile = false;
+		targetPage.useOriginalFile = true;
 		double sampleDuration = targetPage.numSamples / targetPage.sampleRate;
 		if (sampleDuration <= 8.0)
 		{
@@ -438,6 +429,33 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 			}
 		}
 	}
+}
+
+AudioManager::AudioData AudioManager::getAudioTrimmed(int outputSamples, int numChannels,
+                                                      juce::AudioBuffer<float> &finalStretchedAudio, float threshold)
+{
+	int firstValidSample = 0;
+
+	for (int i = 0; i < outputSamples; ++i)
+	{
+		float maxVal = 0.0f;
+		for (int channel = 0; channel < numChannels; ++channel)
+		{
+			float sampleVal = std::abs(finalStretchedAudio.getSample(channel, i));
+			if (sampleVal > maxVal)
+				maxVal = sampleVal;
+		}
+		if (maxVal > threshold)
+		{
+			firstValidSample = i;
+			break;
+		}
+	}
+
+	AudioData data;
+	data.cleanedSize = outputSamples - firstValidSample;
+	data.firstValidSample = firstValidSample;
+	return data;
 }
 
 void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
@@ -515,34 +533,15 @@ void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
 
 	stretch.process(inputPointers, inputSamples, outputPointers, outputSamples);
 
-	const float silenceThreshold = 0.001f;
-	int firstValidSample = 0;
+	AudioData data = getAudioTrimmed(outputSamples, numChannels, finalStretchedAudio);
 
-	for (int i = 0; i < outputSamples; ++i)
+	if (data.cleanedSize > 0)
 	{
-		float maxVal = 0.0f;
-		for (int channel = 0; channel < numChannels; ++channel)
-		{
-			float sampleVal = std::abs(finalStretchedAudio.getSample(channel, i));
-			if (sampleVal > maxVal)
-				maxVal = sampleVal;
-		}
-		if (maxVal > silenceThreshold)
-		{
-			firstValidSample = i;
-			break;
-		}
-	}
-
-	int cleanedSize = outputSamples - firstValidSample;
-
-	if (cleanedSize > 0)
-	{
-		juce::AudioBuffer<float> totalAudio(numChannels, cleanedSize);
+		juce::AudioBuffer<float> totalAudio(numChannels, data.cleanedSize);
 
 		for (int channel = 0; channel < numChannels; ++channel)
 		{
-			totalAudio.copyFrom(channel, 0, finalStretchedAudio, channel, firstValidSample, cleanedSize);
+			totalAudio.copyFrom(channel, 0, finalStretchedAudio, channel, data.firstValidSample, data.cleanedSize);
 		}
 		track->stagingBuffer.makeCopyOf(totalAudio);
 	}

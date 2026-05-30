@@ -19,6 +19,9 @@ juce::ValueTree StateManager::saveState() const
 	    {
 		    juce::ValueTree trackState("Track");
 
+		    bool isPlaying = track->isPlaying.load() && track->isCurrentlyPlaying.load();
+		    bool isArmed = isPlaying ? true : track->isArmed.load();
+
 		    trackState.setProperty("id", track->trackId, nullptr);
 		    trackState.setProperty("name", track->trackName, nullptr);
 
@@ -33,10 +36,10 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("timeStretchRatio", track->timeStretchRatio, nullptr);
 		    trackState.setProperty("showWaveform", track->showWaveform.load(), nullptr);
 		    trackState.setProperty("showSequencer", track->showSequencer.load(), nullptr);
-		    trackState.setProperty("isPlaying", track->isPlaying.load(), nullptr);
-		    trackState.setProperty("isArmed", track->isArmed.load(), nullptr);
-		    trackState.setProperty("isArmedToStop", track->isArmedToStop.load(), nullptr);
-		    trackState.setProperty("isCurrentlyPlaying", track->isCurrentlyPlaying.load(), nullptr);
+		    trackState.setProperty("isPlaying", false, nullptr);
+		    trackState.setProperty("isArmed", isArmed, nullptr);
+		    trackState.setProperty("isArmedToStop", false, nullptr);
+		    trackState.setProperty("isCurrentlyPlaying", false, nullptr);
 		    trackState.setProperty("nextHasOriginalVersion", track->nextHasOriginalVersion.load(), nullptr);
 		    trackState.setProperty("randomRetriggerEnabled", track->randomRetriggerEnabled.load(), nullptr);
 		    trackState.setProperty("randomRetriggerInterval", track->randomRetriggerInterval.load(), nullptr);
