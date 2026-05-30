@@ -140,21 +140,21 @@ juce::Colour ColourPalette::getModelColourByIndex(int index)
 	case 0:
 		return modelStableAudio;
 	case 1:
-		return modelFoundation;
-	case 2:
-		return modelEdm;
-	case 3:
-		return modelPianos;
-	case 4:
-		return modelVocals;
-	case 5:
-		return modelInstrumental;
-	case 6:
-		return modelBeats;
-	case 7:
-		return modelGluten;
-	case 8:
 		return modelStableAudio3;
+	case 2:
+		return modelFoundation;
+	case 3:
+		return modelEdm;
+	case 4:
+		return modelPianos;
+	case 5:
+		return modelVocals;
+	case 6:
+		return modelInstrumental;
+	case 7:
+		return modelBeats;
+	case 8:
+		return modelGluten;
 	default:
 		return modelFoundation;
 	}
