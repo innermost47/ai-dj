@@ -117,7 +117,11 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 			}
 
 			trackComp->repaint();
-			break;
+		}
+		else
+		{
+			trackComp->setIsDragOver(false);
+			trackComp->syncBorderOverlay();
 		}
 	}
 

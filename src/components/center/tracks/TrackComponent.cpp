@@ -4,6 +4,109 @@
 #include "SequencerComponent.h"
 #include "WaveformDisplay.h"
 
+TrackComponent::BorderOverlay::BorderOverlay()
+{
+	setInterceptsMouseClicks(false, false);
+	setOpaque(false);
+	blockedIcon = juce::Drawable::createFromImageData(BinaryData::prohibit_svg, BinaryData::prohibit_svgSize);
+	blockedIcon->replaceColour(juce::Colours::black, ColourPalette::buttonDangerLight);
+}
+
+void TrackComponent::BorderOverlay::setVisualState(bool generating, bool samplePending, bool selected, bool dragOver,
+                                                   bool blink, juce::Colour modelColour)
+{
+	if (generating == isGenerating && samplePending == hasSamplePending && selected == isSelected &&
+	    dragOver == isDragOver && blink == blinkState && modelColour == accentColour)
+		return;
+
+	isGenerating = generating;
+	hasSamplePending = samplePending;
+	isSelected = selected;
+	isDragOver = dragOver;
+	blinkState = blink;
+	accentColour = modelColour;
+	repaint();
+}
+
+void TrackComponent::BorderOverlay::paint(juce::Graphics &g)
+{
+	auto bounds = getLocalBounds().toFloat();
+
+	if (isDragOver && isGenerating)
+	{
+		auto blockedColour = ColourPalette::buttonDangerDark;
+
+		g.setColour(blockedColour.withAlpha(Obsidian::ALPHA_01));
+		g.fillRoundedRectangle(bounds, Obsidian::CORNER);
+
+		g.setColour(blockedColour);
+		g.drawRoundedRectangle(bounds.reduced(1.0f), Obsidian::CORNER, 2.5f);
+
+		const float iconSize = 24.0f;
+		const float gap = 6.0f;
+		const float textHeight = 16.0f;
+		const float blockHeight = iconSize + gap + textHeight;
+
+		auto centreY = bounds.getCentreY() - blockHeight * 0.5f;
+
+		if (blockedIcon != nullptr)
+		{
+			juce::Rectangle<float> iconArea(bounds.getCentreX() - iconSize * 0.5f, centreY, iconSize, iconSize);
+			blockedIcon->drawWithin(g, iconArea, juce::RectanglePlacement::centred, 1.0f);
+		}
+
+		g.setColour(blockedColour);
+		g.setFont(juce::FontOptions(13.0f, juce::Font::bold));
+		juce::Rectangle<float> textArea(bounds.getX(), centreY + iconSize + gap, bounds.getWidth(), textHeight);
+		g.drawText("Drop disabled while generating.", textArea, juce::Justification::centred, false);
+
+		return;
+	}
+
+	juce::Colour bgColour;
+	bool fillBg = true;
+
+	if (isDragOver && !isGenerating)
+		bgColour = ColourPalette::buttonSuccess.withAlpha(0.4f);
+	else if (hasSamplePending && !isGenerating)
+		bgColour = ColourPalette::samplePending.withAlpha(0.15f);
+	else
+		fillBg = false;
+
+	if (fillBg)
+	{
+		g.setColour(bgColour);
+		g.fillRoundedRectangle(bounds, Obsidian::CORNER);
+	}
+
+	juce::Colour borderColour;
+	float borderWidth;
+
+	if (isGenerating)
+	{
+		borderColour = blinkState ? accentColour.brighter(0.4f) : accentColour.darker(0.4f);
+		borderWidth = 3.0f;
+	}
+	else if (hasSamplePending)
+	{
+		borderColour = ColourPalette::samplePending;
+		borderWidth = 2.0f;
+	}
+	else if (isSelected)
+	{
+		borderColour = ColourPalette::lightGrey;
+		borderWidth = 2.0f;
+	}
+	else
+	{
+		borderColour = ColourPalette::backgroundLight;
+		borderWidth = 1.0f;
+	}
+
+	g.setColour(borderColour);
+	g.drawRoundedRectangle(bounds.reduced(1.0f), Obsidian::CORNER, borderWidth);
+}
+
 TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &processor)
     : ObsidianBaseMidiComponent(processor), trackId(trackId)
 {
@@ -979,7 +1082,7 @@ void TrackComponent::stopGeneratingAnimation()
 	if (!t)
 		return;
 	isGenerating = false;
-
+	isDragOver = false;
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
 		pageButtons[i].setEnabled(true);
@@ -999,7 +1102,6 @@ void TrackComponent::stopGeneratingAnimation()
 			waveformDisplay->setLoopPoints(currentPage.loopStart, currentPage.loopEnd);
 		}
 	}
-
 	syncBorderOverlay();
 }
 
@@ -1519,14 +1621,15 @@ bool TrackComponent::isInterestedInDragSource(const SourceDetails &dragSourceDet
 void TrackComponent::itemDragEnter(const SourceDetails &dragSourceDetails)
 {
 	auto *t = getTrack();
+	if (!t)
+		return;
 
-	if (t != nullptr && t->isInGeneratingProcess)
+	isDragOver = true;
+	if (t->isInGeneratingProcess)
 	{
-		if (onStatusMessage)
-			onStatusMessage("Cannot load data from bank while generating.");
+		syncBorderOverlay();
 		return;
 	}
-	isDragOver = true;
 	isDraggingPrompt = dragSourceDetails.description.toString().startsWith("prompt:");
 	syncBorderOverlay();
 }
@@ -1548,12 +1651,12 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 	if (!t)
 		return;
 
-	if (t->isInGeneratingProcess)
-		return;
-
 	isDragOver = false;
 	isDraggingPrompt = false;
 	syncBorderOverlay();
+
+	if (t->isInGeneratingProcess)
+		return;
 
 	juce::String description = dragSourceDetails.description.toString();
 	if (description.isEmpty())
