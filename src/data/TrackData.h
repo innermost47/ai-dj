@@ -169,6 +169,7 @@ struct TrackData
 	std::atomic<float> reverbSend{0.0f};
 
 	std::atomic<bool> showWaveform{true};
+	std::atomic<bool> isLoadingFromBank{false};
 	std::atomic<bool> showSequencer{true};
 	std::atomic<bool> isVersionSwitch{false};
 	std::atomic<bool> preservedLoopLocked{false};
@@ -236,6 +237,7 @@ struct TrackData
 	std::atomic<bool> isPreviewMode{false};
 	std::atomic<bool> previewEndPending{false};
 	std::atomic<bool> skipDiskReload{false};
+	std::atomic<bool> isInGeneratingProcess{false};
 
 	std::atomic<double> stagingSampleRate{Obsidian::SAMPLERATE};
 	std::atomic<double> readPosition{0.0};

@@ -369,14 +369,14 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	targetPage.numSamples = track->stagingNumSamples.load();
 	targetPage.sampleRate = track->stagingSampleRate.load();
 	targetPage.originalBpm = targetPage.stagingOriginalBpm;
-	targetPage.isLoaded = true;
+	targetPage.isLoaded.store(true);
 
 	if (track->isVersionSwitch.load())
 	{
 		targetPage.hasOriginalVersion.store(preservedHasOriginal);
 		targetPage.loopStart = track->preservedLoopStart;
 		targetPage.loopEnd = track->preservedLoopEnd;
-		targetPage.loopPointsLocked = track->preservedLoopLocked.load();
+		targetPage.loopPointsLocked.store(track->preservedLoopLocked.load());
 		double maxDuration = targetPage.numSamples / targetPage.sampleRate;
 		targetPage.loopEnd = std::min(targetPage.loopEnd, maxDuration);
 		targetPage.loopStart = std::min(targetPage.loopStart, targetPage.loopEnd);
@@ -385,7 +385,7 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	else
 	{
 		targetPage.hasOriginalVersion.store(track->nextHasOriginalVersion.load());
-		targetPage.useOriginalFile = true;
+		targetPage.useOriginalFile.store(!track->isLoadingFromBank.load());
 		double sampleDuration = targetPage.numSamples / targetPage.sampleRate;
 		if (sampleDuration <= 8.0)
 		{
@@ -405,6 +405,8 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	track->hasStagingData.store(false);
 	track->stagingBuffer.clear();
 	track->hasSamplePending.store(false);
+	track->isLoadingFromBank.store(false);
+	track->isInGeneratingProcess.store(false);
 
 	juce::MessageManager::callAsync([this, trackId]() { updateWaveformDisplay(trackId); });
 	if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
@@ -850,8 +852,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		page.numSamples = track->stagingNumSamples.load();
 		page.sampleRate = track->stagingSampleRate.load();
 		page.originalBpm = page.stagingOriginalBpm;
-		page.isLoaded = true;
-		page.isLoading = false;
+		page.isLoaded.store(true);
+		page.isLoading.store(false);
 
 		auto *bank = audioProcessor.getSampleBank();
 		auto *sampleEntry = bank->getSample(sampleId);
@@ -953,6 +955,10 @@ juce::File AudioManager::getTrackPageAudioFile(const juce::String &trackId, int 
 
 void AudioManager::loadSampleFromBank(const juce::String &sampleId, const juce::String &trackId)
 {
+	TrackData *track = trackManager.getTrack(trackId);
+	if (!track)
+		return;
+
 	auto *bank = audioProcessor.getSampleBank();
 	if (!bank)
 		return;
@@ -965,24 +971,19 @@ void AudioManager::loadSampleFromBank(const juce::String &sampleId, const juce::
 	if (!sampleFile.exists())
 		return;
 
-	TrackData *track = trackManager.getTrack(trackId);
-	if (!track)
-		return;
-
 	if (!track->currentSampleId.isEmpty() && track->currentSampleId != sampleId)
 	{
 		bank->markSampleAsUnused(track->currentSampleId, audioProcessor.getProjectId());
 	}
+
+	track->isLoadingFromBank.store(true);
 
 	audioProcessor.setIsLoadingFromBank(true);
 	audioProcessor.setCurrentBankLoadTrackId(trackId);
 
 	bank->markSampleAsUsed(sampleId, audioProcessor.getProjectId());
 
-	if (track)
-	{
-		track->currentSampleId = sampleId;
-	}
+	track->currentSampleId = sampleId;
 
 	juce::Thread::launch(
 	    [this, trackId, sampleFile, sampleId, sampleEntry]()

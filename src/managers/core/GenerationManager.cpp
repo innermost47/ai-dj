@@ -13,6 +13,7 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, con
 	if (track)
 	{
 		track->stagingTargetPageIndex.store(track->currentPageIndex.load());
+		track->isInGeneratingProcess.store(true);
 	}
 
 	try
