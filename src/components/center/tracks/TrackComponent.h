@@ -116,7 +116,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 			juce::Colour bgColour;
 			bool fillBg = true;
 
-			if (isDragOver)
+			if (isDragOver && !isGenerating)
 				bgColour = ColourPalette::buttonSuccess.withAlpha(0.4f);
 			else if (hasSamplePending && !isGenerating)
 				bgColour = ColourPalette::samplePending.withAlpha(0.15f);

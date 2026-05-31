@@ -345,6 +345,7 @@ void TrackComponent::resized()
 	if (!t)
 		return;
 	auto fullBounds = getLocalBounds();
+
 	auto area = fullBounds.reduced(6);
 	auto headerArea = area.removeFromTop(32);
 	auto &currentPage = t->getCurrentPage();
@@ -1517,6 +1518,14 @@ bool TrackComponent::isInterestedInDragSource(const SourceDetails &dragSourceDet
 
 void TrackComponent::itemDragEnter(const SourceDetails &dragSourceDetails)
 {
+	auto *t = getTrack();
+
+	if (t != nullptr && t->isInGeneratingProcess)
+	{
+		if (onStatusMessage)
+			onStatusMessage("Cannot load data from bank while generating.");
+		return;
+	}
 	isDragOver = true;
 	isDraggingPrompt = dragSourceDetails.description.toString().startsWith("prompt:");
 	syncBorderOverlay();
@@ -1538,6 +1547,10 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 	auto *t = getTrack();
 	if (!t)
 		return;
+
+	if (t->isInGeneratingProcess)
+		return;
+
 	isDragOver = false;
 	isDraggingPrompt = false;
 	syncBorderOverlay();
@@ -1614,6 +1627,7 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		resetParam(s + "Pitch", 0.0f);
 		resetParam(s + "Fine", 0.0f);
 	}
+
 	if (onSampleDropped)
 		onSampleDropped(trackId);
 	if (onStatusMessage)
