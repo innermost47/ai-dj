@@ -241,11 +241,11 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 				tempMixBuffer.copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
 
 			bool isA = track->isDeckA();
-			float defaultCenterGain = applyCrossfadeCurve(0.5f, isA, curveMode);
+			constexpr float kUnityHeadroom = 0.707f;
 			float trackVol = track->volume.load();
 
-			float deckGainStart = useCrossfader ? 1.0f : trackVol * defaultCenterGain;
-			float deckGainEnd = useCrossfader ? 1.0f : trackVol * defaultCenterGain;
+			float deckGainStart = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
+			float deckGainEnd = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
 			int pairIdx = track->getPairIndex();
 			if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR && useCrossfader)
 			{

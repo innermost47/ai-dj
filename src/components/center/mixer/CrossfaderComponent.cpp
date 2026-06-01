@@ -66,7 +66,9 @@ void CrossfaderComponent::setupUI()
 	useCrossfaderButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
 	useCrossfaderButton.setClickingTogglesState(true);
 	useCrossfaderButton.setShowBackground(false);
-	useCrossfaderButton.setCustomIconColourToggled(ColourPalette::buttonPrimary);
+	useCrossfaderButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	useCrossfaderButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	useCrossfaderButton.setTooltip("Enable/disable crossfader mixing");
 
 	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
@@ -80,6 +82,13 @@ void CrossfaderComponent::setupUI()
 	addAndMakeVisible(globalSlider);
 	setupSlider(globalSlider, "Global Crossfader DECK A <-> DECK B (Right-click for MIDI learn)");
 	globalSlider.setColour(juce::Slider::thumbColourId, ColourPalette::textPrimary);
+
+	addAndMakeVisible(crossfaderLabel);
+	crossfaderLabel.setText("CROSSFADERS", juce::dontSendNotification);
+	crossfaderLabel.setJustificationType(juce::Justification::centred);
+	crossfaderLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
+	crossfaderLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	crossfaderLabel.setInterceptsMouseClicks(false, false);
 }
 
 void CrossfaderComponent::setupCurveButtons()
@@ -426,12 +435,17 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics &g)
 
 void CrossfaderComponent::resized()
 {
-	auto area = getLocalBounds().reduced(8, 6);
+	auto area = getLocalBounds().reduced(8, 2);
 
 	const int segmentedH = 26;
 	const int segmentedTopGap = 6;
 
-	useCrossfaderButton.setBounds(area.removeFromTop(20).removeFromLeft(20));
+	auto topArea = area.removeFromTop(20);
+
+	crossfaderLabel.setBounds(topArea);
+	useCrossfaderButton.setBounds(topArea.removeFromLeft(18));
+
+	area.removeFromTop(Obsidian::GAP_4);
 
 	auto segmentedBand = area.removeFromBottom(segmentedH);
 

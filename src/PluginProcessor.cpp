@@ -172,6 +172,16 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 
 	masterConsoleBuss.prepare(sampleRate);
 	trackManager.prepareSends(sampleRate, samplesPerBlock);
+
+	juce::dsp::ProcessSpec spec;
+	spec.sampleRate = sampleRate;
+	spec.maximumBlockSize = (juce::uint32)samplesPerBlock;
+	spec.numChannels = (juce::uint32)getMainBusNumOutputChannels();
+
+	masterLimiter.prepare(spec);
+	masterLimiter.setThreshold(-0.3f);
+	masterLimiter.setRelease(50.0f);
+	masterLimiter.reset();
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -626,6 +636,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	audioManager.copyToIndividualOutputs(buffer);
 	audioManager.applyMasterEffects(mainOutput);
 	masterConsoleBuss.process(mainOutput, 0, mainOutput.getNumSamples());
+
+	juce::dsp::AudioBlock<float> block(mainOutput);
+	juce::dsp::ProcessContextReplacing<float> ctx(block);
+	masterLimiter.process(ctx);
+
 	auto *lastBus = getBus(false, getBusCount(false) - 1);
 	bool previewBusIsEffectivelyEnabled = (lastBus != nullptr && lastBus->isEnabled());
 	audioManager.renderPreviewToOutput(previewBus, mainOutput, buffer.getNumSamples(), getSampleRate(),

@@ -747,6 +747,8 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::String currentBankLoadTrackId;
 	juce::String localModelsPath = "";
 
+	juce::dsp::Limiter<float> masterLimiter;
+
 	float globalBpm = 110.0f;
 	float pairCrossfaderPrevious[4]{0.5f, 0.5f, 0.5f, 0.5f};
 	float globalCrossfaderPrevious = 0.5f;

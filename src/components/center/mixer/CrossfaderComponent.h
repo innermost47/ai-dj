@@ -38,6 +38,8 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 	juce::Rectangle<int> globalRowBounds;
 	juce::Rectangle<int> curveButtonsRowBounds;
 
+	juce::Label crossfaderLabel;
+
 	static constexpr int ledDiameter = 12;
 	static constexpr int ledPadX = 3;
 	static constexpr int labelWidth = 14;
