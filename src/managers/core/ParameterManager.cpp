@@ -17,9 +17,11 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	masterHighParam = apvts.getRawParameterValue("masterHigh");
 	masterMidParam = apvts.getRawParameterValue("masterMid");
 	masterLowParam = apvts.getRawParameterValue("masterLow");
+	useCrossfaderParam = apvts.getRawParameterValue("useCrossfader");
 
 	apvts.addParameterListener("generate", listener);
 	apvts.addParameterListener("play", listener);
+	apvts.addParameterListener("useCrossfader", listener);
 
 	delayDivisionParam = apvts.getRawParameterValue("delayDivision");
 	delayFeedbackParam = apvts.getRawParameterValue("delayFeedback");
@@ -120,6 +122,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 	apvts.removeParameterListener("reverbDamping", listener);
 	apvts.removeParameterListener("reverbWidth", listener);
 	apvts.removeParameterListener("reverbMix", listener);
+	apvts.removeParameterListener("useCrossfader", listener);
 
 	for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 	{
@@ -159,15 +162,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 {
 	std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-	auto makeTrigg = [](const juce::String &id, const juce::String &name)
+	auto makeTrigg = [](const juce::String &id, const juce::String &name, const float defaulValue = 0.0f)
 	{
 		auto attributes = juce::AudioParameterFloatAttributes().withAutomatable(false).withMeta(true);
-		return std::make_unique<juce::AudioParameterFloat>(id, name, juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f,
-		                                                   attributes);
+		return std::make_unique<juce::AudioParameterFloat>(id, name, juce::NormalisableRange<float>(0.0f, 1.0f),
+		                                                   defaulValue, attributes);
 	};
 
 	params.push_back(makeTrigg("generate", "Generate Loop"));
 	params.push_back(makeTrigg("play", "Play Loop"));
+	params.push_back(makeTrigg("useCrossfader", "Use Crossfader", 1.0f));
 	params.push_back(makeTrigg("nextTrack", "Next Track"));
 	params.push_back(makeTrigg("prevTrack", "Previous Track"));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterVolume", "Master Volume", 0.0f, 1.0f, 0.8f));
@@ -313,20 +317,8 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 	{
 		juce::MessageManager::callAsync([this]() { getAPVTS().getParameter("generate")->setValueNotifyingHost(0.0f); });
 	}
-	else if (parameterID == "globalCrossfader")
-	{
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-			    {
-				    if (auto *mixer = editor->getMixerPanel())
-					    if (auto *cf = mixer->getCrossfader())
-						    cf->refreshFromProcessor();
-			    }
-		    });
-	}
-	else if (parameterID.startsWith("pairCrossfader"))
+	else if (parameterID == "globalCrossfader" || parameterID.startsWith("pairCrossfader") ||
+	         parameterID == "useCrossfader")
 	{
 		juce::MessageManager::callAsync(
 		    [this]()

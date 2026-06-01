@@ -20,6 +20,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 {
 	midiLearnManager.setProcessor(this);
 	parameterManager.resolveParameters(this);
+	useCrossfader = parameterManager.useCrossfader();
 	projectId = "legacy";
 	promptBank = std::make_unique<PromptBank>();
 	loadGlobalConfig();
@@ -595,6 +596,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	previewBus.clear();
 	float pairCurrent[4];
 	float pairPrev[4];
+	useCrossfader = parameterManager.useCrossfader();
 	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		pairCurrent[i] = parameterManager.getPairCrossfader(i);
@@ -609,7 +611,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, hostBpm, pairPrev,
 	                             pairCurrent, globalPrev, globalCurrent, curveMode, timeSignatureNumerator.load(),
-	                             timeSignatureDenominator.load(), getSampleRate());
+	                             timeSignatureDenominator.load(), getSampleRate(), useCrossfader);
 
 	trackManager.processPerTrackDelays(
 	    audioManager.getIndividualOutputBuffers(), mainOutput, hostBpm,

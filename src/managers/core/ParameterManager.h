@@ -102,6 +102,10 @@ class ParameterManager
 	{
 		return safeLoad(playParam) > 0.5f;
 	}
+	bool useCrossfader() const
+	{
+		return safeLoad(useCrossfaderParam) > 0.5f;
+	}
 
 	float getGlobalCrossfader() const
 	{
@@ -197,6 +201,7 @@ class ParameterManager
 	std::atomic<float> *masterLowParam = nullptr;
 	std::atomic<float> *generateParam = nullptr;
 	std::atomic<float> *playParam = nullptr;
+	std::atomic<float> *useCrossfaderParam = nullptr;
 	std::atomic<float> *delayDivisionParam = nullptr;
 	std::atomic<float> *delayFeedbackParam = nullptr;
 	std::atomic<float> *delayModeParam = nullptr;
@@ -279,7 +284,7 @@ class ParameterManager
 
 	static juce::StringArray buildBooleanParamIds()
 	{
-		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack"};
+		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack", "useCrossfader"};
 
 		static const juce::StringArray perSlotParams = {
 		    "Mute", "Solo", "Play", "Stop", "Generate", "RandomRetrigger", "PageA", "PageB", "PageC", "PageD"};

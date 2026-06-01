@@ -198,7 +198,8 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    std::vector<juce::AudioBuffer<float>> &individualOutputs,
                                    juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
                                    const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-                                   int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate)
+                                   int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate,
+                                   bool useCrossfader)
 {
 	const int numSamples = outputBuffer.getNumSamples();
 	bool anyTrackSolo = false;
@@ -239,13 +240,15 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			for (int ch = 0; ch < std::min(tempMixBuffer.getNumChannels(), tempIndividualBuffer.getNumChannels()); ++ch)
 				tempMixBuffer.copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
 
-			float deckGainStart = 1.0f;
-			float deckGainEnd = 1.0f;
-			int pairIdx = track->getPairIndex();
-			if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR)
-			{
-				bool isA = track->isDeckA();
+			bool isA = track->isDeckA();
+			float defaultCenterGain = applyCrossfadeCurve(0.5f, isA, curveMode);
+			float trackVol = track->volume.load();
 
+			float deckGainStart = useCrossfader ? 1.0f : trackVol * defaultCenterGain;
+			float deckGainEnd = useCrossfader ? 1.0f : trackVol * defaultCenterGain;
+			int pairIdx = track->getPairIndex();
+			if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR && useCrossfader)
+			{
 				float pairXfStart = pairPrev[pairIdx];
 				float globalXfStart = globalPrev;
 				float pairGainStart = applyCrossfadeCurve(pairXfStart, isA, curveMode);

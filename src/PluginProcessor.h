@@ -297,6 +297,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return isGenerating;
 	}
+	bool isUsingCrossfader() const
+	{
+		return useCrossfader;
+	}
 	bool hasSampleWaiting() const
 	{
 		return hasUnloadedSample.load();
@@ -771,6 +775,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	bool onboardingDone = false;
 	bool savedPanelVisible = true;
 	bool hasPendingNotification = false;
+	bool useCrossfader = true;
 
 	juce::StringArray customKeywords;
 	juce::StringArray customPrompts;

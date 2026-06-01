@@ -32,6 +32,8 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 	IconButton curveEqualPowerButton{"CurveEqualPower", "EQ"};
 	IconButton curveDjButton{"CurveDJ", "DJ"};
 
+	IconButton useCrossfaderButton{"UseCrossfader", ""};
+
 	juce::Rectangle<int> pairRowBounds[4];
 	juce::Rectangle<int> globalRowBounds;
 	juce::Rectangle<int> curveButtonsRowBounds;
