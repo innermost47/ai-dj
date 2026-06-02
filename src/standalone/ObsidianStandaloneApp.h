@@ -5,6 +5,7 @@
 #include "SendsPanel.h"
 #include "StandaloneTransportComponent.h"
 #include "StateManager.h"
+#include "TrackEffectsPanel.h"
 #include <JuceHeader.h>
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_audio_plugin_client/juce_audio_plugin_client.h>
@@ -854,6 +855,7 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 			    editor->updateUIFromProcessor();
 			    editor->uiPresetManager->notifyTracksPromptUpdate();
 			    editor->uiLayoutManager->getRightPanelWrapper()->getSendsPanel()->syncParams();
+			    editor->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->refresh();
 			    if (editor->mixerPanel &&
 			        editor->uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent())
 				    editor->uiLayoutManager->getRightPanelWrapper()

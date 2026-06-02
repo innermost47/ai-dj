@@ -52,6 +52,9 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(),
 		                           nullptr);
 		    trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
+		    trackState.setProperty("highpassFilter", track->lowpassHighpassFilter.isHighpass(), nullptr);
+		    trackState.setProperty("cutoffFrequency", track->lowpassHighpassFilter.getCutoff(), nullptr);
+		    trackState.setProperty("resonance", track->lowpassHighpassFilter.getResonance(), nullptr);
 
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
@@ -166,6 +169,9 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->beatRepeatActive = trackState.getProperty("beatRepeatActive", false);
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
+		track->lowpassHighpassFilter.setHighpass(trackState.getProperty("highpassFilter", false));
+		track->lowpassHighpassFilter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
+		track->lowpassHighpassFilter.setResonance(trackState.getProperty("resonance", 0.707f));
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{

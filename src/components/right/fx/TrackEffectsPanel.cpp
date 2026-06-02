@@ -17,6 +17,21 @@ TrackEffectsPanel::TrackEffectsPanel(DjIaVstProcessor &processor) : audioProcess
 	}
 }
 
+void TrackEffectsPanel::refresh()
+{
+	auto trackIds = audioProcessor.getAllTrackIds();
+	for (const auto &trackId : trackIds)
+	{
+		TrackData *trackData = audioProcessor.getTrack(trackId);
+		if (!trackData)
+			continue;
+		auto it = std::find(trackIds.begin(), trackIds.end(), trackId);
+		int idx = static_cast<int>(it - trackIds.begin());
+		filterComponents[idx]->setTrackData(trackData);
+		filterComponents[idx]->wireParameters();
+	}
+}
+
 void TrackEffectsPanel::paint(juce::Graphics &g)
 {
 	auto bounds = getLocalBounds().toFloat();

@@ -14,6 +14,7 @@ class TrackEffectsPanel : public ObsidianComponent
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void updateModelUI(const juce::String &trackId);
+	void refresh();
 
   private:
 	DjIaVstProcessor &audioProcessor;
