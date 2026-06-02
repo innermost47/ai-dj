@@ -48,3 +48,15 @@ void TrackEffectsPanel::resized()
 	}
 	fb.performLayout(area);
 }
+
+void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
+{
+	for (auto &fc : filterComponents)
+	{
+		if (fc->getTrackId() == trackId)
+		{
+			fc->updateModelUI();
+			break;
+		}
+	}
+}

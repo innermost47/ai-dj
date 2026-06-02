@@ -19,14 +19,26 @@ void FilterComponent::paint(juce::Graphics &g)
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
 }
 
-void FilterComponent::onParameterChangedUI(const juce::String &paramSuffix, float /*normalizedValue*/)
+void FilterComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
 {
+	auto &apvts = audioProcessor.getParameterTreeState();
+	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
+	auto value = range.convertFrom0to1(normalizedValue);
 	if (paramSuffix == "Highpass")
 		refreshRadioButtonsForParam(paramSuffix);
+	else if (paramSuffix == "Cutoff")
+	{
+		cutoffKnob.setValue(value, juce::dontSendNotification);
+	}
+	else if (paramSuffix == "Resonance")
+	{
+		resonanceKnob.setValue(value, juce::dontSendNotification);
+	}
 }
 
-void FilterComponent::refreshRadioButtonsForParam(const juce::String &paramID)
+void FilterComponent::refreshRadioButtonsForParam(const juce::String &paramSuffix)
 {
+	juce::String paramID = getParameterPrefix() + paramSuffix;
 	auto &apvts = getProcessor().getParameterTreeState();
 	auto *p = apvts.getParameter(paramID);
 	if (!p)

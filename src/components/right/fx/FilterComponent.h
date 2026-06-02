@@ -19,6 +19,13 @@ class FilterComponent : public ObsidianBaseMidiComponent
 	void resized() override;
 	void setTrackData(TrackData *trackData);
 	void updateModelUI();
+	juce::String getTrackId() const
+	{
+		auto *t = track.get();
+		if (t)
+			return t->trackId;
+		return "None";
+	}
 
   protected:
 	juce::String getParameterPrefix() const override
@@ -42,7 +49,7 @@ class FilterComponent : public ObsidianBaseMidiComponent
 	void wireParameters();
 	void setupCutoffModeButtons();
 	void setupUI();
-	void refreshRadioButtonsForParam(const juce::String &paramID);
+	void refreshRadioButtonsForParam(const juce::String &paramSuffix);
 
 	MidiLearnableSlider cutoffKnob;
 	juce::Label cutoffLabel;

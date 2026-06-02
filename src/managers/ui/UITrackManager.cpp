@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
+#include "TrackEffectsPanel.h"
 
 UITrackManager::UITrackManager(DjIaVstEditor &editor) : editor(editor)
 {
@@ -93,6 +94,10 @@ void UITrackManager::refreshTrackComponents()
 			if (editor.mixerPanel)
 			{
 				editor.mixerPanel->updateModelUI(id);
+			}
+			if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+			{
+				editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(id);
 			}
 		};
 
