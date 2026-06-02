@@ -169,7 +169,7 @@ void SendsPanel::setupDelayDivisionButtons()
 	for (int i = 0; i < labels.size(); ++i)
 	{
 		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::violet);
-		btn->setRadioGroupId(0xDEAD);
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::DelayDivisionGroup);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
@@ -198,7 +198,7 @@ void SendsPanel::setupDelayModeButtons()
 	for (int i = 0; i < labels.size(); ++i)
 	{
 		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::amber);
-		btn->setRadioGroupId(0xBEEF);
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::DelayModeGroup);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);

@@ -235,8 +235,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "Cutoff", slotName + " Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f),
 		    20000.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "Resonance", slotName + " Resonance", juce::NormalisableRange<float>(0.1f, 10.0f, 0.f, 0.4f),
-		    0.707f));
+		    slotId + "Resonance", slotName + " Resonance", juce::NormalisableRange<float>(0.f, 1.0f, 0.f, 0.4f), 0.f));
 
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "RandomRetrigger",
 		                                                            slotName + " Random Retrigger", false));

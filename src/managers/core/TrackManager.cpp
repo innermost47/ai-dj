@@ -8,8 +8,8 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.lowpassHighpassFilter.setHighpass(false);
 	track.lowpassHighpassFilter.setSamplingRate(currentSampleRate);
 	track.lowpassHighpassFilter.setCutoffFrequency(20000.f);
-	track.lowpassHighpassFilter.setResonance(0.707f);
-	track.lowpassHighpassFilter.prepare(2);
+	track.lowpassHighpassFilter.setResonance(0.f);
+	track.lowpassHighpassFilter.prepare(2, static_cast<juce::uint32>(currentMaxBlockSize));
 }
 
 juce::String TrackManager::createTrack(const juce::String &name)

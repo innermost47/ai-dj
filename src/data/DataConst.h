@@ -16,5 +16,12 @@ inline constexpr int MAX_BLOCK_SIZE = 512;
 inline constexpr int RNDM_RTRGR_INTRVL = 3;
 
 inline constexpr double SAMPLERATE = 48000.0;
+
+enum RadioGroupIDs
+{
+	FilterTypeGroup = 1,
+	DelayDivisionGroup = 2,
+	DelayModeGroup = 3,
+};
 } // namespace Obsidian
 #endif

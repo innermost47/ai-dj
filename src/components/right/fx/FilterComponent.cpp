@@ -63,7 +63,7 @@ void FilterComponent::setupUI()
 	cutoffKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 
 	addAndMakeVisible(cutoffLabel);
-	cutoffLabel.setText("CUTOFF", juce::dontSendNotification);
+	cutoffLabel.setText("CUT", juce::dontSendNotification);
 	cutoffLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	cutoffLabel.setJustificationType(juce::Justification::centred);
 
@@ -75,7 +75,7 @@ void FilterComponent::setupUI()
 	resonanceKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 
 	addAndMakeVisible(resonanceLabel);
-	resonanceLabel.setText("Q", juce::dontSendNotification);
+	resonanceLabel.setText("RES", juce::dontSendNotification);
 	resonanceLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	resonanceLabel.setJustificationType(juce::Justification::centred);
 
@@ -100,12 +100,12 @@ void FilterComponent::setupCutoffModeButtons()
 	juce::String s = "slot" + juce::String(t->slotIndex + 1);
 	auto *param = apvts.getParameter(s + "Highpass");
 
-	juce::StringArray labels{"LPF", "HPF"};
+	juce::StringArray labels{"LPF12", "HPF12"};
 
 	for (int i = 0; i < labels.size(); ++i)
 	{
 		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::violet);
-		btn->setRadioGroupId(0xDEAD);
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::FilterTypeGroup);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
