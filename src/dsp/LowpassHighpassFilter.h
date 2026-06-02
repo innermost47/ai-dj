@@ -14,6 +14,26 @@ class LowpassHighpassFilter
 	void reset();
 	float softClip(float x) noexcept;
 
+	float getCutoff() const
+	{
+		return cutoffFrequency;
+	}
+	float getResonance() const
+	{
+		return resonance;
+	}
+	bool isHighpass() const
+	{
+		return highpass;
+	}
+
+	struct BiquadCoeffs
+	{
+		float b0, b1, b2, a0, a1, a2;
+	};
+
+	BiquadCoeffs computeCoeffs(float cutoff, float resonance, bool highpass, float sampleRate) const;
+
   private:
 	bool highpass;
 	float cutoffFrequency;

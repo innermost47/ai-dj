@@ -40,7 +40,7 @@ void LowpassHighpassFilter::prepare(int numChannels)
 
 float LowpassHighpassFilter::softClip(float x) noexcept
 {
-	const float threshold = 0.9f;
+	const float threshold = 1.0f;
 	if (x > threshold)
 		return threshold;
 	if (x < -threshold)
@@ -48,21 +48,22 @@ float LowpassHighpassFilter::softClip(float x) noexcept
 	return x - (x * x * x) / 3.f;
 }
 
+LowpassHighpassFilter::BiquadCoeffs LowpassHighpassFilter::computeCoeffs(float cutoff, float res, bool hp,
+                                                                         float sampleRate) const
+{
+	const float PI = juce::MathConstants<float>::pi;
+	const auto w0 = (PI * 2 * cutoff) / static_cast<float>(sampleRate);
+	const auto alpha = std::sin(w0) / (2 * res);
+	const auto cosW0 = std::cos(w0);
+	const auto base = hp ? (1.f + cosW0) : (1.f - cosW0);
+	return {base / 2.f, hp ? -base : base, base / 2.f, 1 + alpha, -2 * cosW0, 1 - alpha};
+}
+
 void LowpassHighpassFilter::processBlock(juce::AudioBuffer<float> &buffer)
 {
 	juce::ScopedNoDenormals noDenormals;
 
-	constexpr auto PI = juce::MathConstants<float>::pi;
-	const auto w0 = (PI * 2 * cutoffFrequency) / static_cast<float>(samplingRate);
-	const auto alpha = std::sin(w0) / (2 * resonance);
-	const auto cosW0 = std::cos(w0);
-	const auto base = highpass ? (1.f + cosW0) : (1.f - cosW0);
-	const auto b0 = base / 2;
-	const auto b1 = highpass ? -base : base;
-	const auto b2 = base / 2;
-	const auto a0 = 1 + alpha;
-	const auto a1 = -2 * cosW0;
-	const auto a2 = 1 - alpha;
+	BiquadCoeffs coefs = computeCoeffs(cutoffFrequency, resonance, highpass, static_cast<float>(samplingRate));
 
 	if (dnBuffer.size() < size_t(buffer.getNumChannels()))
 		dnBuffer.resize(buffer.getNumChannels(), 0.f);
@@ -74,8 +75,9 @@ void LowpassHighpassFilter::processBlock(juce::AudioBuffer<float> &buffer)
 		{
 			const float input = channelSamples[i];
 			auto &state = channelStates[channel];
-			float output = (b0 / a0 * input) + (b1 / a0 * state.x1) + (b2 / a0 * state.x2) - (a1 / a0 * state.y1) -
-			               (a2 / a0 * state.y2);
+			float output = (coefs.b0 / coefs.a0 * input) + (coefs.b1 / coefs.a0 * state.x1) +
+			               (coefs.b2 / coefs.a0 * state.x2) - (coefs.a1 / coefs.a0 * state.y1) -
+			               (coefs.a2 / coefs.a0 * state.y2);
 
 			output = softClip(output);
 
