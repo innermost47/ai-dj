@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 
 class DjIaVstProcessor;
+class FilterComponent;
 
 class TrackEffectsPanel : public ObsidianComponent
 {
@@ -13,11 +14,10 @@ class TrackEffectsPanel : public ObsidianComponent
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 
-	void setActiveTrackId(const juce::String &trackId);
-
   private:
 	DjIaVstProcessor &audioProcessor;
 	juce::String activeTrackId;
+	std::vector<std::unique_ptr<FilterComponent>> filterComponents;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackEffectsPanel)
 };

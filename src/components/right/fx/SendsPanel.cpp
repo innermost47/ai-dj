@@ -3,6 +3,11 @@
 
 SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(processor)
 {
+	setupUI();
+}
+
+void SendsPanel::setupUI()
+{
 	delayTitleLbl.setText("DELAY", juce::dontSendNotification);
 	delayTitleLbl.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
 	delayTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
@@ -235,7 +240,7 @@ void SendsPanel::resized()
 
 	delayTitleLbl.setBounds(delayArea.removeFromTop(14));
 	auto mainRow = delayArea.removeFromTop(80);
-	mainRow.removeFromTop(4);
+	mainRow.removeFromTop(8);
 
 	auto fbCol = mainRow.removeFromLeft(38);
 	auto fbRow = fbCol.removeFromTop(48);

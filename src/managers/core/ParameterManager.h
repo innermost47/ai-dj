@@ -60,6 +60,14 @@ class ParameterManager
 	{
 		return safeLoadIndexed(slotGenerateParams, slot);
 	}
+	float getCutoff(int slot) const
+	{
+		return safeLoadIndexed(slotCutoffParams, slot);
+	}
+	float getResonance(int slot) const
+	{
+		return safeLoadIndexed(slotResonanceParams, slot);
+	}
 
 	bool getMute(int slot) const
 	{
@@ -219,6 +227,9 @@ class ParameterManager
 	std::atomic<float> *slotStopParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotGenerateParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotPitchParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCutoffParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotResonanceParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotHighpassParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotFineParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotRandomRetriggerParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotRetriggerIntervalParams[Obsidian::MAX_TRACKS] = {};
@@ -268,7 +279,8 @@ class ParameterManager
 
 		static const juce::StringArray perSlotParams = {
 		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",         "ReverbSend",
-		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval", "Gain"};
+		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval", "Gain",
+		    "Cutoff",     "Resonance"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
@@ -287,7 +299,8 @@ class ParameterManager
 		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack", "useCrossfader"};
 
 		static const juce::StringArray perSlotParams = {
-		    "Mute", "Solo", "Play", "Stop", "Generate", "RandomRetrigger", "PageA", "PageB", "PageC", "PageD"};
+		    "Mute",  "Solo",  "Play",  "Stop",  "Generate", "RandomRetrigger",
+		    "PageA", "PageB", "PageC", "PageD", "Highpass"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{

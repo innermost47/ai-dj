@@ -268,14 +268,15 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingStep.cpp
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
+    src/components/right/fx/FilterComponent.cpp
+    src/components/right/fx/SendsPanel.cpp
+    src/components/right/fx/TrackEffectsPanel.cpp
     src/components/right/LCDScreen.cpp
     src/components/right/MasterChannel.cpp
     src/components/right/MasterWaveformDisplay.cpp
     src/components/right/RightPanelWrapper.cpp
     src/components/right/ScaleAndDuration.cpp
-    src/components/right/SendsPanel.cpp
     src/components/right/StandaloneTransportComponent.cpp
-    src/components/right/TrackEffectsPanel.cpp
     src/components/right/TrackRecapPanel.cpp
     src/components/shared/accordion/ObsidianAccordion.cpp
     src/components/shared/accordion/ObsidianListItem.cpp
@@ -337,6 +338,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/components/left/samplePanel
     src/components/onboarding
     src/components/right
+    src/components/right/fx
     src/components/shared
     src/components/shared/accordion
     src/components/shared/bank

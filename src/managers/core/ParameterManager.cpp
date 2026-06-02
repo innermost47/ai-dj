@@ -55,6 +55,9 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotGenerateParams[i] = apvts.getRawParameterValue(s + "Generate");
 		slotPitchParams[i] = apvts.getRawParameterValue(s + "Pitch");
 		slotFineParams[i] = apvts.getRawParameterValue(s + "Fine");
+		slotCutoffParams[i] = apvts.getRawParameterValue(s + "Cutoff");
+		slotResonanceParams[i] = apvts.getRawParameterValue(s + "Resonance");
+		slotHighpassParams[i] = apvts.getRawParameterValue(s + "Highpass");
 		slotRandomRetriggerParams[i] = apvts.getRawParameterValue(s + "RandomRetrigger");
 		slotRetriggerIntervalParams[i] = apvts.getRawParameterValue(s + "RetriggerInterval");
 		slotAdsrAttackParams[i] = apvts.getRawParameterValue(s + "AdsrAttack");
@@ -82,6 +85,9 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "Pan", listener);
 		apvts.addParameterListener(s + "RandomRetrigger", listener);
 		apvts.addParameterListener(s + "RetriggerInterval", listener);
+		apvts.addParameterListener(s + "Cutoff", listener);
+		apvts.addParameterListener(s + "Resonance", listener);
+		apvts.addParameterListener(s + "Highpass", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -149,6 +155,9 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "Gain", listener);
 		apvts.removeParameterListener(s + "RandomRetrigger", listener);
 		apvts.removeParameterListener(s + "RetriggerInterval", listener);
+		apvts.removeParameterListener(s + "Cutoff", listener);
+		apvts.removeParameterListener(s + "Resonance", listener);
+		apvts.removeParameterListener(s + "Highpass", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -222,6 +231,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Fine", slotName + " Fine", -50.0f, 50.0f, 0.0f));
 
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "Cutoff", slotName + " Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f),
+		    20000.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "Resonance", slotName + " Resonance", juce::NormalisableRange<float>(0.1f, 10.0f, 0.f, 0.4f),
+		    0.707f));
+
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "RandomRetrigger",
 		                                                            slotName + " Random Retrigger", false));
 		params.push_back(
@@ -241,6 +257,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(makeTrigg(slotId + "PageB", slotName + " Page B"));
 		params.push_back(makeTrigg(slotId + "PageC", slotName + " Page C"));
 		params.push_back(makeTrigg(slotId + "PageD", slotName + " Page D"));
+		params.push_back(makeTrigg(slotId + "Highpass", slotName + " Highpass"));
 
 		params.push_back(std::make_unique<juce::AudioParameterInt>(slotId + "Seq", slotName + " Sequence", 1,
 		                                                           Obsidian::MAX_TRACKS, 1));
@@ -439,6 +456,12 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->delaySend.store(newValue);
 		else if (parameterID.endsWith("ReverbSend"))
 			track->reverbSend.store(newValue);
+		else if (parameterID.endsWith("Highpass"))
+			track->lowpassHighpassFilter.setHighpass(newValue > 0.5);
+		else if (parameterID.endsWith("Cutoff"))
+			track->lowpassHighpassFilter.setCutoffFrequency(newValue);
+		else if (parameterID.endsWith("Resonance"))
+			track->lowpassHighpassFilter.setResonance(newValue);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);
