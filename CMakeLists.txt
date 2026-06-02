@@ -292,6 +292,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/DelaySend.cpp
+    src/dsp/LowpassHighpassFilter.cpp
     src/dsp/MiniBpm.cpp
     src/dsp/ReverbSend.cpp
     src/dsp/SimpleEQ.cpp

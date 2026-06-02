@@ -1,13 +1,21 @@
 ﻿#include "TrackManager.h"
 #include "TrackData.h"
 
+void TrackManager::prepareTrack(TrackData &track)
+{
+	track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+	track.reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+	track.lowpassHighpassFilter.setHighpass(false);
+	track.lowpassHighpassFilter.setSamplingRate(currentSampleRate);
+	track.lowpassHighpassFilter.setCutoffFrequency(20000.f);
+	track.lowpassHighpassFilter.setResonance(0.707f);
+	track.lowpassHighpassFilter.prepare(2);
+}
+
 juce::String TrackManager::createTrack(const juce::String &name)
 {
 	juce::ScopedLock lock(tracksLock);
-	for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
-	{
-		usedSlots[i] = false;
-	}
+	std::fill(std::begin(usedSlots), std::end(usedSlots), false);
 	for (const auto &pair : tracks)
 	{
 		if (pair.second->slotIndex >= 0 && pair.second->slotIndex < Obsidian::MAX_TRACKS)
@@ -30,8 +38,7 @@ juce::String TrackManager::createTrack(const juce::String &name)
 
 	if (audioPrepared)
 	{
-		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
-		track->reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+		prepareTrack(*track);
 	}
 
 	tracks[stdId] = std::move(track);
@@ -44,7 +51,9 @@ void TrackManager::addTrack(const std::string &trackId, std::unique_ptr<TrackDat
 	const juce::ScopedLock sl(tracksLock);
 
 	if (audioPrepared && track)
-		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+	{
+		prepareTrack(*track);
+	}
 
 	tracks[trackId] = std::move(track);
 	trackOrder.push_back(trackId);
@@ -86,8 +95,7 @@ void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 		if (pair.second)
 		{
 			pair.second->meterUpdateInterval = interval;
-			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
-			pair.second->reverbSendProcessor.prepare(sampleRate, maxBlockSize);
+			prepareTrack(*pair.second);
 		}
 	}
 }
@@ -781,6 +789,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			track.theoreticalPosition.store(newTheoretical);
 		}
 	}
+	track.lowpassHighpassFilter.processBlock(individualOutput);
 	track.readPosition.store(currentPosition);
 }
 
