@@ -1,4 +1,5 @@
 #include "TrackEffectsPanel.h"
+#include "EqualizerComponent.h"
 #include "FilterComponent.h"
 #include "PluginProcessor.h"
 
@@ -12,6 +13,7 @@ void TrackEffectsPanel::refresh()
 	removeAllChildren();
 	trackSelectors.clear();
 	filterComponent = nullptr;
+	equalizerComponent = nullptr;
 	setupUI();
 	resized();
 }
@@ -39,6 +41,8 @@ void TrackEffectsPanel::resized()
 
 	auto selectorsArea = area.removeFromTop(26);
 	area.removeFromTop(Obsidian::GAP_4);
+	auto eqArea = area.removeFromTop(110);
+	area.removeFromTop(Obsidian::GAP_4);
 	auto filterArea = area.removeFromTop(60);
 
 	juce::FlexBox selectors;
@@ -52,6 +56,9 @@ void TrackEffectsPanel::resized()
 	}
 
 	selectors.performLayout(selectorsArea);
+
+	if (equalizerComponent)
+		equalizerComponent->setBounds(eqArea);
 	if (filterComponent)
 		filterComponent->setBounds(filterArea);
 }
@@ -114,6 +121,8 @@ void TrackEffectsPanel::setupUI()
 			{
 				filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
 				addAndMakeVisible(*filterComponent);
+				equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, currentTrack);
+				addAndMakeVisible(*equalizerComponent);
 				resized();
 			}
 		};
@@ -125,6 +134,8 @@ void TrackEffectsPanel::setupUI()
 		{
 			filterComponent = std::make_unique<FilterComponent>(audioProcessor, track);
 			addAndMakeVisible(*filterComponent);
+			equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, track);
+			addAndMakeVisible(*equalizerComponent);
 			resized();
 		}
 
@@ -145,6 +156,7 @@ void TrackEffectsPanel::setupUI()
 	btn->setColour(juce::TextButton::textColourOnId, textColour);
 	btn->onClick = [this]()
 	{
+		equalizerComponent = nullptr;
 		filterComponent = nullptr;
 		resized();
 	};

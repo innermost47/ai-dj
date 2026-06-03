@@ -68,6 +68,15 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotDelaySendParams[i] = apvts.getRawParameterValue(s + "DelaySend");
 		slotReverbSendParams[i] = apvts.getRawParameterValue(s + "ReverbSend");
 
+		slotEQGainSubBassParams[i] = apvts.getRawParameterValue(s + "EQGainSubBass");
+		slotEQGainBassParams[i] = apvts.getRawParameterValue(s + "EQGainBass");
+		slotEQGainLowMidParams[i] = apvts.getRawParameterValue(s + "EQGainLowMid");
+		slotEQGainMidParams[i] = apvts.getRawParameterValue(s + "EQGainMid");
+		slotEQGainHighMidParams[i] = apvts.getRawParameterValue(s + "EQGainHiMid");
+		slotEQGainPresenceParams[i] = apvts.getRawParameterValue(s + "EQGainPresence");
+		slotEQGainHighParams[i] = apvts.getRawParameterValue(s + "EQGainHigh");
+		slotEQGainAirParams[i] = apvts.getRawParameterValue(s + "EQGainAir");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -90,6 +99,14 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "Resonance", listener);
 		apvts.addParameterListener(s + "FilterMode", listener);
 		apvts.addParameterListener(s + "FilterDrive", listener);
+		apvts.addParameterListener(s + "EQGainSubBass", listener);
+		apvts.addParameterListener(s + "EQGainBass", listener);
+		apvts.addParameterListener(s + "EQGainLowMid", listener);
+		apvts.addParameterListener(s + "EQGainMid", listener);
+		apvts.addParameterListener(s + "EQGainHiMid", listener);
+		apvts.addParameterListener(s + "EQGainPresence", listener);
+		apvts.addParameterListener(s + "EQGainHigh", listener);
+		apvts.addParameterListener(s + "EQGainAir", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -161,6 +178,14 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "Resonance", listener);
 		apvts.removeParameterListener(s + "FilterMode", listener);
 		apvts.removeParameterListener(s + "FilterDrive", listener);
+		apvts.removeParameterListener(s + "EQGainSubBass", listener);
+		apvts.removeParameterListener(s + "EQGainBass", listener);
+		apvts.removeParameterListener(s + "EQGainLowMid", listener);
+		apvts.removeParameterListener(s + "EQGainMid", listener);
+		apvts.removeParameterListener(s + "EQGainHiMid", listener);
+		apvts.removeParameterListener(s + "EQGainPresence", listener);
+		apvts.removeParameterListener(s + "EQGainHigh", listener);
+		apvts.removeParameterListener(s + "EQGainAir", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -258,6 +283,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(std::make_unique<juce::AudioParameterChoice>(
 		    slotId + "FilterMode", slotName + "Filter Mode",
 		    juce::StringArray{"LPF12", "HPF12", "BPF12", "LPF24", "HPF24", "BPF24"}, 0));
+
+		juce::NormalisableRange<float> gainRange(0.0f, 4.0f);
+		gainRange.skew = std::log(0.5f) / std::log((1.0f - 0.0f) / (4.0f - 0.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainSubBass",
+		                                                             slotName + " EQ Gain Sub Bass", gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainBass", slotName + " EQ Gain Bass",
+		                                                             gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "EQGainLowMid", slotName + " EQ Gain Low Mid", gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainMid", slotName + " EQ Gain Mid",
+		                                                             gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "EQGainHiMid", slotName + " EQ Gain Hi Mid", gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainPresence",
+		                                                             slotName + " EQ Gain Presence",
+		                                                             gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainHigh", slotName + " EQ Gain High",
+		                                                             gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainAir", slotName + " EQ Gain Air",
+		                                                             gainRange, 1.0f));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -475,6 +521,22 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->lowpassHighpassFilter.setCutoffFrequency(newValue);
 		else if (parameterID.endsWith("Resonance"))
 			track->lowpassHighpassFilter.setResonance(newValue);
+		else if (parameterID.endsWith("EQGainSubBass"))
+			track->equalizer.updateGain(Obsidian::eqBands::subBass, newValue);
+		else if (parameterID.endsWith("EQGainBass"))
+			track->equalizer.updateGain(Obsidian::eqBands::bass, newValue);
+		else if (parameterID.endsWith("EQGainLowMid"))
+			track->equalizer.updateGain(Obsidian::eqBands::lowMid, newValue);
+		else if (parameterID.endsWith("EQGainMid"))
+			track->equalizer.updateGain(Obsidian::eqBands::mid, newValue);
+		else if (parameterID.endsWith("EQGainHiMid"))
+			track->equalizer.updateGain(Obsidian::eqBands::highMid, newValue);
+		else if (parameterID.endsWith("EQGainPresence"))
+			track->equalizer.updateGain(Obsidian::eqBands::presence, newValue);
+		else if (parameterID.endsWith("EQGainHigh"))
+			track->equalizer.updateGain(Obsidian::eqBands::high, newValue);
+		else if (parameterID.endsWith("EQGainAir"))
+			track->equalizer.updateGain(Obsidian::eqBands::air, newValue);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);

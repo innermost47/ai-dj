@@ -248,6 +248,15 @@ class ParameterManager
 	std::atomic<float> *slotDelaySendParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotReverbSendParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotEQGainSubBassParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainBassParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainLowMidParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainMidParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainHighMidParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainPresenceParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainHighParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainAirParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
@@ -285,10 +294,28 @@ class ParameterManager
 		                         "delayMode",
 		                         "crossfaderCurveMode"};
 
-		static const juce::StringArray perSlotParams = {
-		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",         "ReverbSend",
-		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval", "Gain",
-		    "Cutoff",     "Resonance"};
+		static const juce::StringArray perSlotParams = {"Volume",
+		                                                "Pan",
+		                                                "Pitch",
+		                                                "Fine",
+		                                                "DelaySend",
+		                                                "ReverbSend",
+		                                                "ADSRAttack",
+		                                                "ADSRDecay",
+		                                                "ADSRSustain",
+		                                                "ADSRRelease",
+		                                                "RetriggerInterval",
+		                                                "Gain",
+		                                                "Cutoff",
+		                                                "Resonance",
+		                                                "EQGainSubBass",
+		                                                "EQGainBass",
+		                                                "EQGainLowMid",
+		                                                "EQGainMid",
+		                                                "EQGainHiMid",
+		                                                "EQGainPresence",
+		                                                "EQGainHigh",
+		                                                "EQGainAir"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{

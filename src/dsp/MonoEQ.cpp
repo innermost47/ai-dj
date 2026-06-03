@@ -4,7 +4,7 @@ void MonoEQ::updateCoefficients(Obsidian::filterType type, float fq, float q, fl
 {
 	frequency = fq;
 	resonance = q;
-	gain = g;
+	gain = juce::jlimit(0.01f, 4.f, g);
 
 	switch (type)
 	{
@@ -32,6 +32,24 @@ void MonoEQ::updateCoefficients(Obsidian::filterType type, float fq, float q, fl
 	default:
 		break;
 	}
+}
+
+void MonoEQ::updateFrequency(Obsidian::filterType type, float fq)
+{
+	frequency = fq;
+	updateCoefficients(type, frequency, resonance, gain);
+}
+
+void MonoEQ::updateQ(Obsidian::filterType type, float q)
+{
+	resonance = q;
+	updateCoefficients(type, frequency, resonance, gain);
+}
+
+void MonoEQ::updateGain(Obsidian::filterType type, float g)
+{
+	gain = g;
+	updateCoefficients(type, frequency, resonance, gain);
 }
 
 void MonoEQ::setSampleRate(double sr)

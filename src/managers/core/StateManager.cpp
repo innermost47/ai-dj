@@ -57,6 +57,15 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("resonance", track->lowpassHighpassFilter.getResonance(), nullptr);
 		    trackState.setProperty("filterDrive", track->lowpassHighpassFilter.getDrive(), nullptr);
 
+		    trackState.setProperty("subBassGain", track->equalizer.getGain(Obsidian::eqBands::subBass), nullptr);
+		    trackState.setProperty("bassGain", track->equalizer.getGain(Obsidian::eqBands::bass), nullptr);
+		    trackState.setProperty("lowMidGain", track->equalizer.getGain(Obsidian::eqBands::lowMid), nullptr);
+		    trackState.setProperty("midGain", track->equalizer.getGain(Obsidian::eqBands::mid), nullptr);
+		    trackState.setProperty("highMidGain", track->equalizer.getGain(Obsidian::eqBands::highMid), nullptr);
+		    trackState.setProperty("presenceGain", track->equalizer.getGain(Obsidian::eqBands::presence), nullptr);
+		    trackState.setProperty("highGain", track->equalizer.getGain(Obsidian::eqBands::high), nullptr);
+		    trackState.setProperty("airGain", track->equalizer.getGain(Obsidian::eqBands::air), nullptr);
+
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
@@ -170,12 +179,22 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->beatRepeatActive = trackState.getProperty("beatRepeatActive", false);
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
+
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
 		track->lowpassHighpassFilter.setMode(mode);
 		track->lowpassHighpassFilter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
 		track->lowpassHighpassFilter.setResonance(trackState.getProperty("resonance", 0.f));
 		track->lowpassHighpassFilter.setDrive(trackState.getProperty("filterDrive", 1.f));
+
+		track->equalizer.updateGain(Obsidian::eqBands::subBass, trackState.getProperty("subBassGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::bass, trackState.getProperty("bassGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::lowMid, trackState.getProperty("lowMidGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::mid, trackState.getProperty("midGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::highMid, trackState.getProperty("highMidGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::presence, trackState.getProperty("presenceGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::high, trackState.getProperty("highGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::air, trackState.getProperty("airGain", 1.f));
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{

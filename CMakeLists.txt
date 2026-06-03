@@ -268,6 +268,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingStep.cpp
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
+    src/components/right/fx/EqualizerComponent.cpp
     src/components/right/fx/FilterComponent.cpp
     src/components/right/fx/SendsPanel.cpp
     src/components/right/fx/TrackEffectsPanel.cpp
