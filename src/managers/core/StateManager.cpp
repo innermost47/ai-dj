@@ -187,6 +187,12 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->lowpassHighpassFilter.setResonance(trackState.getProperty("resonance", 0.f));
 		track->lowpassHighpassFilter.setDrive(trackState.getProperty("filterDrive", 1.f));
 
+		juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
+		spec.maximumBlockSize = static_cast<juce::uint32>(audioProcessor.getBlockSize());
+		spec.numChannels = 2;
+		spec.sampleRate = audioProcessor.getSampleRate();
+		track->equalizer.prepare(spec);
+
 		track->equalizer.updateGain(Obsidian::eqBands::subBass, trackState.getProperty("subBassGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::bass, trackState.getProperty("bassGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::lowMid, trackState.getProperty("lowMidGain", 1.f));
