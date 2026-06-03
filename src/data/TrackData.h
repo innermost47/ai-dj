@@ -3,6 +3,7 @@
 #include "DataConst.h"
 #include "DelaySend.h"
 #include "DjIaClient.h"
+#include "Equalizer.h"
 #include "LowpassHighpassFilter.h"
 #include "ReverbSend.h"
 #include <JuceHeader.h>
@@ -162,6 +163,7 @@ struct TrackData
 	DelaySend delaySendProcessor;
 	ReverbSend reverbSendProcessor;
 	LowpassHighpassFilter lowpassHighpassFilter;
+	Equalizer equalizer;
 
 	juce::String trackId;
 	juce::String trackName;

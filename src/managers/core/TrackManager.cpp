@@ -10,6 +10,11 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.lowpassHighpassFilter.setCutoffFrequency(20000.f);
 	track.lowpassHighpassFilter.setResonance(0.f);
 	track.lowpassHighpassFilter.prepare(2, static_cast<juce::uint32>(currentMaxBlockSize));
+	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
+	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
+	spec.numChannels = 2;
+	spec.sampleRate = currentSampleRate;
+	track.equalizer.prepare(spec);
 }
 
 juce::String TrackManager::createTrack(const juce::String &name)
@@ -789,6 +794,12 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			track.theoreticalPosition.store(newTheoretical);
 		}
 	}
+
+	auto block = juce::dsp::AudioBlock<float>(individualOutput);
+	auto blockToUse = block.getSubBlock(0, individualOutput.getNumSamples());
+	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);
+
+	track.equalizer.process(contextToUse);
 	track.lowpassHighpassFilter.processBlock(individualOutput);
 	track.readPosition.store(currentPosition);
 }

@@ -24,5 +24,25 @@ enum RadioGroupIDs
 	DelayModeGroup = 3,
 	TrackFXSelector = 4
 };
+
+enum eqBands
+{
+	subBass = 0,
+	bass = 1,
+	lowMid = 2,
+	mid = 3,
+	highMid = 4,
+	presence = 5,
+	high = 6,
+	air = 7
+};
+
+enum filterType
+{
+	lowShelf = 0,
+	peakFilter = 1,
+	highShelf = 2,
+};
+
 } // namespace Obsidian
 #endif
