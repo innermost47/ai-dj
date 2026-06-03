@@ -5,14 +5,14 @@
 class LowpassHighpassFilter
 {
   public:
-	void setHighpass(bool value);
 	void setCutoffFrequency(float frequency);
 	void setResonance(float q);
 	void setSamplingRate(double sr);
+	void setDrive(float newDrive);
 	void processBlock(juce::AudioBuffer<float> &);
 	void prepare(int numChannels, juce::uint32 maxBlockSize);
 	void reset();
-	float softClip(float x) noexcept;
+	void setMode(juce::dsp::LadderFilterMode newMode);
 
 	float getCutoff() const
 	{
@@ -22,16 +22,23 @@ class LowpassHighpassFilter
 	{
 		return resonance;
 	}
-	bool isHighpass() const
+	float getDrive() const
 	{
-		return highpass;
+		return drive;
+	}
+	juce::dsp::LadderFilterMode getMode() const
+	{
+		return mode;
 	}
 
   private:
-	bool highpass;
 	float cutoffFrequency;
 	float resonance;
+	float drive;
+
 	double samplingRate;
+
+	juce::dsp::LadderFilterMode mode;
 
 	juce::dsp::LadderFilter<float> filter;
 };

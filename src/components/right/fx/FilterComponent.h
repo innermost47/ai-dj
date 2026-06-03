@@ -52,6 +52,8 @@ class FilterComponent : public ObsidianBaseMidiComponent
 	void setupCutoffModeButtons();
 	void refreshRadioButtonsForParam(const juce::String &paramSuffix);
 
+	MidiLearnableSlider driveKnob;
+	juce::Label driveLabel;
 	MidiLearnableSlider cutoffKnob;
 	juce::Label cutoffLabel;
 	MidiLearnableSlider resonanceKnob;

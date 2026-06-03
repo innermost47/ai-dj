@@ -1,9 +1,9 @@
 #include "LowpassHighpassFilter.h"
 
-void LowpassHighpassFilter::setHighpass(bool value)
+void LowpassHighpassFilter::setMode(juce::dsp::LadderFilterMode newMode)
 {
-	highpass = value;
-	highpass ? filter.setMode(juce::dsp::LadderFilterMode::HPF12) : filter.setMode(juce::dsp::LadderFilterMode::LPF12);
+	mode = newMode;
+	filter.setMode(mode);
 }
 
 void LowpassHighpassFilter::setSamplingRate(double sr)
@@ -21,6 +21,12 @@ void LowpassHighpassFilter::setResonance(float q)
 {
 	resonance = juce::jlimit(0.f, 0.9f, q);
 	filter.setResonance(resonance);
+}
+
+void LowpassHighpassFilter::setDrive(float newDrive)
+{
+	drive = newDrive;
+	filter.setDrive(drive);
 }
 
 void LowpassHighpassFilter::reset()

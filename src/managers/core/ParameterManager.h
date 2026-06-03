@@ -68,6 +68,14 @@ class ParameterManager
 	{
 		return safeLoadIndexed(slotResonanceParams, slot);
 	}
+	float getFilterMode(int slot) const
+	{
+		return safeLoadIndexed(slotFilterModeParams, slot);
+	}
+	float getFilterDrive(int slot) const
+	{
+		return safeLoadIndexed(slotFilterDriveParams, slot);
+	}
 
 	bool getMute(int slot) const
 	{
@@ -150,8 +158,6 @@ class ParameterManager
 		return safeLoad(reverbMixParam);
 	}
 
-	void removeAllListeners(juce::AudioProcessorValueTreeState::Listener *listener);
-
 	float getRandomRetrigger(int slot) const
 	{
 		return safeLoad(slotRandomRetriggerParams[slot]);
@@ -195,6 +201,7 @@ class ParameterManager
 	void handleSampleParams(int slot, TrackData *track);
 	void applyPlayState(bool shouldArm, TrackData *track);
 	void handleSendsParams();
+	void removeAllListeners(juce::AudioProcessorValueTreeState::Listener *listener);
 
   private:
 	juce::AudioProcessorValueTreeState apvts;
@@ -229,7 +236,8 @@ class ParameterManager
 	std::atomic<float> *slotPitchParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotCutoffParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotResonanceParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotHighpassParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterModeParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterDriveParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotFineParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotRandomRetriggerParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotRetriggerIntervalParams[Obsidian::MAX_TRACKS] = {};
@@ -299,8 +307,8 @@ class ParameterManager
 		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack", "useCrossfader"};
 
 		static const juce::StringArray perSlotParams = {
-		    "Mute",  "Solo",  "Play",  "Stop",  "Generate", "RandomRetrigger",
-		    "PageA", "PageB", "PageC", "PageD", "Highpass"};
+		    "Mute",  "Solo",  "Play",  "Stop",  "Generate",   "RandomRetrigger",
+		    "PageA", "PageB", "PageC", "PageD", "FilterMode", "FilterDrive"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{

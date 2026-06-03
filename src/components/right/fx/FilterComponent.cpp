@@ -24,7 +24,7 @@ void FilterComponent::onParameterChangedUI(const juce::String &paramSuffix, floa
 	auto &apvts = audioProcessor.getParameterTreeState();
 	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
 	auto value = range.convertFrom0to1(normalizedValue);
-	if (paramSuffix == "Highpass")
+	if (paramSuffix == "FilterMode")
 		refreshRadioButtonsForParam(paramSuffix);
 	else if (paramSuffix == "Cutoff")
 	{
@@ -33,6 +33,10 @@ void FilterComponent::onParameterChangedUI(const juce::String &paramSuffix, floa
 	else if (paramSuffix == "Resonance")
 	{
 		resonanceKnob.setValue(value, juce::dontSendNotification);
+	}
+	else if (paramSuffix == "FilterDrive")
+	{
+		driveKnob.setValue(value, juce::dontSendNotification);
 	}
 }
 
@@ -55,6 +59,18 @@ void FilterComponent::refreshRadioButtonsForParam(const juce::String &paramSuffi
 
 void FilterComponent::setupUI()
 {
+	addAndMakeVisible(driveKnob);
+	driveKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+	driveKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+	driveKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+	driveKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+	driveKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+
+	addAndMakeVisible(driveLabel);
+	driveLabel.setText("DRIVE", juce::dontSendNotification);
+	driveLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+	driveLabel.setJustificationType(juce::Justification::centred);
+
 	addAndMakeVisible(cutoffKnob);
 	cutoffKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 	cutoffKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
@@ -79,6 +95,7 @@ void FilterComponent::setupUI()
 	resonanceLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	resonanceLabel.setJustificationType(juce::Justification::centred);
 
+	Obsidian::applyFontSize(driveLabel, Obsidian::TEXT_XXS);
 	Obsidian::applyFontSize(cutoffLabel, Obsidian::TEXT_XXS);
 	Obsidian::applyFontSize(resonanceLabel, Obsidian::TEXT_XXS);
 
@@ -98,9 +115,9 @@ void FilterComponent::setupCutoffModeButtons()
 		return;
 	auto &apvts = getProcessor().getParameterTreeState();
 	juce::String s = "slot" + juce::String(t->slotIndex + 1);
-	auto *param = apvts.getParameter(s + "Highpass");
+	auto *param = apvts.getParameter(s + "FilterMode");
 
-	juce::StringArray labels{"LPF12", "HPF12"};
+	juce::StringArray labels{"LP12", "HP12", "BP12", "LP24", "HP24", "BP24"};
 
 	for (int i = 0; i < labels.size(); ++i)
 	{
@@ -128,21 +145,37 @@ void FilterComponent::resized()
 {
 	auto area = getLocalBounds().reduced(8);
 
-	auto selector = area.removeFromLeft(area.getWidth() / 4);
+	auto selector = area.removeFromLeft(area.getWidth() / 2);
+	area.removeFromLeft(Obsidian::GAP_4);
+	auto drive = area.removeFromLeft(area.getWidth() / 3);
 	auto cutoff = area.removeFromLeft(area.getWidth() / 2);
 
-	juce::FlexBox selectorArea;
+	juce::Grid grid;
+	using Track = juce::Grid::TrackInfo;
+	using Fr = juce::Grid::Fr;
 
-	selectorArea.flexDirection = juce::FlexBox::Direction::column;
-	selectorArea.justifyContent = juce::FlexBox::JustifyContent::center;
-	selectorArea.alignContent = juce::FlexBox::AlignContent::center;
+	grid.templateRows = {Track(Fr(1)), Track(Fr(1))};
+	grid.templateColumns = {Track(Fr(1)), Track(Fr(1)), Track(Fr(1))};
+	grid.columnGap = juce::Grid::Px(Obsidian::GAP_2);
+	grid.rowGap = juce::Grid::Px(Obsidian::GAP_2);
 
 	for (int i = 0; i < (int)cutoffModeButtons.size(); ++i)
 	{
-		selectorArea.items.add(juce::FlexItem(*cutoffModeButtons[i]).withFlex(0.5f));
+		juce::GridItem item(*cutoffModeButtons[i]);
+		grid.items.add(item);
 	}
 
-	selectorArea.performLayout(selector);
+	grid.performLayout(selector);
+
+	juce::FlexBox driveArea;
+	driveArea.flexDirection = juce::FlexBox::Direction::column;
+	driveArea.justifyContent = juce::FlexBox::JustifyContent::center;
+	driveArea.alignContent = juce::FlexBox::AlignContent::center;
+
+	driveArea.items.add(juce::FlexItem(driveLabel).withFlex(0.2f));
+	driveArea.items.add(juce::FlexItem(driveKnob).withFlex(0.8f));
+
+	driveArea.performLayout(drive);
 
 	juce::FlexBox cutoffArea;
 	cutoffArea.flexDirection = juce::FlexBox::Direction::column;
@@ -178,6 +211,7 @@ void FilterComponent::updateModelUI()
 
 	cutoffKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 	resonanceKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
+	driveKnob.setColour(juce::Slider::rotarySliderFillColourId, modelColour);
 
 	repaint();
 }
@@ -186,14 +220,17 @@ void FilterComponent::wireParameters()
 {
 	registerSliderParam("Cutoff", cutoffKnob);
 	registerSliderParam("Resonance", resonanceKnob);
+	registerSliderParam("FilterDrive", driveKnob);
 
 	registerMidiLearn("Cutoff", &cutoffKnob);
 	registerMidiLearn("Resonance", &resonanceKnob);
+	registerMidiLearn("FilterDrive", &driveKnob);
 
 	syncSliderRange(cutoffKnob, fullParamId("Cutoff"));
 	syncSliderRange(resonanceKnob, fullParamId("Resonance"));
+	syncSliderRange(driveKnob, fullParamId("FilterDrive"));
 
-	subscribeToParam("Highpass");
+	subscribeToParam("FilterMode");
 
 	auto highpassCallback = [this](const juce::String &paramID, int targetIndex, int totalCount)
 	{
@@ -217,7 +254,7 @@ void FilterComponent::wireParameters()
 
 	for (int i = 0; i < (int)cutoffModeButtons.size(); ++i)
 	{
-		registerMidiLearn("Highpass", cutoffModeButtons[i].get(),
-		                  highpassCallback("Highpass", i, (int)cutoffModeButtons.size()));
+		registerMidiLearn("FilterMode", cutoffModeButtons[i].get(),
+		                  highpassCallback("FilterMode", i, (int)cutoffModeButtons.size()));
 	}
 }

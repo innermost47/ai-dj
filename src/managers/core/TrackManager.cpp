@@ -5,7 +5,7 @@ void TrackManager::prepareTrack(TrackData &track)
 {
 	track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
 	track.reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
-	track.lowpassHighpassFilter.setHighpass(false);
+	track.lowpassHighpassFilter.setMode(juce::dsp::LadderFilterMode::HPF12);
 	track.lowpassHighpassFilter.setSamplingRate(currentSampleRate);
 	track.lowpassHighpassFilter.setCutoffFrequency(20000.f);
 	track.lowpassHighpassFilter.setResonance(0.f);

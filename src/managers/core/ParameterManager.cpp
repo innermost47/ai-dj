@@ -57,7 +57,8 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotFineParams[i] = apvts.getRawParameterValue(s + "Fine");
 		slotCutoffParams[i] = apvts.getRawParameterValue(s + "Cutoff");
 		slotResonanceParams[i] = apvts.getRawParameterValue(s + "Resonance");
-		slotHighpassParams[i] = apvts.getRawParameterValue(s + "Highpass");
+		slotFilterModeParams[i] = apvts.getRawParameterValue(s + "FilterMode");
+		slotFilterDriveParams[i] = apvts.getRawParameterValue(s + "FilterDrive");
 		slotRandomRetriggerParams[i] = apvts.getRawParameterValue(s + "RandomRetrigger");
 		slotRetriggerIntervalParams[i] = apvts.getRawParameterValue(s + "RetriggerInterval");
 		slotAdsrAttackParams[i] = apvts.getRawParameterValue(s + "AdsrAttack");
@@ -87,7 +88,8 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "RetriggerInterval", listener);
 		apvts.addParameterListener(s + "Cutoff", listener);
 		apvts.addParameterListener(s + "Resonance", listener);
-		apvts.addParameterListener(s + "Highpass", listener);
+		apvts.addParameterListener(s + "FilterMode", listener);
+		apvts.addParameterListener(s + "FilterDrive", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -157,7 +159,8 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "RetriggerInterval", listener);
 		apvts.removeParameterListener(s + "Cutoff", listener);
 		apvts.removeParameterListener(s + "Resonance", listener);
-		apvts.removeParameterListener(s + "Highpass", listener);
+		apvts.removeParameterListener(s + "FilterMode", listener);
+		apvts.removeParameterListener(s + "FilterDrive", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -249,6 +252,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "ReverbSend", slotName + " Reverb Send",
 		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
 
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "FilterDrive", slotName + " Filter Drive", juce::NormalisableRange<float>(1.0f, 10.0f), 1.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterChoice>(
+		    slotId + "FilterMode", slotName + "Filter Mode",
+		    juce::StringArray{"LPF12", "HPF12", "BPF12", "LPF24", "HPF24", "BPF24"}, 0));
+
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
 		params.push_back(makeTrigg(slotId + "Generate", slotName + " Generate"));
@@ -256,7 +266,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(makeTrigg(slotId + "PageB", slotName + " Page B"));
 		params.push_back(makeTrigg(slotId + "PageC", slotName + " Page C"));
 		params.push_back(makeTrigg(slotId + "PageD", slotName + " Page D"));
-		params.push_back(makeTrigg(slotId + "Highpass", slotName + " Highpass"));
 
 		params.push_back(std::make_unique<juce::AudioParameterInt>(slotId + "Seq", slotName + " Sequence", 1,
 		                                                           Obsidian::MAX_TRACKS, 1));
@@ -455,8 +464,13 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->delaySend.store(newValue);
 		else if (parameterID.endsWith("ReverbSend"))
 			track->reverbSend.store(newValue);
-		else if (parameterID.endsWith("Highpass"))
-			track->lowpassHighpassFilter.setHighpass(newValue > 0.5);
+		else if (parameterID.endsWith("FilterMode"))
+		{
+			auto mode = static_cast<juce::dsp::LadderFilterMode>((int)newValue);
+			track->lowpassHighpassFilter.setMode(mode);
+		}
+		else if (parameterID.endsWith("FilterDrive"))
+			track->lowpassHighpassFilter.setDrive(newValue);
 		else if (parameterID.endsWith("Cutoff"))
 			track->lowpassHighpassFilter.setCutoffFrequency(newValue);
 		else if (parameterID.endsWith("Resonance"))
