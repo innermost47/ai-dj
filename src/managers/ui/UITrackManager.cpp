@@ -20,8 +20,8 @@ UITrackManager::~UITrackManager()
 
 void UITrackManager::refreshTracks()
 {
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 	refreshTrackComponents();
 	for (auto &trackComp : trackComponents)
 		trackComp->loadPromptPresets();
@@ -65,8 +65,8 @@ void UITrackManager::refreshTrackComponents()
 	juce::String generatingId = editor.audioProcessor.getGeneratingTrackId();
 	bool wasGeneratingLocal = editor.audioProcessor.getIsGenerating();
 
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 
 	for (const auto &trackId : trackIds)
 	{
@@ -341,6 +341,6 @@ TrackComponent *UITrackManager::getTrackComponent(const juce::String &trackId)
 
 void UITrackManager::forceFullRefresh()
 {
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 }

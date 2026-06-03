@@ -20,7 +20,6 @@ class TrackEffectsPanel : public ObsidianComponent
   private:
 	DjIaVstProcessor &audioProcessor;
 	juce::String activeTrackId;
-	std::vector<std::unique_ptr<FilterComponent>> filterComponents;
 	std::vector<std::unique_ptr<IconButtonSimple>> trackSelectors;
 	std::unique_ptr<FilterComponent> filterComponent;
 
