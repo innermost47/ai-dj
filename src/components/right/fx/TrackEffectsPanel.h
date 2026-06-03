@@ -10,7 +10,7 @@ class TrackEffectsPanel : public ObsidianComponent
 {
   public:
 	TrackEffectsPanel(DjIaVstProcessor &processor);
-	~TrackEffectsPanel() override = default;
+	~TrackEffectsPanel() override;
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;

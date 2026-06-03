@@ -8,6 +8,8 @@ TrackEffectsPanel::TrackEffectsPanel(DjIaVstProcessor &processor) : audioProcess
 	setupUI();
 }
 
+TrackEffectsPanel::~TrackEffectsPanel() = default;
+
 void TrackEffectsPanel::refresh()
 {
 	removeAllChildren();
