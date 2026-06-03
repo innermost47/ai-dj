@@ -64,12 +64,22 @@ void TrackEffectsPanel::resized()
 
 void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 {
-	for (auto &fc : filterComponents)
+	if (filterComponent)
+		filterComponent->updateModelUI();
+
+	for (auto &selector : trackSelectors)
 	{
-		if (fc->getTrackId() == trackId)
+		if (selector->getName() == "trackFXSelector" + trackId)
 		{
-			fc->updateModelUI();
-			break;
+			auto *track = audioProcessor.getTrack(trackId);
+			if (!track)
+				continue;
+			auto &currentPage = track->getCurrentPage();
+			auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
+			bool darkText = modelColour.getBrightness() > 0.6f;
+			auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
+			selector->setColour(juce::TextButton::buttonColourId, modelColour.withAlpha(Obsidian::ALPHA_02));
+			selector->setColour(juce::TextButton::buttonOnColourId, modelColour);
 		}
 	}
 }
@@ -78,7 +88,7 @@ void TrackEffectsPanel::setupUI()
 {
 	int index = 1;
 	auto trackIds = audioProcessor.getAllTrackIds();
-
+	int selectedValue = 1;
 	for (const auto &trackId : trackIds)
 	{
 		auto *track = audioProcessor.getTrack(trackId);
@@ -93,10 +103,10 @@ void TrackEffectsPanel::setupUI()
 		auto btn = std::make_unique<IconButtonSimple>(label, "");
 		btn->setRadioGroupId(Obsidian::RadioGroupIDs::TrackFXSelector);
 
-		int currentValue = 1;
-		btn->setToggleState(index == currentValue, juce::dontSendNotification);
+		btn->setToggleState(index == selectedValue, juce::dontSendNotification);
 
 		btn->setLabelText(label);
+		btn->setName("trackFXSelector" + trackId);
 		btn->setShowBackground(true);
 		btn->setClickingTogglesState(true);
 		btn->setColour(juce::TextButton::buttonColourId, modelColour.withAlpha(Obsidian::ALPHA_02));
@@ -117,9 +127,12 @@ void TrackEffectsPanel::setupUI()
 		addAndMakeVisible(*btn);
 		trackSelectors.push_back(std::move(btn));
 
-		filterComponent = std::make_unique<FilterComponent>(audioProcessor, track);
-		addAndMakeVisible(*filterComponent);
-		resized();
+		if (index == selectedValue)
+		{
+			filterComponent = std::make_unique<FilterComponent>(audioProcessor, track);
+			addAndMakeVisible(*filterComponent);
+			resized();
+		}
 
 		index++;
 	}

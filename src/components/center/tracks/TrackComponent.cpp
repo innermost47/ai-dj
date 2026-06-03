@@ -304,7 +304,11 @@ void TrackComponent::updateFromTrackData()
 	}
 
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
-	updateModelUI();
+	if (modelSet != modelToSet)
+	{
+		modelSet = modelToSet;
+		updateModelUI();
+	}
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
