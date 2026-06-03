@@ -4,17 +4,7 @@
 
 TrackEffectsPanel::TrackEffectsPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
-	auto trackIds = audioProcessor.getAllTrackIds();
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *trackData = audioProcessor.getTrack(trackId);
-		if (!trackData)
-			continue;
-
-		auto fc = std::make_unique<FilterComponent>(audioProcessor, trackData);
-		addAndMakeVisible(*fc);
-		filterComponents.push_back(std::move(fc));
-	}
+	setupUI();
 }
 
 void TrackEffectsPanel::refresh()
@@ -49,19 +39,27 @@ void TrackEffectsPanel::paint(juce::Graphics &g)
 
 void TrackEffectsPanel::resized()
 {
-	auto area = getLocalBounds().reduced(2);
+	auto area = getLocalBounds().reduced(4, 2);
 
-	area.removeFromTop(26);
+	area.removeFromTop(24);
 
-	juce::FlexBox fb;
-	fb.flexDirection = juce::FlexBox::Direction::column;
+	auto selectorsArea = area.removeFromTop(26);
+	area.removeFromTop(Obsidian::GAP_4);
+	auto filterArea = area.removeFromTop(60);
 
-	for (auto &fc : filterComponents)
+	juce::FlexBox selectors;
+	selectors.flexDirection = juce::FlexBox::Direction::row;
+	selectors.justifyContent = juce::FlexBox::JustifyContent::center;
+	selectors.alignContent = juce::FlexBox::AlignContent::center;
+
+	for (int i = 0; i < (int)trackSelectors.size(); ++i)
 	{
-		fb.items.add(juce::FlexItem(*fc).withMinWidth(60.0f).withHeight(60.0f).withMargin(
-		    juce::FlexItem::Margin(0.f, Obsidian::GAP_4, Obsidian::GAP_4, Obsidian::GAP_4)));
+		selectors.items.add(juce::FlexItem(*trackSelectors[i]).withFlex(1.f).withMargin(juce::FlexItem::Margin(1.f)));
 	}
-	fb.performLayout(area);
+
+	selectors.performLayout(selectorsArea);
+	if (filterComponent)
+		filterComponent->setBounds(filterArea);
 }
 
 void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
@@ -74,4 +72,76 @@ void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 			break;
 		}
 	}
+}
+
+void TrackEffectsPanel::setupUI()
+{
+	int index = 1;
+	auto trackIds = audioProcessor.getAllTrackIds();
+
+	for (const auto &trackId : trackIds)
+	{
+		auto *track = audioProcessor.getTrack(trackId);
+		if (!track)
+			continue;
+		auto &currentPage = track->getCurrentPage();
+		auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
+		bool darkText = modelColour.getBrightness() > 0.6f;
+		auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
+
+		juce::String label = "T" + juce::String(index);
+		auto btn = std::make_unique<IconButtonSimple>(label, "");
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::TrackFXSelector);
+
+		int currentValue = 1;
+		btn->setToggleState(index == currentValue, juce::dontSendNotification);
+
+		btn->setLabelText(label);
+		btn->setShowBackground(true);
+		btn->setClickingTogglesState(true);
+		btn->setColour(juce::TextButton::buttonColourId, modelColour.withAlpha(Obsidian::ALPHA_02));
+		btn->setColour(juce::TextButton::buttonOnColourId, modelColour);
+		btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+		btn->setColour(juce::TextButton::textColourOnId, textColour);
+
+		btn->onClick = [this, trackId]()
+		{
+			if (auto *currentTrack = audioProcessor.getTrack(trackId))
+			{
+				filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
+				addAndMakeVisible(*filterComponent);
+				resized();
+			}
+		};
+
+		addAndMakeVisible(*btn);
+		trackSelectors.push_back(std::move(btn));
+
+		filterComponent = std::make_unique<FilterComponent>(audioProcessor, track);
+		addAndMakeVisible(*filterComponent);
+		resized();
+
+		index++;
+	}
+	juce::String label = "M";
+	auto btn = std::make_unique<IconButtonSimple>(label, "");
+	bool darkText = ColourPalette::playArmed.getBrightness() > 0.6f;
+	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
+	btn->setRadioGroupId(Obsidian::RadioGroupIDs::TrackFXSelector);
+	btn->setToggleState(false, juce::dontSendNotification);
+	btn->setLabelText(label);
+	btn->setShowBackground(true);
+	btn->setClickingTogglesState(true);
+	btn->setColour(juce::TextButton::buttonColourId, ColourPalette::playArmed.withAlpha(Obsidian::ALPHA_02));
+	btn->setColour(juce::TextButton::buttonOnColourId, ColourPalette::playArmed);
+	btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
+	btn->setColour(juce::TextButton::textColourOnId, textColour);
+	btn->onClick = [this]()
+	{
+		filterComponent = nullptr;
+		resized();
+	};
+
+	addAndMakeVisible(*btn);
+	trackSelectors.push_back(std::move(btn));
 }

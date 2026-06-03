@@ -143,10 +143,11 @@ void FilterComponent::setupCutoffModeButtons()
 
 void FilterComponent::resized()
 {
-	auto area = getLocalBounds().reduced(8);
+	auto area = getLocalBounds().reduced(8, 4);
 
 	auto selector = area.removeFromLeft(area.getWidth() / 2);
 	area.removeFromLeft(Obsidian::GAP_4);
+	area.removeFromTop(Obsidian::GAP_8);
 	auto drive = area.removeFromLeft(area.getWidth() / 3);
 	auto cutoff = area.removeFromLeft(area.getWidth() / 2);
 

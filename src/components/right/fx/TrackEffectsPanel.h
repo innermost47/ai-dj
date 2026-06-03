@@ -15,11 +15,14 @@ class TrackEffectsPanel : public ObsidianComponent
 	void resized() override;
 	void updateModelUI(const juce::String &trackId);
 	void refresh();
+	void setupUI();
 
   private:
 	DjIaVstProcessor &audioProcessor;
 	juce::String activeTrackId;
 	std::vector<std::unique_ptr<FilterComponent>> filterComponents;
+	std::vector<std::unique_ptr<IconButtonSimple>> trackSelectors;
+	std::unique_ptr<FilterComponent> filterComponent;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackEffectsPanel)
 };

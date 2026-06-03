@@ -22,6 +22,7 @@ enum RadioGroupIDs
 	FilterTypeGroup = 1,
 	DelayDivisionGroup = 2,
 	DelayModeGroup = 3,
+	TrackFXSelector = 4
 };
 } // namespace Obsidian
 #endif
