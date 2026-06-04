@@ -9,8 +9,8 @@ class LowpassHighpassFilter
 	void setResonance(float q);
 	void setSamplingRate(double sr);
 	void setDrive(float newDrive);
-	void processBlock(juce::AudioBuffer<float> &);
-	void prepare(int numChannels, juce::uint32 maxBlockSize);
+	void process(juce::dsp::ProcessContextReplacing<float> &context);
+	void prepare(const juce::dsp::ProcessSpec &spec);
 	void reset();
 	void setMode(juce::dsp::LadderFilterMode newMode);
 

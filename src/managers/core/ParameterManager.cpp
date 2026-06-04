@@ -77,6 +77,11 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotEQGainHighParams[i] = apvts.getRawParameterValue(s + "EQGainHigh");
 		slotEQGainAirParams[i] = apvts.getRawParameterValue(s + "EQGainAir");
 
+		slotCompressorThresholdParams[i] = apvts.getRawParameterValue(s + "CompressorThreshold");
+		slotCompressorRatioParams[i] = apvts.getRawParameterValue(s + "CompressorRatio");
+		slotCompressorAttackParams[i] = apvts.getRawParameterValue(s + "CompressorAttack");
+		slotCompressorReleaseParams[i] = apvts.getRawParameterValue(s + "CompressorRelease");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -107,6 +112,10 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "EQGainPresence", listener);
 		apvts.addParameterListener(s + "EQGainHigh", listener);
 		apvts.addParameterListener(s + "EQGainAir", listener);
+		apvts.addParameterListener(s + "CompressorThreshold", listener);
+		apvts.addParameterListener(s + "CompressorRatio", listener);
+		apvts.addParameterListener(s + "CompressorAttack", listener);
+		apvts.addParameterListener(s + "CompressorRelease", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -186,6 +195,10 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "EQGainPresence", listener);
 		apvts.removeParameterListener(s + "EQGainHigh", listener);
 		apvts.removeParameterListener(s + "EQGainAir", listener);
+		apvts.removeParameterListener(s + "CompressorThreshold", listener);
+		apvts.removeParameterListener(s + "CompressorRatio", listener);
+		apvts.removeParameterListener(s + "CompressorAttack", listener);
+		apvts.removeParameterListener(s + "CompressorRelease", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -291,19 +304,31 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		                                                             slotName + " EQ Gain Sub Bass", gainRange, 1.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainBass", slotName + " EQ Gain Bass",
 		                                                             gainRange, 1.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "EQGainLowMid", slotName + " EQ Gain Low Mid", gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainLowMid",
+		                                                             slotName + " EQ Gain Low Mid", gainRange, 1.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainMid", slotName + " EQ Gain Mid",
 		                                                             gainRange, 1.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "EQGainHiMid", slotName + " EQ Gain Hi Mid", gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainHiMid",
+		                                                             slotName + " EQ Gain Hi Mid", gainRange, 1.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainPresence",
-		                                                             slotName + " EQ Gain Presence",
-		                                                             gainRange, 1.0f));
+		                                                             slotName + " EQ Gain Presence", gainRange, 1.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainHigh", slotName + " EQ Gain High",
 		                                                             gainRange, 1.0f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainAir", slotName + " EQ Gain Air",
 		                                                             gainRange, 1.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "CompressorThreshold", slotName + " Compressor Threshold",
+		    juce::NormalisableRange<float>(-60.f, 0.f, .1f), -12.f));
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorRatio", slotName + " Compressor Ratio",
+		                                                juce::NormalisableRange<float>(1.f, 20.f, .01f), 4.f));
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorAttack", slotName + " Compressor Attack",
+		                                                juce::NormalisableRange<float>(.1f, 100.f, .01f, .3f), 10.f));
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorRelease", slotName + " Compressor Release",
+		                                                juce::NormalisableRange<float>(10.f, 1000.f, .1f, .3f), 100.f));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -537,6 +562,14 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->equalizer.updateGain(Obsidian::eqBands::high, newValue);
 		else if (parameterID.endsWith("EQGainAir"))
 			track->equalizer.updateGain(Obsidian::eqBands::air, newValue);
+		else if (parameterID.endsWith("CompressorThreshold"))
+			track->compressor.setThreshold(newValue);
+		else if (parameterID.endsWith("CompressorRatio"))
+			track->compressor.setRatio(newValue);
+		else if (parameterID.endsWith("CompressorAttack"))
+			track->compressor.setAttack(newValue);
+		else if (parameterID.endsWith("CompressorRelease"))
+			track->compressor.setRelease(newValue);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);

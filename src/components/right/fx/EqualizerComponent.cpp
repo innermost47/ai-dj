@@ -45,7 +45,7 @@ void EqualizerComponent::onParameterChangedUI(const juce::String &paramSuffix, f
 
 void EqualizerComponent::setupUI()
 {
-	auto setupSliders = [this](MidiLearnableSlider &slider)
+	auto setupSlider = [this](MidiLearnableSlider &slider)
 	{
 		addAndMakeVisible(slider);
 		slider.setSliderStyle(juce::Slider::LinearVertical);
@@ -57,16 +57,16 @@ void EqualizerComponent::setupUI()
 		slider.getProperties().set(CustomLookAndFeel::getDrawTicksSmallPropertyId(), true);
 	};
 
-	setupSliders(subBassSlider);
-	setupSliders(bassSlider);
-	setupSliders(lowMidSlider);
-	setupSliders(midSlider);
-	setupSliders(highMidSlider);
-	setupSliders(presenceSlider);
-	setupSliders(highSlider);
-	setupSliders(airSlider);
+	setupSlider(subBassSlider);
+	setupSlider(bassSlider);
+	setupSlider(lowMidSlider);
+	setupSlider(midSlider);
+	setupSlider(highMidSlider);
+	setupSlider(presenceSlider);
+	setupSlider(highSlider);
+	setupSlider(airSlider);
 
-	auto setupLabels = [this](juce::Label &label, juce::String labelValue)
+	auto setupLabel = [this](juce::Label &label, juce::String labelValue)
 	{
 		addAndMakeVisible(label);
 		label.setText(labelValue, juce::dontSendNotification);
@@ -75,14 +75,14 @@ void EqualizerComponent::setupUI()
 		Obsidian::applyFontSize(label, Obsidian::MIXER_KNOB_LABEL);
 	};
 
-	setupLabels(subBassLabel, "40H");
-	setupLabels(bassLabel, "120H");
-	setupLabels(lowMidLabel, "350H");
-	setupLabels(midLabel, "1K");
-	setupLabels(highMidLabel, "3K");
-	setupLabels(presenceLabel, "5K");
-	setupLabels(highLabel, "8K");
-	setupLabels(airLabel, "15K");
+	setupLabel(subBassLabel, "40H");
+	setupLabel(bassLabel, "120H");
+	setupLabel(lowMidLabel, "350H");
+	setupLabel(midLabel, "1K");
+	setupLabel(highMidLabel, "3K");
+	setupLabel(presenceLabel, "5K");
+	setupLabel(highLabel, "8K");
+	setupLabel(airLabel, "15K");
 
 	updateModelUI();
 }

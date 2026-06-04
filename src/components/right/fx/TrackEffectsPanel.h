@@ -5,6 +5,7 @@
 class DjIaVstProcessor;
 class FilterComponent;
 class EqualizerComponent;
+class CompressorComponent;
 
 class TrackEffectsPanel : public ObsidianComponent
 {
@@ -24,6 +25,7 @@ class TrackEffectsPanel : public ObsidianComponent
 	std::vector<std::unique_ptr<IconButtonSimple>> trackSelectors;
 	std::unique_ptr<FilterComponent> filterComponent;
 	std::unique_ptr<EqualizerComponent> equalizerComponent;
+	std::unique_ptr<CompressorComponent> compressorComponent;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackEffectsPanel)
 };

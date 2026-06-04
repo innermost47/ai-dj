@@ -66,6 +66,11 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("highGain", track->equalizer.getGain(Obsidian::eqBands::high), nullptr);
 		    trackState.setProperty("airGain", track->equalizer.getGain(Obsidian::eqBands::air), nullptr);
 
+		    trackState.setProperty("compressorThreshold", track->compressor.getThreshold(), nullptr);
+		    trackState.setProperty("compressorRatio", track->compressor.getRatio(), nullptr);
+		    trackState.setProperty("compressorAttack", track->compressor.getAttack(), nullptr);
+		    trackState.setProperty("compressorRelease", track->compressor.getRelease(), nullptr);
+
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
@@ -180,18 +185,21 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 
+		juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
+		spec.maximumBlockSize = static_cast<juce::uint32>(audioProcessor.getBlockSize());
+		spec.numChannels = 2;
+		spec.sampleRate = audioProcessor.getSampleRate();
+
+		track->lowpassHighpassFilter.prepare(spec);
+		track->equalizer.prepare(spec);
+		track->compressor.prepare(spec);
+
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
 		track->lowpassHighpassFilter.setMode(mode);
 		track->lowpassHighpassFilter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
 		track->lowpassHighpassFilter.setResonance(trackState.getProperty("resonance", 0.f));
 		track->lowpassHighpassFilter.setDrive(trackState.getProperty("filterDrive", 1.f));
-
-		juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
-		spec.maximumBlockSize = static_cast<juce::uint32>(audioProcessor.getBlockSize());
-		spec.numChannels = 2;
-		spec.sampleRate = audioProcessor.getSampleRate();
-		track->equalizer.prepare(spec);
 
 		track->equalizer.updateGain(Obsidian::eqBands::subBass, trackState.getProperty("subBassGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::bass, trackState.getProperty("bassGain", 1.f));
@@ -201,6 +209,11 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->equalizer.updateGain(Obsidian::eqBands::presence, trackState.getProperty("presenceGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::high, trackState.getProperty("highGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::air, trackState.getProperty("airGain", 1.f));
+
+		track->compressor.setThreshold(trackState.getProperty("compressorThreshold", -12.f));
+		track->compressor.setRatio(trackState.getProperty("compressorRatio", 4.f));
+		track->compressor.setAttack(trackState.getProperty("compressorAttack", 10.f));
+		track->compressor.setRelease(trackState.getProperty("compressorRelease", 100.f));
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{

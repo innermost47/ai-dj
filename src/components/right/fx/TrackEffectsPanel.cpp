@@ -1,4 +1,5 @@
 #include "TrackEffectsPanel.h"
+#include "CompressorComponent.h"
 #include "EqualizerComponent.h"
 #include "FilterComponent.h"
 #include "PluginProcessor.h"
@@ -16,6 +17,7 @@ void TrackEffectsPanel::refresh()
 	trackSelectors.clear();
 	filterComponent = nullptr;
 	equalizerComponent = nullptr;
+	compressorComponent = nullptr;
 	setupUI();
 	resized();
 }
@@ -46,6 +48,8 @@ void TrackEffectsPanel::resized()
 	auto eqArea = area.removeFromTop(110);
 	area.removeFromTop(Obsidian::GAP_4);
 	auto filterArea = area.removeFromTop(60);
+	area.removeFromTop(Obsidian::GAP_4);
+	auto compressorArea = area.removeFromTop(50);
 
 	juce::FlexBox selectors;
 	selectors.flexDirection = juce::FlexBox::Direction::row;
@@ -63,12 +67,16 @@ void TrackEffectsPanel::resized()
 		equalizerComponent->setBounds(eqArea);
 	if (filterComponent)
 		filterComponent->setBounds(filterArea);
+	if (compressorComponent)
+		compressorComponent->setBounds(compressorArea);
 }
 
 void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 {
 	if (filterComponent)
 		filterComponent->updateModelUI();
+	if (compressorComponent)
+		compressorComponent->updateModelUI();
 
 	for (auto &selector : trackSelectors)
 	{
@@ -125,6 +133,8 @@ void TrackEffectsPanel::setupUI()
 				addAndMakeVisible(*filterComponent);
 				equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, currentTrack);
 				addAndMakeVisible(*equalizerComponent);
+				compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, currentTrack);
+				addAndMakeVisible(*compressorComponent);
 				resized();
 			}
 		};
@@ -138,6 +148,8 @@ void TrackEffectsPanel::setupUI()
 			addAndMakeVisible(*filterComponent);
 			equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, track);
 			addAndMakeVisible(*equalizerComponent);
+			compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, track);
+			addAndMakeVisible(*compressorComponent);
 			resized();
 		}
 
@@ -160,6 +172,7 @@ void TrackEffectsPanel::setupUI()
 	{
 		equalizerComponent = nullptr;
 		filterComponent = nullptr;
+		compressorComponent = nullptr;
 		resized();
 	};
 

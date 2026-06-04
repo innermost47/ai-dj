@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Compressor.h"
 #include "Console6Channel.h"
 #include "DataConst.h"
 #include "DelaySend.h"
@@ -164,6 +165,7 @@ struct TrackData
 	ReverbSend reverbSendProcessor;
 	LowpassHighpassFilter lowpassHighpassFilter;
 	Equalizer equalizer;
+	Compressor compressor;
 
 	juce::String trackId;
 	juce::String trackName;

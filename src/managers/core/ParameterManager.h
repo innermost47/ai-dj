@@ -77,6 +77,23 @@ class ParameterManager
 		return safeLoadIndexed(slotFilterDriveParams, slot);
 	}
 
+	float getCompressorThreshold(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorThresholdParams, slot);
+	}
+	float getCompressorRatio(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorRatioParams, slot);
+	}
+	float getCompressorAttack(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorAttackParams, slot);
+	}
+	float getCompressorRelease(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorReleaseParams, slot);
+	}
+
 	bool getMute(int slot) const
 	{
 		return safeLoad(slotMuteParams[slot]) > 0.5f;
@@ -257,6 +274,11 @@ class ParameterManager
 	std::atomic<float> *slotEQGainHighParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotEQGainAirParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotCompressorThresholdParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorRatioParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorAttackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorReleaseParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
@@ -294,28 +316,34 @@ class ParameterManager
 		                         "delayMode",
 		                         "crossfaderCurveMode"};
 
-		static const juce::StringArray perSlotParams = {"Volume",
-		                                                "Pan",
-		                                                "Pitch",
-		                                                "Fine",
-		                                                "DelaySend",
-		                                                "ReverbSend",
-		                                                "ADSRAttack",
-		                                                "ADSRDecay",
-		                                                "ADSRSustain",
-		                                                "ADSRRelease",
-		                                                "RetriggerInterval",
-		                                                "Gain",
-		                                                "Cutoff",
-		                                                "Resonance",
-		                                                "EQGainSubBass",
-		                                                "EQGainBass",
-		                                                "EQGainLowMid",
-		                                                "EQGainMid",
-		                                                "EQGainHiMid",
-		                                                "EQGainPresence",
-		                                                "EQGainHigh",
-		                                                "EQGainAir"};
+		static const juce::StringArray perSlotParams = {
+		    "Volume",
+		    "Pan",
+		    "Pitch",
+		    "Fine",
+		    "DelaySend",
+		    "ReverbSend",
+		    "ADSRAttack",
+		    "ADSRDecay",
+		    "ADSRSustain",
+		    "ADSRRelease",
+		    "RetriggerInterval",
+		    "Gain",
+		    "Cutoff",
+		    "Resonance",
+		    "EQGainSubBass",
+		    "EQGainBass",
+		    "EQGainLowMid",
+		    "EQGainMid",
+		    "EQGainHiMid",
+		    "EQGainPresence",
+		    "EQGainHigh",
+		    "EQGainAir",
+		    "CompressorThreshold",
+		    "CompressorRatio",
+		    "CompressorAttack",
+		    "CompressorRelease",
+		};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
