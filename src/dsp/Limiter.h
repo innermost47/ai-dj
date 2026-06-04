@@ -6,6 +6,8 @@
 class Limiter
 {
   public:
+	Limiter();
+
 	void process(juce::dsp::ProcessContextReplacing<float> &context);
 	void prepare(const juce::dsp::ProcessSpec &spec);
 	void reset() noexcept;
@@ -41,4 +43,6 @@ class Limiter
 	float reductionAmount = 0.f;
 
 	juce::dsp::Limiter<float> lim;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Limiter)
 };

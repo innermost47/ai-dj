@@ -44,5 +44,23 @@ enum filterType
 	highShelf = 2,
 };
 
+enum distorsionChain
+{
+	filter = 0,
+	preGain = 1,
+	waveshaper = 2,
+	postGain = 3
+};
+
+enum distorsionType
+{
+	soft = 0,
+	hard = 1,
+	sigm = 2,
+	arc = 3,
+	fold = 4,
+	crush = 5
+};
+
 } // namespace Obsidian
 #endif

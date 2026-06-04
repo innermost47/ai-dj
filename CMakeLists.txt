@@ -297,6 +297,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/Compressor.cpp
     src/dsp/DelaySend.cpp
+    src/dsp/Distorsion.cpp
     src/dsp/Equalizer.cpp
     src/dsp/Filter.cpp
     src/dsp/Limiter.cpp

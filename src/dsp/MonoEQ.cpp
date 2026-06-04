@@ -1,5 +1,9 @@
 #include "MonoEQ.h"
 
+MonoEQ::MonoEQ()
+{
+}
+
 void MonoEQ::updateCoefficients(Obsidian::filterType type, float fq, float q, float g)
 {
 	frequency = fq;

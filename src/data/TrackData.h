@@ -3,6 +3,7 @@
 #include "Console6Channel.h"
 #include "DataConst.h"
 #include "DelaySend.h"
+#include "Distorsion.h"
 #include "DjIaClient.h"
 #include "Equalizer.h"
 #include "Filter.h"
@@ -168,6 +169,7 @@ struct TrackData
 	Equalizer equalizer;
 	Compressor compressor;
 	Limiter limiter;
+	Distorsion distorsion;
 
 	juce::String trackId;
 	juce::String trackName;

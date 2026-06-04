@@ -111,6 +111,27 @@ class ParameterManager
 		return safeLoadIndexed(slotLimiterMakeUpGainParams, slot);
 	}
 
+	float getDistorsionPreGain(int slot) const
+	{
+		return safeLoadIndexed(slotDistorsionPreGainParams, slot);
+	}
+	float getDistorsionPostGain(int slot) const
+	{
+		return safeLoadIndexed(slotDistorsionPostGainParams, slot);
+	}
+	float getDistorsionCut(int slot) const
+	{
+		return safeLoadIndexed(slotDistorsionCutParams, slot);
+	}
+	float getDistorsionType(int slot) const
+	{
+		return safeLoadIndexed(slotDistorsionTypeParams, slot);
+	}
+
+	bool getDistorsionBypassed(int slot) const
+	{
+		return safeLoad(slotDistorsionBypassedParams[slot]) > 0.5f;
+	}
 	bool getMute(int slot) const
 	{
 		return safeLoad(slotMuteParams[slot]) > 0.5f;
@@ -301,6 +322,12 @@ class ParameterManager
 	std::atomic<float> *slotLimiterThresholdParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotLimiterMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotDistorsionPreGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistorsionPostGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistorsionCutParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistorsionBypassedParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistorsionTypeParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
@@ -338,38 +365,40 @@ class ParameterManager
 		                         "delayMode",
 		                         "crossfaderCurveMode"};
 
-		static const juce::StringArray perSlotParams = {
-		    "Volume",
-		    "Pan",
-		    "Pitch",
-		    "Fine",
-		    "DelaySend",
-		    "ReverbSend",
-		    "ADSRAttack",
-		    "ADSRDecay",
-		    "ADSRSustain",
-		    "ADSRRelease",
-		    "RetriggerInterval",
-		    "Gain",
-		    "Cutoff",
-		    "Resonance",
-		    "EQGainSubBass",
-		    "EQGainBass",
-		    "EQGainLowMid",
-		    "EQGainMid",
-		    "EQGainHiMid",
-		    "EQGainPresence",
-		    "EQGainHigh",
-		    "EQGainAir",
-		    "CompressorThreshold",
-		    "CompressorRatio",
-		    "CompressorAttack",
-		    "CompressorRelease",
-		    "CompressorMakeUpGain",
-		    "LimiterThreshold",
-		    "LimiterRelease",
-		    "LimiterMakeUpGain",
-		};
+		static const juce::StringArray perSlotParams = {"Volume",
+		                                                "Pan",
+		                                                "Pitch",
+		                                                "Fine",
+		                                                "DelaySend",
+		                                                "ReverbSend",
+		                                                "ADSRAttack",
+		                                                "ADSRDecay",
+		                                                "ADSRSustain",
+		                                                "ADSRRelease",
+		                                                "RetriggerInterval",
+		                                                "Gain",
+		                                                "Cutoff",
+		                                                "Resonance",
+		                                                "EQGainSubBass",
+		                                                "EQGainBass",
+		                                                "EQGainLowMid",
+		                                                "EQGainMid",
+		                                                "EQGainHiMid",
+		                                                "EQGainPresence",
+		                                                "EQGainHigh",
+		                                                "EQGainAir",
+		                                                "CompressorThreshold",
+		                                                "CompressorRatio",
+		                                                "CompressorAttack",
+		                                                "CompressorRelease",
+		                                                "CompressorMakeUpGain",
+		                                                "LimiterThreshold",
+		                                                "LimiterRelease",
+		                                                "LimiterMakeUpGain",
+		                                                "DistorsionPreGain",
+		                                                "DistorsionPostGain",
+		                                                "DistorsionCut",
+		                                                "DistorsionType"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
@@ -388,8 +417,8 @@ class ParameterManager
 		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack", "useCrossfader"};
 
 		static const juce::StringArray perSlotParams = {
-		    "Mute",  "Solo",  "Play",  "Stop",  "Generate",   "RandomRetrigger",
-		    "PageA", "PageB", "PageC", "PageD", "FilterMode", "FilterDrive"};
+		    "Mute",  "Solo",  "Play",  "Stop",       "Generate",    "RandomRetrigger",   "PageA",
+		    "PageB", "PageC", "PageD", "FilterMode", "FilterDrive", "DistorsionBypassed"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{

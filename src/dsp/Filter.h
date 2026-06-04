@@ -5,6 +5,8 @@
 class Filter
 {
   public:
+	Filter();
+
 	void setCutoffFrequency(float frequency);
 	void setResonance(float q);
 	void setSamplingRate(double sr);
@@ -41,4 +43,6 @@ class Filter
 	juce::dsp::LadderFilterMode mode;
 
 	juce::dsp::LadderFilter<float> filter;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Filter)
 };

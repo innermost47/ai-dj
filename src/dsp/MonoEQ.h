@@ -6,6 +6,8 @@
 class MonoEQ
 {
   public:
+	MonoEQ();
+
 	void updateCoefficients(Obsidian::filterType type, float fq, float q, float g);
 	void updateFrequency(Obsidian::filterType type, float fq);
 	void updateQ(Obsidian::filterType type, float q);
@@ -35,4 +37,6 @@ class MonoEQ
 	float gain;
 
 	juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> stereoFilter;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MonoEQ)
 };

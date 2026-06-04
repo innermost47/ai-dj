@@ -6,6 +6,8 @@
 class Compressor
 {
   public:
+	Compressor();
+
 	void process(juce::dsp::ProcessContextReplacing<float> &context);
 	void prepare(const juce::dsp::ProcessSpec &spec);
 	void reset() noexcept;
@@ -49,4 +51,6 @@ class Compressor
 	float makeUpGain;
 
 	juce::dsp::Compressor<float> comp;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Compressor)
 };

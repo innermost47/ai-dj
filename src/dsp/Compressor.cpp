@@ -1,5 +1,9 @@
 #include "Compressor.h"
 
+Compressor::Compressor()
+{
+}
+
 void Compressor::setThreshold(float t)
 {
 	threshold = t;

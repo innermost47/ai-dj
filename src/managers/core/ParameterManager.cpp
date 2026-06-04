@@ -87,6 +87,12 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotLimiterReleaseParams[i] = apvts.getRawParameterValue(s + "LimiterRelease");
 		slotLimiterMakeUpGainParams[i] = apvts.getRawParameterValue(s + "LimiterMakeUpGain");
 
+		slotDistorsionPreGainParams[i] = apvts.getRawParameterValue(s + "DistorsionPreGain");
+		slotDistorsionPostGainParams[i] = apvts.getRawParameterValue(s + "DistorsionPostGain");
+		slotDistorsionCutParams[i] = apvts.getRawParameterValue(s + "DistorsionCut");
+		slotDistorsionBypassedParams[i] = apvts.getRawParameterValue(s + "DistorsionBypassed");
+		slotDistorsionTypeParams[i] = apvts.getRawParameterValue(s + "DistorsionType");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -125,6 +131,12 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "LimiterThreshold", listener);
 		apvts.addParameterListener(s + "LimiterRelease", listener);
 		apvts.addParameterListener(s + "LimiterMakeUpGain", listener);
+
+		apvts.addParameterListener(s + "DistorsionPreGain", listener);
+		apvts.addParameterListener(s + "DistorsionPostGain", listener);
+		apvts.addParameterListener(s + "DistorsionCut", listener);
+		apvts.addParameterListener(s + "DistorsionBypassed", listener);
+		apvts.addParameterListener(s + "DistorsionType", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -212,6 +224,11 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "LimiterThreshold", listener);
 		apvts.removeParameterListener(s + "LimiterRelease", listener);
 		apvts.removeParameterListener(s + "LimiterMakeUpGain", listener);
+		apvts.removeParameterListener(s + "DistorsionPreGain", listener);
+		apvts.removeParameterListener(s + "DistorsionPostGain", listener);
+		apvts.removeParameterListener(s + "DistorsionCut", listener);
+		apvts.removeParameterListener(s + "DistorsionType", listener);
+		apvts.removeParameterListener(s + "DistorsionBypassed", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -307,7 +324,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "FilterDrive", slotName + " Filter Drive", juce::NormalisableRange<float>(1.0f, 10.0f), 1.0f));
 
 		params.push_back(std::make_unique<juce::AudioParameterChoice>(
-		    slotId + "FilterMode", slotName + "Filter Mode",
+		    slotId + "FilterMode", slotName + " Filter Mode",
 		    juce::StringArray{"LPF12", "HPF12", "BPF12", "LPF24", "HPF24", "BPF24"}, 0));
 
 		juce::NormalisableRange<float> gainRange(0.0f, 4.0f);
@@ -359,6 +376,20 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "LimiterMakeUpGain", slotName + " Limiter MakeUp Gain", makeUpGainRange, 1.f));
+
+		params.push_back(std::make_unique<juce::AudioParameterChoice>(
+		    slotId + "DistorsionType", slotName + " Distorsion Type",
+		    juce::StringArray{"SOFT", "HARD", "SIGM", "ATAN", "FOLD", "CRUSH"}, 0));
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "DistorsionPreGain", slotName + " Distorsion PreGain",
+		                                                juce::NormalisableRange<float>(0.f, 24.f, 0.f), 0.f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "DistorsionPostGain", slotName + " Distorsion PostGain",
+		    juce::NormalisableRange<float>(-24.f, 0.f, 0.f), 0.f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "DistorsionCut", slotName + " Distorsion Cut",
+		    juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f), 1000.f));
+		params.push_back(makeTrigg(slotId + "DistorsionBypassed", slotName + " Distorsion Bypassed"));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -606,6 +637,19 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->limiter.setThreshold(newValue);
 		else if (parameterID.endsWith("LimiterRelease"))
 			track->limiter.setRelease(newValue);
+		else if (parameterID.endsWith("DistorsionPreGain"))
+			track->distorsion.setPre(newValue);
+		else if (parameterID.endsWith("DistorsionPostGain"))
+			track->distorsion.setPost(newValue);
+		else if (parameterID.endsWith("DistorsionCut"))
+			track->distorsion.setCut(newValue);
+		else if (parameterID.endsWith("DistorsionType"))
+		{
+			auto type = static_cast<Obsidian::distorsionType>((int)newValue);
+			track->distorsion.setType(type);
+		}
+		else if (parameterID.endsWith("DistorsionBypassed"))
+			track->distorsion.setBypassed(newValue > 0.5f);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);

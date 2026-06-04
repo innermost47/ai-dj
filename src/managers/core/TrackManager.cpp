@@ -21,11 +21,18 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.limiter.setRelease(50.f);
 	track.limiter.setMakeUpGain(1.f);
 
+	track.distorsion.setPre(12.f);
+	track.distorsion.setPost(-6.f);
+	track.distorsion.setCut(1000.f);
+	track.distorsion.setType(Obsidian::distorsionType::soft);
+	track.distorsion.setBypassed(true);
+
 	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
 	spec.numChannels = 2;
 	spec.sampleRate = currentSampleRate;
 
+	track.distorsion.prepare(spec);
 	track.equalizer.prepare(spec);
 	track.filter.prepare(spec);
 	track.compressor.prepare(spec);
@@ -792,6 +799,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	auto blockToUse = block.getSubBlock(0, individualOutput.getNumSamples());
 	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);
 
+	track.distorsion.process(contextToUse);
 	track.equalizer.process(contextToUse);
 	track.filter.process(contextToUse);
 	track.compressor.process(contextToUse);

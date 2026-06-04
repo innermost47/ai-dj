@@ -76,6 +76,12 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("limiterRelease", track->limiter.getRelease(), nullptr);
 		    trackState.setProperty("limiterMakeUpGain", track->limiter.getMakeUpGain(), nullptr);
 
+		    trackState.setProperty("distorsionPreGain", track->distorsion.getPre(), nullptr);
+		    trackState.setProperty("distorsionPostGain", track->distorsion.getPost(), nullptr);
+		    trackState.setProperty("distorsionCut", track->distorsion.getCut(), nullptr);
+		    trackState.setProperty("distorsionType", track->distorsion.getType(), nullptr);
+		    trackState.setProperty("distorsionBypassed", track->distorsion.isBypassed(), nullptr);
+
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
@@ -195,6 +201,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		spec.numChannels = 2;
 		spec.sampleRate = audioProcessor.getSampleRate();
 
+		track->distorsion.prepare(spec);
 		track->filter.prepare(spec);
 		track->equalizer.prepare(spec);
 		track->compressor.prepare(spec);
@@ -206,6 +213,14 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->filter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
 		track->filter.setResonance(trackState.getProperty("resonance", 0.f));
 		track->filter.setDrive(trackState.getProperty("filterDrive", 1.f));
+
+		int typeAsInt = trackState.getProperty("distorsionType");
+		auto type = static_cast<Obsidian::distorsionType>(typeAsInt);
+		track->distorsion.setType(type);
+		track->distorsion.setPre(trackState.getProperty("distorsionPreGain", 12.f));
+		track->distorsion.setPost(trackState.getProperty("distorsionPostGain", -6.f));
+		track->distorsion.setCut(trackState.getProperty("distorsionCut", 1000.f));
+		track->distorsion.setBypassed(trackState.getProperty("distorsionBypassed", true));
 
 		track->equalizer.updateGain(Obsidian::eqBands::subBass, trackState.getProperty("subBassGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::bass, trackState.getProperty("bassGain", 1.f));

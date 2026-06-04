@@ -1,5 +1,9 @@
 #include "Limiter.h"
 
+Limiter::Limiter()
+{
+}
+
 void Limiter::setThreshold(float t)
 {
 	threshold = t;

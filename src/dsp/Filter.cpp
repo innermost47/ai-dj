@@ -1,5 +1,9 @@
 #include "Filter.h"
 
+Filter::Filter()
+{
+}
+
 void Filter::setMode(juce::dsp::LadderFilterMode newMode)
 {
 	mode = newMode;
