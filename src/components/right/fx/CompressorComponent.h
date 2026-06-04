@@ -50,11 +50,13 @@ class CompressorComponent : public ObsidianBaseMidiComponent
 	MidiLearnableSlider ratioKnob;
 	MidiLearnableSlider attackKnob;
 	MidiLearnableSlider releaseKnob;
+	MidiLearnableSlider makeUpGainKnob;
 
 	juce::Label thresholdLabel;
 	juce::Label ratioLabel;
 	juce::Label attackLabel;
 	juce::Label releaseLabel;
+	juce::Label makeUpGainLabel;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CompressorComponent)
 };

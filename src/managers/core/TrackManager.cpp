@@ -13,6 +13,7 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.compressor.setRatio(4.f);
 	track.compressor.setAttack(10.f);
 	track.compressor.setRelease(100.f);
+	track.compressor.setMakeUpGain(1.f);
 
 	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
@@ -760,28 +761,6 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		leftSample *= volume * leftGain * totalGain * gainLinear;
 		rightSample *= volume * rightGain * totalGain * gainLinear;
 
-		float absLeft = std::abs(leftSample);
-		float absRight = std::abs(rightSample);
-
-		if (absLeft > track.meterAccumPeakLeft)
-			track.meterAccumPeakLeft = absLeft;
-		if (absRight > track.meterAccumPeakRight)
-			track.meterAccumPeakRight = absRight;
-
-		track.meterSampleCounter++;
-
-		if (track.meterSampleCounter >= track.meterUpdateInterval)
-		{
-			track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakLeft));
-			track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakRight));
-
-			track.meterAccumPeakLeft = 0.0f;
-			track.meterAccumPeakRight = 0.0f;
-			track.meterSampleCounter = 0;
-		}
-
-		mixOutput.addSample(0, i, leftSample);
-		mixOutput.addSample(1, i, rightSample);
 		individualOutput.setSample(0, i, leftSample);
 		individualOutput.setSample(1, i, rightSample);
 
@@ -809,6 +788,40 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	track.equalizer.process(contextToUse);
 	track.lowpassHighpassFilter.process(contextToUse);
 	track.compressor.process(contextToUse);
+
+	const int numSamplesProcessed = individualOutput.getNumSamples();
+	const float *postLeft = individualOutput.getReadPointer(0);
+	const float *postRight = individualOutput.getReadPointer(1);
+
+	for (int i = 0; i < numSamplesProcessed; i++)
+	{
+		float absLeft = std::abs(postLeft[i]);
+		float absRight = std::abs(postRight[i]);
+
+		if (absLeft > track.meterAccumPeakLeft)
+			track.meterAccumPeakLeft = absLeft;
+		if (absRight > track.meterAccumPeakRight)
+			track.meterAccumPeakRight = absRight;
+
+		track.meterSampleCounter++;
+
+		if (track.meterSampleCounter >= track.meterUpdateInterval)
+		{
+			track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakLeft));
+			track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakRight));
+
+			track.meterAccumPeakLeft = 0.0f;
+			track.meterAccumPeakRight = 0.0f;
+			track.meterSampleCounter = 0;
+		}
+	}
+
+	for (int i = 0; i < numSamplesProcessed; i++)
+	{
+		mixOutput.addSample(0, i, individualOutput.getSample(0, i));
+		mixOutput.addSample(1, i, individualOutput.getSample(1, i));
+	}
+
 	track.readPosition.store(currentPosition);
 }
 

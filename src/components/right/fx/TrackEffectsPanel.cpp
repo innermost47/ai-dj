@@ -77,6 +77,8 @@ void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 		filterComponent->updateModelUI();
 	if (compressorComponent)
 		compressorComponent->updateModelUI();
+	if (equalizerComponent)
+		equalizerComponent->updateModelUI();
 
 	for (auto &selector : trackSelectors)
 	{

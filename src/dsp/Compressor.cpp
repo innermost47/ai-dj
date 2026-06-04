@@ -24,6 +24,11 @@ void Compressor::setRelease(float r)
 	comp.setRelease(release);
 }
 
+void Compressor::setMakeUpGain(float mk)
+{
+	makeUpGain = mk;
+}
+
 void Compressor::reset() noexcept
 {
 	comp.reset();
@@ -37,4 +42,5 @@ void Compressor::prepare(const juce::dsp::ProcessSpec &spec)
 void Compressor::process(juce::dsp::ProcessContextReplacing<float> &context)
 {
 	comp.process(context);
+	context.getOutputBlock().multiplyBy(makeUpGain);
 }

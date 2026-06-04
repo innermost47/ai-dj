@@ -70,6 +70,7 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("compressorRatio", track->compressor.getRatio(), nullptr);
 		    trackState.setProperty("compressorAttack", track->compressor.getAttack(), nullptr);
 		    trackState.setProperty("compressorRelease", track->compressor.getRelease(), nullptr);
+		    trackState.setProperty("compressorMakeUpGain", track->compressor.getMakeUpGain(), nullptr);
 
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
@@ -214,6 +215,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->compressor.setRatio(trackState.getProperty("compressorRatio", 4.f));
 		track->compressor.setAttack(trackState.getProperty("compressorAttack", 10.f));
 		track->compressor.setRelease(trackState.getProperty("compressorRelease", 100.f));
+		track->compressor.setMakeUpGain(trackState.getProperty("compressorMakeUpGain", 1.f));
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{

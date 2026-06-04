@@ -40,6 +40,10 @@ void CompressorComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	{
 		releaseKnob.setValue(value, juce::dontSendNotification);
 	}
+	else if (paramSuffix == "CompressorMakeUpGain")
+	{
+		makeUpGainKnob.setValue(value, juce::dontSendNotification);
+	}
 }
 
 void CompressorComponent::setupUI()
@@ -58,6 +62,7 @@ void CompressorComponent::setupUI()
 	setupKnob(ratioKnob);
 	setupKnob(attackKnob);
 	setupKnob(releaseKnob);
+	setupKnob(makeUpGainKnob);
 
 	auto setupLabel = [this](juce::Label &label, juce::String labelValue)
 	{
@@ -68,10 +73,11 @@ void CompressorComponent::setupUI()
 		Obsidian::applyFontSize(label, Obsidian::MIXER_KNOB_LABEL);
 	};
 
-	setupLabel(thresholdLabel, "THRESHOLD");
+	setupLabel(thresholdLabel, "THRESH");
 	setupLabel(ratioLabel, "RATIO");
 	setupLabel(attackLabel, "ATTACK");
 	setupLabel(releaseLabel, "RELEASE");
+	setupLabel(makeUpGainLabel, "GAIN");
 
 	updateModelUI();
 }
@@ -87,7 +93,7 @@ void CompressorComponent::resized()
 
 	area.removeFromBottom(Obsidian::GAP_4);
 
-	auto knobAreaWidth = area.getWidth() / 4;
+	auto knobAreaWidth = area.getWidth() / 5;
 
 	auto placeKnob = [this, &area, knobAreaWidth](MidiLearnableSlider &slider, juce::Label &label)
 	{
@@ -100,6 +106,7 @@ void CompressorComponent::resized()
 	placeKnob(ratioKnob, ratioLabel);
 	placeKnob(attackKnob, attackLabel);
 	placeKnob(releaseKnob, releaseLabel);
+	placeKnob(makeUpGainKnob, makeUpGainLabel);
 }
 
 void CompressorComponent::updateModelUI()
@@ -120,6 +127,7 @@ void CompressorComponent::updateModelUI()
 	updateColor(ratioKnob);
 	updateColor(attackKnob);
 	updateColor(releaseKnob);
+	updateColor(makeUpGainKnob);
 
 	repaint();
 }
@@ -137,4 +145,5 @@ void CompressorComponent::wireParameters()
 	setupSlider("CompressorRatio", ratioKnob);
 	setupSlider("CompressorAttack", attackKnob);
 	setupSlider("CompressorRelease", releaseKnob);
+	setupSlider("CompressorMakeUpGain", makeUpGainKnob);
 }

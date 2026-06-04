@@ -13,6 +13,7 @@ class Compressor
 	void setRatio(float r);
 	void setAttack(float a);
 	void setRelease(float r);
+	void setMakeUpGain(float mk);
 
 	float getThreshold() const
 	{
@@ -34,12 +35,18 @@ class Compressor
 		return release;
 	}
 
+	float getMakeUpGain() const
+	{
+		return makeUpGain;
+	}
+
   private:
 	double sampleRate;
 	float threshold;
 	float attack;
 	float release;
 	float ratio;
+	float makeUpGain;
 
 	juce::dsp::Compressor<float> comp;
 };

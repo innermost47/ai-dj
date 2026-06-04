@@ -81,6 +81,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotCompressorRatioParams[i] = apvts.getRawParameterValue(s + "CompressorRatio");
 		slotCompressorAttackParams[i] = apvts.getRawParameterValue(s + "CompressorAttack");
 		slotCompressorReleaseParams[i] = apvts.getRawParameterValue(s + "CompressorRelease");
+		slotCompressorMakeUpGainParams[i] = apvts.getRawParameterValue(s + "CompressorMakeUpGain");
 
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
@@ -116,6 +117,7 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "CompressorRatio", listener);
 		apvts.addParameterListener(s + "CompressorAttack", listener);
 		apvts.addParameterListener(s + "CompressorRelease", listener);
+		apvts.addParameterListener(s + "CompressorMakeUpGain", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -199,6 +201,7 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "CompressorRatio", listener);
 		apvts.removeParameterListener(s + "CompressorAttack", listener);
 		apvts.removeParameterListener(s + "CompressorRelease", listener);
+		apvts.removeParameterListener(s + "CompressorMakeUpGain", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -329,6 +332,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorRelease", slotName + " Compressor Release",
 		                                                juce::NormalisableRange<float>(10.f, 1000.f, .1f, .3f), 100.f));
+
+		juce::NormalisableRange<float> makeUpGainRange(0.0f, 10.0f);
+		makeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "CompressorMakeUpGain", slotName + " Compressor MakeUp Gain", makeUpGainRange, 1.f));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -510,10 +518,10 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
 			                                                 MidiMapping::panToMidi(getPan(slotIdx)));
 		}
+		else if (parameterID.endsWith("CompressorMakeUpGain"))
+			track->compressor.setMakeUpGain(newValue);
 		else if (parameterID.endsWith("Gain"))
-		{
 			track->getCurrentPage().gain.store(newValue);
-		}
 		else if (parameterID.endsWith("Solo"))
 		{
 			track->isSolo.store(newValue > 0.5f);
