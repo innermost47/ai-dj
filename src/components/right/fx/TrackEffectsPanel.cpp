@@ -2,6 +2,7 @@
 #include "CompressorComponent.h"
 #include "EqualizerComponent.h"
 #include "FilterComponent.h"
+#include "LimiterComponent.h"
 #include "PluginProcessor.h"
 
 TrackEffectsPanel::TrackEffectsPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
@@ -15,9 +16,7 @@ void TrackEffectsPanel::refresh()
 {
 	removeAllChildren();
 	trackSelectors.clear();
-	filterComponent = nullptr;
-	equalizerComponent = nullptr;
-	compressorComponent = nullptr;
+	resetComponents();
 	setupUI();
 	resized();
 }
@@ -50,6 +49,8 @@ void TrackEffectsPanel::resized()
 	auto filterArea = area.removeFromTop(60);
 	area.removeFromTop(Obsidian::GAP_4);
 	auto compressorArea = area.removeFromTop(50);
+	area.removeFromTop(Obsidian::GAP_4);
+	auto limiterArea = area.removeFromTop(50);
 
 	juce::FlexBox selectors;
 	selectors.flexDirection = juce::FlexBox::Direction::row;
@@ -69,6 +70,8 @@ void TrackEffectsPanel::resized()
 		filterComponent->setBounds(filterArea);
 	if (compressorComponent)
 		compressorComponent->setBounds(compressorArea);
+	if (limiterComponent)
+		limiterComponent->setBounds(limiterArea);
 }
 
 void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
@@ -79,6 +82,8 @@ void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 		compressorComponent->updateModelUI();
 	if (equalizerComponent)
 		equalizerComponent->updateModelUI();
+	if (limiterComponent)
+		limiterComponent->updateModelUI();
 
 	for (auto &selector : trackSelectors)
 	{
@@ -127,32 +132,14 @@ void TrackEffectsPanel::setupUI()
 		btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		btn->setColour(juce::TextButton::textColourOnId, textColour);
 
-		btn->onClick = [this, trackId]()
-		{
-			if (auto *currentTrack = audioProcessor.getTrack(trackId))
-			{
-				filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
-				addAndMakeVisible(*filterComponent);
-				equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, currentTrack);
-				addAndMakeVisible(*equalizerComponent);
-				compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, currentTrack);
-				addAndMakeVisible(*compressorComponent);
-				resized();
-			}
-		};
+		btn->onClick = [this, trackId]() { addComponents(trackId); };
 
 		addAndMakeVisible(*btn);
 		trackSelectors.push_back(std::move(btn));
 
 		if (index == selectedValue)
 		{
-			filterComponent = std::make_unique<FilterComponent>(audioProcessor, track);
-			addAndMakeVisible(*filterComponent);
-			equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, track);
-			addAndMakeVisible(*equalizerComponent);
-			compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, track);
-			addAndMakeVisible(*compressorComponent);
-			resized();
+			addComponents(trackId);
 		}
 
 		index++;
@@ -172,12 +159,34 @@ void TrackEffectsPanel::setupUI()
 	btn->setColour(juce::TextButton::textColourOnId, textColour);
 	btn->onClick = [this]()
 	{
-		equalizerComponent = nullptr;
-		filterComponent = nullptr;
-		compressorComponent = nullptr;
+		resetComponents();
 		resized();
 	};
 
 	addAndMakeVisible(*btn);
 	trackSelectors.push_back(std::move(btn));
+}
+
+void TrackEffectsPanel::addComponents(const juce::String &trackId)
+{
+	if (auto *currentTrack = audioProcessor.getTrack(trackId))
+	{
+		filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*filterComponent);
+		equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*equalizerComponent);
+		compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*compressorComponent);
+		limiterComponent = std::make_unique<LimiterComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*limiterComponent);
+		resized();
+	}
+}
+
+void TrackEffectsPanel::resetComponents()
+{
+	equalizerComponent = nullptr;
+	filterComponent = nullptr;
+	compressorComponent = nullptr;
+	limiterComponent = nullptr;
 }

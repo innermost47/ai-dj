@@ -271,6 +271,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/right/fx/CompressorComponent.cpp
     src/components/right/fx/EqualizerComponent.cpp
     src/components/right/fx/FilterComponent.cpp
+    src/components/right/fx/LimiterComponent.cpp
     src/components/right/fx/SendsPanel.cpp
     src/components/right/fx/TrackEffectsPanel.cpp
     src/components/right/LCDScreen.cpp
@@ -297,7 +298,8 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/dsp/Compressor.cpp
     src/dsp/DelaySend.cpp
     src/dsp/Equalizer.cpp
-    src/dsp/LowpassHighpassFilter.cpp
+    src/dsp/Filter.cpp
+    src/dsp/Limiter.cpp
     src/dsp/MiniBpm.cpp
     src/dsp/MonoEQ.cpp
     src/dsp/ReverbSend.cpp

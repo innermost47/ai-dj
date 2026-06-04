@@ -2,7 +2,7 @@
 #include "JuceHeader.h"
 #include <vector>
 
-class LowpassHighpassFilter
+class Filter
 {
   public:
 	void setCutoffFrequency(float frequency);

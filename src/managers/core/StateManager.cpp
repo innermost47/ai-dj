@@ -52,10 +52,10 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("randomRetriggerDurationEnabled", track->randomRetriggerDurationEnabled.load(),
 		                           nullptr);
 		    trackState.setProperty("currentPageIndex", track->currentPageIndex.load(), nullptr);
-		    trackState.setProperty("filterMode", static_cast<int>(track->lowpassHighpassFilter.getMode()), nullptr);
-		    trackState.setProperty("cutoffFrequency", track->lowpassHighpassFilter.getCutoff(), nullptr);
-		    trackState.setProperty("resonance", track->lowpassHighpassFilter.getResonance(), nullptr);
-		    trackState.setProperty("filterDrive", track->lowpassHighpassFilter.getDrive(), nullptr);
+		    trackState.setProperty("filterMode", static_cast<int>(track->filter.getMode()), nullptr);
+		    trackState.setProperty("cutoffFrequency", track->filter.getCutoff(), nullptr);
+		    trackState.setProperty("resonance", track->filter.getResonance(), nullptr);
+		    trackState.setProperty("filterDrive", track->filter.getDrive(), nullptr);
 
 		    trackState.setProperty("subBassGain", track->equalizer.getGain(Obsidian::eqBands::subBass), nullptr);
 		    trackState.setProperty("bassGain", track->equalizer.getGain(Obsidian::eqBands::bass), nullptr);
@@ -71,6 +71,10 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("compressorAttack", track->compressor.getAttack(), nullptr);
 		    trackState.setProperty("compressorRelease", track->compressor.getRelease(), nullptr);
 		    trackState.setProperty("compressorMakeUpGain", track->compressor.getMakeUpGain(), nullptr);
+
+		    trackState.setProperty("limiterThreshold", track->limiter.getThreshold(), nullptr);
+		    trackState.setProperty("limiterRelease", track->limiter.getRelease(), nullptr);
+		    trackState.setProperty("limiterMakeUpGain", track->limiter.getMakeUpGain(), nullptr);
 
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
@@ -191,16 +195,17 @@ void StateManager::loadState(const juce::ValueTree &state)
 		spec.numChannels = 2;
 		spec.sampleRate = audioProcessor.getSampleRate();
 
-		track->lowpassHighpassFilter.prepare(spec);
+		track->filter.prepare(spec);
 		track->equalizer.prepare(spec);
 		track->compressor.prepare(spec);
+		track->limiter.prepare(spec);
 
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
-		track->lowpassHighpassFilter.setMode(mode);
-		track->lowpassHighpassFilter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
-		track->lowpassHighpassFilter.setResonance(trackState.getProperty("resonance", 0.f));
-		track->lowpassHighpassFilter.setDrive(trackState.getProperty("filterDrive", 1.f));
+		track->filter.setMode(mode);
+		track->filter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
+		track->filter.setResonance(trackState.getProperty("resonance", 0.f));
+		track->filter.setDrive(trackState.getProperty("filterDrive", 1.f));
 
 		track->equalizer.updateGain(Obsidian::eqBands::subBass, trackState.getProperty("subBassGain", 1.f));
 		track->equalizer.updateGain(Obsidian::eqBands::bass, trackState.getProperty("bassGain", 1.f));
@@ -216,6 +221,10 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->compressor.setAttack(trackState.getProperty("compressorAttack", 10.f));
 		track->compressor.setRelease(trackState.getProperty("compressorRelease", 100.f));
 		track->compressor.setMakeUpGain(trackState.getProperty("compressorMakeUpGain", 1.f));
+
+		track->limiter.setThreshold(trackState.getProperty("limiterThreshold", -.3f));
+		track->limiter.setRelease(trackState.getProperty("limiterRelease", 50.f));
+		track->limiter.setMakeUpGain(trackState.getProperty("limiterMakeUpGain", 1.f));
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{

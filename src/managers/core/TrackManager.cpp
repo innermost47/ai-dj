@@ -5,15 +5,21 @@ void TrackManager::prepareTrack(TrackData &track)
 {
 	track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
 	track.reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
-	track.lowpassHighpassFilter.setMode(juce::dsp::LadderFilterMode::HPF12);
-	track.lowpassHighpassFilter.setSamplingRate(currentSampleRate);
-	track.lowpassHighpassFilter.setCutoffFrequency(20000.f);
-	track.lowpassHighpassFilter.setResonance(0.f);
+
+	track.filter.setMode(juce::dsp::LadderFilterMode::HPF12);
+	track.filter.setSamplingRate(currentSampleRate);
+	track.filter.setCutoffFrequency(20000.f);
+	track.filter.setResonance(0.f);
+
 	track.compressor.setThreshold(-12.f);
 	track.compressor.setRatio(4.f);
 	track.compressor.setAttack(10.f);
 	track.compressor.setRelease(100.f);
 	track.compressor.setMakeUpGain(1.f);
+
+	track.limiter.setThreshold(-.3f);
+	track.limiter.setRelease(50.f);
+	track.limiter.setMakeUpGain(1.f);
 
 	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
@@ -21,8 +27,9 @@ void TrackManager::prepareTrack(TrackData &track)
 	spec.sampleRate = currentSampleRate;
 
 	track.equalizer.prepare(spec);
-	track.lowpassHighpassFilter.prepare(spec);
+	track.filter.prepare(spec);
 	track.compressor.prepare(spec);
+	track.limiter.prepare(spec);
 }
 
 juce::String TrackManager::createTrack(const juce::String &name)
@@ -758,8 +765,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		float gainDb = juce::jlimit(-60.0f, 12.0f, track.getCurrentPage().gain.load());
 		float gainLinear = std::pow(10.0f, gainDb / 20.0f);
 
-		leftSample *= volume * leftGain * totalGain * gainLinear;
-		rightSample *= volume * rightGain * totalGain * gainLinear;
+		leftSample *= leftGain * totalGain * gainLinear;
+		rightSample *= rightGain * totalGain * gainLinear;
 
 		individualOutput.setSample(0, i, leftSample);
 		individualOutput.setSample(1, i, rightSample);
@@ -786,8 +793,11 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);
 
 	track.equalizer.process(contextToUse);
-	track.lowpassHighpassFilter.process(contextToUse);
+	track.filter.process(contextToUse);
 	track.compressor.process(contextToUse);
+	track.limiter.process(contextToUse);
+
+	individualOutput.applyGain(volume);
 
 	const int numSamplesProcessed = individualOutput.getNumSamples();
 	const float *postLeft = individualOutput.getReadPointer(0);
@@ -814,10 +824,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			track.meterAccumPeakRight = 0.0f;
 			track.meterSampleCounter = 0;
 		}
-	}
 
-	for (int i = 0; i < numSamplesProcessed; i++)
-	{
 		mixOutput.addSample(0, i, individualOutput.getSample(0, i));
 		mixOutput.addSample(1, i, individualOutput.getSample(1, i));
 	}

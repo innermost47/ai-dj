@@ -98,6 +98,19 @@ class ParameterManager
 		return safeLoadIndexed(slotCompressorMakeUpGainParams, slot);
 	}
 
+	float getLimiterRelease(int slot) const
+	{
+		return safeLoadIndexed(slotLimiterReleaseParams, slot);
+	}
+	float getLimiterThreshold(int slot) const
+	{
+		return safeLoadIndexed(slotLimiterThresholdParams, slot);
+	}
+	float getLimiterMakeUpGain(int slot) const
+	{
+		return safeLoadIndexed(slotLimiterMakeUpGainParams, slot);
+	}
+
 	bool getMute(int slot) const
 	{
 		return safeLoad(slotMuteParams[slot]) > 0.5f;
@@ -284,6 +297,10 @@ class ParameterManager
 	std::atomic<float> *slotCompressorReleaseParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotCompressorMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotLimiterReleaseParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotLimiterThresholdParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotLimiterMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
@@ -349,6 +366,9 @@ class ParameterManager
 		    "CompressorAttack",
 		    "CompressorRelease",
 		    "CompressorMakeUpGain",
+		    "LimiterThreshold",
+		    "LimiterRelease",
+		    "LimiterMakeUpGain",
 		};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)

@@ -83,6 +83,10 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotCompressorReleaseParams[i] = apvts.getRawParameterValue(s + "CompressorRelease");
 		slotCompressorMakeUpGainParams[i] = apvts.getRawParameterValue(s + "CompressorMakeUpGain");
 
+		slotLimiterThresholdParams[i] = apvts.getRawParameterValue(s + "LimiterThreshold");
+		slotLimiterReleaseParams[i] = apvts.getRawParameterValue(s + "LimiterRelease");
+		slotLimiterMakeUpGainParams[i] = apvts.getRawParameterValue(s + "LimiterMakeUpGain");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -118,6 +122,9 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "CompressorAttack", listener);
 		apvts.addParameterListener(s + "CompressorRelease", listener);
 		apvts.addParameterListener(s + "CompressorMakeUpGain", listener);
+		apvts.addParameterListener(s + "LimiterThreshold", listener);
+		apvts.addParameterListener(s + "LimiterRelease", listener);
+		apvts.addParameterListener(s + "LimiterMakeUpGain", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -202,6 +209,9 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "CompressorAttack", listener);
 		apvts.removeParameterListener(s + "CompressorRelease", listener);
 		apvts.removeParameterListener(s + "CompressorMakeUpGain", listener);
+		apvts.removeParameterListener(s + "LimiterThreshold", listener);
+		apvts.removeParameterListener(s + "LimiterRelease", listener);
+		apvts.removeParameterListener(s + "LimiterMakeUpGain", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -337,6 +347,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		makeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "CompressorMakeUpGain", slotName + " Compressor MakeUp Gain", makeUpGainRange, 1.f));
+
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "LimiterThreshold", slotName + " Limiter Threshold",
+		                                                juce::NormalisableRange<float>(-20.f, 0.f, .1f), -.3f));
+
+		juce::NormalisableRange<float> limiterReleaseRange(1.f, 500.0f);
+		limiterReleaseRange.skew = 0.3f;
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "LimiterRelease", slotName + " Limiter Release", limiterReleaseRange, 50.f));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "LimiterMakeUpGain", slotName + " Limiter MakeUp Gain", makeUpGainRange, 1.f));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -520,6 +542,8 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		}
 		else if (parameterID.endsWith("CompressorMakeUpGain"))
 			track->compressor.setMakeUpGain(newValue);
+		else if (parameterID.endsWith("LimiterMakeUpGain"))
+			track->limiter.setMakeUpGain(newValue);
 		else if (parameterID.endsWith("Gain"))
 			track->getCurrentPage().gain.store(newValue);
 		else if (parameterID.endsWith("Solo"))
@@ -546,14 +570,14 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		else if (parameterID.endsWith("FilterMode"))
 		{
 			auto mode = static_cast<juce::dsp::LadderFilterMode>((int)newValue);
-			track->lowpassHighpassFilter.setMode(mode);
+			track->filter.setMode(mode);
 		}
 		else if (parameterID.endsWith("FilterDrive"))
-			track->lowpassHighpassFilter.setDrive(newValue);
+			track->filter.setDrive(newValue);
 		else if (parameterID.endsWith("Cutoff"))
-			track->lowpassHighpassFilter.setCutoffFrequency(newValue);
+			track->filter.setCutoffFrequency(newValue);
 		else if (parameterID.endsWith("Resonance"))
-			track->lowpassHighpassFilter.setResonance(newValue);
+			track->filter.setResonance(newValue);
 		else if (parameterID.endsWith("EQGainSubBass"))
 			track->equalizer.updateGain(Obsidian::eqBands::subBass, newValue);
 		else if (parameterID.endsWith("EQGainBass"))
@@ -578,6 +602,10 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->compressor.setAttack(newValue);
 		else if (parameterID.endsWith("CompressorRelease"))
 			track->compressor.setRelease(newValue);
+		else if (parameterID.endsWith("LimiterThreshold"))
+			track->limiter.setThreshold(newValue);
+		else if (parameterID.endsWith("LimiterRelease"))
+			track->limiter.setRelease(newValue);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);
