@@ -269,6 +269,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
     src/components/right/fx/CompressorComponent.cpp
+    src/components/right/fx/DistorsionComponent.cpp
     src/components/right/fx/EqualizerComponent.cpp
     src/components/right/fx/FilterComponent.cpp
     src/components/right/fx/LimiterComponent.cpp

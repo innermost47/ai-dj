@@ -379,7 +379,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 
 		params.push_back(std::make_unique<juce::AudioParameterChoice>(
 		    slotId + "DistorsionType", slotName + " Distorsion Type",
-		    juce::StringArray{"SOFT", "HARD", "SIGM", "ATAN", "FOLD", "CRUSH"}, 0));
+		    juce::StringArray{"SOFT", "HARD", "TUBE", "FOLD", "DIODE", "CUBIC"}, 0));
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "DistorsionPreGain", slotName + " Distorsion PreGain",
 		                                                juce::NormalisableRange<float>(0.f, 24.f, 0.f), 0.f));
@@ -573,6 +573,12 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		}
 		else if (parameterID.endsWith("CompressorMakeUpGain"))
 			track->compressor.setMakeUpGain(newValue);
+		else if (parameterID.endsWith("DistorsionPreGain"))
+		{
+			track->distorsion.setPre(newValue);
+		}
+		else if (parameterID.endsWith("DistorsionPostGain"))
+			track->distorsion.setPost(newValue);
 		else if (parameterID.endsWith("LimiterMakeUpGain"))
 			track->limiter.setMakeUpGain(newValue);
 		else if (parameterID.endsWith("Gain"))
@@ -637,10 +643,6 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->limiter.setThreshold(newValue);
 		else if (parameterID.endsWith("LimiterRelease"))
 			track->limiter.setRelease(newValue);
-		else if (parameterID.endsWith("DistorsionPreGain"))
-			track->distorsion.setPre(newValue);
-		else if (parameterID.endsWith("DistorsionPostGain"))
-			track->distorsion.setPost(newValue);
 		else if (parameterID.endsWith("DistorsionCut"))
 			track->distorsion.setCut(newValue);
 		else if (parameterID.endsWith("DistorsionType"))
@@ -649,7 +651,7 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->distorsion.setType(type);
 		}
 		else if (parameterID.endsWith("DistorsionBypassed"))
-			track->distorsion.setBypassed(newValue > 0.5f);
+			track->distorsion.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);

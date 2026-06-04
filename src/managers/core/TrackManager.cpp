@@ -21,8 +21,8 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.limiter.setRelease(50.f);
 	track.limiter.setMakeUpGain(1.f);
 
-	track.distorsion.setPre(12.f);
-	track.distorsion.setPost(-6.f);
+	track.distorsion.setPre(0.f);
+	track.distorsion.setPost(0.f);
 	track.distorsion.setCut(1000.f);
 	track.distorsion.setType(Obsidian::distorsionType::soft);
 	track.distorsion.setBypassed(true);

@@ -21,8 +21,14 @@ void Distorsion::setBypassed(bool b)
 void Distorsion::setPre(float p)
 {
 	pre = p;
+	updatePre();
+}
+
+void Distorsion::updatePre()
+{
 	auto &preGain = processorChain.template get<Obsidian::distorsionChain::preGain>();
-	preGain.setGainDecibels(pre);
+	float multiplicator = getMultiplicator(distorsionType);
+	preGain.setGainDecibels(pre * multiplicator);
 }
 
 void Distorsion::setPost(float p)
@@ -36,7 +42,36 @@ void Distorsion::setCut(float c)
 {
 	cut = c;
 	auto &filter = processorChain.template get<Obsidian::distorsionChain::filter>();
-	filter.state = FilterCoefs::makeFirstOrderHighPass(sampleRate, cut);
+	filter.setCutoffFrequency(cut);
+}
+
+float Distorsion::getMultiplicator(Obsidian::distorsionType type)
+{
+	float value = 1.f;
+	switch (type)
+	{
+	case Obsidian::distorsionType::soft:
+		value = 1.f;
+		break;
+	case Obsidian::distorsionType::hard:
+		value = 2.f;
+		break;
+	case Obsidian::distorsionType::tube:
+		value = 1.f;
+		break;
+	case Obsidian::distorsionType::fold:
+		value = 1.f;
+		break;
+	case Obsidian::distorsionType::diode:
+		value = 1.f;
+		break;
+	case Obsidian::distorsionType::cubic:
+		value = 1.f;
+		break;
+	default:
+		value = 1.f;
+	}
+	return value;
 }
 
 void Distorsion::setType(Obsidian::distorsionType type)
@@ -47,22 +82,31 @@ void Distorsion::setType(Obsidian::distorsionType type)
 		waveshaper.functionToUse = [](float x) { return std::tanh(x); };
 	else if (type == Obsidian::distorsionType::hard)
 		waveshaper.functionToUse = [](float x) { return std::clamp(x, -1.f, 1.f); };
-	else if (type == Obsidian::distorsionType::sigm)
-		waveshaper.functionToUse = [](float x) { return (2.f / (1 + std::exp(-x)) - 1.f); };
-	else if (type == Obsidian::distorsionType::arc)
-		waveshaper.functionToUse = [](float x) { return (2.f / juce::MathConstants<float>::pi) * std::atan(x); };
+	else if (type == Obsidian::distorsionType::tube)
+		waveshaper.functionToUse = [](float x) { return std::tanh(x + .3f) - std::tanh(.3f); };
 	else if (type == Obsidian::distorsionType::fold)
-		waveshaper.functionToUse = [](float x) { return std::sin(x); };
-	else if (type == Obsidian::distorsionType::crush)
-		waveshaper.functionToUse = [](float x) { return std::round(x * 16.f) / 16.f; };
+		waveshaper.functionToUse = [](float x) { return std::sin(x * juce::MathConstants<float>::pi) * .5f; };
+	else if (type == Obsidian::distorsionType::diode)
+		waveshaper.functionToUse = [](float x)
+		{
+			if (x > 0.f)
+				return std::tanh(x * 2.f);
+			else
+				return std::tanh(x * .5f);
+		};
+	else if (type == Obsidian::distorsionType::cubic)
+		waveshaper.functionToUse = [](float x) { return 1.5f * x - .5f * x * x * x; };
+	updatePre();
 }
 
 void Distorsion::prepare(const juce::dsp::ProcessSpec &spec)
 {
 	sampleRate = spec.sampleRate;
-	auto &filter = processorChain.template get<Obsidian::distorsionChain::filter>();
-	filter.state = FilterCoefs::makeFirstOrderHighPass(sampleRate, cut);
 	processorChain.prepare(spec);
+
+	auto &filter = processorChain.template get<Obsidian::distorsionChain::filter>();
+	filter.setType(juce::dsp::StateVariableTPTFilterType::highpass);
+	filter.setCutoffFrequency(cut);
 }
 
 void Distorsion::process(juce::dsp::ProcessContextReplacing<float> &context)

@@ -217,8 +217,9 @@ void StateManager::loadState(const juce::ValueTree &state)
 		int typeAsInt = trackState.getProperty("distorsionType");
 		auto type = static_cast<Obsidian::distorsionType>(typeAsInt);
 		track->distorsion.setType(type);
-		track->distorsion.setPre(trackState.getProperty("distorsionPreGain", 12.f));
-		track->distorsion.setPost(trackState.getProperty("distorsionPostGain", -6.f));
+
+		track->distorsion.setPre(trackState.getProperty("distorsionPreGain", 0.f));
+		track->distorsion.setPost(trackState.getProperty("distorsionPostGain", 0.f));
 		track->distorsion.setCut(trackState.getProperty("distorsionCut", 1000.f));
 		track->distorsion.setBypassed(trackState.getProperty("distorsionBypassed", true));
 

@@ -22,7 +22,8 @@ enum RadioGroupIDs
 	FilterTypeGroup = 1,
 	DelayDivisionGroup = 2,
 	DelayModeGroup = 3,
-	TrackFXSelector = 4
+	TrackFXSelector = 4,
+	DistorsionType = 5
 };
 
 enum eqBands
@@ -56,10 +57,10 @@ enum distorsionType
 {
 	soft = 0,
 	hard = 1,
-	sigm = 2,
-	arc = 3,
-	fold = 4,
-	crush = 5
+	tube = 2,
+	fold = 3,
+	diode = 4,
+	cubic = 5
 };
 
 } // namespace Obsidian

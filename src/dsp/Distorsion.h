@@ -17,6 +17,8 @@ class Distorsion
 	void setType(Obsidian::distorsionType type);
 	void setBypassed(bool b);
 
+	float getMultiplicator(Obsidian::distorsionType type);
+
 	float getPre() const
 	{
 		return pre;
@@ -51,12 +53,11 @@ class Distorsion
 
 	Obsidian::distorsionType distorsionType = Obsidian::distorsionType::soft;
 
-	using Filter = juce::dsp::IIR::Filter<float>;
-	using FilterCoefs = juce::dsp::IIR::Coefficients<float>;
-
-	juce::dsp::ProcessorChain<juce::dsp::ProcessorDuplicator<Filter, FilterCoefs>, juce::dsp::Gain<float>,
+	juce::dsp::ProcessorChain<juce::dsp::StateVariableTPTFilter<float>, juce::dsp::Gain<float>,
 	                          juce::dsp::WaveShaper<float>, juce::dsp::Gain<float>>
 	    processorChain;
+
+	void updatePre();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Distorsion)
 };
