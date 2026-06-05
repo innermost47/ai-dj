@@ -51,6 +51,8 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 
 	void subscribeToParam(const juce::String &paramSuffix);
 
+	void clearAllBindings();
+
 	void markForDestruction()
 	{
 		isDestroyed.store(true);

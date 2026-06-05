@@ -116,8 +116,9 @@ TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &pr
 
 TrackComponent::~TrackComponent()
 {
-	setVisible(false);
 	markForDestruction();
+	clearAllBindings();
+	setVisible(false);
 	stopTimer();
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
