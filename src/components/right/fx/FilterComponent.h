@@ -53,11 +53,17 @@ class FilterComponent : public ObsidianBaseMidiComponent
 	void refreshRadioButtonsForParam(const juce::String &paramSuffix);
 
 	MidiLearnableSlider driveKnob;
-	juce::Label driveLabel;
 	MidiLearnableSlider cutoffKnob;
-	juce::Label cutoffLabel;
 	MidiLearnableSlider resonanceKnob;
+
+	juce::Label driveLabel;
+	juce::Label cutoffLabel;
 	juce::Label resonanceLabel;
+
+	juce::Label componentLabel;
+
+	IconButton bypassFilterButton{"BypassFilter", ""};
+
 	std::vector<std::unique_ptr<MidiLearnableLedRadioButton>> cutoffModeButtons;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FilterComponent)

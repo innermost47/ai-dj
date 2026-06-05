@@ -16,7 +16,14 @@ FilterComponent::~FilterComponent()
 
 void FilterComponent::paint(juce::Graphics &g)
 {
+	auto *t = getTrack();
+	if (!t)
+		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
+
+	auto bounds = getLocalBounds().reduced(4);
+	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
+	bypassFilterButton.setBounds(bypassArea);
 }
 
 void FilterComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
@@ -37,6 +44,13 @@ void FilterComponent::onParameterChangedUI(const juce::String &paramSuffix, floa
 	else if (paramSuffix == "FilterDrive")
 	{
 		driveKnob.setValue(value, juce::dontSendNotification);
+	}
+	else if (paramSuffix == "FilterBypassed")
+	{
+		if (value > .5f)
+			bypassFilterButton.setToggleState(true, juce::dontSendNotification);
+		else
+			bypassFilterButton.setToggleState(false, juce::dontSendNotification);
 	}
 }
 
@@ -59,45 +73,47 @@ void FilterComponent::refreshRadioButtonsForParam(const juce::String &paramSuffi
 
 void FilterComponent::setupUI()
 {
-	addAndMakeVisible(driveKnob);
-	driveKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-	driveKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-	driveKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
-	driveKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
-	driveKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	addAndMakeVisible(bypassFilterButton);
+	bypassFilterButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
+	bypassFilterButton.setClickingTogglesState(true);
+	bypassFilterButton.setShowBackground(false);
+	bypassFilterButton.setToggleState(!track->filter.isBypassed(), juce::dontSendNotification);
+	bypassFilterButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	bypassFilterButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	bypassFilterButton.setTooltip("Enable/disable filter");
 
-	addAndMakeVisible(driveLabel);
-	driveLabel.setText("DRIVE", juce::dontSendNotification);
-	driveLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	driveLabel.setJustificationType(juce::Justification::centred);
+	auto setupKnob = [this](MidiLearnableSlider &knob)
+	{
+		addAndMakeVisible(knob);
+		knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+		knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+		knob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+		knob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
+		knob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	};
 
-	addAndMakeVisible(cutoffKnob);
-	cutoffKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-	cutoffKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-	cutoffKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
-	cutoffKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
-	cutoffKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	setupKnob(driveKnob);
+	setupKnob(cutoffKnob);
+	setupKnob(resonanceKnob);
 
-	addAndMakeVisible(cutoffLabel);
-	cutoffLabel.setText("CUT", juce::dontSendNotification);
-	cutoffLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	cutoffLabel.setJustificationType(juce::Justification::centred);
+	auto setupLabel = [this](juce::Label &label, juce::String labelValue)
+	{
+		addAndMakeVisible(label);
+		label.setText(labelValue, juce::dontSendNotification);
+		label.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		label.setJustificationType(juce::Justification::centred);
+		Obsidian::applyFontSize(label, Obsidian::TEXT_XXS);
+	};
 
-	addAndMakeVisible(resonanceKnob);
-	resonanceKnob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-	resonanceKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-	resonanceKnob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
-	resonanceKnob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
-	resonanceKnob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
+	setupLabel(driveLabel, "DRIVE");
+	setupLabel(cutoffLabel, "CUT");
+	setupLabel(resonanceLabel, "RES");
 
-	addAndMakeVisible(resonanceLabel);
-	resonanceLabel.setText("RES", juce::dontSendNotification);
-	resonanceLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	resonanceLabel.setJustificationType(juce::Justification::centred);
-
-	Obsidian::applyFontSize(driveLabel, Obsidian::TEXT_XXS);
-	Obsidian::applyFontSize(cutoffLabel, Obsidian::TEXT_XXS);
-	Obsidian::applyFontSize(resonanceLabel, Obsidian::TEXT_XXS);
+	addAndMakeVisible(componentLabel);
+	componentLabel.setText("Filter", juce::dontSendNotification);
+	componentLabel.setJustificationType(juce::Justification::topLeft);
+	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
 	setupCutoffModeButtons();
 	updateModelUI();
@@ -144,6 +160,11 @@ void FilterComponent::setupCutoffModeButtons()
 void FilterComponent::resized()
 {
 	auto area = getLocalBounds().reduced(8, 4);
+
+	auto labelArea = area.removeFromTop(18);
+	labelArea.removeFromLeft(14);
+
+	componentLabel.setBounds(labelArea);
 
 	auto selector = area.removeFromLeft(area.getWidth() / 2);
 	area.removeFromLeft(Obsidian::GAP_4);
@@ -219,17 +240,19 @@ void FilterComponent::updateModelUI()
 
 void FilterComponent::wireParameters()
 {
-	registerSliderParam("Cutoff", cutoffKnob);
-	registerSliderParam("Resonance", resonanceKnob);
-	registerSliderParam("FilterDrive", driveKnob);
+	auto setupSlider = [this](juce::String paramSuffix, MidiLearnableSlider &knob)
+	{
+		registerSliderParam(paramSuffix, knob);
+		registerMidiLearn(paramSuffix, &knob);
+		syncSliderRange(knob, fullParamId(paramSuffix));
+	};
 
-	registerMidiLearn("Cutoff", &cutoffKnob);
-	registerMidiLearn("Resonance", &resonanceKnob);
-	registerMidiLearn("FilterDrive", &driveKnob);
+	setupSlider("Cutoff", cutoffKnob);
+	setupSlider("Resonance", resonanceKnob);
+	setupSlider("FilterDrive", driveKnob);
 
-	syncSliderRange(cutoffKnob, fullParamId("Cutoff"));
-	syncSliderRange(resonanceKnob, fullParamId("Resonance"));
-	syncSliderRange(driveKnob, fullParamId("FilterDrive"));
+	registerButtonParam("FilterBypassed", bypassFilterButton);
+	registerMidiLearn("FilterBypassed", &bypassFilterButton);
 
 	subscribeToParam("FilterMode");
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include "JuceHeader.h"
 #include <vector>
 
@@ -15,6 +16,7 @@ class Filter
 	void prepare(const juce::dsp::ProcessSpec &spec);
 	void reset();
 	void setMode(juce::dsp::LadderFilterMode newMode);
+	void setBypassed(bool b);
 
 	float getCutoff() const
 	{
@@ -28,17 +30,25 @@ class Filter
 	{
 		return drive;
 	}
+
+	bool isBypassed() const
+	{
+		return bypassed;
+	}
+
 	juce::dsp::LadderFilterMode getMode() const
 	{
 		return mode;
 	}
 
   private:
-	float cutoffFrequency;
-	float resonance;
-	float drive;
+	float cutoffFrequency = Obsidian::FILTER_CUT;
+	float resonance = Obsidian::FILTER_RES;
+	float drive = Obsidian::FILTER_DRIVE;
 
-	double samplingRate;
+	bool bypassed = Obsidian::FILTER_BYPASSED;
+
+	double samplingRate = Obsidian::SAMPLERATE;
 
 	juce::dsp::LadderFilterMode mode;
 

@@ -49,7 +49,7 @@ void TrackEffectsPanel::resized()
 	area.removeFromTop(Obsidian::GAP_4);
 	auto eqArea = area.removeFromTop(130);
 	area.removeFromTop(Obsidian::GAP_4);
-	auto filterArea = area.removeFromTop(60);
+	auto filterArea = area.removeFromTop(80);
 	area.removeFromTop(Obsidian::GAP_4);
 	auto compressorArea = area.removeFromTop(70);
 	area.removeFromTop(Obsidian::GAP_4);

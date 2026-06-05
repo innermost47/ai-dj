@@ -4,6 +4,12 @@ Filter::Filter()
 {
 }
 
+void Filter::setBypassed(bool b)
+{
+	bypassed = b;
+	filter.setEnabled(!bypassed);
+}
+
 void Filter::setMode(juce::dsp::LadderFilterMode newMode)
 {
 	mode = newMode;

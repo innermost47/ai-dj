@@ -56,6 +56,7 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("cutoffFrequency", track->filter.getCutoff(), nullptr);
 		    trackState.setProperty("resonance", track->filter.getResonance(), nullptr);
 		    trackState.setProperty("filterDrive", track->filter.getDrive(), nullptr);
+		    trackState.setProperty("filterBypassed", track->filter.isBypassed(), nullptr);
 
 		    trackState.setProperty("subBassGain", track->equalizer.getGain(Obsidian::eqBands::subBass), nullptr);
 		    trackState.setProperty("bassGain", track->equalizer.getGain(Obsidian::eqBands::bass), nullptr);
@@ -65,6 +66,7 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("presenceGain", track->equalizer.getGain(Obsidian::eqBands::presence), nullptr);
 		    trackState.setProperty("highGain", track->equalizer.getGain(Obsidian::eqBands::high), nullptr);
 		    trackState.setProperty("airGain", track->equalizer.getGain(Obsidian::eqBands::air), nullptr);
+		    trackState.setProperty("eqBypassed", track->equalizer.isBypassed(), nullptr);
 
 		    trackState.setProperty("compressorThreshold", track->compressor.getThreshold(), nullptr);
 		    trackState.setProperty("compressorRatio", track->compressor.getRatio(), nullptr);
@@ -211,9 +213,10 @@ void StateManager::loadState(const juce::ValueTree &state)
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
 		track->filter.setMode(mode);
-		track->filter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", 20000.f));
-		track->filter.setResonance(trackState.getProperty("resonance", 0.f));
-		track->filter.setDrive(trackState.getProperty("filterDrive", 1.f));
+		track->filter.setCutoffFrequency(trackState.getProperty("cutoffFrequency", Obsidian::FILTER_CUT));
+		track->filter.setResonance(trackState.getProperty("resonance", Obsidian::FILTER_RES));
+		track->filter.setDrive(trackState.getProperty("filterDrive", Obsidian::FILTER_DRIVE));
+		track->filter.setBypassed(trackState.getProperty("filterBypassed", Obsidian::FILTER_BYPASSED));
 
 		int typeAsInt = trackState.getProperty("distortionType");
 		auto type = static_cast<Obsidian::distortionType>(typeAsInt);
@@ -238,6 +241,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->equalizer.updateGain(Obsidian::eqBands::high,
 		                            trackState.getProperty("highGain", Obsidian::EQ_BANDS_GAIN));
 		track->equalizer.updateGain(Obsidian::eqBands::air, trackState.getProperty("airGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.setBypassed(trackState.getProperty("eqBypassed", Obsidian::EQ_BYPASSED));
 
 		track->compressor.setThreshold(trackState.getProperty("compressorThreshold", Obsidian::COMPRESSOR_THRESHOLD));
 		track->compressor.setRatio(trackState.getProperty("compressorRatio", Obsidian::COMPRESSOR_RATIO));

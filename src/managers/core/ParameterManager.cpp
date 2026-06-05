@@ -324,12 +324,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Fine", slotName + " Fine", -50.0f, 50.0f, 0.0f));
 
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "Cutoff", slotName + " Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f),
-		    20000.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "Resonance", slotName + " Resonance", juce::NormalisableRange<float>(0.f, 1.0f, 0.f, 0.4f), 0.f));
-
 		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "RandomRetrigger",
 		                                                            slotName + " Random Retrigger", false));
 		params.push_back(
@@ -343,11 +337,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "FilterDrive", slotName + " Filter Drive", juce::NormalisableRange<float>(1.0f, 10.0f), 1.0f));
-
+		    slotId + "Cutoff", slotName + " Cutoff", juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f),
+		    Obsidian::FILTER_CUT));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "Resonance", slotName + " Resonance", juce::NormalisableRange<float>(0.f, 1.0f, 0.f, 0.4f),
+		    Obsidian::FILTER_RES));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "FilterDrive", slotName + " Filter Drive",
+		                                                             juce::NormalisableRange<float>(1.0f, 10.0f),
+		                                                             Obsidian::FILTER_DRIVE));
 		params.push_back(std::make_unique<juce::AudioParameterChoice>(
 		    slotId + "FilterMode", slotName + " Filter Mode",
-		    juce::StringArray{"LPF12", "HPF12", "BPF12", "LPF24", "HPF24", "BPF24"}, 0));
+		    juce::StringArray{"LPF12", "HPF12", "BPF12", "LPF24", "HPF24", "BPF24"}, Obsidian::FILTER_MODE));
 
 		juce::NormalisableRange<float> gainRange(0.0f, 4.0f);
 		gainRange.skew = std::log(0.5f) / std::log((1.0f - 0.0f) / (4.0f - 0.0f));
@@ -682,8 +682,8 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->distortion.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("EQBypassed"))
 			track->equalizer.setBypassed(newValue < 0.5f);
-		// else if (parameterID.endsWith("FilterBypassed"))
-		//	track->filter.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("FilterBypassed"))
+			track->filter.setBypassed(newValue < 0.5f);
 		// else if (parameterID.endsWith("LimiterBypassed"))
 		//	track->limiter.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("CompressorBypassed"))

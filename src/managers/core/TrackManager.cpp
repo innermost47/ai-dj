@@ -8,8 +8,10 @@ void TrackManager::prepareTrack(TrackData &track)
 
 	track.filter.setMode(juce::dsp::LadderFilterMode::HPF12);
 	track.filter.setSamplingRate(currentSampleRate);
-	track.filter.setCutoffFrequency(20000.f);
-	track.filter.setResonance(0.f);
+	track.filter.setCutoffFrequency(Obsidian::FILTER_CUT);
+	track.filter.setResonance(Obsidian::FILTER_RES);
+	track.filter.setDrive(Obsidian::FILTER_DRIVE);
+	track.filter.setBypassed(Obsidian::FILTER_BYPASSED);
 
 	track.compressor.setThreshold(Obsidian::COMPRESSOR_THRESHOLD);
 	track.compressor.setRatio(Obsidian::COMPRESSOR_RATIO);
@@ -27,6 +29,8 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.distortion.setCut(Obsidian::DISTORTION_CUT);
 	track.distortion.setType(Obsidian::distortionType::soft);
 	track.distortion.setBypassed(Obsidian::DISTORTION_BYPASSED);
+
+	track.equalizer.setBypassed(Obsidian::EQ_BYPASSED);
 
 	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);

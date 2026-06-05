@@ -27,6 +27,11 @@ inline constexpr float DISTORTION_PRE = 0.f;
 inline constexpr float DISTORTION_POST = 0.f;
 inline constexpr float DISTORTION_CUT = 1000.f;
 
+inline constexpr float FILTER_DRIVE = 1.f;
+inline constexpr float FILTER_CUT = 20000.0f;
+inline constexpr float FILTER_RES = 0.f;
+inline constexpr int FILTER_MODE = 0;
+
 inline constexpr float EQ_BANDS_GAIN = 1.f;
 inline constexpr float EQ_SUB_BAS_FRQ = 40.f;
 inline constexpr float EQ_BASS_FRQ = 120.f;
