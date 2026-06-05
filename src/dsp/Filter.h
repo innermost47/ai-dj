@@ -50,7 +50,7 @@ class Filter
 
 	double samplingRate = Obsidian::SAMPLERATE;
 
-	juce::dsp::LadderFilterMode mode;
+	juce::dsp::LadderFilterMode mode = juce::dsp::LadderFilterMode::HPF12;
 
 	juce::dsp::LadderFilter<float> filter;
 

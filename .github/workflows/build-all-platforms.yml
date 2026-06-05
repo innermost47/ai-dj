@@ -321,7 +321,7 @@ jobs:
           body: |
             # 🎵 OBSIDIAN-Neural Release v${{ github.run_number }}
 
-            Real-time AI music generation for your DAW — or Standalone.
+            Real-time AI music generation for your DAW - or Standalone.
 
             ## 📥 Installation
 
@@ -369,7 +369,7 @@ jobs:
 
             ## 📚 Resources
 
-            - 🌐 [obsidian-neural.com](https://obsidian-neural.com) — Get your API key
+            - 🌐 [obsidian-neural.com](https://obsidian-neural.com) - Get your API key
             - 🎓 [Video Tutorial](https://www.youtube.com/watch?v=l4KMC5adxVA)
             - 💬 [Discussions](https://github.com/innermost47/ai-dj/discussions)
             - 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)

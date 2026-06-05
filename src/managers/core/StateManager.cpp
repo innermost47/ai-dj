@@ -762,6 +762,8 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 				if (param)
 				{
 					float value = parametersState.getProperty(paramId, 0.0f);
+					if (paramId.contains("Bypassed"))
+						continue;
 					param->setValueNotifyingHost(value);
 				}
 			}

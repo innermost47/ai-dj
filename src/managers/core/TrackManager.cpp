@@ -6,40 +6,6 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
 	track.reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
 
-	track.filter.setMode(juce::dsp::LadderFilterMode::HPF12);
-	track.filter.setSamplingRate(currentSampleRate);
-	track.filter.setCutoffFrequency(Obsidian::FILTER_CUT);
-	track.filter.setResonance(Obsidian::FILTER_RES);
-	track.filter.setDrive(Obsidian::FILTER_DRIVE);
-	track.filter.setBypassed(Obsidian::FILTER_BYPASSED);
-
-	track.compressor.setThreshold(Obsidian::COMPRESSOR_THRESHOLD);
-	track.compressor.setRatio(Obsidian::COMPRESSOR_RATIO);
-	track.compressor.setAttack(Obsidian::COMPRESSOR_ATTACK);
-	track.compressor.setRelease(Obsidian::COMPRESSOR_RELEASE);
-	track.compressor.setMakeUpGain(Obsidian::COMPRESSOR_MAKEUP_GAIN);
-	track.compressor.setBypassed(Obsidian::COMPRESSOR_BYPASSED);
-
-	track.limiter.setThreshold(Obsidian::LIMITER_THRESHOLD);
-	track.limiter.setRelease(Obsidian::LIMITER_RELEASE);
-	track.limiter.setMakeUpGain(Obsidian::LIMITER_MAKEUP_GAIN);
-	track.limiter.setBypassed(Obsidian::LIMITER_BYPASSED);
-
-	track.chorus.setRate(Obsidian::CHORUS_RATE);
-	track.chorus.setDepth(Obsidian::CHORUS_DEPTH);
-	track.chorus.setCentre(Obsidian::CHORUS_CENTRE);
-	track.chorus.setFeedback(Obsidian::CHORUS_FEEDBACK);
-	track.chorus.setMix(Obsidian::CHORUS_MIX);
-	track.chorus.setBypassed(Obsidian::CHORUS_BYPASSED);
-
-	track.distortion.setPre(Obsidian::DISTORTION_PRE);
-	track.distortion.setPost(Obsidian::DISTORTION_POST);
-	track.distortion.setCut(Obsidian::DISTORTION_CUT);
-	track.distortion.setType(Obsidian::distortionType::soft);
-	track.distortion.setBypassed(Obsidian::DISTORTION_BYPASSED);
-
-	track.equalizer.setBypassed(Obsidian::EQ_BYPASSED);
-
 	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
 	spec.numChannels = 2;

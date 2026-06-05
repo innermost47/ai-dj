@@ -331,6 +331,14 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return bypassLLM.load();
 	}
+	bool getAreTracksPrepared() const
+	{
+		return areTracksPrepared;
+	}
+	void setAreTracksPrepared(bool v)
+	{
+		areTracksPrepared = v;
+	}
 	bool getBypassSequencer() const
 	{
 		return sequencerManager.isBypassed();
@@ -782,6 +790,8 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	int requestTimeoutMS = 360000;
 	int savedWindowWidth = 1620;
 	int savedWindowHeight = 840;
+
+	bool areTracksPrepared = false;
 
 	enum class CrossfadeMode
 	{
