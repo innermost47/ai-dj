@@ -40,8 +40,11 @@ void LimiterComponent::paint(juce::Graphics &g)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
 
-	auto bounds = getLocalBounds();
-	auto circleArea = bounds.removeFromLeft(18).removeFromTop(18);
+	auto bounds = getLocalBounds().reduced(4);
+	auto bypassArea = bounds.removeFromLeft(16);
+	bypassLimiterButton.setBounds(bypassArea.removeFromTop(16));
+
+	auto circleArea = bypassArea.removeFromBottom(16);
 	auto circleRect = circleArea.withSizeKeepingCentre(6, 6).toFloat();
 
 	float scale = 1.f;
@@ -77,10 +80,26 @@ void LimiterComponent::onParameterChangedUI(const juce::String &paramSuffix, flo
 	{
 		makeUpGainKnob.setValue(value, juce::dontSendNotification);
 	}
+	else if (paramSuffix == "LimiterBypassed")
+	{
+		if (value > .5f)
+			bypassLimiterButton.setToggleState(true, juce::dontSendNotification);
+		else
+			bypassLimiterButton.setToggleState(false, juce::dontSendNotification);
+	}
 }
 
 void LimiterComponent::setupUI()
 {
+	addAndMakeVisible(bypassLimiterButton);
+	bypassLimiterButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
+	bypassLimiterButton.setClickingTogglesState(true);
+	bypassLimiterButton.setShowBackground(false);
+	bypassLimiterButton.setToggleState(!track->limiter.isBypassed(), juce::dontSendNotification);
+	bypassLimiterButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	bypassLimiterButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	bypassLimiterButton.setTooltip("Enable/disable limiter");
+
 	auto setupKnob = [this](MidiLearnableSlider &knob)
 	{
 		addAndMakeVisible(knob);
@@ -110,7 +129,7 @@ void LimiterComponent::setupUI()
 
 	addAndMakeVisible(componentLabel);
 	componentLabel.setText("Limiter", juce::dontSendNotification);
-	componentLabel.setJustificationType(juce::Justification::bottomLeft);
+	componentLabel.setJustificationType(juce::Justification::topLeft);
 	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
 	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
@@ -124,14 +143,14 @@ void LimiterComponent::setTrackData(TrackData *trackData)
 
 void LimiterComponent::resized()
 {
-	auto area = getLocalBounds().reduced(2);
+	auto area = getLocalBounds().reduced(8, 4);
 
-	area.removeFromBottom(Obsidian::GAP_4);
+	auto labelArea = area.removeFromTop(18);
+	labelArea.removeFromLeft(14);
+
+	componentLabel.setBounds(labelArea);
 
 	auto knobAreaWidth = area.getWidth() / 5;
-
-	auto componentLabelArea = area.removeFromLeft(knobAreaWidth * 2);
-	componentLabel.setBounds(componentLabelArea);
 
 	auto placeKnob = [this, &area, knobAreaWidth](MidiLearnableSlider &slider, juce::Label &label)
 	{
@@ -178,4 +197,7 @@ void LimiterComponent::wireParameters()
 	setupSlider("LimiterThreshold", thresholdKnob);
 	setupSlider("LimiterRelease", releaseKnob);
 	setupSlider("LimiterMakeUpGain", makeUpGainKnob);
+
+	registerButtonParam("LimiterBypassed", bypassLimiterButton);
+	registerMidiLearn("LimiterBypassed", &bypassLimiterButton);
 }

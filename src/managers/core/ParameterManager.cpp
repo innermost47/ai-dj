@@ -382,8 +382,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "CompressorRelease", slotName + " Compressor Release",
 		    juce::NormalisableRange<float>(10.f, 1000.f, .1f, .3f), Obsidian::COMPRESSOR_RELEASE));
 
-		juce::NormalisableRange<float> makeUpGainRange(0.0f, 20.0f);
-		makeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 20.f);
+		juce::NormalisableRange<float> makeUpGainRange(0.0f, 10.0f);
+		makeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "CompressorMakeUpGain", slotName + " Compressor MakeUp Gain", makeUpGainRange,
 		    Obsidian::COMPRESSOR_MAKEUP_GAIN));

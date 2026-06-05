@@ -53,7 +53,7 @@ void TrackEffectsPanel::resized()
 	area.removeFromTop(Obsidian::GAP_4);
 	auto compressorArea = area.removeFromTop(70);
 	area.removeFromTop(Obsidian::GAP_4);
-	auto limiterArea = area.removeFromTop(50);
+	auto limiterArea = area.removeFromTop(70);
 
 	juce::FlexBox selectors;
 	selectors.flexDirection = juce::FlexBox::Direction::row;

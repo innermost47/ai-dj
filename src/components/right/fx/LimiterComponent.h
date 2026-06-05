@@ -59,5 +59,7 @@ class LimiterComponent : public ObsidianBaseMidiComponent, public juce::Timer
 
 	juce::Colour modelColour;
 
+	IconButton bypassLimiterButton{"BypassLimiter", ""};
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LimiterComponent)
 };
