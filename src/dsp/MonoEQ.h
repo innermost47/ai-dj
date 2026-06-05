@@ -31,10 +31,11 @@ class MonoEQ
 	}
 
   private:
-	double sampleRate;
-	float frequency;
-	float resonance;
-	float gain;
+	double sampleRate = Obsidian::SAMPLERATE;
+
+	float frequency = Obsidian::EQ_MID_FRQ;
+	float resonance = Obsidian::EQ_BASE_RESONANCE;
+	float gain = Obsidian::EQ_BANDS_GAIN;
 
 	juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>> stereoFilter;
 

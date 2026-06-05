@@ -3,10 +3,10 @@
 #include "JuceHeader.h"
 #include <vector>
 
-class Distorsion
+class Distortion
 {
   public:
-	Distorsion();
+	Distortion();
 
 	void process(juce::dsp::ProcessContextReplacing<float> &context);
 	void prepare(const juce::dsp::ProcessSpec &spec);
@@ -14,10 +14,10 @@ class Distorsion
 	void setPre(float p);
 	void setPost(float p);
 	void setCut(float c);
-	void setType(Obsidian::distorsionType type);
+	void setType(Obsidian::distortionType type);
 	void setBypassed(bool b);
 
-	float getMultiplicator(Obsidian::distorsionType type);
+	float getMultiplicator(Obsidian::distortionType type);
 
 	float getPre() const
 	{
@@ -37,21 +37,21 @@ class Distorsion
 		return bypassed;
 	}
 
-	Obsidian::distorsionType getType() const
+	Obsidian::distortionType getType() const
 	{
-		return distorsionType;
+		return distortionType;
 	}
 
   private:
 	double sampleRate = Obsidian::SAMPLERATE;
 
-	float pre = 1.f;
-	float post = 1.f;
-	float cut = 1000.f;
+	float pre = Obsidian::DISTORTION_PRE;
+	float post = Obsidian::DISTORTION_POST;
+	float cut = Obsidian::DISTORTION_CUT;
 
-	bool bypassed = false;
+	bool bypassed = Obsidian::DISTORTION_BYPASSED;
 
-	Obsidian::distorsionType distorsionType = Obsidian::distorsionType::soft;
+	Obsidian::distortionType distortionType = Obsidian::distortionType::soft;
 
 	juce::dsp::ProcessorChain<juce::dsp::StateVariableTPTFilter<float>, juce::dsp::Gain<float>,
 	                          juce::dsp::WaveShaper<float>, juce::dsp::Gain<float>>
@@ -59,5 +59,5 @@ class Distorsion
 
 	void updatePre();
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Distorsion)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Distortion)
 };

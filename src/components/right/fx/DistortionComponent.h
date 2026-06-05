@@ -8,11 +8,11 @@ class DjIaVstProcessor;
 
 using MidiLearnableLedRadioButton = MidiLearnable<LedRadioButton>;
 
-class DistorsionComponent : public ObsidianBaseMidiComponent
+class DistortionComponent : public ObsidianBaseMidiComponent
 {
   public:
-	DistorsionComponent(DjIaVstProcessor &processor, TrackData *trackData);
-	~DistorsionComponent() override;
+	DistortionComponent(DjIaVstProcessor &processor, TrackData *trackData);
+	~DistortionComponent() override;
 
 	void paint(juce::Graphics &g) override;
 	void syncParams();
@@ -49,7 +49,7 @@ class DistorsionComponent : public ObsidianBaseMidiComponent
 	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
 
   private:
-	void setupDistorsionTypeButtons();
+	void setupDistortionTypeButtons();
 	void refreshRadioButtonsForParam(const juce::String &paramSuffix);
 
 	MidiLearnableSlider preGainKnob;
@@ -62,9 +62,9 @@ class DistorsionComponent : public ObsidianBaseMidiComponent
 
 	juce::Label componentLabel;
 
-	IconButton bypassDistorsionButton{"BypassDistorsion", ""};
+	IconButton bypassDistortionButton{"BypassDistortion", ""};
 
-	std::vector<std::unique_ptr<MidiLearnableLedRadioButton>> distorsionTypeButtons;
+	std::vector<std::unique_ptr<MidiLearnableLedRadioButton>> distortionTypeButtons;
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DistorsionComponent)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DistortionComponent)
 };

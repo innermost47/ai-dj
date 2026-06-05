@@ -58,5 +58,9 @@ class CompressorComponent : public ObsidianBaseMidiComponent
 	juce::Label releaseLabel;
 	juce::Label makeUpGainLabel;
 
+	juce::Label componentLabel;
+
+	IconButton bypassCompressorButton{"BypassCompressor", ""};
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CompressorComponent)
 };

@@ -69,8 +69,8 @@ void MonoEQ::reset() noexcept
 void MonoEQ::init(float fr)
 {
 	frequency = fr;
-	resonance = 0.707f;
-	gain = 0.f;
+	resonance = Obsidian::EQ_BASE_RESONANCE;
+	gain = Obsidian::EQ_BANDS_GAIN;
 }
 
 void MonoEQ::prepare(const juce::dsp::ProcessSpec &spec)

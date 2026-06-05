@@ -1,6 +1,6 @@
 #include "TrackEffectsPanel.h"
 #include "CompressorComponent.h"
-#include "DistorsionComponent.h"
+#include "DistortionComponent.h"
 #include "EqualizerComponent.h"
 #include "FilterComponent.h"
 #include "LimiterComponent.h"
@@ -45,13 +45,13 @@ void TrackEffectsPanel::resized()
 
 	auto selectorsArea = area.removeFromTop(26);
 	area.removeFromTop(Obsidian::GAP_4);
-	auto distorsionArea = area.removeFromTop(82);
+	auto distortionArea = area.removeFromTop(82);
 	area.removeFromTop(Obsidian::GAP_4);
-	auto eqArea = area.removeFromTop(110);
+	auto eqArea = area.removeFromTop(130);
 	area.removeFromTop(Obsidian::GAP_4);
 	auto filterArea = area.removeFromTop(60);
 	area.removeFromTop(Obsidian::GAP_4);
-	auto compressorArea = area.removeFromTop(50);
+	auto compressorArea = area.removeFromTop(70);
 	area.removeFromTop(Obsidian::GAP_4);
 	auto limiterArea = area.removeFromTop(50);
 
@@ -67,8 +67,8 @@ void TrackEffectsPanel::resized()
 
 	selectors.performLayout(selectorsArea);
 
-	if (distorsionComponent)
-		distorsionComponent->setBounds(distorsionArea);
+	if (distortionComponent)
+		distortionComponent->setBounds(distortionArea);
 	if (equalizerComponent)
 		equalizerComponent->setBounds(eqArea);
 	if (filterComponent)
@@ -81,8 +81,8 @@ void TrackEffectsPanel::resized()
 
 void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 {
-	if (distorsionComponent)
-		distorsionComponent->updateModelUI();
+	if (distortionComponent)
+		distortionComponent->updateModelUI();
 	if (filterComponent)
 		filterComponent->updateModelUI();
 	if (compressorComponent)
@@ -178,8 +178,8 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 {
 	if (auto *currentTrack = audioProcessor.getTrack(trackId))
 	{
-		distorsionComponent = std::make_unique<DistorsionComponent>(audioProcessor, currentTrack);
-		addAndMakeVisible(*distorsionComponent);
+		distortionComponent = std::make_unique<DistortionComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*distortionComponent);
 		filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
 		addAndMakeVisible(*filterComponent);
 		equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, currentTrack);
@@ -194,7 +194,7 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 
 void TrackEffectsPanel::resetComponents()
 {
-	distorsionComponent = nullptr;
+	distortionComponent = nullptr;
 	equalizerComponent = nullptr;
 	filterComponent = nullptr;
 	compressorComponent = nullptr;

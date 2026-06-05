@@ -269,7 +269,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
     src/components/right/fx/CompressorComponent.cpp
-    src/components/right/fx/DistorsionComponent.cpp
+    src/components/right/fx/DistortionComponent.cpp
     src/components/right/fx/EqualizerComponent.cpp
     src/components/right/fx/FilterComponent.cpp
     src/components/right/fx/LimiterComponent.cpp
@@ -298,7 +298,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/dsp/airwindows/Console6Channel.cpp
     src/dsp/Compressor.cpp
     src/dsp/DelaySend.cpp
-    src/dsp/Distorsion.cpp
+    src/dsp/Distortion.cpp
     src/dsp/Equalizer.cpp
     src/dsp/Filter.cpp
     src/dsp/Limiter.cpp

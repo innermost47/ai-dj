@@ -14,11 +14,21 @@ class Equalizer
 	void updateFrequency(Obsidian::eqBands band, float value);
 	void updateQ(Obsidian::eqBands band, float value);
 	void updateGain(Obsidian::eqBands band, float value);
+	void setBypassed(bool b);
+
 	float getGain(Obsidian::eqBands band) const;
 	float getFrequency(Obsidian::eqBands band) const;
 	float getQ(Obsidian::eqBands band) const;
 
+	bool isBypassed() const
+	{
+		return bypassed;
+	}
+
   private:
-	float sampleRate;
+	float sampleRate = Obsidian::SAMPLERATE;
+
+	bool bypassed = Obsidian::EQ_BYPASSED;
+
 	juce::dsp::ProcessorChain<MonoEQ, MonoEQ, MonoEQ, MonoEQ, MonoEQ, MonoEQ, MonoEQ, MonoEQ> bandsChain;
 };

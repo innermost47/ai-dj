@@ -16,7 +16,14 @@ CompressorComponent::~CompressorComponent()
 
 void CompressorComponent::paint(juce::Graphics &g)
 {
+	auto *t = getTrack();
+	if (!t)
+		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
+
+	auto bounds = getLocalBounds().reduced(4);
+	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
+	bypassCompressorButton.setBounds(bypassArea);
 }
 
 void CompressorComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
@@ -44,10 +51,26 @@ void CompressorComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	{
 		makeUpGainKnob.setValue(value, juce::dontSendNotification);
 	}
+	else if (paramSuffix == "CompressorBypassed")
+	{
+		if (value > .5f)
+			bypassCompressorButton.setToggleState(true, juce::dontSendNotification);
+		else
+			bypassCompressorButton.setToggleState(false, juce::dontSendNotification);
+	}
 }
 
 void CompressorComponent::setupUI()
 {
+	addAndMakeVisible(bypassCompressorButton);
+	bypassCompressorButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
+	bypassCompressorButton.setClickingTogglesState(true);
+	bypassCompressorButton.setShowBackground(false);
+	bypassCompressorButton.setToggleState(!track->compressor.isBypassed(), juce::dontSendNotification);
+	bypassCompressorButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	bypassCompressorButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	bypassCompressorButton.setTooltip("Enable/disable compressor");
+
 	auto setupKnob = [this](MidiLearnableSlider &knob)
 	{
 		addAndMakeVisible(knob);
@@ -79,6 +102,12 @@ void CompressorComponent::setupUI()
 	setupLabel(releaseLabel, "RELEASE");
 	setupLabel(makeUpGainLabel, "GAIN");
 
+	addAndMakeVisible(componentLabel);
+	componentLabel.setText("Compressor", juce::dontSendNotification);
+	componentLabel.setJustificationType(juce::Justification::topLeft);
+	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+
 	updateModelUI();
 }
 
@@ -89,9 +118,12 @@ void CompressorComponent::setTrackData(TrackData *trackData)
 
 void CompressorComponent::resized()
 {
-	auto area = getLocalBounds().reduced(2);
+	auto area = getLocalBounds().reduced(8, 4);
 
-	area.removeFromBottom(Obsidian::GAP_4);
+	auto labelArea = area.removeFromTop(18);
+	labelArea.removeFromLeft(14);
+
+	componentLabel.setBounds(labelArea);
 
 	auto knobAreaWidth = area.getWidth() / 5;
 
@@ -146,4 +178,7 @@ void CompressorComponent::wireParameters()
 	setupSlider("CompressorAttack", attackKnob);
 	setupSlider("CompressorRelease", releaseKnob);
 	setupSlider("CompressorMakeUpGain", makeUpGainKnob);
+
+	registerButtonParam("CompressorBypassed", bypassCompressorButton);
+	registerMidiLearn("CompressorBypassed", &bypassCompressorButton);
 }

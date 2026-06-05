@@ -17,7 +17,14 @@ EqualizerComponent::~EqualizerComponent()
 
 void EqualizerComponent::paint(juce::Graphics &g)
 {
+	auto *t = getTrack();
+	if (!t)
+		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
+
+	auto bounds = getLocalBounds().reduced(4);
+	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
+	bypassEqualizerButton.setBounds(bypassArea);
 }
 
 void EqualizerComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
@@ -41,10 +48,27 @@ void EqualizerComponent::onParameterChangedUI(const juce::String &paramSuffix, f
 		highSlider.setValue(value, juce::dontSendNotification);
 	else if (paramSuffix == "EQGainAir")
 		airSlider.setValue(value, juce::dontSendNotification);
+	else if (paramSuffix == "EQBypassed")
+	{
+		if (value > .5f)
+			bypassEqualizerButton.setToggleState(true, juce::dontSendNotification);
+		else
+			bypassEqualizerButton.setToggleState(false, juce::dontSendNotification);
+	}
 }
 
 void EqualizerComponent::setupUI()
 {
+
+	addAndMakeVisible(bypassEqualizerButton);
+	bypassEqualizerButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
+	bypassEqualizerButton.setClickingTogglesState(true);
+	bypassEqualizerButton.setShowBackground(false);
+	bypassEqualizerButton.setToggleState(!track->equalizer.isBypassed(), juce::dontSendNotification);
+	bypassEqualizerButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	bypassEqualizerButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	bypassEqualizerButton.setTooltip("Enable/disable equalizer");
+
 	auto setupSlider = [this](MidiLearnableSlider &slider)
 	{
 		addAndMakeVisible(slider);
@@ -84,6 +108,12 @@ void EqualizerComponent::setupUI()
 	setupLabel(highLabel, "8K");
 	setupLabel(airLabel, "15K");
 
+	addAndMakeVisible(componentLabel);
+	componentLabel.setText("Equalizer", juce::dontSendNotification);
+	componentLabel.setJustificationType(juce::Justification::topLeft);
+	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+
 	updateModelUI();
 }
 
@@ -95,6 +125,11 @@ void EqualizerComponent::setTrackData(TrackData *trackData)
 void EqualizerComponent::resized()
 {
 	auto area = getLocalBounds().reduced(8, 4);
+
+	auto labelArea = area.removeFromTop(18);
+	labelArea.removeFromLeft(14);
+
+	componentLabel.setBounds(labelArea);
 
 	auto sliderAreaWidth = area.getWidth() / 8;
 
@@ -138,30 +173,22 @@ void EqualizerComponent::updateModelUI()
 
 void EqualizerComponent::wireParameters()
 {
-	registerSliderParam("EQGainSubBass", subBassSlider);
-	registerSliderParam("EQGainBass", bassSlider);
-	registerSliderParam("EQGainLowMid", lowMidSlider);
-	registerSliderParam("EQGainMid", midSlider);
-	registerSliderParam("EQGainHiMid", highMidSlider);
-	registerSliderParam("EQGainPresence", presenceSlider);
-	registerSliderParam("EQGainHigh", highSlider);
-	registerSliderParam("EQGainAir", airSlider);
+	auto setupSlider = [this](juce::String paramSuffix, MidiLearnableSlider &knob)
+	{
+		registerSliderParam(paramSuffix, knob);
+		registerMidiLearn(paramSuffix, &knob);
+		syncSliderRange(knob, fullParamId(paramSuffix));
+	};
 
-	registerMidiLearn("EQGainSubBass", &subBassSlider);
-	registerMidiLearn("EQGainBass", &bassSlider);
-	registerMidiLearn("EQGainLowMid", &lowMidSlider);
-	registerMidiLearn("EQGainMid", &midSlider);
-	registerMidiLearn("EQGainHiMid", &highMidSlider);
-	registerMidiLearn("EQGainPresence", &presenceSlider);
-	registerMidiLearn("EQGainHigh", &highSlider);
-	registerMidiLearn("EQGainAir", &airSlider);
+	setupSlider("EQGainSubBass", subBassSlider);
+	setupSlider("EQGainBass", bassSlider);
+	setupSlider("EQGainLowMid", lowMidSlider);
+	setupSlider("EQGainMid", midSlider);
+	setupSlider("EQGainHiMid", highMidSlider);
+	setupSlider("EQGainPresence", presenceSlider);
+	setupSlider("EQGainHigh", highSlider);
+	setupSlider("EQGainAir", airSlider);
 
-	syncSliderRange(subBassSlider, fullParamId("EQGainSubBass"));
-	syncSliderRange(bassSlider, fullParamId("EQGainBass"));
-	syncSliderRange(lowMidSlider, fullParamId("EQGainLowMid"));
-	syncSliderRange(midSlider, fullParamId("EQGainMid"));
-	syncSliderRange(highMidSlider, fullParamId("EQGainHiMid"));
-	syncSliderRange(presenceSlider, fullParamId("EQGainPresence"));
-	syncSliderRange(highSlider, fullParamId("EQGainHigh"));
-	syncSliderRange(airSlider, fullParamId("EQGainAir"));
+	registerButtonParam("EQBypassed", bypassEqualizerButton);
+	registerMidiLearn("EQBypassed", &bypassEqualizerButton);
 }

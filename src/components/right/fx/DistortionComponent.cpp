@@ -1,7 +1,7 @@
-#include "DistorsionComponent.h"
+#include "DistortionComponent.h"
 #include "PluginProcessor.h"
 
-DistorsionComponent::DistorsionComponent(DjIaVstProcessor &processor, TrackData *trackData)
+DistortionComponent::DistortionComponent(DjIaVstProcessor &processor, TrackData *trackData)
     : ObsidianBaseMidiComponent(processor)
 {
 	setTrackData(trackData);
@@ -9,12 +9,12 @@ DistorsionComponent::DistorsionComponent(DjIaVstProcessor &processor, TrackData 
 	wireParameters();
 }
 
-DistorsionComponent::~DistorsionComponent()
+DistortionComponent::~DistortionComponent()
 {
 	markForDestruction();
 }
 
-void DistorsionComponent::paint(juce::Graphics &g)
+void DistortionComponent::paint(juce::Graphics &g)
 {
 	auto *t = getTrack();
 	if (!t)
@@ -23,38 +23,38 @@ void DistorsionComponent::paint(juce::Graphics &g)
 
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
-	bypassDistorsionButton.setBounds(bypassArea);
+	bypassDistortionButton.setBounds(bypassArea);
 }
 
-void DistorsionComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
+void DistortionComponent::onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue)
 {
 	auto &apvts = audioProcessor.getParameterTreeState();
 	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
 	auto value = range.convertFrom0to1(normalizedValue);
-	if (paramSuffix == "DistorsionType")
+	if (paramSuffix == "DistortionType")
 		refreshRadioButtonsForParam(paramSuffix);
-	else if (paramSuffix == "DistorsionPreGain")
+	else if (paramSuffix == "DistortionPreGain")
 	{
 		preGainKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "DistorsionPostGain")
+	else if (paramSuffix == "DistortionPostGain")
 	{
 		postGainKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "DistorsionCut")
+	else if (paramSuffix == "DistortionCut")
 	{
 		cutKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "DistorsionBypassed")
+	else if (paramSuffix == "DistortionBypassed")
 	{
 		if (value > .5f)
-			bypassDistorsionButton.setToggleState(true, juce::dontSendNotification);
+			bypassDistortionButton.setToggleState(true, juce::dontSendNotification);
 		else
-			bypassDistorsionButton.setToggleState(false, juce::dontSendNotification);
+			bypassDistortionButton.setToggleState(false, juce::dontSendNotification);
 	}
 }
 
-void DistorsionComponent::refreshRadioButtonsForParam(const juce::String &paramSuffix)
+void DistortionComponent::refreshRadioButtonsForParam(const juce::String &paramSuffix)
 {
 	juce::String paramID = getParameterPrefix() + paramSuffix;
 	auto &apvts = getProcessor().getParameterTreeState();
@@ -62,25 +62,25 @@ void DistorsionComponent::refreshRadioButtonsForParam(const juce::String &paramS
 	if (!p)
 		return;
 
-	int max = (int)distorsionTypeButtons.size() - 1;
+	int max = (int)distortionTypeButtons.size() - 1;
 	if (max < 0)
 		return;
 
 	int idx = juce::jlimit(0, max, (int)(p->getValue() * max + 0.5f));
-	for (int i = 0; i < (int)distorsionTypeButtons.size(); ++i)
-		distorsionTypeButtons[i]->setToggleState(i == idx, juce::dontSendNotification);
+	for (int i = 0; i < (int)distortionTypeButtons.size(); ++i)
+		distortionTypeButtons[i]->setToggleState(i == idx, juce::dontSendNotification);
 }
 
-void DistorsionComponent::setupUI()
+void DistortionComponent::setupUI()
 {
-	addAndMakeVisible(bypassDistorsionButton);
-	bypassDistorsionButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
-	bypassDistorsionButton.setClickingTogglesState(true);
-	bypassDistorsionButton.setShowBackground(false);
-	bypassDistorsionButton.setToggleState(!track->distorsion.isBypassed(), juce::dontSendNotification);
-	bypassDistorsionButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
-	bypassDistorsionButton.setCustomIconColourToggled(ColourPalette::textPrimary);
-	bypassDistorsionButton.setTooltip("Enable/disable distorsion");
+	addAndMakeVisible(bypassDistortionButton);
+	bypassDistortionButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
+	bypassDistortionButton.setClickingTogglesState(true);
+	bypassDistortionButton.setShowBackground(false);
+	bypassDistortionButton.setToggleState(!track->distortion.isBypassed(), juce::dontSendNotification);
+	bypassDistortionButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	bypassDistortionButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	bypassDistortionButton.setTooltip("Enable/disable distortion");
 
 	auto setupKnob = [this](MidiLearnableSlider &knob)
 	{
@@ -115,30 +115,30 @@ void DistorsionComponent::setupUI()
 	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
 	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
-	setupDistorsionTypeButtons();
+	setupDistortionTypeButtons();
 	updateModelUI();
 }
 
-void DistorsionComponent::setTrackData(TrackData *trackData)
+void DistortionComponent::setTrackData(TrackData *trackData)
 {
 	track = trackData;
 }
 
-void DistorsionComponent::setupDistorsionTypeButtons()
+void DistortionComponent::setupDistortionTypeButtons()
 {
 	auto *t = getTrack();
 	if (!t)
 		return;
 	auto &apvts = getProcessor().getParameterTreeState();
 	juce::String s = "slot" + juce::String(t->slotIndex + 1);
-	auto *param = apvts.getParameter(s + "DistorsionType");
+	auto *param = apvts.getParameter(s + "DistortionType");
 
 	juce::StringArray labels{"SOFT", "HARD", "TUBE", "FOLD", "DIODE", "CUBIC"};
 
 	for (int i = 0; i < labels.size(); ++i)
 	{
 		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::violet);
-		btn->setRadioGroupId(Obsidian::RadioGroupIDs::DistorsionType);
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::DistortionType);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
@@ -153,11 +153,11 @@ void DistorsionComponent::setupDistorsionTypeButtons()
 		};
 
 		addAndMakeVisible(*btn);
-		distorsionTypeButtons.push_back(std::move(btn));
+		distortionTypeButtons.push_back(std::move(btn));
 	}
 }
 
-void DistorsionComponent::resized()
+void DistortionComponent::resized()
 {
 	auto area = getLocalBounds().reduced(8, 4);
 
@@ -179,9 +179,9 @@ void DistorsionComponent::resized()
 	grid.templateRows = {Track(Fr(1)), Track(Fr(1))};
 	grid.templateColumns = {Track(Fr(1)), Track(Fr(1)), Track(Fr(1))};
 
-	for (int i = 0; i < (int)distorsionTypeButtons.size(); ++i)
+	for (int i = 0; i < (int)distortionTypeButtons.size(); ++i)
 	{
-		juce::GridItem item(*distorsionTypeButtons[i]);
+		juce::GridItem item(*distortionTypeButtons[i]);
 		grid.items.add(item);
 	}
 
@@ -218,7 +218,7 @@ void DistorsionComponent::resized()
 	postArea.performLayout(area);
 }
 
-void DistorsionComponent::updateModelUI()
+void DistortionComponent::updateModelUI()
 {
 	auto *t = getTrack();
 	if (!t)
@@ -236,7 +236,7 @@ void DistorsionComponent::updateModelUI()
 	repaint();
 }
 
-void DistorsionComponent::wireParameters()
+void DistortionComponent::wireParameters()
 {
 	auto setupSlider = [this](juce::String paramSuffix, MidiLearnableSlider &knob)
 	{
@@ -245,14 +245,14 @@ void DistorsionComponent::wireParameters()
 		syncSliderRange(knob, fullParamId(paramSuffix));
 	};
 
-	setupSlider("DistorsionPreGain", preGainKnob);
-	setupSlider("DistorsionPostGain", postGainKnob);
-	setupSlider("DistorsionCut", cutKnob);
+	setupSlider("DistortionPreGain", preGainKnob);
+	setupSlider("DistortionPostGain", postGainKnob);
+	setupSlider("DistortionCut", cutKnob);
 
-	registerButtonParam("DistorsionBypassed", bypassDistorsionButton);
-	registerMidiLearn("DistorsionBypassed", &bypassDistorsionButton);
+	registerButtonParam("DistortionBypassed", bypassDistortionButton);
+	registerMidiLearn("DistortionBypassed", &bypassDistortionButton);
 
-	subscribeToParam("DistorsionType");
+	subscribeToParam("DistortionType");
 
 	auto highpassCallback = [this](const juce::String &paramID, int targetIndex, int totalCount)
 	{
@@ -274,9 +274,9 @@ void DistorsionComponent::wireParameters()
 		};
 	};
 
-	for (int i = 0; i < (int)distorsionTypeButtons.size(); ++i)
+	for (int i = 0; i < (int)distortionTypeButtons.size(); ++i)
 	{
-		registerMidiLearn("DistorsionType", distorsionTypeButtons[i].get(),
-		                  highpassCallback("DistorsionType", i, (int)distorsionTypeButtons.size()));
+		registerMidiLearn("DistortionType", distortionTypeButtons[i].get(),
+		                  highpassCallback("DistortionType", i, (int)distortionTypeButtons.size()));
 	}
 }

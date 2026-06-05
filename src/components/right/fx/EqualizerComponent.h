@@ -64,5 +64,9 @@ class EqualizerComponent : public ObsidianBaseMidiComponent
 	juce::Label highLabel;
 	juce::Label airLabel;
 
+	juce::Label componentLabel;
+
+	IconButton bypassEqualizerButton{"BypassEqualizer", ""};
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EqualizerComponent)
 };

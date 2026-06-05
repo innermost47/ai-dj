@@ -16,6 +16,7 @@ class Compressor
 	void setAttack(float a);
 	void setRelease(float r);
 	void setMakeUpGain(float mk);
+	void setBypassed(bool b);
 
 	float getThreshold() const
 	{
@@ -42,15 +43,23 @@ class Compressor
 		return makeUpGain;
 	}
 
-  private:
-	double sampleRate;
-	float threshold;
-	float attack;
-	float release;
-	float ratio;
-	float makeUpGain;
+	bool isBypassed() const
+	{
+		return bypassed;
+	}
 
-	juce::dsp::Compressor<float> comp;
+  private:
+	double sampleRate = Obsidian::SAMPLERATE;
+
+	float threshold = Obsidian::COMPRESSOR_THRESHOLD;
+	float attack = Obsidian::COMPRESSOR_ATTACK;
+	float release = Obsidian::COMPRESSOR_RELEASE;
+	float ratio = Obsidian::COMPRESSOR_RATIO;
+	float makeUpGain = Obsidian::COMPRESSOR_MAKEUP_GAIN;
+
+	bool bypassed = Obsidian::COMPRESSOR_BYPASSED;
+
+	juce::dsp::ProcessorChain<juce::dsp::Compressor<float>, juce::dsp::Gain<float>> processorChain;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Compressor)
 };

@@ -55,10 +55,6 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotGenerateParams[i] = apvts.getRawParameterValue(s + "Generate");
 		slotPitchParams[i] = apvts.getRawParameterValue(s + "Pitch");
 		slotFineParams[i] = apvts.getRawParameterValue(s + "Fine");
-		slotCutoffParams[i] = apvts.getRawParameterValue(s + "Cutoff");
-		slotResonanceParams[i] = apvts.getRawParameterValue(s + "Resonance");
-		slotFilterModeParams[i] = apvts.getRawParameterValue(s + "FilterMode");
-		slotFilterDriveParams[i] = apvts.getRawParameterValue(s + "FilterDrive");
 		slotRandomRetriggerParams[i] = apvts.getRawParameterValue(s + "RandomRetrigger");
 		slotRetriggerIntervalParams[i] = apvts.getRawParameterValue(s + "RetriggerInterval");
 		slotAdsrAttackParams[i] = apvts.getRawParameterValue(s + "AdsrAttack");
@@ -68,6 +64,12 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotDelaySendParams[i] = apvts.getRawParameterValue(s + "DelaySend");
 		slotReverbSendParams[i] = apvts.getRawParameterValue(s + "ReverbSend");
 
+		slotCutoffParams[i] = apvts.getRawParameterValue(s + "Cutoff");
+		slotResonanceParams[i] = apvts.getRawParameterValue(s + "Resonance");
+		slotFilterModeParams[i] = apvts.getRawParameterValue(s + "FilterMode");
+		slotFilterDriveParams[i] = apvts.getRawParameterValue(s + "FilterDrive");
+		slotFilterBypassedParams[i] = apvts.getRawParameterValue(s + "FilterBypassed");
+
 		slotEQGainSubBassParams[i] = apvts.getRawParameterValue(s + "EQGainSubBass");
 		slotEQGainBassParams[i] = apvts.getRawParameterValue(s + "EQGainBass");
 		slotEQGainLowMidParams[i] = apvts.getRawParameterValue(s + "EQGainLowMid");
@@ -76,22 +78,25 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotEQGainPresenceParams[i] = apvts.getRawParameterValue(s + "EQGainPresence");
 		slotEQGainHighParams[i] = apvts.getRawParameterValue(s + "EQGainHigh");
 		slotEQGainAirParams[i] = apvts.getRawParameterValue(s + "EQGainAir");
+		slotEQBypassedParams[i] = apvts.getRawParameterValue(s + "EQBypassed");
 
 		slotCompressorThresholdParams[i] = apvts.getRawParameterValue(s + "CompressorThreshold");
 		slotCompressorRatioParams[i] = apvts.getRawParameterValue(s + "CompressorRatio");
 		slotCompressorAttackParams[i] = apvts.getRawParameterValue(s + "CompressorAttack");
 		slotCompressorReleaseParams[i] = apvts.getRawParameterValue(s + "CompressorRelease");
 		slotCompressorMakeUpGainParams[i] = apvts.getRawParameterValue(s + "CompressorMakeUpGain");
+		slotCompressorBypassedParams[i] = apvts.getRawParameterValue(s + "CompressorBypassed");
 
 		slotLimiterThresholdParams[i] = apvts.getRawParameterValue(s + "LimiterThreshold");
 		slotLimiterReleaseParams[i] = apvts.getRawParameterValue(s + "LimiterRelease");
 		slotLimiterMakeUpGainParams[i] = apvts.getRawParameterValue(s + "LimiterMakeUpGain");
+		slotLimiterBypassedParams[i] = apvts.getRawParameterValue(s + "LimiterBypassed");
 
-		slotDistorsionPreGainParams[i] = apvts.getRawParameterValue(s + "DistorsionPreGain");
-		slotDistorsionPostGainParams[i] = apvts.getRawParameterValue(s + "DistorsionPostGain");
-		slotDistorsionCutParams[i] = apvts.getRawParameterValue(s + "DistorsionCut");
-		slotDistorsionBypassedParams[i] = apvts.getRawParameterValue(s + "DistorsionBypassed");
-		slotDistorsionTypeParams[i] = apvts.getRawParameterValue(s + "DistorsionType");
+		slotDistortionPreGainParams[i] = apvts.getRawParameterValue(s + "DistortionPreGain");
+		slotDistortionPostGainParams[i] = apvts.getRawParameterValue(s + "DistortionPostGain");
+		slotDistortionCutParams[i] = apvts.getRawParameterValue(s + "DistortionCut");
+		slotDistortionBypassedParams[i] = apvts.getRawParameterValue(s + "DistortionBypassed");
+		slotDistortionTypeParams[i] = apvts.getRawParameterValue(s + "DistortionType");
 
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
@@ -111,10 +116,13 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "Pan", listener);
 		apvts.addParameterListener(s + "RandomRetrigger", listener);
 		apvts.addParameterListener(s + "RetriggerInterval", listener);
+
 		apvts.addParameterListener(s + "Cutoff", listener);
 		apvts.addParameterListener(s + "Resonance", listener);
 		apvts.addParameterListener(s + "FilterMode", listener);
 		apvts.addParameterListener(s + "FilterDrive", listener);
+		apvts.addParameterListener(s + "FilterBypassed", listener);
+
 		apvts.addParameterListener(s + "EQGainSubBass", listener);
 		apvts.addParameterListener(s + "EQGainBass", listener);
 		apvts.addParameterListener(s + "EQGainLowMid", listener);
@@ -123,20 +131,25 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "EQGainPresence", listener);
 		apvts.addParameterListener(s + "EQGainHigh", listener);
 		apvts.addParameterListener(s + "EQGainAir", listener);
+		apvts.addParameterListener(s + "EQBypassed", listener);
+
 		apvts.addParameterListener(s + "CompressorThreshold", listener);
 		apvts.addParameterListener(s + "CompressorRatio", listener);
 		apvts.addParameterListener(s + "CompressorAttack", listener);
 		apvts.addParameterListener(s + "CompressorRelease", listener);
 		apvts.addParameterListener(s + "CompressorMakeUpGain", listener);
+		apvts.addParameterListener(s + "CompressorBypassed", listener);
+
 		apvts.addParameterListener(s + "LimiterThreshold", listener);
 		apvts.addParameterListener(s + "LimiterRelease", listener);
 		apvts.addParameterListener(s + "LimiterMakeUpGain", listener);
+		apvts.addParameterListener(s + "LimiterBypassed", listener);
 
-		apvts.addParameterListener(s + "DistorsionPreGain", listener);
-		apvts.addParameterListener(s + "DistorsionPostGain", listener);
-		apvts.addParameterListener(s + "DistorsionCut", listener);
-		apvts.addParameterListener(s + "DistorsionBypassed", listener);
-		apvts.addParameterListener(s + "DistorsionType", listener);
+		apvts.addParameterListener(s + "DistortionPreGain", listener);
+		apvts.addParameterListener(s + "DistortionPostGain", listener);
+		apvts.addParameterListener(s + "DistortionCut", listener);
+		apvts.addParameterListener(s + "DistortionBypassed", listener);
+		apvts.addParameterListener(s + "DistortionType", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -204,10 +217,13 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "Gain", listener);
 		apvts.removeParameterListener(s + "RandomRetrigger", listener);
 		apvts.removeParameterListener(s + "RetriggerInterval", listener);
+
 		apvts.removeParameterListener(s + "Cutoff", listener);
 		apvts.removeParameterListener(s + "Resonance", listener);
 		apvts.removeParameterListener(s + "FilterMode", listener);
 		apvts.removeParameterListener(s + "FilterDrive", listener);
+		apvts.removeParameterListener(s + "FilterBypassed", listener);
+
 		apvts.removeParameterListener(s + "EQGainSubBass", listener);
 		apvts.removeParameterListener(s + "EQGainBass", listener);
 		apvts.removeParameterListener(s + "EQGainLowMid", listener);
@@ -216,19 +232,25 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "EQGainPresence", listener);
 		apvts.removeParameterListener(s + "EQGainHigh", listener);
 		apvts.removeParameterListener(s + "EQGainAir", listener);
+		apvts.removeParameterListener(s + "EQBypassed", listener);
+
 		apvts.removeParameterListener(s + "CompressorThreshold", listener);
 		apvts.removeParameterListener(s + "CompressorRatio", listener);
 		apvts.removeParameterListener(s + "CompressorAttack", listener);
 		apvts.removeParameterListener(s + "CompressorRelease", listener);
 		apvts.removeParameterListener(s + "CompressorMakeUpGain", listener);
+		apvts.removeParameterListener(s + "CompressorBypassed", listener);
+
 		apvts.removeParameterListener(s + "LimiterThreshold", listener);
 		apvts.removeParameterListener(s + "LimiterRelease", listener);
 		apvts.removeParameterListener(s + "LimiterMakeUpGain", listener);
-		apvts.removeParameterListener(s + "DistorsionPreGain", listener);
-		apvts.removeParameterListener(s + "DistorsionPostGain", listener);
-		apvts.removeParameterListener(s + "DistorsionCut", listener);
-		apvts.removeParameterListener(s + "DistorsionType", listener);
-		apvts.removeParameterListener(s + "DistorsionBypassed", listener);
+		apvts.removeParameterListener(s + "LimiterBypassed", listener);
+
+		apvts.removeParameterListener(s + "DistortionPreGain", listener);
+		apvts.removeParameterListener(s + "DistortionPostGain", listener);
+		apvts.removeParameterListener(s + "DistortionCut", listener);
+		apvts.removeParameterListener(s + "DistortionType", listener);
+		apvts.removeParameterListener(s + "DistortionBypassed", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -330,40 +352,41 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		juce::NormalisableRange<float> gainRange(0.0f, 4.0f);
 		gainRange.skew = std::log(0.5f) / std::log((1.0f - 0.0f) / (4.0f - 0.0f));
 
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainSubBass",
-		                                                             slotName + " EQ Gain Sub Bass", gainRange, 1.0f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "EQGainSubBass", slotName + " EQ Gain Sub Bass", gainRange, Obsidian::EQ_BANDS_GAIN));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainBass", slotName + " EQ Gain Bass",
-		                                                             gainRange, 1.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainLowMid",
-		                                                             slotName + " EQ Gain Low Mid", gainRange, 1.0f));
+		                                                             gainRange, Obsidian::EQ_BANDS_GAIN));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "EQGainLowMid", slotName + " EQ Gain Low Mid", gainRange, Obsidian::EQ_BANDS_GAIN));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainMid", slotName + " EQ Gain Mid",
-		                                                             gainRange, 1.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainHiMid",
-		                                                             slotName + " EQ Gain Hi Mid", gainRange, 1.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainPresence",
-		                                                             slotName + " EQ Gain Presence", gainRange, 1.0f));
+		                                                             gainRange, Obsidian::EQ_BANDS_GAIN));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "EQGainHiMid", slotName + " EQ Gain Hi Mid", gainRange, Obsidian::EQ_BANDS_GAIN));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "EQGainPresence", slotName + " EQ Gain Presence", gainRange, Obsidian::EQ_BANDS_GAIN));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainHigh", slotName + " EQ Gain High",
-		                                                             gainRange, 1.0f));
+		                                                             gainRange, Obsidian::EQ_BANDS_GAIN));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "EQGainAir", slotName + " EQ Gain Air",
-		                                                             gainRange, 1.0f));
+		                                                             gainRange, Obsidian::EQ_BANDS_GAIN));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
 		    slotId + "CompressorThreshold", slotName + " Compressor Threshold",
-		    juce::NormalisableRange<float>(-60.f, 0.f, .1f), -12.f));
-		params.push_back(
-		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorRatio", slotName + " Compressor Ratio",
-		                                                juce::NormalisableRange<float>(1.f, 20.f, .01f), 4.f));
-		params.push_back(
-		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorAttack", slotName + " Compressor Attack",
-		                                                juce::NormalisableRange<float>(.1f, 100.f, .01f, .3f), 10.f));
-		params.push_back(
-		    std::make_unique<juce::AudioParameterFloat>(slotId + "CompressorRelease", slotName + " Compressor Release",
-		                                                juce::NormalisableRange<float>(10.f, 1000.f, .1f, .3f), 100.f));
-
-		juce::NormalisableRange<float> makeUpGainRange(0.0f, 10.0f);
-		makeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
+		    juce::NormalisableRange<float>(-60.f, 0.f, .1f), Obsidian::COMPRESSOR_THRESHOLD));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "CompressorMakeUpGain", slotName + " Compressor MakeUp Gain", makeUpGainRange, 1.f));
+		    slotId + "CompressorRatio", slotName + " Compressor Ratio", juce::NormalisableRange<float>(1.f, 20.f, .01f),
+		    Obsidian::COMPRESSOR_RATIO));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "CompressorAttack", slotName + " Compressor Attack",
+		    juce::NormalisableRange<float>(.1f, 100.f, .01f, .3f), Obsidian::COMPRESSOR_ATTACK));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "CompressorRelease", slotName + " Compressor Release",
+		    juce::NormalisableRange<float>(10.f, 1000.f, .1f, .3f), Obsidian::COMPRESSOR_RELEASE));
+
+		juce::NormalisableRange<float> makeUpGainRange(0.0f, 20.0f);
+		makeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 20.f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "CompressorMakeUpGain", slotName + " Compressor MakeUp Gain", makeUpGainRange,
+		    Obsidian::COMPRESSOR_MAKEUP_GAIN));
 
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "LimiterThreshold", slotName + " Limiter Threshold",
@@ -378,18 +401,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "LimiterMakeUpGain", slotName + " Limiter MakeUp Gain", makeUpGainRange, 1.f));
 
 		params.push_back(std::make_unique<juce::AudioParameterChoice>(
-		    slotId + "DistorsionType", slotName + " Distorsion Type",
+		    slotId + "DistortionType", slotName + " Distortion Type",
 		    juce::StringArray{"SOFT", "HARD", "TUBE", "FOLD", "DIODE", "CUBIC"}, 0));
 		params.push_back(
-		    std::make_unique<juce::AudioParameterFloat>(slotId + "DistorsionPreGain", slotName + " Distorsion PreGain",
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "DistortionPreGain", slotName + " Distortion PreGain",
 		                                                juce::NormalisableRange<float>(0.f, 24.f, 0.f), 0.f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "DistorsionPostGain", slotName + " Distorsion PostGain",
+		    slotId + "DistortionPostGain", slotName + " Distortion PostGain",
 		    juce::NormalisableRange<float>(-24.f, 0.f, 0.f), 0.f));
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "DistorsionCut", slotName + " Distorsion Cut",
+		    slotId + "DistortionCut", slotName + " Distortion Cut",
 		    juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f), 1000.f));
-		params.push_back(makeTrigg(slotId + "DistorsionBypassed", slotName + " Distorsion Bypassed"));
+
+		params.push_back(makeTrigg(slotId + "DistortionBypassed", slotName + " Distortion Bypassed"));
+		params.push_back(makeTrigg(slotId + "CompressorBypassed", slotName + " Compressor Bypassed"));
+		params.push_back(makeTrigg(slotId + "LimiterBypassed", slotName + " Limiter Bypassed"));
+		params.push_back(makeTrigg(slotId + "EQBypassed", slotName + " EQ Bypassed"));
+		params.push_back(makeTrigg(slotId + "FilterBypassed", slotName + " Filter Bypassed"));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -573,12 +601,12 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		}
 		else if (parameterID.endsWith("CompressorMakeUpGain"))
 			track->compressor.setMakeUpGain(newValue);
-		else if (parameterID.endsWith("DistorsionPreGain"))
+		else if (parameterID.endsWith("DistortionPreGain"))
 		{
-			track->distorsion.setPre(newValue);
+			track->distortion.setPre(newValue);
 		}
-		else if (parameterID.endsWith("DistorsionPostGain"))
-			track->distorsion.setPost(newValue);
+		else if (parameterID.endsWith("DistortionPostGain"))
+			track->distortion.setPost(newValue);
 		else if (parameterID.endsWith("LimiterMakeUpGain"))
 			track->limiter.setMakeUpGain(newValue);
 		else if (parameterID.endsWith("Gain"))
@@ -643,15 +671,23 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->limiter.setThreshold(newValue);
 		else if (parameterID.endsWith("LimiterRelease"))
 			track->limiter.setRelease(newValue);
-		else if (parameterID.endsWith("DistorsionCut"))
-			track->distorsion.setCut(newValue);
-		else if (parameterID.endsWith("DistorsionType"))
+		else if (parameterID.endsWith("DistortionCut"))
+			track->distortion.setCut(newValue);
+		else if (parameterID.endsWith("DistortionType"))
 		{
-			auto type = static_cast<Obsidian::distorsionType>((int)newValue);
-			track->distorsion.setType(type);
+			auto type = static_cast<Obsidian::distortionType>((int)newValue);
+			track->distortion.setType(type);
 		}
-		else if (parameterID.endsWith("DistorsionBypassed"))
-			track->distorsion.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("DistortionBypassed"))
+			track->distortion.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("EQBypassed"))
+			track->equalizer.setBypassed(newValue < 0.5f);
+		// else if (parameterID.endsWith("FilterBypassed"))
+		//	track->filter.setBypassed(newValue < 0.5f);
+		// else if (parameterID.endsWith("LimiterBypassed"))
+		//	track->limiter.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("CompressorBypassed"))
+			track->compressor.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);

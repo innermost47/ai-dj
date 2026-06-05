@@ -1,5 +1,18 @@
 #include "Equalizer.h"
 
+void Equalizer::setBypassed(bool b)
+{
+	bypassed = b;
+	bandsChain.setBypassed<Obsidian::eqBands::subBass>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::bass>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::lowMid>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::mid>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::highMid>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::presence>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::high>(bypassed);
+	bandsChain.setBypassed<Obsidian::eqBands::air>(bypassed);
+}
+
 float Equalizer::getGain(Obsidian::eqBands band) const
 {
 	switch (band)
@@ -105,14 +118,14 @@ float Equalizer::getQ(Obsidian::eqBands band) const
 void Equalizer::prepare(const juce::dsp::ProcessSpec &spec)
 {
 	sampleRate = static_cast<float>(spec.sampleRate);
-	bandsChain.get<Obsidian::eqBands::subBass>().init(40.0f);
-	bandsChain.get<Obsidian::eqBands::bass>().init(120.0f);
-	bandsChain.get<Obsidian::eqBands::lowMid>().init(350.0f);
-	bandsChain.get<Obsidian::eqBands::mid>().init(1000.0f);
-	bandsChain.get<Obsidian::eqBands::highMid>().init(3000.0f);
-	bandsChain.get<Obsidian::eqBands::presence>().init(5000.0f);
-	bandsChain.get<Obsidian::eqBands::high>().init(8000.0f);
-	bandsChain.get<Obsidian::eqBands::air>().init(15000.0f);
+	bandsChain.get<Obsidian::eqBands::subBass>().init(Obsidian::EQ_SUB_BAS_FRQ);
+	bandsChain.get<Obsidian::eqBands::bass>().init(Obsidian::EQ_BASS_FRQ);
+	bandsChain.get<Obsidian::eqBands::lowMid>().init(Obsidian::EQ_LOW_MID_FRQ);
+	bandsChain.get<Obsidian::eqBands::mid>().init(Obsidian::EQ_MID_FRQ);
+	bandsChain.get<Obsidian::eqBands::highMid>().init(Obsidian::EQ_HI_MID_FRQ);
+	bandsChain.get<Obsidian::eqBands::presence>().init(Obsidian::EQ_PRESENCE_FRQ);
+	bandsChain.get<Obsidian::eqBands::high>().init(Obsidian::EQ_HI_FRQ);
+	bandsChain.get<Obsidian::eqBands::air>().init(Obsidian::EQ_AIR_FRQ);
 	bandsChain.prepare(spec);
 }
 

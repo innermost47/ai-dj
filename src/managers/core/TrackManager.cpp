@@ -11,28 +11,29 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.filter.setCutoffFrequency(20000.f);
 	track.filter.setResonance(0.f);
 
-	track.compressor.setThreshold(-12.f);
-	track.compressor.setRatio(4.f);
-	track.compressor.setAttack(10.f);
-	track.compressor.setRelease(100.f);
-	track.compressor.setMakeUpGain(1.f);
+	track.compressor.setThreshold(Obsidian::COMPRESSOR_THRESHOLD);
+	track.compressor.setRatio(Obsidian::COMPRESSOR_RATIO);
+	track.compressor.setAttack(Obsidian::COMPRESSOR_ATTACK);
+	track.compressor.setRelease(Obsidian::COMPRESSOR_RELEASE);
+	track.compressor.setMakeUpGain(Obsidian::COMPRESSOR_MAKEUP_GAIN);
+	track.compressor.setBypassed(Obsidian::COMPRESSOR_BYPASSED);
 
 	track.limiter.setThreshold(-.3f);
 	track.limiter.setRelease(50.f);
 	track.limiter.setMakeUpGain(1.f);
 
-	track.distorsion.setPre(0.f);
-	track.distorsion.setPost(0.f);
-	track.distorsion.setCut(1000.f);
-	track.distorsion.setType(Obsidian::distorsionType::soft);
-	track.distorsion.setBypassed(true);
+	track.distortion.setPre(Obsidian::DISTORTION_PRE);
+	track.distortion.setPost(Obsidian::DISTORTION_POST);
+	track.distortion.setCut(Obsidian::DISTORTION_CUT);
+	track.distortion.setType(Obsidian::distortionType::soft);
+	track.distortion.setBypassed(Obsidian::DISTORTION_BYPASSED);
 
 	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
 	spec.numChannels = 2;
 	spec.sampleRate = currentSampleRate;
 
-	track.distorsion.prepare(spec);
+	track.distortion.prepare(spec);
 	track.equalizer.prepare(spec);
 	track.filter.prepare(spec);
 	track.compressor.prepare(spec);
@@ -799,7 +800,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	auto blockToUse = block.getSubBlock(0, individualOutput.getNumSamples());
 	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);
 
-	track.distorsion.process(contextToUse);
+	track.distortion.process(contextToUse);
 	track.equalizer.process(contextToUse);
 	track.filter.process(contextToUse);
 	track.compressor.process(contextToUse);

@@ -71,16 +71,17 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("compressorAttack", track->compressor.getAttack(), nullptr);
 		    trackState.setProperty("compressorRelease", track->compressor.getRelease(), nullptr);
 		    trackState.setProperty("compressorMakeUpGain", track->compressor.getMakeUpGain(), nullptr);
+		    trackState.setProperty("compressorBypassed", track->compressor.isBypassed(), nullptr);
 
 		    trackState.setProperty("limiterThreshold", track->limiter.getThreshold(), nullptr);
 		    trackState.setProperty("limiterRelease", track->limiter.getRelease(), nullptr);
 		    trackState.setProperty("limiterMakeUpGain", track->limiter.getMakeUpGain(), nullptr);
 
-		    trackState.setProperty("distorsionPreGain", track->distorsion.getPre(), nullptr);
-		    trackState.setProperty("distorsionPostGain", track->distorsion.getPost(), nullptr);
-		    trackState.setProperty("distorsionCut", track->distorsion.getCut(), nullptr);
-		    trackState.setProperty("distorsionType", track->distorsion.getType(), nullptr);
-		    trackState.setProperty("distorsionBypassed", track->distorsion.isBypassed(), nullptr);
+		    trackState.setProperty("distortionPreGain", track->distortion.getPre(), nullptr);
+		    trackState.setProperty("distortionPostGain", track->distortion.getPost(), nullptr);
+		    trackState.setProperty("distortionCut", track->distortion.getCut(), nullptr);
+		    trackState.setProperty("distortionType", track->distortion.getType(), nullptr);
+		    trackState.setProperty("distortionBypassed", track->distortion.isBypassed(), nullptr);
 
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
@@ -201,7 +202,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		spec.numChannels = 2;
 		spec.sampleRate = audioProcessor.getSampleRate();
 
-		track->distorsion.prepare(spec);
+		track->distortion.prepare(spec);
 		track->filter.prepare(spec);
 		track->equalizer.prepare(spec);
 		track->compressor.prepare(spec);
@@ -214,29 +215,37 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->filter.setResonance(trackState.getProperty("resonance", 0.f));
 		track->filter.setDrive(trackState.getProperty("filterDrive", 1.f));
 
-		int typeAsInt = trackState.getProperty("distorsionType");
-		auto type = static_cast<Obsidian::distorsionType>(typeAsInt);
-		track->distorsion.setType(type);
+		int typeAsInt = trackState.getProperty("distortionType");
+		auto type = static_cast<Obsidian::distortionType>(typeAsInt);
+		track->distortion.setType(type);
 
-		track->distorsion.setPre(trackState.getProperty("distorsionPreGain", 0.f));
-		track->distorsion.setPost(trackState.getProperty("distorsionPostGain", 0.f));
-		track->distorsion.setCut(trackState.getProperty("distorsionCut", 1000.f));
-		track->distorsion.setBypassed(trackState.getProperty("distorsionBypassed", true));
+		track->distortion.setPre(trackState.getProperty("distortionPreGain", Obsidian::DISTORTION_PRE));
+		track->distortion.setPost(trackState.getProperty("distortionPostGain", Obsidian::DISTORTION_POST));
+		track->distortion.setCut(trackState.getProperty("distortionCut", Obsidian::DISTORTION_CUT));
+		track->distortion.setBypassed(trackState.getProperty("distortionBypassed", Obsidian::DISTORTION_BYPASSED));
 
-		track->equalizer.updateGain(Obsidian::eqBands::subBass, trackState.getProperty("subBassGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::bass, trackState.getProperty("bassGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::lowMid, trackState.getProperty("lowMidGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::mid, trackState.getProperty("midGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::highMid, trackState.getProperty("highMidGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::presence, trackState.getProperty("presenceGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::high, trackState.getProperty("highGain", 1.f));
-		track->equalizer.updateGain(Obsidian::eqBands::air, trackState.getProperty("airGain", 1.f));
+		track->equalizer.updateGain(Obsidian::eqBands::subBass,
+		                            trackState.getProperty("subBassGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::bass,
+		                            trackState.getProperty("bassGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::lowMid,
+		                            trackState.getProperty("lowMidGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::mid, trackState.getProperty("midGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::highMid,
+		                            trackState.getProperty("highMidGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::presence,
+		                            trackState.getProperty("presenceGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::high,
+		                            trackState.getProperty("highGain", Obsidian::EQ_BANDS_GAIN));
+		track->equalizer.updateGain(Obsidian::eqBands::air, trackState.getProperty("airGain", Obsidian::EQ_BANDS_GAIN));
 
-		track->compressor.setThreshold(trackState.getProperty("compressorThreshold", -12.f));
-		track->compressor.setRatio(trackState.getProperty("compressorRatio", 4.f));
-		track->compressor.setAttack(trackState.getProperty("compressorAttack", 10.f));
-		track->compressor.setRelease(trackState.getProperty("compressorRelease", 100.f));
-		track->compressor.setMakeUpGain(trackState.getProperty("compressorMakeUpGain", 1.f));
+		track->compressor.setThreshold(trackState.getProperty("compressorThreshold", Obsidian::COMPRESSOR_THRESHOLD));
+		track->compressor.setRatio(trackState.getProperty("compressorRatio", Obsidian::COMPRESSOR_RATIO));
+		track->compressor.setAttack(trackState.getProperty("compressorAttack", Obsidian::COMPRESSOR_ATTACK));
+		track->compressor.setRelease(trackState.getProperty("compressorRelease", Obsidian::COMPRESSOR_RELEASE));
+		track->compressor.setMakeUpGain(
+		    trackState.getProperty("compressorMakeUpGain", Obsidian::COMPRESSOR_MAKEUP_GAIN));
+		track->compressor.setBypassed(trackState.getProperty("compressorBypassed", Obsidian::COMPRESSOR_BYPASSED));
 
 		track->limiter.setThreshold(trackState.getProperty("limiterThreshold", -.3f));
 		track->limiter.setRelease(trackState.getProperty("limiterRelease", 50.f));

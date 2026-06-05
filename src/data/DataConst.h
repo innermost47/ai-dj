@@ -17,13 +17,40 @@ inline constexpr int RNDM_RTRGR_INTRVL = 3;
 
 inline constexpr double SAMPLERATE = 48000.0;
 
+inline constexpr float COMPRESSOR_THRESHOLD = -12.f;
+inline constexpr float COMPRESSOR_RATIO = 4.f;
+inline constexpr float COMPRESSOR_ATTACK = 10.f;
+inline constexpr float COMPRESSOR_RELEASE = 100.f;
+inline constexpr float COMPRESSOR_MAKEUP_GAIN = 1.f;
+
+inline constexpr float DISTORTION_PRE = 0.f;
+inline constexpr float DISTORTION_POST = 0.f;
+inline constexpr float DISTORTION_CUT = 1000.f;
+
+inline constexpr float EQ_BANDS_GAIN = 1.f;
+inline constexpr float EQ_SUB_BAS_FRQ = 40.f;
+inline constexpr float EQ_BASS_FRQ = 120.f;
+inline constexpr float EQ_LOW_MID_FRQ = 350.f;
+inline constexpr float EQ_MID_FRQ = 1000.f;
+inline constexpr float EQ_HI_MID_FRQ = 3000.f;
+inline constexpr float EQ_PRESENCE_FRQ = 5000.f;
+inline constexpr float EQ_HI_FRQ = 8000.f;
+inline constexpr float EQ_AIR_FRQ = 15000.f;
+inline constexpr float EQ_BASE_RESONANCE = 0.707f;
+
+inline constexpr bool COMPRESSOR_BYPASSED = false;
+inline constexpr bool LIMITER_BYPASSED = false;
+inline constexpr bool EQ_BYPASSED = false;
+inline constexpr bool FILTER_BYPASSED = false;
+inline constexpr bool DISTORTION_BYPASSED = true;
+
 enum RadioGroupIDs
 {
 	FilterTypeGroup = 1,
 	DelayDivisionGroup = 2,
 	DelayModeGroup = 3,
 	TrackFXSelector = 4,
-	DistorsionType = 5
+	DistortionType = 5
 };
 
 enum eqBands
@@ -45,7 +72,7 @@ enum filterType
 	highShelf = 2,
 };
 
-enum distorsionChain
+enum distortionChain
 {
 	filter = 0,
 	preGain = 1,
@@ -53,7 +80,13 @@ enum distorsionChain
 	postGain = 3
 };
 
-enum distorsionType
+enum compressorChain
+{
+	compressor = 0,
+	makeUpGain = 1
+};
+
+enum distortionType
 {
 	soft = 0,
 	hard = 1,

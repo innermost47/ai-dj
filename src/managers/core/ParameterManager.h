@@ -111,27 +111,44 @@ class ParameterManager
 		return safeLoadIndexed(slotLimiterMakeUpGainParams, slot);
 	}
 
-	float getDistorsionPreGain(int slot) const
+	float getDistortionPreGain(int slot) const
 	{
-		return safeLoadIndexed(slotDistorsionPreGainParams, slot);
+		return safeLoadIndexed(slotDistortionPreGainParams, slot);
 	}
-	float getDistorsionPostGain(int slot) const
+	float getDistortionPostGain(int slot) const
 	{
-		return safeLoadIndexed(slotDistorsionPostGainParams, slot);
+		return safeLoadIndexed(slotDistortionPostGainParams, slot);
 	}
-	float getDistorsionCut(int slot) const
+	float getDistortionCut(int slot) const
 	{
-		return safeLoadIndexed(slotDistorsionCutParams, slot);
+		return safeLoadIndexed(slotDistortionCutParams, slot);
 	}
-	float getDistorsionType(int slot) const
+	float getDistortionType(int slot) const
 	{
-		return safeLoadIndexed(slotDistorsionTypeParams, slot);
+		return safeLoadIndexed(slotDistortionTypeParams, slot);
 	}
 
-	bool getDistorsionBypassed(int slot) const
+	bool getDistortionBypassed(int slot) const
 	{
-		return safeLoad(slotDistorsionBypassedParams[slot]) > 0.5f;
+		return safeLoad(slotDistortionBypassedParams[slot]) > 0.5f;
 	}
+	bool getCompressorBypassed(int slot) const
+	{
+		return safeLoad(slotCompressorBypassedParams[slot]) > 0.5f;
+	}
+	bool getEQBypassed(int slot) const
+	{
+		return safeLoad(slotEQBypassedParams[slot]) > 0.5f;
+	}
+	bool getFilterBypassed(int slot) const
+	{
+		return safeLoad(slotFilterBypassedParams[slot]) > 0.5f;
+	}
+	bool getLimiterBypassed(int slot) const
+	{
+		return safeLoad(slotLimiterBypassedParams[slot]) > 0.5f;
+	}
+
 	bool getMute(int slot) const
 	{
 		return safeLoad(slotMuteParams[slot]) > 0.5f;
@@ -289,10 +306,6 @@ class ParameterManager
 	std::atomic<float> *slotStopParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotGenerateParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotPitchParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotCutoffParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotResonanceParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotFilterModeParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotFilterDriveParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotFineParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotRandomRetriggerParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotRetriggerIntervalParams[Obsidian::MAX_TRACKS] = {};
@@ -303,6 +316,12 @@ class ParameterManager
 	std::atomic<float> *slotDelaySendParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotReverbSendParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotCutoffParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotResonanceParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterModeParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterDriveParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterBypassedParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *slotEQGainSubBassParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotEQGainBassParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotEQGainLowMidParams[Obsidian::MAX_TRACKS] = {};
@@ -311,22 +330,25 @@ class ParameterManager
 	std::atomic<float> *slotEQGainPresenceParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotEQGainHighParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotEQGainAirParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQBypassedParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *slotCompressorThresholdParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotCompressorRatioParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotCompressorAttackParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotCompressorReleaseParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotCompressorMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorBypassedParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *slotLimiterReleaseParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotLimiterThresholdParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotLimiterMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotLimiterBypassedParams[Obsidian::MAX_TRACKS] = {};
 
-	std::atomic<float> *slotDistorsionPreGainParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotDistorsionPostGainParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotDistorsionCutParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotDistorsionBypassedParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotDistorsionTypeParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionPreGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionPostGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionCutParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionBypassedParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionTypeParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
@@ -395,10 +417,10 @@ class ParameterManager
 		                                                "LimiterThreshold",
 		                                                "LimiterRelease",
 		                                                "LimiterMakeUpGain",
-		                                                "DistorsionPreGain",
-		                                                "DistorsionPostGain",
-		                                                "DistorsionCut",
-		                                                "DistorsionType"};
+		                                                "DistortionPreGain",
+		                                                "DistortionPostGain",
+		                                                "DistortionCut",
+		                                                "DistortionType"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
@@ -416,9 +438,23 @@ class ParameterManager
 	{
 		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack", "useCrossfader"};
 
-		static const juce::StringArray perSlotParams = {
-		    "Mute",  "Solo",  "Play",  "Stop",       "Generate",    "RandomRetrigger",   "PageA",
-		    "PageB", "PageC", "PageD", "FilterMode", "FilterDrive", "DistorsionBypassed"};
+		static const juce::StringArray perSlotParams = {"Mute",
+		                                                "Solo",
+		                                                "Play",
+		                                                "Stop",
+		                                                "Generate",
+		                                                "RandomRetrigger",
+		                                                "PageA",
+		                                                "PageB",
+		                                                "PageC",
+		                                                "PageD",
+		                                                "FilterMode",
+		                                                "FilterDrive",
+		                                                "DistortionBypassed",
+		                                                "FilterBypassed",
+		                                                "CompressorBypassed",
+		                                                "LimiterBypassed",
+		                                                "EQBypassed"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
