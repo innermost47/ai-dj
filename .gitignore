@@ -30,3 +30,4 @@ unused_functions.txt
 to_do.md
 CMakeSettings.json
 build-clang
+build-asan

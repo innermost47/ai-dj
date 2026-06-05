@@ -262,3 +262,21 @@ void ObsidianBaseMidiComponent::syncBindingsFromParameters()
 			applyParamToBinding(*b, p->getValue());
 	}
 }
+
+void ObsidianBaseMidiComponent::clearAllBindings()
+{
+	auto &apvts = audioProcessor.getParameterTreeState();
+	for (auto &id : listenedParams)
+		if (auto *p = apvts.getParameter(id))
+			p->removeListener(this);
+	listenedParams.clear();
+
+	for (auto &b : bindings)
+	{
+		if (b->slider)
+			b->slider->onValueChange = nullptr;
+		if (b->button)
+			b->button->onClick = nullptr;
+	}
+	bindings.clear();
+}
