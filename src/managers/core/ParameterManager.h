@@ -322,6 +322,28 @@ class ParameterManager
 	std::atomic<float> *reverbWidthParam = nullptr;
 	std::atomic<float> *reverbMixParam = nullptr;
 
+	std::atomic<float> *masterEQGainSubBassParams = nullptr;
+	std::atomic<float> *masterEQGainBassParams = nullptr;
+	std::atomic<float> *masterEQGainLowMidParams = nullptr;
+	std::atomic<float> *masterEQGainMidParams = nullptr;
+	std::atomic<float> *masterEQGainHighMidParams = nullptr;
+	std::atomic<float> *masterEQGainPresenceParams = nullptr;
+	std::atomic<float> *masterEQGainHighParams = nullptr;
+	std::atomic<float> *masterEQGainAirParams = nullptr;
+	std::atomic<float> *masterEQBypassedParams = nullptr;
+
+	std::atomic<float> *masterCompressorThresholdParams = nullptr;
+	std::atomic<float> *masterCompressorRatioParams = nullptr;
+	std::atomic<float> *masterCompressorAttackParams = nullptr;
+	std::atomic<float> *masterCompressorReleaseParams = nullptr;
+	std::atomic<float> *masterCompressorMakeUpGainParams = nullptr;
+	std::atomic<float> *masterCompressorBypassedParams = nullptr;
+
+	std::atomic<float> *masterLimiterReleaseParams = nullptr;
+	std::atomic<float> *masterLimiterThresholdParams = nullptr;
+	std::atomic<float> *masterLimiterMakeUpGainParams = nullptr;
+	std::atomic<float> *masterLimiterBypassedParams = nullptr;
+
 	std::atomic<float> *slotVolumeParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotPanParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotGainParams[Obsidian::MAX_TRACKS] = {};
@@ -399,25 +421,43 @@ class ParameterManager
 
 	static juce::StringArray buildFloatParamIds()
 	{
-		juce::StringArray ids = {"bpm",
-		                         "delayFeedback",
-		                         "reverbSize",
-		                         "reverbDamping",
-		                         "reverbWidth",
-		                         "reverbMix",
-		                         "masterVolume",
-		                         "masterPan",
-		                         "masterHigh",
-		                         "masterMid",
-		                         "masterLow",
-		                         "globalCrossfader",
-		                         "pairCrossfader1",
-		                         "pairCrossfader2",
-		                         "pairCrossfader3",
-		                         "pairCrossfader4",
-		                         "delayDivision",
-		                         "delayMode",
-		                         "crossfaderCurveMode"};
+		juce::StringArray ids = {
+		    "bpm",
+		    "delayFeedback",
+		    "reverbSize",
+		    "reverbDamping",
+		    "reverbWidth",
+		    "reverbMix",
+		    "masterVolume",
+		    "masterPan",
+		    "masterHigh",
+		    "masterMid",
+		    "masterLow",
+		    "globalCrossfader",
+		    "pairCrossfader1",
+		    "pairCrossfader2",
+		    "pairCrossfader3",
+		    "pairCrossfader4",
+		    "delayDivision",
+		    "delayMode",
+		    "crossfaderCurveMode",
+		    "masterEQGainSubBass",
+		    "masterEQGainBass",
+		    "masterEQGainLowMid",
+		    "masterEQGainMid",
+		    "masterEQGainHiMid",
+		    "masterEQGainPresence",
+		    "masterEQGainHigh",
+		    "masterEQGainAir",
+		    "masterCompressorThreshold",
+		    "masterCompressorRatio",
+		    "masterCompressorAttack",
+		    "masterCompressorRelease",
+		    "masterCompressorMakeUpGain",
+		    "masterLimiterThreshold",
+		    "masterLimiterRelease",
+		    "masterLimiterMakeUpGain",
+		};
 
 		static const juce::StringArray perSlotParams = {"Volume",
 		                                                "Pan",
@@ -473,7 +513,16 @@ class ParameterManager
 
 	static juce::StringArray buildBooleanParamIds()
 	{
-		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack", "useCrossfader"};
+		juce::StringArray ids = {
+		    "generate",
+		    "play",
+		    "nextTrack",
+		    "prevTrack",
+		    "useCrossfader",
+		    "masterCompressorBypassed",
+		    "masterLimiterBypassed",
+		    "masterEQBypassed",
+		};
 
 		static const juce::StringArray perSlotParams = {"Mute",
 		                                                "Solo",

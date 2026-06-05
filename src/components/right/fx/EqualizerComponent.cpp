@@ -2,8 +2,8 @@
 #include "CustomLookAndFeel.h"
 #include "PluginProcessor.h"
 
-EqualizerComponent::EqualizerComponent(DjIaVstProcessor &processor, TrackData *trackData)
-    : ObsidianBaseMidiComponent(processor)
+EqualizerComponent::EqualizerComponent(DjIaVstProcessor &processor, TrackData *trackData, bool isMaster)
+    : ObsidianBaseMidiComponent(processor), masterChannel(isMaster)
 {
 	setTrackData(trackData);
 	setupUI();
@@ -17,9 +17,6 @@ EqualizerComponent::~EqualizerComponent()
 
 void EqualizerComponent::paint(juce::Graphics &g)
 {
-	auto *t = getTrack();
-	if (!t)
-		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
 
 	auto bounds = getLocalBounds().reduced(4);
@@ -32,23 +29,23 @@ void EqualizerComponent::onParameterChangedUI(const juce::String &paramSuffix, f
 	auto &apvts = audioProcessor.getParameterTreeState();
 	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
 	auto value = range.convertFrom0to1(normalizedValue);
-	if (paramSuffix == "EQGainSubBass")
+	if (paramSuffix.endsWith("EQGainSubBass"))
 		subBassSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainBass")
+	else if (paramSuffix.endsWith("EQGainBass"))
 		bassSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainLowMid")
+	else if (paramSuffix.endsWith("EQGainLowMid"))
 		lowMidSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainMid")
+	else if (paramSuffix.endsWith("EQGainMid"))
 		midSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainHiMid")
+	else if (paramSuffix.endsWith("EQGainHiMid"))
 		highMidSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainPresence")
+	else if (paramSuffix.endsWith("EQGainPresence"))
 		presenceSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainHigh")
+	else if (paramSuffix.endsWith("EQGainHigh"))
 		highSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQGainAir")
+	else if (paramSuffix.endsWith("EQGainAir"))
 		airSlider.setValue(value, juce::dontSendNotification);
-	else if (paramSuffix == "EQBypassed")
+	else if (paramSuffix.endsWith("EQBypassed"))
 	{
 		if (value > .5f)
 			bypassEqualizerButton.setToggleState(true, juce::dontSendNotification);
@@ -59,12 +56,12 @@ void EqualizerComponent::onParameterChangedUI(const juce::String &paramSuffix, f
 
 void EqualizerComponent::setupUI()
 {
-
+	bool isBypassed = masterChannel ? audioProcessor.getEqualizer().isBypassed() : track->equalizer.isBypassed();
 	addAndMakeVisible(bypassEqualizerButton);
 	bypassEqualizerButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
 	bypassEqualizerButton.setClickingTogglesState(true);
 	bypassEqualizerButton.setShowBackground(false);
-	bypassEqualizerButton.setToggleState(!track->equalizer.isBypassed(), juce::dontSendNotification);
+	bypassEqualizerButton.setToggleState(!isBypassed, juce::dontSendNotification);
 	bypassEqualizerButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
 	bypassEqualizerButton.setCustomIconColourToggled(ColourPalette::textPrimary);
 	bypassEqualizerButton.setTooltip("Enable/disable equalizer");
@@ -74,7 +71,7 @@ void EqualizerComponent::setupUI()
 		addAndMakeVisible(slider);
 		slider.setSliderStyle(juce::Slider::LinearVertical);
 		slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-		slider.setColour(juce::Slider::thumbColourId, ColourPalette::sliderThumb);
+		slider.setColour(juce::Slider::thumbColourId, ColourPalette::playArmed);
 		slider.setColour(juce::Slider::trackColourId, ColourPalette::sliderTrack);
 		slider.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
 		slider.getProperties().set(CustomLookAndFeel::getDrawTicksPropertyId(), 9);
@@ -154,10 +151,13 @@ void EqualizerComponent::updateModelUI()
 {
 	auto *t = getTrack();
 	if (!t)
+	{
+		modelColour = ColourPalette::playArmed;
 		return;
+	}
 
 	auto &currentPage = t->getCurrentPage();
-	auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
+	modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
 
 	subBassSlider.setColour(juce::Slider::thumbColourId, modelColour);
 	bassSlider.setColour(juce::Slider::thumbColourId, modelColour);

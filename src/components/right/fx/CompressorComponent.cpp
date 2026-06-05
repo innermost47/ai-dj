@@ -1,8 +1,8 @@
 #include "CompressorComponent.h"
 #include "PluginProcessor.h"
 
-CompressorComponent::CompressorComponent(DjIaVstProcessor &processor, TrackData *trackData)
-    : ObsidianBaseMidiComponent(processor)
+CompressorComponent::CompressorComponent(DjIaVstProcessor &processor, TrackData *trackData, bool isMaster)
+    : ObsidianBaseMidiComponent(processor), masterChannel(isMaster)
 {
 	setTrackData(trackData);
 	setupUI();
@@ -16,9 +16,6 @@ CompressorComponent::~CompressorComponent()
 
 void CompressorComponent::paint(juce::Graphics &g)
 {
-	auto *t = getTrack();
-	if (!t)
-		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
 
 	auto bounds = getLocalBounds().reduced(4);
@@ -31,27 +28,27 @@ void CompressorComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	auto &apvts = audioProcessor.getParameterTreeState();
 	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
 	auto value = range.convertFrom0to1(normalizedValue);
-	if (paramSuffix == "CompressorThreshold")
+	if (paramSuffix.endsWith("CompressorThreshold"))
 	{
 		thresholdKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "CompressorRatio")
+	else if (paramSuffix.endsWith("CompressorRatio"))
 	{
 		ratioKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "CompressorAttack")
+	else if (paramSuffix.endsWith("CompressorAttack"))
 	{
 		attackKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "CompressorRelease")
+	else if (paramSuffix.endsWith("CompressorRelease"))
 	{
 		releaseKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "CompressorMakeUpGain")
+	else if (paramSuffix.endsWith("CompressorMakeUpGain"))
 	{
 		makeUpGainKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "CompressorBypassed")
+	else if (paramSuffix.endsWith("CompressorBypassed"))
 	{
 		if (value > .5f)
 			bypassCompressorButton.setToggleState(true, juce::dontSendNotification);
@@ -62,11 +59,12 @@ void CompressorComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 
 void CompressorComponent::setupUI()
 {
+	bool isBypassed = masterChannel ? audioProcessor.getCompressor().isBypassed() : track->compressor.isBypassed();
 	addAndMakeVisible(bypassCompressorButton);
 	bypassCompressorButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
 	bypassCompressorButton.setClickingTogglesState(true);
 	bypassCompressorButton.setShowBackground(false);
-	bypassCompressorButton.setToggleState(!track->compressor.isBypassed(), juce::dontSendNotification);
+	bypassCompressorButton.setToggleState(!isBypassed, juce::dontSendNotification);
 	bypassCompressorButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
 	bypassCompressorButton.setCustomIconColourToggled(ColourPalette::textPrimary);
 	bypassCompressorButton.setTooltip("Enable/disable compressor");
@@ -76,7 +74,7 @@ void CompressorComponent::setupUI()
 		addAndMakeVisible(knob);
 		knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 		knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-		knob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+		knob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::playArmed);
 		knob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
 		knob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 	};
@@ -145,14 +143,17 @@ void CompressorComponent::updateModelUI()
 {
 	auto *t = getTrack();
 	if (!t)
+	{
+		modelColour = ColourPalette::playArmed;
 		return;
+	}
 
 	auto &currentPage = t->getCurrentPage();
-	auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
+	modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
 	bool darkText = modelColour.getBrightness() > 0.6f;
 	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
 
-	auto updateColor = [this, modelColour](MidiLearnableSlider &knob)
+	auto updateColor = [this](MidiLearnableSlider &knob)
 	{ knob.setColour(juce::Slider::rotarySliderFillColourId, modelColour); };
 
 	updateColor(thresholdKnob);

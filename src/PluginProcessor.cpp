@@ -178,10 +178,26 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 	spec.maximumBlockSize = (juce::uint32)samplesPerBlock;
 	spec.numChannels = (juce::uint32)getMainBusNumOutputChannels();
 
-	masterLimiter.prepare(spec);
-	masterLimiter.setThreshold(-0.3f);
-	masterLimiter.setRelease(50.0f);
-	masterLimiter.reset();
+	limiter.prepare(spec);
+	equalizer.prepare(spec);
+	compressor.prepare(spec);
+	limiter.reset();
+	equalizer.reset();
+	compressor.reset();
+
+	equalizer.setBypassed(Obsidian::EQ_BYPASSED);
+
+	compressor.setThreshold(Obsidian::COMPRESSOR_THRESHOLD);
+	compressor.setRatio(Obsidian::COMPRESSOR_RATIO);
+	compressor.setAttack(Obsidian::COMPRESSOR_ATTACK);
+	compressor.setRelease(Obsidian::COMPRESSOR_RELEASE);
+	compressor.setMakeUpGain(Obsidian::COMPRESSOR_MAKEUP_GAIN);
+	compressor.setBypassed(Obsidian::COMPRESSOR_BYPASSED);
+
+	limiter.setThreshold(Obsidian::LIMITER_THRESHOLD);
+	limiter.setRelease(Obsidian::LIMITER_RELEASE);
+	limiter.setMakeUpGain(Obsidian::LIMITER_MAKEUP_GAIN);
+	limiter.setBypassed(Obsidian::LIMITER_BYPASSED);
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -639,7 +655,9 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	juce::dsp::AudioBlock<float> block(mainOutput);
 	juce::dsp::ProcessContextReplacing<float> ctx(block);
-	masterLimiter.process(ctx);
+	equalizer.process(ctx);
+	compressor.process(ctx);
+	limiter.process(ctx);
 
 	auto *lastBus = getBus(false, getBusCount(false) - 1);
 	bool previewBusIsEffectivelyEnabled = (lastBus != nullptr && lastBus->isEnabled());

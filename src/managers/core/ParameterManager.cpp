@@ -19,6 +19,48 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 	masterLowParam = apvts.getRawParameterValue("masterLow");
 	useCrossfaderParam = apvts.getRawParameterValue("useCrossfader");
 
+	masterEQGainSubBassParams = apvts.getRawParameterValue("masterEQGainSubBass");
+	masterEQGainBassParams = apvts.getRawParameterValue("masterEQGainBass");
+	masterEQGainLowMidParams = apvts.getRawParameterValue("masterEQGainLowMid");
+	masterEQGainMidParams = apvts.getRawParameterValue("masterEQGainMid");
+	masterEQGainHighMidParams = apvts.getRawParameterValue("masterEQGainHiMid");
+	masterEQGainPresenceParams = apvts.getRawParameterValue("masterEQGainPresence");
+	masterEQGainHighParams = apvts.getRawParameterValue("masterEQGainHigh");
+	masterEQGainAirParams = apvts.getRawParameterValue("masterEQGainAir");
+	masterEQBypassedParams = apvts.getRawParameterValue("masterEQBypassed");
+
+	masterCompressorThresholdParams = apvts.getRawParameterValue("masterCompressorThreshold");
+	masterCompressorRatioParams = apvts.getRawParameterValue("masterCompressorRatio");
+	masterCompressorAttackParams = apvts.getRawParameterValue("masterCompressorAttack");
+	masterCompressorReleaseParams = apvts.getRawParameterValue("masterCompressorRelease");
+	masterCompressorMakeUpGainParams = apvts.getRawParameterValue("masterCompressorMakeUpGain");
+	masterCompressorBypassedParams = apvts.getRawParameterValue("masterCompressorBypassed");
+
+	masterLimiterThresholdParams = apvts.getRawParameterValue("masterLimiterThreshold");
+	masterLimiterReleaseParams = apvts.getRawParameterValue("masterLimiterRelease");
+	masterLimiterMakeUpGainParams = apvts.getRawParameterValue("masterLimiterMakeUpGain");
+	masterLimiterBypassedParams = apvts.getRawParameterValue("masterLimiterBypassed");
+
+	apvts.addParameterListener("masterEQGainSubBass", listener);
+	apvts.addParameterListener("masterEQGainBass", listener);
+	apvts.addParameterListener("masterEQGainLowMid", listener);
+	apvts.addParameterListener("masterEQGainMid", listener);
+	apvts.addParameterListener("masterEQGainHiMid", listener);
+	apvts.addParameterListener("masterEQGainPresence", listener);
+	apvts.addParameterListener("masterEQGainHigh", listener);
+	apvts.addParameterListener("masterEQGainAir", listener);
+	apvts.addParameterListener("masterCompressorThreshold", listener);
+	apvts.addParameterListener("masterCompressorRatio", listener);
+	apvts.addParameterListener("masterCompressorAttack", listener);
+	apvts.addParameterListener("masterCompressorRelease", listener);
+	apvts.addParameterListener("masterCompressorMakeUpGain", listener);
+	apvts.addParameterListener("masterLimiterThreshold", listener);
+	apvts.addParameterListener("masterLimiterRelease", listener);
+	apvts.addParameterListener("masterLimiterMakeUpGain", listener);
+	apvts.addParameterListener("masterCompressorBypassed", listener);
+	apvts.addParameterListener("masterLimiterBypassed", listener);
+	apvts.addParameterListener("masterEQBypassed", listener);
+
 	apvts.addParameterListener("generate", listener);
 	apvts.addParameterListener("play", listener);
 	apvts.addParameterListener("useCrossfader", listener);
@@ -206,6 +248,26 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 	apvts.removeParameterListener("reverbMix", listener);
 	apvts.removeParameterListener("useCrossfader", listener);
 
+	apvts.removeParameterListener("masterEQGainSubBass", listener);
+	apvts.removeParameterListener("masterEQGainBass", listener);
+	apvts.removeParameterListener("masterEQGainLowMid", listener);
+	apvts.removeParameterListener("masterEQGainMid", listener);
+	apvts.removeParameterListener("masterEQGainHiMid", listener);
+	apvts.removeParameterListener("masterEQGainPresence", listener);
+	apvts.removeParameterListener("masterEQGainHigh", listener);
+	apvts.removeParameterListener("masterEQGainAir", listener);
+	apvts.removeParameterListener("masterCompressorThreshold", listener);
+	apvts.removeParameterListener("masterCompressorRatio", listener);
+	apvts.removeParameterListener("masterCompressorAttack", listener);
+	apvts.removeParameterListener("masterCompressorRelease", listener);
+	apvts.removeParameterListener("masterCompressorMakeUpGain", listener);
+	apvts.removeParameterListener("masterLimiterThreshold", listener);
+	apvts.removeParameterListener("masterLimiterRelease", listener);
+	apvts.removeParameterListener("masterLimiterMakeUpGain", listener);
+	apvts.removeParameterListener("masterCompressorBypassed", listener);
+	apvts.removeParameterListener("masterLimiterBypassed", listener);
+	apvts.removeParameterListener("masterEQBypassed", listener);
+
 	for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 	{
 		juce::String s = "slot" + juce::String(slot);
@@ -297,6 +359,61 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 	params.push_back(makeTrigg("useCrossfader", "Use Crossfader", 1.0f));
 	params.push_back(makeTrigg("nextTrack", "Next Track"));
 	params.push_back(makeTrigg("prevTrack", "Previous Track"));
+	params.push_back(makeTrigg("masterCompressorBypassed", "Master Compressor Bypassed"));
+	params.push_back(makeTrigg("masterLimiterBypassed", "Master Limiter Bypassed"));
+	params.push_back(makeTrigg("masterEQBypassed", "Master EQ Bypassed"));
+
+	juce::NormalisableRange<float> masterEQGainRange(0.0f, 4.0f);
+	masterEQGainRange.skew = std::log(0.5f) / std::log((1.0f - 0.0f) / (4.0f - 0.0f));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainSubBass", "Master EQ Gain Sub Bass",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainBass", "Master EQ Gain Bass",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainLowMid", "Master EQ Gain Low Mid",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainMid", "Master EQ Gain Mid",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainHiMid", "Master EQ Gain Hi Mid",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainPresence", "Master EQ Gain Presence",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainHigh", "Master EQ Gain High",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterEQGainAir", "Master EQ Gain Air",
+	                                                             masterEQGainRange, Obsidian::EQ_BANDS_GAIN));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+	    "masterCompressorThreshold", "Master Compressor Threshold", juce::NormalisableRange<float>(-60.f, 0.f, .1f),
+	    Obsidian::COMPRESSOR_THRESHOLD));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterCompressorRatio", "Master Compressor Ratio",
+	                                                             juce::NormalisableRange<float>(1.f, 20.f, .01f),
+	                                                             Obsidian::COMPRESSOR_RATIO));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterCompressorAttack", "Master Compressor Attack",
+	                                                             juce::NormalisableRange<float>(.1f, 100.f, .01f, .3f),
+	                                                             Obsidian::COMPRESSOR_ATTACK));
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterCompressorRelease", "Master Compressor Release",
+	                                                             juce::NormalisableRange<float>(10.f, 1000.f, .1f, .3f),
+	                                                             Obsidian::COMPRESSOR_RELEASE));
+
+	juce::NormalisableRange<float> masterMakeUpGainRange(0.0f, 10.0f);
+	masterMakeUpGainRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterCompressorMakeUpGain",
+	                                                             "Master Compressor MakeUp Gain", masterMakeUpGainRange,
+	                                                             Obsidian::COMPRESSOR_MAKEUP_GAIN));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterLimiterThreshold", "Master Limiter Threshold",
+	                                                             juce::NormalisableRange<float>(-20.f, 0.f, .1f),
+	                                                             Obsidian::LIMITER_THRESHOLD));
+
+	juce::NormalisableRange<float> masterLimiterReleaseRange(1.f, 500.0f);
+	masterLimiterReleaseRange.skew = 0.3f;
+	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterLimiterRelease", "Master Limiter Release",
+	                                                             masterLimiterReleaseRange, Obsidian::LIMITER_RELEASE));
+
+	params.push_back(std::make_unique<juce::AudioParameterFloat>(
+	    "masterLimiterMakeUpGain", "Master Limiter MakeUp Gain", masterMakeUpGainRange, Obsidian::LIMITER_MAKEUP_GAIN));
+
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterVolume", "Master Volume", 0.0f, 1.0f, 0.8f));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterPan", "Master Pan", -1.0f, 1.0f, 0.0f));
 	params.push_back(std::make_unique<juce::AudioParameterFloat>("masterHigh", "Master High EQ", -12.0f, 12.0f, 0.0f));
@@ -571,6 +688,44 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			    }
 		    });
 	}
+	else if (parameterID == "masterEQGainSubBass")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::subBass, newValue);
+	else if (parameterID == "masterEQGainBass")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::bass, newValue);
+	else if (parameterID == "masterEQGainLowMid")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::lowMid, newValue);
+	else if (parameterID == "masterEQGainMid")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::mid, newValue);
+	else if (parameterID == "masterEQGainHiMid")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::highMid, newValue);
+	else if (parameterID == "masterEQGainPresence")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::presence, newValue);
+	else if (parameterID == "masterEQGainHigh")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::high, newValue);
+	else if (parameterID == "masterEQGainAir")
+		audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::air, newValue);
+	else if (parameterID == "masterCompressorThreshold")
+		audioProcessor.getCompressor().setThreshold(newValue);
+	else if (parameterID == "masterCompressorRatio")
+		audioProcessor.getCompressor().setRatio(newValue);
+	else if (parameterID == "masterCompressorAttack")
+		audioProcessor.getCompressor().setAttack(newValue);
+	else if (parameterID == "masterCompressorRelease")
+		audioProcessor.getCompressor().setRelease(newValue);
+	else if (parameterID == "masterCompressorMakeUpGain")
+		audioProcessor.getCompressor().setMakeUpGain(newValue);
+	else if (parameterID == "masterLimiterThreshold")
+		audioProcessor.getLimiter().setThreshold(newValue);
+	else if (parameterID == "masterLimiterRelease")
+		audioProcessor.getLimiter().setRelease(newValue);
+	else if (parameterID == "masterLimiterMakeUpGain")
+		audioProcessor.getLimiter().setMakeUpGain(newValue);
+	else if (parameterID == "masterEQBypassed")
+		audioProcessor.getEqualizer().setBypassed(newValue < 0.5f);
+	else if (parameterID == "masterLimiterBypassed")
+		audioProcessor.getLimiter().setBypassed(newValue < 0.5f);
+	else if (parameterID == "masterCompressorBypassed")
+		audioProcessor.getCompressor().setBypassed(newValue < 0.5f);
 	else if (parameterID.startsWith("slot"))
 	{
 		TrackData *track = audioProcessor.getTrackFromParamId(parameterID);

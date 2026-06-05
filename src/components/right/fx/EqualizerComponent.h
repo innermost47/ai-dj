@@ -8,7 +8,7 @@ class DjIaVstProcessor;
 class EqualizerComponent : public ObsidianBaseMidiComponent
 {
   public:
-	EqualizerComponent(DjIaVstProcessor &processor, TrackData *trackData);
+	EqualizerComponent(DjIaVstProcessor &processor, TrackData *trackData = nullptr, bool isMaster = false);
 	~EqualizerComponent() override;
 
 	void paint(juce::Graphics &g) override;
@@ -30,18 +30,28 @@ class EqualizerComponent : public ObsidianBaseMidiComponent
   protected:
 	juce::String getParameterPrefix() const override
 	{
-		auto *t = track.get();
-		if (!t || t->slotIndex == -1)
-			return {};
-		return "slot" + juce::String(t->slotIndex + 1);
+		if (masterChannel)
+			return "master";
+		else
+		{
+			auto *t = track.get();
+			if (!t || t->slotIndex == -1)
+				return {};
+			return "slot" + juce::String(t->slotIndex + 1);
+		}
 	}
 
 	juce::String getMidiLearnDescriptionPrefix() const override
 	{
-		auto *t = track.get();
-		if (!t || t->slotIndex == -1)
-			return {};
-		return "Slot " + juce::String(t->slotIndex + 1) + " ";
+		if (masterChannel)
+			return "Master ";
+		else
+		{
+			auto *t = track.get();
+			if (!t || t->slotIndex == -1)
+				return {};
+			return "Slot " + juce::String(t->slotIndex + 1) + " ";
+		}
 	}
 	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
 
@@ -66,7 +76,11 @@ class EqualizerComponent : public ObsidianBaseMidiComponent
 
 	juce::Label componentLabel;
 
+	juce::Colour modelColour;
+
 	IconButton bypassEqualizerButton{"BypassEqualizer", ""};
+
+	bool masterChannel = false;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EqualizerComponent)
 };

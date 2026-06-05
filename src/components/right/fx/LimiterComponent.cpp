@@ -1,8 +1,8 @@
 #include "LimiterComponent.h"
 #include "PluginProcessor.h"
 
-LimiterComponent::LimiterComponent(DjIaVstProcessor &processor, TrackData *trackData)
-    : ObsidianBaseMidiComponent(processor)
+LimiterComponent::LimiterComponent(DjIaVstProcessor &processor, TrackData *trackData, bool isMaster)
+    : ObsidianBaseMidiComponent(processor), masterChannel(isMaster)
 {
 	setTrackData(trackData);
 	setupUI();
@@ -18,25 +18,13 @@ LimiterComponent::~LimiterComponent()
 
 void LimiterComponent::timerCallback()
 {
-	auto *t = getTrack();
-	if (!t)
-	{
-		stopTimer();
-		return;
-	}
-	if (!t->isCurrentlyPlaying.load())
-	{
-		repaint();
-		return;
-	}
-
 	repaint();
 }
 
 void LimiterComponent::paint(juce::Graphics &g)
 {
 	auto *t = getTrack();
-	if (!t)
+	if (!t && !masterChannel)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
 
@@ -53,7 +41,8 @@ void LimiterComponent::paint(juce::Graphics &g)
 	g.drawEllipse(circleRect.getX() - (scale / 2), circleRect.getY() - (scale / 2), circleRect.getWidth() + scale,
 	              circleRect.getHeight() + scale, Obsidian::BORDER_WIDTH_XS);
 
-	float gainReduction = juce::jlimit(0.f, 1.f, (t->limiter.getReductionAmount()));
+	float amount = masterChannel ? audioProcessor.getLimiter().getReductionAmount() : t->limiter.getReductionAmount();
+	float gainReduction = juce::jlimit(0.f, 1.f, (amount));
 
 	if (gainReduction > 0.01f)
 		g.setColour(modelColour.withBrightness(gainReduction));
@@ -68,19 +57,19 @@ void LimiterComponent::onParameterChangedUI(const juce::String &paramSuffix, flo
 	auto &apvts = audioProcessor.getParameterTreeState();
 	auto range = apvts.getParameterRange(fullParamId(paramSuffix));
 	auto value = range.convertFrom0to1(normalizedValue);
-	if (paramSuffix == "LimiterThreshold")
+	if (paramSuffix.endsWith("LimiterThreshold"))
 	{
 		thresholdKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "LimiterRelease")
+	else if (paramSuffix.endsWith("LimiterRelease"))
 	{
 		releaseKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "LimiterMakeUpGain")
+	else if (paramSuffix.endsWith("LimiterMakeUpGain"))
 	{
 		makeUpGainKnob.setValue(value, juce::dontSendNotification);
 	}
-	else if (paramSuffix == "LimiterBypassed")
+	else if (paramSuffix.endsWith("LimiterBypassed"))
 	{
 		if (value > .5f)
 			bypassLimiterButton.setToggleState(true, juce::dontSendNotification);
@@ -91,11 +80,12 @@ void LimiterComponent::onParameterChangedUI(const juce::String &paramSuffix, flo
 
 void LimiterComponent::setupUI()
 {
+	bool isBypassed = masterChannel ? audioProcessor.getLimiter().isBypassed() : track->limiter.isBypassed();
 	addAndMakeVisible(bypassLimiterButton);
 	bypassLimiterButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
 	bypassLimiterButton.setClickingTogglesState(true);
 	bypassLimiterButton.setShowBackground(false);
-	bypassLimiterButton.setToggleState(!track->limiter.isBypassed(), juce::dontSendNotification);
+	bypassLimiterButton.setToggleState(!isBypassed, juce::dontSendNotification);
 	bypassLimiterButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
 	bypassLimiterButton.setCustomIconColourToggled(ColourPalette::textPrimary);
 	bypassLimiterButton.setTooltip("Enable/disable limiter");
@@ -105,7 +95,7 @@ void LimiterComponent::setupUI()
 		addAndMakeVisible(knob);
 		knob.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
 		knob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-		knob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::sliderThumb);
+		knob.setColour(juce::Slider::rotarySliderFillColourId, ColourPalette::playArmed);
 		knob.setColour(juce::Slider::backgroundColourId, ColourPalette::backgroundDeep);
 		knob.setColour(juce::Slider::rotarySliderOutlineColourId, ColourPalette::backgroundDeep);
 	};
@@ -168,7 +158,10 @@ void LimiterComponent::updateModelUI()
 {
 	auto *t = getTrack();
 	if (!t)
+	{
+		modelColour = ColourPalette::playArmed;
 		return;
+	}
 
 	auto &currentPage = t->getCurrentPage();
 	modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);

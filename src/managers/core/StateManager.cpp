@@ -506,6 +506,33 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("bankVisible", audioProcessor.getSavedPanelVisible(), nullptr);
 	state.setProperty("useLocalModel", audioProcessor.getUseLocalModel(), nullptr);
 
+	state.setProperty("masterEQGainSubBass", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::subBass),
+	                  nullptr);
+	state.setProperty("masterEQGainBass", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::bass), nullptr);
+	state.setProperty("masterEQGainLowMid", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::lowMid),
+	                  nullptr);
+	state.setProperty("masterEQGainMid", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::mid), nullptr);
+	state.setProperty("masterEQGainHiMid", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::highMid),
+	                  nullptr);
+	state.setProperty("masterEQGainPresence", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::presence),
+	                  nullptr);
+	state.setProperty("masterEQGainHigh", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::high), nullptr);
+	state.setProperty("masterEQGainAir", audioProcessor.getEqualizer().getFrequency(Obsidian::eqBands::air), nullptr);
+
+	state.setProperty("masterCompressorThreshold", audioProcessor.getCompressor().getThreshold(), nullptr);
+	state.setProperty("masterCompressorRatio", audioProcessor.getCompressor().getRatio(), nullptr);
+	state.setProperty("masterCompressorAttack", audioProcessor.getCompressor().getAttack(), nullptr);
+	state.setProperty("masterCompressorRelease", audioProcessor.getCompressor().getRelease(), nullptr);
+	state.setProperty("masterCompressorMakeUpGain", audioProcessor.getCompressor().getMakeUpGain(), nullptr);
+
+	state.setProperty("masterLimiterThreshold", audioProcessor.getLimiter().getThreshold(), nullptr);
+	state.setProperty("masterLimiterRelease", audioProcessor.getLimiter().getRelease(), nullptr);
+	state.setProperty("masterLimiterMakeUpGain", audioProcessor.getLimiter().getMakeUpGain(), nullptr);
+
+	state.setProperty("masterCompressorBypassed", audioProcessor.getCompressor().isBypassed(), nullptr);
+	state.setProperty("masterLimiterBypassed", audioProcessor.getLimiter().isBypassed(), nullptr);
+	state.setProperty("masterEQBypassed", audioProcessor.getEqualizer().isBypassed(), nullptr);
+
 	juce::ValueTree midiMappingsState("MidiMappings");
 	auto mappings = audioProcessor.getMidiLearnManager().getAllMappings();
 	for (int i = 0; i < mappings.size(); ++i)
@@ -594,6 +621,42 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setWindowSize(state.getProperty("windowWidth", 1620), state.getProperty("windowHeight", 840));
 	audioProcessor.setPanelVisible(state.getProperty("bankVisible", true));
 	audioProcessor.setUseLocalModel(state.getProperty("useLocalModel", false));
+
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::subBass,
+	                                         state.getProperty("masterEQGainSubBass", Obsidian::EQ_SUB_BAS_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::bass,
+	                                         state.getProperty("masterEQGainBass", Obsidian::EQ_BASS_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::lowMid,
+	                                         state.getProperty("masterEQGainLowMid", Obsidian::EQ_LOW_MID_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::mid,
+	                                         state.getProperty("masterEQGainMid", Obsidian::EQ_MID_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::highMid,
+	                                         state.getProperty("masterEQGainHiMid", Obsidian::EQ_HI_MID_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::presence,
+	                                         state.getProperty("masterEQGainPresence", Obsidian::EQ_PRESENCE_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::high,
+	                                         state.getProperty("masterEQGainHigh", Obsidian::EQ_HI_FRQ));
+	audioProcessor.getEqualizer().updateGain(Obsidian::eqBands::air,
+	                                         state.getProperty("masterEQGainAir", Obsidian::EQ_AIR_FRQ));
+
+	audioProcessor.getCompressor().setThreshold(
+	    state.getProperty("masterCompressorThreshold", Obsidian::COMPRESSOR_THRESHOLD));
+	audioProcessor.getCompressor().setRatio(state.getProperty("masterCompressorRatio", Obsidian::COMPRESSOR_RATIO));
+	audioProcessor.getCompressor().setAttack(state.getProperty("masterCompressorAttack", Obsidian::COMPRESSOR_ATTACK));
+	audioProcessor.getCompressor().setRelease(
+	    state.getProperty("masterCompressorRelease", Obsidian::COMPRESSOR_RELEASE));
+	audioProcessor.getCompressor().setMakeUpGain(
+	    state.getProperty("masterCompressorMakeUpGain", Obsidian::COMPRESSOR_MAKEUP_GAIN));
+
+	audioProcessor.getLimiter().setThreshold(state.getProperty("masterLimiterThreshold", Obsidian::LIMITER_THRESHOLD));
+	audioProcessor.getLimiter().setRelease(state.getProperty("masterLimiterRelease", Obsidian::LIMITER_RELEASE));
+	audioProcessor.getLimiter().setMakeUpGain(
+	    state.getProperty("masterLimiterMakeUpGain", Obsidian::LIMITER_MAKEUP_GAIN));
+
+	audioProcessor.getCompressor().setBypassed(
+	    state.getProperty("masterCompressorBypassed", Obsidian::COMPRESSOR_BYPASSED));
+	audioProcessor.getLimiter().setBypassed(state.getProperty("masterLimiterBypassed", Obsidian::LIMITER_BYPASSED));
+	audioProcessor.getEqualizer().setBypassed(state.getProperty("masterEQBypassed", Obsidian::EQ_BYPASSED));
 
 	bool bypassValue = state.getProperty("bypassSequencer", false);
 	audioProcessor.setBypassSequencer(bypassValue);

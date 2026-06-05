@@ -37,7 +37,10 @@ class TrackEffectsPanel : public ObsidianComponent
 	std::unique_ptr<ChorusComponent> chorusComponent;
 
 	void addComponents(const juce::String &trackId);
+	void addComponents();
 	void resetComponents();
+
+	bool isMasterView = false;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackEffectsPanel)
 };

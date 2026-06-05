@@ -44,20 +44,6 @@ void TrackEffectsPanel::resized()
 
 	area.removeFromTop(24);
 
-	auto selectorsArea = area.removeFromTop(26);
-	area.removeFromTop(Obsidian::GAP_4);
-	auto distortionArea = area.removeFromTop(82);
-	area.removeFromTop(Obsidian::GAP_4);
-	auto eqArea = area.removeFromTop(130);
-	area.removeFromTop(Obsidian::GAP_4);
-	auto filterArea = area.removeFromTop(80);
-	area.removeFromTop(Obsidian::GAP_4);
-	auto chorusArea = area.removeFromTop(70);
-	area.removeFromTop(Obsidian::GAP_4);
-	auto compressorArea = area.removeFromTop(70);
-	area.removeFromTop(Obsidian::GAP_4);
-	auto limiterArea = area.removeFromTop(70);
-
 	juce::FlexBox selectors;
 	selectors.flexDirection = juce::FlexBox::Direction::row;
 	selectors.justifyContent = juce::FlexBox::JustifyContent::center;
@@ -68,20 +54,40 @@ void TrackEffectsPanel::resized()
 		selectors.items.add(juce::FlexItem(*trackSelectors[i]).withFlex(1.f).withMargin(juce::FlexItem::Margin(1.f)));
 	}
 
-	selectors.performLayout(selectorsArea);
+	selectors.performLayout(area.removeFromTop(26));
+
+	area.removeFromTop(Obsidian::GAP);
 
 	if (distortionComponent)
-		distortionComponent->setBounds(distortionArea);
+	{
+		distortionComponent->setBounds(area.removeFromTop(82));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 	if (equalizerComponent)
-		equalizerComponent->setBounds(eqArea);
+	{
+		equalizerComponent->setBounds(area.removeFromTop(130));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 	if (filterComponent)
-		filterComponent->setBounds(filterArea);
+	{
+		filterComponent->setBounds(area.removeFromTop(80));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 	if (chorusComponent)
-		chorusComponent->setBounds(chorusArea);
+	{
+		chorusComponent->setBounds(area.removeFromTop(70));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 	if (compressorComponent)
-		compressorComponent->setBounds(compressorArea);
+	{
+		compressorComponent->setBounds(area.removeFromTop(70));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 	if (limiterComponent)
-		limiterComponent->setBounds(limiterArea);
+	{
+		limiterComponent->setBounds(area.removeFromTop(70));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 }
 
 void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
@@ -174,7 +180,7 @@ void TrackEffectsPanel::setupUI()
 	btn->onClick = [this]()
 	{
 		resetComponents();
-		resized();
+		addComponents();
 	};
 
 	addAndMakeVisible(*btn);
@@ -185,6 +191,7 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 {
 	if (auto *currentTrack = audioProcessor.getTrack(trackId))
 	{
+		isMasterView = false;
 		distortionComponent = std::make_unique<DistortionComponent>(audioProcessor, currentTrack);
 		addAndMakeVisible(*distortionComponent);
 		filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
@@ -199,6 +206,18 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 		addAndMakeVisible(*chorusComponent);
 		resized();
 	}
+}
+
+void TrackEffectsPanel::addComponents()
+{
+	isMasterView = true;
+	equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, nullptr, true);
+	addAndMakeVisible(*equalizerComponent);
+	compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, nullptr, true);
+	addAndMakeVisible(*compressorComponent);
+	limiterComponent = std::make_unique<LimiterComponent>(audioProcessor, nullptr, true);
+	addAndMakeVisible(*limiterComponent);
+	resized();
 }
 
 void TrackEffectsPanel::resetComponents()
