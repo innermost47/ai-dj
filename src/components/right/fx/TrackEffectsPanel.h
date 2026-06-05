@@ -8,6 +8,7 @@ class EqualizerComponent;
 class CompressorComponent;
 class LimiterComponent;
 class DistortionComponent;
+class ChorusComponent;
 
 class TrackEffectsPanel : public ObsidianComponent
 {
@@ -33,6 +34,7 @@ class TrackEffectsPanel : public ObsidianComponent
 	std::unique_ptr<CompressorComponent> compressorComponent;
 	std::unique_ptr<LimiterComponent> limiterComponent;
 	std::unique_ptr<DistortionComponent> distortionComponent;
+	std::unique_ptr<ChorusComponent> chorusComponent;
 
 	void addComponents(const juce::String &trackId);
 	void resetComponents();

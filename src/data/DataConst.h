@@ -23,6 +23,12 @@ inline constexpr float COMPRESSOR_ATTACK = 10.f;
 inline constexpr float COMPRESSOR_RELEASE = 100.f;
 inline constexpr float COMPRESSOR_MAKEUP_GAIN = 1.f;
 
+inline constexpr float CHORUS_RATE = 1.5f;
+inline constexpr float CHORUS_DEPTH = 0.25f;
+inline constexpr float CHORUS_CENTRE = 7.f;
+inline constexpr float CHORUS_FEEDBACK = 0.f;
+inline constexpr float CHORUS_MIX = 0.f;
+
 inline constexpr float DISTORTION_PRE = 0.f;
 inline constexpr float DISTORTION_POST = 0.f;
 inline constexpr float DISTORTION_CUT = 1000.f;
@@ -52,6 +58,7 @@ inline constexpr bool LIMITER_BYPASSED = false;
 inline constexpr bool EQ_BYPASSED = false;
 inline constexpr bool FILTER_BYPASSED = false;
 inline constexpr bool DISTORTION_BYPASSED = true;
+inline constexpr bool CHORUS_BYPASSED = false;
 
 enum RadioGroupIDs
 {
@@ -99,6 +106,11 @@ enum limiterChain
 {
 	limiter = 0,
 	limiterGain = 1
+};
+
+enum chorusChain
+{
+	chorus = 0,
 };
 
 enum distortionType

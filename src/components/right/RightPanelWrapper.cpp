@@ -78,7 +78,7 @@ void RightPanelWrapper::resized()
 
 	const int viewportW = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
 	const int recapH = trackRecap->getPreferredHeight();
-	const int effectsH = 542;
+	const int effectsH = 580;
 
 	int y = 0;
 	trackEffects->setBounds(0, y, viewportW, effectsH);

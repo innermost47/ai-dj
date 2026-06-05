@@ -20,9 +20,17 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.compressor.setMakeUpGain(Obsidian::COMPRESSOR_MAKEUP_GAIN);
 	track.compressor.setBypassed(Obsidian::COMPRESSOR_BYPASSED);
 
-	track.limiter.setThreshold(-.3f);
-	track.limiter.setRelease(50.f);
-	track.limiter.setMakeUpGain(1.f);
+	track.limiter.setThreshold(Obsidian::LIMITER_THRESHOLD);
+	track.limiter.setRelease(Obsidian::LIMITER_RELEASE);
+	track.limiter.setMakeUpGain(Obsidian::LIMITER_MAKEUP_GAIN);
+	track.limiter.setBypassed(Obsidian::LIMITER_BYPASSED);
+
+	track.chorus.setRate(Obsidian::CHORUS_RATE);
+	track.chorus.setDepth(Obsidian::CHORUS_DEPTH);
+	track.chorus.setCentre(Obsidian::CHORUS_CENTRE);
+	track.chorus.setFeedback(Obsidian::CHORUS_FEEDBACK);
+	track.chorus.setMix(Obsidian::CHORUS_MIX);
+	track.chorus.setBypassed(Obsidian::CHORUS_BYPASSED);
 
 	track.distortion.setPre(Obsidian::DISTORTION_PRE);
 	track.distortion.setPost(Obsidian::DISTORTION_POST);
@@ -40,6 +48,7 @@ void TrackManager::prepareTrack(TrackData &track)
 	track.distortion.prepare(spec);
 	track.equalizer.prepare(spec);
 	track.filter.prepare(spec);
+	track.chorus.prepare(spec);
 	track.compressor.prepare(spec);
 	track.limiter.prepare(spec);
 }
@@ -807,6 +816,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	track.distortion.process(contextToUse);
 	track.equalizer.process(contextToUse);
 	track.filter.process(contextToUse);
+	track.chorus.process(contextToUse);
 	track.compressor.process(contextToUse);
 	track.limiter.process(contextToUse);
 

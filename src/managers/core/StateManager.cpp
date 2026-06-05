@@ -85,6 +85,13 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("distortionType", track->distortion.getType(), nullptr);
 		    trackState.setProperty("distortionBypassed", track->distortion.isBypassed(), nullptr);
 
+		    trackState.setProperty("chorusRate", track->chorus.getRate(), nullptr);
+		    trackState.setProperty("chorusDepth", track->chorus.getDepth(), nullptr);
+		    trackState.setProperty("chorusCentre", track->chorus.getCentre(), nullptr);
+		    trackState.setProperty("chorusFeedback", track->chorus.getFeedback(), nullptr);
+		    trackState.setProperty("chorusMix", track->chorus.getMix(), nullptr);
+		    trackState.setProperty("chorusBypassed", track->chorus.isBypassed(), nullptr);
+
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
@@ -199,6 +206,13 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 
+		track->distortion.reset();
+		track->filter.reset();
+		track->equalizer.reset();
+		track->compressor.reset();
+		track->limiter.reset();
+		track->chorus.reset();
+
 		juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 		spec.maximumBlockSize = static_cast<juce::uint32>(audioProcessor.getBlockSize());
 		spec.numChannels = 2;
@@ -209,6 +223,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->equalizer.prepare(spec);
 		track->compressor.prepare(spec);
 		track->limiter.prepare(spec);
+		track->chorus.prepare(spec);
 
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
@@ -251,9 +266,17 @@ void StateManager::loadState(const juce::ValueTree &state)
 		    trackState.getProperty("compressorMakeUpGain", Obsidian::COMPRESSOR_MAKEUP_GAIN));
 		track->compressor.setBypassed(trackState.getProperty("compressorBypassed", Obsidian::COMPRESSOR_BYPASSED));
 
-		track->limiter.setThreshold(trackState.getProperty("limiterThreshold", -.3f));
-		track->limiter.setRelease(trackState.getProperty("limiterRelease", 50.f));
-		track->limiter.setMakeUpGain(trackState.getProperty("limiterMakeUpGain", 1.f));
+		track->limiter.setThreshold(trackState.getProperty("limiterThreshold", Obsidian::LIMITER_THRESHOLD));
+		track->limiter.setRelease(trackState.getProperty("limiterRelease", Obsidian::LIMITER_RELEASE));
+		track->limiter.setMakeUpGain(trackState.getProperty("limiterMakeUpGain", Obsidian::LIMITER_MAKEUP_GAIN));
+		track->limiter.setBypassed(trackState.getProperty("limiterBypassed", Obsidian::LIMITER_BYPASSED));
+
+		track->chorus.setRate(trackState.getProperty("chorusRate", Obsidian::CHORUS_RATE));
+		track->chorus.setDepth(trackState.getProperty("chorusDepth", Obsidian::CHORUS_DEPTH));
+		track->chorus.setCentre(trackState.getProperty("chorusCentre", Obsidian::CHORUS_CENTRE));
+		track->chorus.setFeedback(trackState.getProperty("chorusFeedback", Obsidian::CHORUS_FEEDBACK));
+		track->chorus.setMix(trackState.getProperty("chorusMix", Obsidian::CHORUS_MIX));
+		track->chorus.setBypassed(trackState.getProperty("chorusBypassed", Obsidian::CHORUS_BYPASSED));
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{

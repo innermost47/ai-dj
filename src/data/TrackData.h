@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Chorus.h"
 #include "Compressor.h"
 #include "Console6Channel.h"
 #include "DataConst.h"
@@ -170,6 +171,7 @@ struct TrackData
 	Compressor compressor;
 	Limiter limiter;
 	Distortion distortion;
+	Chorus chorus;
 
 	juce::String trackId;
 	juce::String trackName;

@@ -268,6 +268,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingStep.cpp
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
+    src/components/right/fx/ChorusComponent.cpp
     src/components/right/fx/CompressorComponent.cpp
     src/components/right/fx/DistortionComponent.cpp
     src/components/right/fx/EqualizerComponent.cpp
@@ -296,6 +297,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/data/TrackData.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
+    src/dsp/Chorus.cpp
     src/dsp/Compressor.cpp
     src/dsp/DelaySend.cpp
     src/dsp/Distortion.cpp

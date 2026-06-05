@@ -1,4 +1,5 @@
 #include "TrackEffectsPanel.h"
+#include "ChorusComponent.h"
 #include "CompressorComponent.h"
 #include "DistortionComponent.h"
 #include "EqualizerComponent.h"
@@ -51,6 +52,8 @@ void TrackEffectsPanel::resized()
 	area.removeFromTop(Obsidian::GAP_4);
 	auto filterArea = area.removeFromTop(80);
 	area.removeFromTop(Obsidian::GAP_4);
+	auto chorusArea = area.removeFromTop(70);
+	area.removeFromTop(Obsidian::GAP_4);
 	auto compressorArea = area.removeFromTop(70);
 	area.removeFromTop(Obsidian::GAP_4);
 	auto limiterArea = area.removeFromTop(70);
@@ -73,6 +76,8 @@ void TrackEffectsPanel::resized()
 		equalizerComponent->setBounds(eqArea);
 	if (filterComponent)
 		filterComponent->setBounds(filterArea);
+	if (chorusComponent)
+		chorusComponent->setBounds(chorusArea);
 	if (compressorComponent)
 		compressorComponent->setBounds(compressorArea);
 	if (limiterComponent)
@@ -85,6 +90,8 @@ void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 		distortionComponent->updateModelUI();
 	if (filterComponent)
 		filterComponent->updateModelUI();
+	if (chorusComponent)
+		chorusComponent->updateModelUI();
 	if (compressorComponent)
 		compressorComponent->updateModelUI();
 	if (equalizerComponent)
@@ -188,6 +195,8 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 		addAndMakeVisible(*compressorComponent);
 		limiterComponent = std::make_unique<LimiterComponent>(audioProcessor, currentTrack);
 		addAndMakeVisible(*limiterComponent);
+		chorusComponent = std::make_unique<ChorusComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*chorusComponent);
 		resized();
 	}
 }
@@ -199,4 +208,5 @@ void TrackEffectsPanel::resetComponents()
 	filterComponent = nullptr;
 	compressorComponent = nullptr;
 	limiterComponent = nullptr;
+	chorusComponent = nullptr;
 }

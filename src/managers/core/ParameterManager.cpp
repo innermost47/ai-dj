@@ -98,6 +98,13 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotDistortionBypassedParams[i] = apvts.getRawParameterValue(s + "DistortionBypassed");
 		slotDistortionTypeParams[i] = apvts.getRawParameterValue(s + "DistortionType");
 
+		slotChorusRateParams[i] = apvts.getRawParameterValue(s + "ChorusRate");
+		slotChorusDepthParams[i] = apvts.getRawParameterValue(s + "ChorusDepth");
+		slotChorusCentreParams[i] = apvts.getRawParameterValue(s + "ChorusCentre");
+		slotChorusFeedbackParams[i] = apvts.getRawParameterValue(s + "ChorusFeedback");
+		slotChorusMixParams[i] = apvts.getRawParameterValue(s + "ChorusMix");
+		slotChorusBypassedParams[i] = apvts.getRawParameterValue(s + "ChorusBypassed");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -150,6 +157,13 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "DistortionCut", listener);
 		apvts.addParameterListener(s + "DistortionBypassed", listener);
 		apvts.addParameterListener(s + "DistortionType", listener);
+
+		apvts.addParameterListener(s + "ChorusRate", listener);
+		apvts.addParameterListener(s + "ChorusDepth", listener);
+		apvts.addParameterListener(s + "ChorusCentre", listener);
+		apvts.addParameterListener(s + "ChorusFeedback", listener);
+		apvts.addParameterListener(s + "ChorusMix", listener);
+		apvts.addParameterListener(s + "ChorusBypassed", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -251,6 +265,13 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "DistortionCut", listener);
 		apvts.removeParameterListener(s + "DistortionType", listener);
 		apvts.removeParameterListener(s + "DistortionBypassed", listener);
+
+		apvts.removeParameterListener(s + "ChorusRate", listener);
+		apvts.removeParameterListener(s + "ChorusDepth", listener);
+		apvts.removeParameterListener(s + "ChorusCentre", listener);
+		apvts.removeParameterListener(s + "ChorusFeedback", listener);
+		apvts.removeParameterListener(s + "ChorusMix", listener);
+		apvts.removeParameterListener(s + "ChorusBypassed", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -414,11 +435,31 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "DistortionCut", slotName + " Distortion Cut",
 		    juce::NormalisableRange<float>(20.0f, 20000.0f, 0.f, 0.3f), 1000.f));
 
+		juce::NormalisableRange<float> chorusRateRange(0.0f, 10.0f);
+		chorusRateRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "ChorusRate", slotName + " Chorus Rate",
+		                                                             chorusRateRange, Obsidian::CHORUS_RATE));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "ChorusDepth", slotName + " Chorus Depth",
+		                                                             juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		                                                             Obsidian::CHORUS_DEPTH));
+
+		juce::NormalisableRange<float> chorusCentreRange(1.0f, 30.0f);
+		chorusCentreRange.skew = std::log(0.5f) / std::log(1.f / 30.f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "ChorusCentre", slotName + " Chorus Centre", chorusCentreRange, Obsidian::CHORUS_CENTRE));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "ChorusFeedback", slotName + " Chorus Feedback",
+		    juce::NormalisableRange<float>(-0.95f, 0.95f, 0.f), Obsidian::CHORUS_FEEDBACK));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "ChorusMix", slotName + " Chorus Mix",
+		                                                             juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		                                                             Obsidian::CHORUS_MIX));
+
 		params.push_back(makeTrigg(slotId + "DistortionBypassed", slotName + " Distortion Bypassed"));
 		params.push_back(makeTrigg(slotId + "CompressorBypassed", slotName + " Compressor Bypassed"));
 		params.push_back(makeTrigg(slotId + "LimiterBypassed", slotName + " Limiter Bypassed"));
 		params.push_back(makeTrigg(slotId + "EQBypassed", slotName + " EQ Bypassed"));
 		params.push_back(makeTrigg(slotId + "FilterBypassed", slotName + " Filter Bypassed"));
+		params.push_back(makeTrigg(slotId + "ChorusBypassed", slotName + " Chorus Bypassed"));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -679,6 +720,16 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			auto type = static_cast<Obsidian::distortionType>((int)newValue);
 			track->distortion.setType(type);
 		}
+		else if (parameterID.endsWith("ChorusRate"))
+			track->chorus.setRate(newValue);
+		else if (parameterID.endsWith("ChorusDepth"))
+			track->chorus.setDepth(newValue);
+		else if (parameterID.endsWith("ChorusCentre"))
+			track->chorus.setCentre(newValue);
+		else if (parameterID.endsWith("ChorusFeedback"))
+			track->chorus.setFeedback(newValue);
+		else if (parameterID.endsWith("ChorusMix"))
+			track->chorus.setMix(newValue);
 		else if (parameterID.endsWith("DistortionBypassed"))
 			track->distortion.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("EQBypassed"))
@@ -689,6 +740,8 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->limiter.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("CompressorBypassed"))
 			track->compressor.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("ChorusBypassed"))
+			track->chorus.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);

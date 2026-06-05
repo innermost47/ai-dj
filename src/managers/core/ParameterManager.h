@@ -128,6 +128,27 @@ class ParameterManager
 		return safeLoadIndexed(slotDistortionTypeParams, slot);
 	}
 
+	float getChorusRate(int slot) const
+	{
+		return safeLoadIndexed(slotChorusRateParams, slot);
+	}
+	float getChorusDepth(int slot) const
+	{
+		return safeLoadIndexed(slotChorusDepthParams, slot);
+	}
+	float getChorusCentre(int slot) const
+	{
+		return safeLoadIndexed(slotChorusCentreParams, slot);
+	}
+	float getChorusFeedback(int slot) const
+	{
+		return safeLoadIndexed(slotChorusFeedbackParams, slot);
+	}
+	float getChorusMix(int slot) const
+	{
+		return safeLoadIndexed(slotChorusMixParams, slot);
+	}
+
 	bool getDistortionBypassed(int slot) const
 	{
 		return safeLoad(slotDistortionBypassedParams[slot]) > 0.5f;
@@ -147,6 +168,10 @@ class ParameterManager
 	bool getLimiterBypassed(int slot) const
 	{
 		return safeLoad(slotLimiterBypassedParams[slot]) > 0.5f;
+	}
+	bool getChorusBypassed(int slot) const
+	{
+		return safeLoad(slotChorusBypassedParams[slot]) > 0.5f;
 	}
 
 	bool getMute(int slot) const
@@ -350,6 +375,13 @@ class ParameterManager
 	std::atomic<float> *slotDistortionBypassedParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotDistortionTypeParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotChorusRateParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusDepthParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusCentreParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusFeedbackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusMixParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusBypassedParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
@@ -420,7 +452,12 @@ class ParameterManager
 		                                                "DistortionPreGain",
 		                                                "DistortionPostGain",
 		                                                "DistortionCut",
-		                                                "DistortionType"};
+		                                                "DistortionType",
+		                                                "ChorusRate",
+		                                                "ChorusDepth",
+		                                                "ChorusCentre",
+		                                                "ChorusFeedback",
+		                                                "ChorusMix"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
@@ -454,7 +491,8 @@ class ParameterManager
 		                                                "FilterBypassed",
 		                                                "CompressorBypassed",
 		                                                "LimiterBypassed",
-		                                                "EQBypassed"};
+		                                                "EQBypassed",
+		                                                "ChorusBypassed"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
