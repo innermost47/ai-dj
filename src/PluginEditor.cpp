@@ -32,8 +32,6 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
 	lcdScreen = std::make_unique<LCDScreen>();
 	masterWaveformDisplay = std::make_unique<MasterWaveformDisplay>();
-	uiLayoutManager = std::make_unique<UILayoutManager>(audioProcessor, *this, *mixerPanel);
-	lcdScreen->setTwoLineMode(true);
 
 	audioProcessor.setGenerationListener(uiGenerationManager.get());
 	if (audioProcessor.isStateReady())
@@ -193,7 +191,11 @@ void DjIaVstEditor::initUI()
 	if (isInitialized.load())
 		return;
 
+	if (!uiLayoutManager)
+		uiLayoutManager = std::make_unique<UILayoutManager>(audioProcessor, *this, *mixerPanel);
+	lcdScreen->setTwoLineMode(true);
 	setupUI();
+	uiTrackManager->refreshTrackComponents();
 	uiTrackManager->refreshUIForMode();
 	juce::WeakReference<DjIaVstEditor> weakThis(this);
 	if (audioProcessor.getServerUrl().isEmpty())
