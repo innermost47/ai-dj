@@ -201,6 +201,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isPlaying.store(false);
 				track->isCurrentlyPlaying.store(false);
 				track->readPosition.store(0.0);
+				track->limiter.resetReductionAmount();
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
 				seqData.stepAccumulator = 0.0;
@@ -223,6 +224,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 			{
 				auto &seqData = track->getCurrentSequencerData();
 				track->isCurrentlyPlaying.store(false);
+				track->limiter.resetReductionAmount();
 				track->readPosition.store(0.0);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
@@ -587,6 +589,7 @@ void SequencerManager::executePendingAction(TrackData *track)
 		track->isPlaying.store(false);
 		track->isArmedToStop.store(false);
 		track->isCurrentlyPlaying.store(false);
+		track->limiter.resetReductionAmount();
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
 		                                                 MidiMapping::feedbackIdle);
 		if (audioProcessor.onUIUpdateNeeded)

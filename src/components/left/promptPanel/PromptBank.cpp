@@ -463,7 +463,7 @@ bool PromptBank::seedDefaultPromptsAndCategories()
 	     "stable-audio-open-1.0", "Drums"},
 	    {"gqom drum loop, solo deep kick with tribal percussion, raw south african rhythm, dry, isolated",
 	     "stable-audio-open-1.0", "Drums"},
-	    {"baile funk drum loop, solo tamborzão pattern, rapid syncopated brazilian rhythm, dry, no background",
+	    {"baile funk drum loop, solo tamborzao pattern, rapid syncopated brazilian rhythm, dry, no background",
 	     "stable-audio-open-1.0", "Drums"},
 	    {"reggaeton drum loop, solo dembow pattern with crisp snare, latin groove, dry, isolated",
 	     "stable-audio-open-1.0", "Drums"},

@@ -5,6 +5,19 @@
 
 MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
+	setupUI();
+}
+
+MixerPanel::~MixerPanel()
+{
+	for (auto &channel : mixerChannels)
+		if (channel)
+			channel->setVisible(false);
+	mixerChannels.clear();
+}
+
+void MixerPanel::setupUI()
+{
 	addAndMakeVisible(deckAViewport);
 	deckAViewport.setViewedComponent(&deckAContainer, false);
 	deckAViewport.setScrollBarsShown(false, false);
@@ -17,14 +30,6 @@ MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 	addAndMakeVisible(*crossfader);
 
 	refreshMixerChannels();
-}
-
-MixerPanel::~MixerPanel()
-{
-	for (auto &channel : mixerChannels)
-		if (channel)
-			channel->setVisible(false);
-	mixerChannels.clear();
 }
 
 void MixerPanel::updateTrackName(const juce::String &trackId, const juce::String &newName)

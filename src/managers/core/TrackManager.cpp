@@ -1,13 +1,62 @@
 ﻿#include "TrackManager.h"
 #include "TrackData.h"
 
+void TrackManager::prepareTrack(TrackData &track)
+{
+	track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+	track.reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+
+	track.filter.setMode(juce::dsp::LadderFilterMode::HPF12);
+	track.filter.setSamplingRate(currentSampleRate);
+	track.filter.setCutoffFrequency(Obsidian::FILTER_CUT);
+	track.filter.setResonance(Obsidian::FILTER_RES);
+	track.filter.setDrive(Obsidian::FILTER_DRIVE);
+	track.filter.setBypassed(Obsidian::FILTER_BYPASSED);
+
+	track.compressor.setThreshold(Obsidian::COMPRESSOR_THRESHOLD);
+	track.compressor.setRatio(Obsidian::COMPRESSOR_RATIO);
+	track.compressor.setAttack(Obsidian::COMPRESSOR_ATTACK);
+	track.compressor.setRelease(Obsidian::COMPRESSOR_RELEASE);
+	track.compressor.setMakeUpGain(Obsidian::COMPRESSOR_MAKEUP_GAIN);
+	track.compressor.setBypassed(Obsidian::COMPRESSOR_BYPASSED);
+
+	track.limiter.setThreshold(Obsidian::LIMITER_THRESHOLD);
+	track.limiter.setRelease(Obsidian::LIMITER_RELEASE);
+	track.limiter.setMakeUpGain(Obsidian::LIMITER_MAKEUP_GAIN);
+	track.limiter.setBypassed(Obsidian::LIMITER_BYPASSED);
+
+	track.chorus.setRate(Obsidian::CHORUS_RATE);
+	track.chorus.setDepth(Obsidian::CHORUS_DEPTH);
+	track.chorus.setCentre(Obsidian::CHORUS_CENTRE);
+	track.chorus.setFeedback(Obsidian::CHORUS_FEEDBACK);
+	track.chorus.setMix(Obsidian::CHORUS_MIX);
+	track.chorus.setBypassed(Obsidian::CHORUS_BYPASSED);
+
+	track.distortion.setPre(Obsidian::DISTORTION_PRE);
+	track.distortion.setPost(Obsidian::DISTORTION_POST);
+	track.distortion.setCut(Obsidian::DISTORTION_CUT);
+	track.distortion.setType(Obsidian::distortionType::soft);
+	track.distortion.setBypassed(Obsidian::DISTORTION_BYPASSED);
+
+	track.equalizer.setBypassed(Obsidian::EQ_BYPASSED);
+
+	juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
+	spec.maximumBlockSize = static_cast<juce::uint32>(currentMaxBlockSize);
+	spec.numChannels = 2;
+	spec.sampleRate = currentSampleRate;
+
+	track.distortion.prepare(spec);
+	track.equalizer.prepare(spec);
+	track.filter.prepare(spec);
+	track.chorus.prepare(spec);
+	track.compressor.prepare(spec);
+	track.limiter.prepare(spec);
+}
+
 juce::String TrackManager::createTrack(const juce::String &name)
 {
 	juce::ScopedLock lock(tracksLock);
-	for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
-	{
-		usedSlots[i] = false;
-	}
+	std::fill(std::begin(usedSlots), std::end(usedSlots), false);
 	for (const auto &pair : tracks)
 	{
 		if (pair.second->slotIndex >= 0 && pair.second->slotIndex < Obsidian::MAX_TRACKS)
@@ -30,8 +79,7 @@ juce::String TrackManager::createTrack(const juce::String &name)
 
 	if (audioPrepared)
 	{
-		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
-		track->reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+		prepareTrack(*track);
 	}
 
 	tracks[stdId] = std::move(track);
@@ -44,7 +92,9 @@ void TrackManager::addTrack(const std::string &trackId, std::unique_ptr<TrackDat
 	const juce::ScopedLock sl(tracksLock);
 
 	if (audioPrepared && track)
-		track->delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+	{
+		prepareTrack(*track);
+	}
 
 	tracks[trackId] = std::move(track);
 	trackOrder.push_back(trackId);
@@ -86,8 +136,7 @@ void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 		if (pair.second)
 		{
 			pair.second->meterUpdateInterval = interval;
-			pair.second->delaySendProcessor.prepare(sampleRate, maxBlockSize);
-			pair.second->reverbSendProcessor.prepare(sampleRate, maxBlockSize);
+			prepareTrack(*pair.second);
 		}
 	}
 }
@@ -198,7 +247,8 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    std::vector<juce::AudioBuffer<float>> &individualOutputs,
                                    juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
                                    const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-                                   int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate)
+                                   int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate,
+                                   bool useCrossfader)
 {
 	const int numSamples = outputBuffer.getNumSamples();
 	bool anyTrackSolo = false;
@@ -239,13 +289,15 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			for (int ch = 0; ch < std::min(tempMixBuffer.getNumChannels(), tempIndividualBuffer.getNumChannels()); ++ch)
 				tempMixBuffer.copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
 
-			float deckGainStart = 1.0f;
-			float deckGainEnd = 1.0f;
-			int pairIdx = track->getPairIndex();
-			if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR)
-			{
-				bool isA = track->isDeckA();
+			bool isA = track->isDeckA();
+			constexpr float kUnityHeadroom = 0.707f;
+			float trackVol = track->volume.load();
 
+			float deckGainStart = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
+			float deckGainEnd = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
+			int pairIdx = track->getPairIndex();
+			if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR && useCrossfader)
+			{
 				float pairXfStart = pairPrev[pairIdx];
 				float globalXfStart = globalPrev;
 				float pairGainStart = applyCrossfadeCurve(pairXfStart, isA, curveMode);
@@ -734,31 +786,9 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		float gainDb = juce::jlimit(-60.0f, 12.0f, track.getCurrentPage().gain.load());
 		float gainLinear = std::pow(10.0f, gainDb / 20.0f);
 
-		leftSample *= volume * leftGain * totalGain * gainLinear;
-		rightSample *= volume * rightGain * totalGain * gainLinear;
+		leftSample *= leftGain * totalGain * gainLinear;
+		rightSample *= rightGain * totalGain * gainLinear;
 
-		float absLeft = std::abs(leftSample);
-		float absRight = std::abs(rightSample);
-
-		if (absLeft > track.meterAccumPeakLeft)
-			track.meterAccumPeakLeft = absLeft;
-		if (absRight > track.meterAccumPeakRight)
-			track.meterAccumPeakRight = absRight;
-
-		track.meterSampleCounter++;
-
-		if (track.meterSampleCounter >= track.meterUpdateInterval)
-		{
-			track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakLeft));
-			track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakRight));
-
-			track.meterAccumPeakLeft = 0.0f;
-			track.meterAccumPeakRight = 0.0f;
-			track.meterSampleCounter = 0;
-		}
-
-		mixOutput.addSample(0, i, leftSample);
-		mixOutput.addSample(1, i, rightSample);
 		individualOutput.setSample(0, i, leftSample);
 		individualOutput.setSample(1, i, rightSample);
 
@@ -778,6 +808,50 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			track.theoreticalPosition.store(newTheoretical);
 		}
 	}
+
+	auto block = juce::dsp::AudioBlock<float>(individualOutput);
+	auto blockToUse = block.getSubBlock(0, individualOutput.getNumSamples());
+	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);
+
+	track.distortion.process(contextToUse);
+	track.equalizer.process(contextToUse);
+	track.filter.process(contextToUse);
+	track.chorus.process(contextToUse);
+	track.compressor.process(contextToUse);
+	track.limiter.process(contextToUse);
+
+	individualOutput.applyGain(volume);
+
+	const int numSamplesProcessed = individualOutput.getNumSamples();
+	const float *postLeft = individualOutput.getReadPointer(0);
+	const float *postRight = individualOutput.getReadPointer(1);
+
+	for (int i = 0; i < numSamplesProcessed; i++)
+	{
+		float absLeft = std::abs(postLeft[i]);
+		float absRight = std::abs(postRight[i]);
+
+		if (absLeft > track.meterAccumPeakLeft)
+			track.meterAccumPeakLeft = absLeft;
+		if (absRight > track.meterAccumPeakRight)
+			track.meterAccumPeakRight = absRight;
+
+		track.meterSampleCounter++;
+
+		if (track.meterSampleCounter >= track.meterUpdateInterval)
+		{
+			track.audioLevelLeft.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakLeft));
+			track.audioLevelRight.store(juce::jlimit(0.0f, 1.0f, track.meterAccumPeakRight));
+
+			track.meterAccumPeakLeft = 0.0f;
+			track.meterAccumPeakRight = 0.0f;
+			track.meterSampleCounter = 0;
+		}
+
+		mixOutput.addSample(0, i, individualOutput.getSample(0, i));
+		mixOutput.addSample(1, i, individualOutput.getSample(1, i));
+	}
+
 	track.readPosition.store(currentPosition);
 }
 

@@ -32,9 +32,13 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 	IconButton curveEqualPowerButton{"CurveEqualPower", "EQ"};
 	IconButton curveDjButton{"CurveDJ", "DJ"};
 
+	IconButton useCrossfaderButton{"UseCrossfader", ""};
+
 	juce::Rectangle<int> pairRowBounds[4];
 	juce::Rectangle<int> globalRowBounds;
 	juce::Rectangle<int> curveButtonsRowBounds;
+
+	juce::Label crossfaderLabel;
 
 	static constexpr int ledDiameter = 12;
 	static constexpr int ledPadX = 3;

@@ -1,0 +1,78 @@
+#pragma once
+#include "MidiLearnableComponents.h"
+#include "ObsidianBaseMidiComponent.h"
+#include <JuceHeader.h>
+
+class DjIaVstProcessor;
+
+class LimiterComponent : public ObsidianBaseMidiComponent, public juce::Timer
+{
+  public:
+	LimiterComponent(DjIaVstProcessor &processor, TrackData *trackData = nullptr, bool isMaster = false);
+	~LimiterComponent() override;
+
+	void paint(juce::Graphics &g) override;
+	void syncParams();
+	void resized() override;
+	void setTrackData(TrackData *trackData);
+	void updateModelUI();
+	void wireParameters();
+	void timerCallback() override;
+	void setupUI();
+
+	juce::String getTrackId() const
+	{
+		auto *t = track.get();
+		if (t)
+			return t->trackId;
+		return "None";
+	}
+
+  protected:
+	juce::String getParameterPrefix() const override
+	{
+		if (masterChannel)
+			return "master";
+		else
+		{
+			auto *t = track.get();
+			if (!t || t->slotIndex == -1)
+				return {};
+			return "slot" + juce::String(t->slotIndex + 1);
+		}
+	}
+
+	juce::String getMidiLearnDescriptionPrefix() const override
+	{
+		if (masterChannel)
+			return "Master ";
+		else
+		{
+			auto *t = track.get();
+			if (!t || t->slotIndex == -1)
+				return {};
+			return "Slot " + juce::String(t->slotIndex + 1) + " ";
+		}
+	}
+	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
+
+  private:
+	MidiLearnableSlider thresholdKnob;
+	MidiLearnableSlider releaseKnob;
+	MidiLearnableSlider makeUpGainKnob;
+
+	juce::Label thresholdLabel;
+	juce::Label releaseLabel;
+	juce::Label makeUpGainLabel;
+
+	juce::Label componentLabel;
+
+	juce::Colour modelColour;
+
+	IconButton bypassLimiterButton{"BypassLimiter", ""};
+
+	bool masterChannel = false;
+	bool isPlaying = false;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LimiterComponent)
+};

@@ -35,6 +35,8 @@ class MixerPanel : public ObsidianComponent
   private:
 	DjIaVstProcessor &audioProcessor;
 
+	void setupUI();
+
 	std::unique_ptr<CrossfaderComponent> crossfader;
 
 	juce::Viewport deckAViewport;

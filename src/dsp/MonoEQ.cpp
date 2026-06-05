@@ -1,0 +1,86 @@
+#include "MonoEQ.h"
+
+MonoEQ::MonoEQ()
+{
+}
+
+void MonoEQ::updateCoefficients(Obsidian::filterType type, float fq, float q, float g)
+{
+	frequency = fq;
+	resonance = q;
+	gain = juce::jlimit(0.01f, 4.f, g);
+
+	switch (type)
+	{
+	case Obsidian::filterType::lowShelf:
+	{
+		auto newCoefs = juce::dsp::IIR::Coefficients<float>::makeLowShelf(sampleRate, frequency, resonance, gain);
+		if (newCoefs)
+			*stereoFilter.state = *newCoefs;
+		break;
+	}
+	case Obsidian::filterType::peakFilter:
+	{
+		auto newCoefs = juce::dsp::IIR::Coefficients<float>::makePeakFilter(sampleRate, frequency, resonance, gain);
+		if (newCoefs)
+			*stereoFilter.state = *newCoefs;
+		break;
+	}
+	case Obsidian::filterType::highShelf:
+	{
+		auto newCoefs = juce::dsp::IIR::Coefficients<float>::makeHighShelf(sampleRate, frequency, resonance, gain);
+		if (newCoefs)
+			*stereoFilter.state = *newCoefs;
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void MonoEQ::updateFrequency(Obsidian::filterType type, float fq)
+{
+	frequency = fq;
+	updateCoefficients(type, frequency, resonance, gain);
+}
+
+void MonoEQ::updateQ(Obsidian::filterType type, float q)
+{
+	resonance = q;
+	updateCoefficients(type, frequency, resonance, gain);
+}
+
+void MonoEQ::updateGain(Obsidian::filterType type, float g)
+{
+	gain = g;
+	updateCoefficients(type, frequency, resonance, gain);
+}
+
+void MonoEQ::setSampleRate(double sr)
+{
+	sampleRate = sr;
+}
+
+void MonoEQ::reset() noexcept
+{
+	stereoFilter.reset();
+}
+
+void MonoEQ::init(float fr)
+{
+	frequency = fr;
+	resonance = Obsidian::EQ_BASE_RESONANCE;
+	gain = Obsidian::EQ_BANDS_GAIN;
+}
+
+void MonoEQ::prepare(const juce::dsp::ProcessSpec &spec)
+{
+	sampleRate = spec.sampleRate;
+	stereoFilter.prepare(spec);
+	updateCoefficients(Obsidian::filterType::peakFilter, frequency, resonance, 1.0f);
+}
+
+void MonoEQ::process(juce::dsp::ProcessContextReplacing<float> &context)
+{
+	stereoFilter.process(context);
+}

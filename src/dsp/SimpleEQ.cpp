@@ -1,5 +1,9 @@
 #include "SimpleEQ.h"
 
+SimpleEQ::SimpleEQ()
+{
+}
+
 void SimpleEQ::prepare(double newSampleRate, int /*samplesPerBlock*/)
 {
 	sampleRate = newSampleRate;

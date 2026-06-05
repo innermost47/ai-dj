@@ -60,6 +60,119 @@ class ParameterManager
 	{
 		return safeLoadIndexed(slotGenerateParams, slot);
 	}
+	float getCutoff(int slot) const
+	{
+		return safeLoadIndexed(slotCutoffParams, slot);
+	}
+	float getResonance(int slot) const
+	{
+		return safeLoadIndexed(slotResonanceParams, slot);
+	}
+	float getFilterMode(int slot) const
+	{
+		return safeLoadIndexed(slotFilterModeParams, slot);
+	}
+	float getFilterDrive(int slot) const
+	{
+		return safeLoadIndexed(slotFilterDriveParams, slot);
+	}
+
+	float getCompressorThreshold(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorThresholdParams, slot);
+	}
+	float getCompressorRatio(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorRatioParams, slot);
+	}
+	float getCompressorAttack(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorAttackParams, slot);
+	}
+	float getCompressorRelease(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorReleaseParams, slot);
+	}
+	float getCompressorMakeUpGain(int slot) const
+	{
+		return safeLoadIndexed(slotCompressorMakeUpGainParams, slot);
+	}
+
+	float getLimiterRelease(int slot) const
+	{
+		return safeLoadIndexed(slotLimiterReleaseParams, slot);
+	}
+	float getLimiterThreshold(int slot) const
+	{
+		return safeLoadIndexed(slotLimiterThresholdParams, slot);
+	}
+	float getLimiterMakeUpGain(int slot) const
+	{
+		return safeLoadIndexed(slotLimiterMakeUpGainParams, slot);
+	}
+
+	float getDistortionPreGain(int slot) const
+	{
+		return safeLoadIndexed(slotDistortionPreGainParams, slot);
+	}
+	float getDistortionPostGain(int slot) const
+	{
+		return safeLoadIndexed(slotDistortionPostGainParams, slot);
+	}
+	float getDistortionCut(int slot) const
+	{
+		return safeLoadIndexed(slotDistortionCutParams, slot);
+	}
+	float getDistortionType(int slot) const
+	{
+		return safeLoadIndexed(slotDistortionTypeParams, slot);
+	}
+
+	float getChorusRate(int slot) const
+	{
+		return safeLoadIndexed(slotChorusRateParams, slot);
+	}
+	float getChorusDepth(int slot) const
+	{
+		return safeLoadIndexed(slotChorusDepthParams, slot);
+	}
+	float getChorusCentre(int slot) const
+	{
+		return safeLoadIndexed(slotChorusCentreParams, slot);
+	}
+	float getChorusFeedback(int slot) const
+	{
+		return safeLoadIndexed(slotChorusFeedbackParams, slot);
+	}
+	float getChorusMix(int slot) const
+	{
+		return safeLoadIndexed(slotChorusMixParams, slot);
+	}
+
+	bool getDistortionBypassed(int slot) const
+	{
+		return safeLoad(slotDistortionBypassedParams[slot]) > 0.5f;
+	}
+	bool getCompressorBypassed(int slot) const
+	{
+		return safeLoad(slotCompressorBypassedParams[slot]) > 0.5f;
+	}
+	bool getEQBypassed(int slot) const
+	{
+		return safeLoad(slotEQBypassedParams[slot]) > 0.5f;
+	}
+	bool getFilterBypassed(int slot) const
+	{
+		return safeLoad(slotFilterBypassedParams[slot]) > 0.5f;
+	}
+	bool getLimiterBypassed(int slot) const
+	{
+		return safeLoad(slotLimiterBypassedParams[slot]) > 0.5f;
+	}
+	bool getChorusBypassed(int slot) const
+	{
+		return safeLoad(slotChorusBypassedParams[slot]) > 0.5f;
+	}
 
 	bool getMute(int slot) const
 	{
@@ -102,6 +215,10 @@ class ParameterManager
 	{
 		return safeLoad(playParam) > 0.5f;
 	}
+	bool useCrossfader() const
+	{
+		return safeLoad(useCrossfaderParam) > 0.5f;
+	}
 
 	float getGlobalCrossfader() const
 	{
@@ -137,8 +254,6 @@ class ParameterManager
 	{
 		return safeLoad(reverbMixParam);
 	}
-
-	void removeAllListeners(juce::AudioProcessorValueTreeState::Listener *listener);
 
 	float getRandomRetrigger(int slot) const
 	{
@@ -183,6 +298,7 @@ class ParameterManager
 	void handleSampleParams(int slot, TrackData *track);
 	void applyPlayState(bool shouldArm, TrackData *track);
 	void handleSendsParams();
+	void removeAllListeners(juce::AudioProcessorValueTreeState::Listener *listener);
 
   private:
 	juce::AudioProcessorValueTreeState apvts;
@@ -197,6 +313,7 @@ class ParameterManager
 	std::atomic<float> *masterLowParam = nullptr;
 	std::atomic<float> *generateParam = nullptr;
 	std::atomic<float> *playParam = nullptr;
+	std::atomic<float> *useCrossfaderParam = nullptr;
 	std::atomic<float> *delayDivisionParam = nullptr;
 	std::atomic<float> *delayFeedbackParam = nullptr;
 	std::atomic<float> *delayModeParam = nullptr;
@@ -204,6 +321,28 @@ class ParameterManager
 	std::atomic<float> *reverbDampingParam = nullptr;
 	std::atomic<float> *reverbWidthParam = nullptr;
 	std::atomic<float> *reverbMixParam = nullptr;
+
+	std::atomic<float> *masterEQGainSubBassParams = nullptr;
+	std::atomic<float> *masterEQGainBassParams = nullptr;
+	std::atomic<float> *masterEQGainLowMidParams = nullptr;
+	std::atomic<float> *masterEQGainMidParams = nullptr;
+	std::atomic<float> *masterEQGainHighMidParams = nullptr;
+	std::atomic<float> *masterEQGainPresenceParams = nullptr;
+	std::atomic<float> *masterEQGainHighParams = nullptr;
+	std::atomic<float> *masterEQGainAirParams = nullptr;
+	std::atomic<float> *masterEQBypassedParams = nullptr;
+
+	std::atomic<float> *masterCompressorThresholdParams = nullptr;
+	std::atomic<float> *masterCompressorRatioParams = nullptr;
+	std::atomic<float> *masterCompressorAttackParams = nullptr;
+	std::atomic<float> *masterCompressorReleaseParams = nullptr;
+	std::atomic<float> *masterCompressorMakeUpGainParams = nullptr;
+	std::atomic<float> *masterCompressorBypassedParams = nullptr;
+
+	std::atomic<float> *masterLimiterReleaseParams = nullptr;
+	std::atomic<float> *masterLimiterThresholdParams = nullptr;
+	std::atomic<float> *masterLimiterMakeUpGainParams = nullptr;
+	std::atomic<float> *masterLimiterBypassedParams = nullptr;
 
 	std::atomic<float> *slotVolumeParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotPanParams[Obsidian::MAX_TRACKS] = {};
@@ -224,6 +363,47 @@ class ParameterManager
 	std::atomic<float> *slotDelaySendParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotReverbSendParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotCutoffParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotResonanceParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterModeParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterDriveParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFilterBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotEQGainSubBassParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainBassParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainLowMidParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainMidParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainHighMidParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainPresenceParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainHighParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQGainAirParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotEQBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotCompressorThresholdParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorRatioParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorAttackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorReleaseParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotCompressorBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotLimiterReleaseParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotLimiterThresholdParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotLimiterMakeUpGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotLimiterBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotDistortionPreGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionPostGainParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionCutParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionBypassedParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotDistortionTypeParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotChorusRateParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusDepthParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusCentreParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusFeedbackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusMixParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotChorusBypassedParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
 	std::atomic<float> *crossfaderCurveModeParam = nullptr;
@@ -241,29 +421,83 @@ class ParameterManager
 
 	static juce::StringArray buildFloatParamIds()
 	{
-		juce::StringArray ids = {"bpm",
-		                         "delayFeedback",
-		                         "reverbSize",
-		                         "reverbDamping",
-		                         "reverbWidth",
-		                         "reverbMix",
-		                         "masterVolume",
-		                         "masterPan",
-		                         "masterHigh",
-		                         "masterMid",
-		                         "masterLow",
-		                         "globalCrossfader",
-		                         "pairCrossfader1",
-		                         "pairCrossfader2",
-		                         "pairCrossfader3",
-		                         "pairCrossfader4",
-		                         "delayDivision",
-		                         "delayMode",
-		                         "crossfaderCurveMode"};
+		juce::StringArray ids = {
+		    "bpm",
+		    "delayFeedback",
+		    "reverbSize",
+		    "reverbDamping",
+		    "reverbWidth",
+		    "reverbMix",
+		    "masterVolume",
+		    "masterPan",
+		    "masterHigh",
+		    "masterMid",
+		    "masterLow",
+		    "globalCrossfader",
+		    "pairCrossfader1",
+		    "pairCrossfader2",
+		    "pairCrossfader3",
+		    "pairCrossfader4",
+		    "delayDivision",
+		    "delayMode",
+		    "crossfaderCurveMode",
+		    "masterEQGainSubBass",
+		    "masterEQGainBass",
+		    "masterEQGainLowMid",
+		    "masterEQGainMid",
+		    "masterEQGainHiMid",
+		    "masterEQGainPresence",
+		    "masterEQGainHigh",
+		    "masterEQGainAir",
+		    "masterCompressorThreshold",
+		    "masterCompressorRatio",
+		    "masterCompressorAttack",
+		    "masterCompressorRelease",
+		    "masterCompressorMakeUpGain",
+		    "masterLimiterThreshold",
+		    "masterLimiterRelease",
+		    "masterLimiterMakeUpGain",
+		};
 
-		static const juce::StringArray perSlotParams = {
-		    "Volume",     "Pan",       "Pitch",       "Fine",        "DelaySend",         "ReverbSend",
-		    "ADSRAttack", "ADSRDecay", "ADSRSustain", "ADSRRelease", "RetriggerInterval", "Gain"};
+		static const juce::StringArray perSlotParams = {"Volume",
+		                                                "Pan",
+		                                                "Pitch",
+		                                                "Fine",
+		                                                "DelaySend",
+		                                                "ReverbSend",
+		                                                "ADSRAttack",
+		                                                "ADSRDecay",
+		                                                "ADSRSustain",
+		                                                "ADSRRelease",
+		                                                "RetriggerInterval",
+		                                                "Gain",
+		                                                "Cutoff",
+		                                                "Resonance",
+		                                                "EQGainSubBass",
+		                                                "EQGainBass",
+		                                                "EQGainLowMid",
+		                                                "EQGainMid",
+		                                                "EQGainHiMid",
+		                                                "EQGainPresence",
+		                                                "EQGainHigh",
+		                                                "EQGainAir",
+		                                                "CompressorThreshold",
+		                                                "CompressorRatio",
+		                                                "CompressorAttack",
+		                                                "CompressorRelease",
+		                                                "CompressorMakeUpGain",
+		                                                "LimiterThreshold",
+		                                                "LimiterRelease",
+		                                                "LimiterMakeUpGain",
+		                                                "DistortionPreGain",
+		                                                "DistortionPostGain",
+		                                                "DistortionCut",
+		                                                "DistortionType",
+		                                                "ChorusRate",
+		                                                "ChorusDepth",
+		                                                "ChorusCentre",
+		                                                "ChorusFeedback",
+		                                                "ChorusMix"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
@@ -279,10 +513,35 @@ class ParameterManager
 
 	static juce::StringArray buildBooleanParamIds()
 	{
-		juce::StringArray ids = {"generate", "play", "nextTrack", "prevTrack"};
+		juce::StringArray ids = {
+		    "generate",
+		    "play",
+		    "nextTrack",
+		    "prevTrack",
+		    "useCrossfader",
+		    "masterCompressorBypassed",
+		    "masterLimiterBypassed",
+		    "masterEQBypassed",
+		};
 
-		static const juce::StringArray perSlotParams = {
-		    "Mute", "Solo", "Play", "Stop", "Generate", "RandomRetrigger", "PageA", "PageB", "PageC", "PageD"};
+		static const juce::StringArray perSlotParams = {"Mute",
+		                                                "Solo",
+		                                                "Play",
+		                                                "Stop",
+		                                                "Generate",
+		                                                "RandomRetrigger",
+		                                                "PageA",
+		                                                "PageB",
+		                                                "PageC",
+		                                                "PageD",
+		                                                "FilterMode",
+		                                                "FilterDrive",
+		                                                "DistortionBypassed",
+		                                                "FilterBypassed",
+		                                                "CompressorBypassed",
+		                                                "LimiterBypassed",
+		                                                "EQBypassed",
+		                                                "ChorusBypassed"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{

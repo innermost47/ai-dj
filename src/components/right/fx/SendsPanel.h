@@ -30,6 +30,7 @@ class SendsPanel : public ObsidianBaseMidiComponent
 	void setupDelayDivisionButtons();
 	void setupDelayModeButtons();
 	void styleKnob(juce::Slider &s, juce::Colour col);
+	void setupUI();
 
 	void refreshRadioButtonsForParam(const juce::String &paramID);
 

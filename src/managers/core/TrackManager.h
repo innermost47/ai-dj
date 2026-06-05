@@ -22,10 +22,12 @@ class TrackManager
 	                     std::vector<juce::AudioBuffer<float>> &individualOutputs,
 	                     juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
 	                     const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-	                     int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate);
+	                     int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate,
+	                     bool useCrossfader);
 
 	void loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile);
 	void addTrack(const std::string &trackId, std::unique_ptr<TrackData> track);
+	void prepareTrack(TrackData &track);
 	void clearAllTracks();
 	void forEachTrack(std::function<void(const std::string &, const TrackData *)> callback) const;
 	void forEachTrack(std::function<void(const TrackData *)> callback) const;

@@ -116,8 +116,9 @@ TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &pr
 
 TrackComponent::~TrackComponent()
 {
-	setVisible(false);
 	markForDestruction();
+	clearAllBindings();
+	setVisible(false);
 	stopTimer();
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
@@ -304,7 +305,11 @@ void TrackComponent::updateFromTrackData()
 	}
 
 	modelSelector.setText(modelToSet, juce::dontSendNotification);
-	updateModelUI();
+	if (modelSet != modelToSet)
+	{
+		modelSet = modelToSet;
+		updateModelUI();
+	}
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{

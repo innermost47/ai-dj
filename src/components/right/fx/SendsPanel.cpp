@@ -3,6 +3,11 @@
 
 SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(processor)
 {
+	setupUI();
+}
+
+void SendsPanel::setupUI()
+{
 	delayTitleLbl.setText("DELAY", juce::dontSendNotification);
 	delayTitleLbl.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
 	delayTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
@@ -164,7 +169,7 @@ void SendsPanel::setupDelayDivisionButtons()
 	for (int i = 0; i < labels.size(); ++i)
 	{
 		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::violet);
-		btn->setRadioGroupId(0xDEAD);
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::DelayDivisionGroup);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
@@ -193,7 +198,7 @@ void SendsPanel::setupDelayModeButtons()
 	for (int i = 0; i < labels.size(); ++i)
 	{
 		auto btn = std::make_unique<MidiLearnableLedRadioButton>(labels[i], ColourPalette::amber);
-		btn->setRadioGroupId(0xBEEF);
+		btn->setRadioGroupId(Obsidian::RadioGroupIDs::DelayModeGroup);
 
 		int currentValue = (int)(param->getValue() * (labels.size() - 1) + 0.5f);
 		btn->setToggleState(i == currentValue, juce::dontSendNotification);
@@ -235,7 +240,7 @@ void SendsPanel::resized()
 
 	delayTitleLbl.setBounds(delayArea.removeFromTop(14));
 	auto mainRow = delayArea.removeFromTop(80);
-	mainRow.removeFromTop(4);
+	mainRow.removeFromTop(8);
 
 	auto fbCol = mainRow.removeFromLeft(38);
 	auto fbRow = fbCol.removeFromTop(48);

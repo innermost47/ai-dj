@@ -123,6 +123,7 @@ void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, const juce::Str
 	float actualDefaultValue = range.convertFrom0to1(normalizedDefault);
 
 	s.setRange(range.start, range.end, range.interval);
+	s.setSkewFactor(range.skew, range.symmetricSkew);
 	s.setValue(actualValue, juce::dontSendNotification);
 	s.setDoubleClickReturnValue(true, actualDefaultValue);
 }
@@ -183,23 +184,20 @@ void ObsidianBaseMidiComponent::parameterValueChanged(int parameterIndex, float 
 	if (isDestroyed.load())
 		return;
 
-	auto &allParams = audioProcessor.AudioProcessor::getParameters();
-	if (parameterIndex < 0 || parameterIndex >= allParams.size())
-		return;
-
-	auto *p = allParams[parameterIndex];
-	auto *paramByID = dynamic_cast<juce::RangedAudioParameter *>(p);
-	juce::String fullId = paramByID->paramID;
-
 	juce::WeakReference<juce::Component> safeThis(this);
-
 	juce::MessageManager::callAsync(
-	    [this, safeThis, fullId, newValue]()
+	    [this, safeThis, parameterIndex, newValue]()
 	    {
-		    if (safeThis == nullptr)
+		    if (safeThis == nullptr || isDestroyed.load())
 			    return;
-		    if (isDestroyed.load())
+
+		    auto &allParams = audioProcessor.AudioProcessor::getParameters();
+		    if (parameterIndex < 0 || parameterIndex >= allParams.size())
 			    return;
+		    auto *paramByID = dynamic_cast<juce::RangedAudioParameter *>(allParams[parameterIndex]);
+		    if (!paramByID)
+			    return;
+		    juce::String fullId = paramByID->paramID;
 
 		    if (auto *b = findBindingByParamId(fullId))
 			    applyParamToBinding(*b, newValue);
@@ -263,4 +261,22 @@ void ObsidianBaseMidiComponent::syncBindingsFromParameters()
 		if (auto *p = getParam(b->suffix))
 			applyParamToBinding(*b, p->getValue());
 	}
+}
+
+void ObsidianBaseMidiComponent::clearAllBindings()
+{
+	auto &apvts = audioProcessor.getParameterTreeState();
+	for (auto &id : listenedParams)
+		if (auto *p = apvts.getParameter(id))
+			p->removeListener(this);
+	listenedParams.clear();
+
+	for (auto &b : bindings)
+	{
+		if (b->slider)
+			b->slider->onValueChange = nullptr;
+		if (b->button)
+			b->button->onClick = nullptr;
+	}
+	bindings.clear();
 }

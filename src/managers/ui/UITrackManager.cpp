@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
+#include "TrackEffectsPanel.h"
 
 UITrackManager::UITrackManager(DjIaVstEditor &editor) : editor(editor)
 {
@@ -19,8 +20,8 @@ UITrackManager::~UITrackManager()
 
 void UITrackManager::refreshTracks()
 {
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 	refreshTrackComponents();
 	for (auto &trackComp : trackComponents)
 		trackComp->loadPromptPresets();
@@ -64,8 +65,8 @@ void UITrackManager::refreshTrackComponents()
 	juce::String generatingId = editor.audioProcessor.getGeneratingTrackId();
 	bool wasGeneratingLocal = editor.audioProcessor.getIsGenerating();
 
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 
 	for (const auto &trackId : trackIds)
 	{
@@ -93,6 +94,10 @@ void UITrackManager::refreshTrackComponents()
 			if (editor.mixerPanel)
 			{
 				editor.mixerPanel->updateModelUI(id);
+			}
+			if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+			{
+				editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(id);
 			}
 		};
 
@@ -336,6 +341,6 @@ TrackComponent *UITrackManager::getTrackComponent(const juce::String &trackId)
 
 void UITrackManager::forceFullRefresh()
 {
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 }

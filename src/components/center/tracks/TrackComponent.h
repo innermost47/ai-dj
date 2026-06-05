@@ -177,6 +177,8 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 
 	juce::TextButton togglePagesButton;
 
+	juce::String modelSet;
+
 	void setupPagesUI();
 	void loadPageIfNeeded(int pageIndex);
 	void loadPageAudioFile(int pageIndex, const juce::File &audioFile);

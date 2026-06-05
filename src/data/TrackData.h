@@ -1,8 +1,14 @@
 ﻿#pragma once
+#include "Chorus.h"
+#include "Compressor.h"
 #include "Console6Channel.h"
 #include "DataConst.h"
 #include "DelaySend.h"
+#include "Distortion.h"
 #include "DjIaClient.h"
+#include "Equalizer.h"
+#include "Filter.h"
+#include "Limiter.h"
 #include "ReverbSend.h"
 #include <JuceHeader.h>
 #include <memory>
@@ -160,6 +166,12 @@ struct TrackData
 
 	DelaySend delaySendProcessor;
 	ReverbSend reverbSendProcessor;
+	Filter filter;
+	Equalizer equalizer;
+	Compressor compressor;
+	Limiter limiter;
+	Distortion distortion;
+	Chorus chorus;
 
 	juce::String trackId;
 	juce::String trackName;

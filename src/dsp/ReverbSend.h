@@ -43,4 +43,6 @@ class ReverbSend
 	float damping = 0.5f;
 	float width = 1.0f;
 	float mix = 0.5f;
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ReverbSend)
 };
