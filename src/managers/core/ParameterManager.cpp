@@ -388,17 +388,18 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "CompressorMakeUpGain", slotName + " Compressor MakeUp Gain", makeUpGainRange,
 		    Obsidian::COMPRESSOR_MAKEUP_GAIN));
 
-		params.push_back(
-		    std::make_unique<juce::AudioParameterFloat>(slotId + "LimiterThreshold", slotName + " Limiter Threshold",
-		                                                juce::NormalisableRange<float>(-20.f, 0.f, .1f), -.3f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "LimiterThreshold", slotName + " Limiter Threshold",
+		    juce::NormalisableRange<float>(-20.f, 0.f, .1f), Obsidian::LIMITER_THRESHOLD));
 
 		juce::NormalisableRange<float> limiterReleaseRange(1.f, 500.0f);
 		limiterReleaseRange.skew = 0.3f;
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "LimiterRelease", slotName + " Limiter Release", limiterReleaseRange, 50.f));
+		    slotId + "LimiterRelease", slotName + " Limiter Release", limiterReleaseRange, Obsidian::LIMITER_RELEASE));
 
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "LimiterMakeUpGain", slotName + " Limiter MakeUp Gain", makeUpGainRange, 1.f));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "LimiterMakeUpGain",
+		                                                             slotName + " Limiter MakeUp Gain", makeUpGainRange,
+		                                                             Obsidian::LIMITER_MAKEUP_GAIN));
 
 		params.push_back(std::make_unique<juce::AudioParameterChoice>(
 		    slotId + "DistortionType", slotName + " Distortion Type",
@@ -684,8 +685,8 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->equalizer.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("FilterBypassed"))
 			track->filter.setBypassed(newValue < 0.5f);
-		// else if (parameterID.endsWith("LimiterBypassed"))
-		//	track->limiter.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("LimiterBypassed"))
+			track->limiter.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("CompressorBypassed"))
 			track->compressor.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("Pitch"))

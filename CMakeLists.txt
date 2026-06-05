@@ -39,6 +39,12 @@ if(MSVC)
 string(REPLACE "/Zi" "/ZI" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 add_compile_options($<$<CONFIG:Debug>:/ZI>)
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /EDITANDCONTINUE")
+
+foreach(t ObsidianNeuralVST_Standalone ObsidianNeuralVST_VST3)
+    if(TARGET ${t})
+        target_compile_options(${t} PRIVATE $<$<CONFIG:Debug>:/fsanitize=address>)
+    endif()
+endforeach()
     
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
     

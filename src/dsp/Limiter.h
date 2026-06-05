@@ -15,6 +15,7 @@ class Limiter
 	void setRelease(float r);
 	void setMakeUpGain(float mk);
 	void resetReductionAmount();
+	void setBypassed(bool b);
 
 	float getThreshold() const
 	{
@@ -36,13 +37,20 @@ class Limiter
 		return juce::jlimit(0.f, 1.f, reductionAmount);
 	}
 
+	bool isBypassed() const
+	{
+		return bypassed;
+	}
+
   private:
-	float threshold;
-	float release;
-	float makeUpGain;
+	float threshold = Obsidian::LIMITER_THRESHOLD;
+	float release = Obsidian::LIMITER_RELEASE;
+	float makeUpGain = Obsidian::LIMITER_MAKEUP_GAIN;
 	float reductionAmount = 0.f;
 
-	juce::dsp::Limiter<float> lim;
+	bool bypassed = Obsidian::LIMITER_BYPASSED;
+
+	juce::dsp::ProcessorChain<juce::dsp::Limiter<float>, juce::dsp::Gain<float>> processorChain;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Limiter)
 };

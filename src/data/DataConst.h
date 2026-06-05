@@ -32,6 +32,10 @@ inline constexpr float FILTER_CUT = 20000.0f;
 inline constexpr float FILTER_RES = 0.f;
 inline constexpr int FILTER_MODE = 0;
 
+inline constexpr float LIMITER_THRESHOLD = -3.f;
+inline constexpr float LIMITER_RELEASE = 50.f;
+inline constexpr float LIMITER_MAKEUP_GAIN = 1.f;
+
 inline constexpr float EQ_BANDS_GAIN = 1.f;
 inline constexpr float EQ_SUB_BAS_FRQ = 40.f;
 inline constexpr float EQ_BASS_FRQ = 120.f;
@@ -89,6 +93,12 @@ enum compressorChain
 {
 	compressor = 0,
 	makeUpGain = 1
+};
+
+enum limiterChain
+{
+	limiter = 0,
+	limiterGain = 1
 };
 
 enum distortionType
