@@ -183,23 +183,20 @@ void ObsidianBaseMidiComponent::parameterValueChanged(int parameterIndex, float 
 	if (isDestroyed.load())
 		return;
 
-	auto &allParams = audioProcessor.AudioProcessor::getParameters();
-	if (parameterIndex < 0 || parameterIndex >= allParams.size())
-		return;
-
-	auto *p = allParams[parameterIndex];
-	auto *paramByID = dynamic_cast<juce::RangedAudioParameter *>(p);
-	juce::String fullId = paramByID->paramID;
-
 	juce::WeakReference<juce::Component> safeThis(this);
-
 	juce::MessageManager::callAsync(
-	    [this, safeThis, fullId, newValue]()
+	    [this, safeThis, parameterIndex, newValue]()
 	    {
-		    if (safeThis == nullptr)
+		    if (safeThis == nullptr || isDestroyed.load())
 			    return;
-		    if (isDestroyed.load())
+
+		    auto &allParams = audioProcessor.AudioProcessor::getParameters();
+		    if (parameterIndex < 0 || parameterIndex >= allParams.size())
 			    return;
+		    auto *paramByID = dynamic_cast<juce::RangedAudioParameter *>(allParams[parameterIndex]);
+		    if (!paramByID)
+			    return;
+		    juce::String fullId = paramByID->paramID;
 
 		    if (auto *b = findBindingByParamId(fullId))
 			    applyParamToBinding(*b, newValue);
