@@ -19,8 +19,8 @@ UITrackManager::~UITrackManager()
 
 void UITrackManager::refreshTracks()
 {
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 	refreshTrackComponents();
 	for (auto &trackComp : trackComponents)
 		trackComp->loadPromptPresets();
@@ -336,6 +336,6 @@ TrackComponent *UITrackManager::getTrackComponent(const juce::String &trackId)
 
 void UITrackManager::forceFullRefresh()
 {
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 }
