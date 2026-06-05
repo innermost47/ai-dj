@@ -187,6 +187,8 @@ struct TrackData
 	std::atomic<bool> preservedLoopLocked{false};
 	std::atomic<bool> hasSamplePending{false};
 
+	std::atomic<bool> isPrepared{false};
+
 	std::atomic<float> lastFeedbackDelaySend{-1.0f};
 
 	int slotIndex = -1;

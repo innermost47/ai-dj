@@ -107,6 +107,10 @@ void Distortion::prepare(const juce::dsp::ProcessSpec &spec)
 	auto &filter = processorChain.template get<Obsidian::distortionChain::filter>();
 	filter.setType(juce::dsp::StateVariableTPTFilterType::highpass);
 	filter.setCutoffFrequency(cut);
+
+	auto &waveshaper = processorChain.template get<Obsidian::distortionChain::waveshaper>();
+	if (waveshaper.functionToUse == nullptr)
+		waveshaper.functionToUse = [](float x) { return std::tanh(x); };
 }
 
 void Distortion::process(juce::dsp::ProcessContextReplacing<float> &context)

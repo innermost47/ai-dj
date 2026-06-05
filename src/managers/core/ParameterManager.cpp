@@ -965,6 +965,8 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 
 void ParameterManager::handleSampleParams(int slot, TrackData *track)
 {
+	if (audioProcessor.isShuttingDown.load())
+		return;
 	float paramRandomRetrigger = getRandomRetrigger(slot);
 	int slotNumber = slot + 1;
 	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;

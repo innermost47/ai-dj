@@ -212,6 +212,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->compressor.reset();
 		track->limiter.reset();
 		track->chorus.reset();
+		track->delaySendProcessor.reset();
+		track->reverbSendProcessor.reset();
 
 		juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 		spec.maximumBlockSize = static_cast<juce::uint32>(audioProcessor.getBlockSize());
@@ -277,6 +279,13 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->chorus.setFeedback(trackState.getProperty("chorusFeedback", Obsidian::CHORUS_FEEDBACK));
 		track->chorus.setMix(trackState.getProperty("chorusMix", Obsidian::CHORUS_MIX));
 		track->chorus.setBypassed(trackState.getProperty("chorusBypassed", Obsidian::CHORUS_BYPASSED));
+
+		track->delaySendProcessor.prepare(audioProcessor.getSampleRate(),
+		                                  static_cast<juce::uint32>(audioProcessor.getBlockSize()));
+		track->reverbSendProcessor.prepare(audioProcessor.getSampleRate(),
+		                                   static_cast<juce::uint32>(audioProcessor.getBlockSize()));
+
+		track->isPrepared.store(true);
 
 		for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		{
