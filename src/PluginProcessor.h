@@ -1,8 +1,11 @@
 ﻿#pragma once
 #include "AudioManager.h"
+#include "Compressor.h"
 #include "Console6Bus.h"
 #include "DjIaClient.h"
+#include "Equalizer.h"
 #include "GenerationManager.h"
+#include "Limiter.h"
 #include "MidiLearnManager.h"
 #include "MidiManager.h"
 #include "ObsidianEngine.h"
@@ -172,6 +175,21 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		return sampleBank.get();
 	}
 
+	Compressor &getCompressor()
+	{
+		return compressor;
+	}
+
+	Equalizer &getEqualizer()
+	{
+		return equalizer;
+	}
+
+	Limiter &getLimiter()
+	{
+		return limiter;
+	}
+
 #if JucePlugin_Build_Standalone
 	StandaloneTransport *getStandaloneTransport() const
 	{
@@ -297,6 +315,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return isGenerating;
 	}
+	bool isUsingCrossfader() const
+	{
+		return useCrossfader;
+	}
 	bool hasSampleWaiting() const
 	{
 		return hasUnloadedSample.load();
@@ -308,6 +330,14 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	bool getBypassLLM() const
 	{
 		return bypassLLM.load();
+	}
+	bool getAreTracksPrepared() const
+	{
+		return areTracksPrepared;
+	}
+	void setAreTracksPrepared(bool v)
+	{
+		areTracksPrepared = v;
 	}
 	bool getBypassSequencer() const
 	{
@@ -721,6 +751,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	SequencerManager sequencerManager;
 	AudioManager audioManager;
 	Console6Buss masterConsoleBuss;
+	Equalizer equalizer;
+	Limiter limiter;
+	Compressor compressor;
 
 	std::unique_ptr<SampleBank> sampleBank;
 	std::unique_ptr<ObsidianEngine> obsidianEngine;
@@ -743,6 +776,8 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::String currentBankLoadTrackId;
 	juce::String localModelsPath = "";
 
+	juce::dsp::Limiter<float> masterLimiter;
+
 	float globalBpm = 110.0f;
 	float pairCrossfaderPrevious[4]{0.5f, 0.5f, 0.5f, 0.5f};
 	float globalCrossfaderPrevious = 0.5f;
@@ -755,6 +790,8 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	int requestTimeoutMS = 360000;
 	int savedWindowWidth = 1620;
 	int savedWindowHeight = 840;
+
+	bool areTracksPrepared = false;
 
 	enum class CrossfadeMode
 	{
@@ -771,6 +808,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	bool onboardingDone = false;
 	bool savedPanelVisible = true;
 	bool hasPendingNotification = false;
+	bool useCrossfader = true;
 
 	juce::StringArray customKeywords;
 	juce::StringArray customPrompts;

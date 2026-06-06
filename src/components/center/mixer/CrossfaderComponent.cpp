@@ -43,6 +43,9 @@ void CrossfaderComponent::wireParameters()
 	registerSliderParam("globalCrossfader", globalSlider);
 	registerMidiLearn("globalCrossfader", &globalSlider);
 
+	registerButtonParam("useCrossfader", useCrossfaderButton);
+	registerMidiLearn("useCrossfader", &useCrossfaderButton);
+
 	auto curveCallback = [this](int targetMode)
 	{
 		return [this, targetMode](float value)
@@ -59,6 +62,14 @@ void CrossfaderComponent::wireParameters()
 
 void CrossfaderComponent::setupUI()
 {
+	addAndMakeVisible(useCrossfaderButton);
+	useCrossfaderButton.loadIcon(BinaryData::power_svg, BinaryData::power_svgSize);
+	useCrossfaderButton.setClickingTogglesState(true);
+	useCrossfaderButton.setShowBackground(false);
+	useCrossfaderButton.setCustomIconColour(ColourPalette::textSecondary.withAlpha(Obsidian::ALPHA_06));
+	useCrossfaderButton.setCustomIconColourToggled(ColourPalette::textPrimary);
+	useCrossfaderButton.setTooltip("Enable/disable crossfader mixing");
+
 	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		addAndMakeVisible(pairSliders[i]);
@@ -71,6 +82,13 @@ void CrossfaderComponent::setupUI()
 	addAndMakeVisible(globalSlider);
 	setupSlider(globalSlider, "Global Crossfader DECK A <-> DECK B (Right-click for MIDI learn)");
 	globalSlider.setColour(juce::Slider::thumbColourId, ColourPalette::textPrimary);
+
+	addAndMakeVisible(crossfaderLabel);
+	crossfaderLabel.setText("CROSSFADERS", juce::dontSendNotification);
+	crossfaderLabel.setJustificationType(juce::Justification::centred);
+	crossfaderLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
+	crossfaderLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	crossfaderLabel.setInterceptsMouseClicks(false, false);
 }
 
 void CrossfaderComponent::setupCurveButtons()
@@ -146,6 +164,17 @@ void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	else if (paramSuffix == "crossfaderCurveMode")
 	{
 		refreshCurveButtons();
+	}
+	else if (paramSuffix == "useCrossfader")
+	{
+		bool enabled = normalizedValue > 0.5f;
+		for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; i++)
+		{
+			pairSliders[i].setEnabled(enabled);
+		}
+		curveLinearButton.setEnabled(enabled);
+		curveEqualPowerButton.setEnabled(enabled);
+		curveDjButton.setEnabled(enabled);
 	}
 }
 
@@ -376,8 +405,10 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics &g)
 		float leftPairGain = 1.0f - pairX;
 		float rightPairGain = pairX;
 
-		float leftIntensity = juce::jmax(0.0f, deckAGain * leftPairGain * pulseIntensity);
-		float rightIntensity = juce::jmax(0.0f, deckBGain * rightPairGain * pulseIntensity);
+		float leftIntensity =
+		    audioProcessor.isUsingCrossfader() ? juce::jmax(0.0f, deckAGain * leftPairGain * pulseIntensity) : 0.0f;
+		float rightIntensity =
+		    audioProcessor.isUsingCrossfader() ? juce::jmax(0.0f, deckBGain * rightPairGain * pulseIntensity) : 0.0f;
 
 		const float ledD = (float)ledDiameter;
 		const int rowH = rowBounds.getHeight();
@@ -404,12 +435,20 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics &g)
 
 void CrossfaderComponent::resized()
 {
-	auto area = getLocalBounds().reduced(8, 6);
+	auto area = getLocalBounds().reduced(8, 2);
 
 	const int segmentedH = 26;
 	const int segmentedTopGap = 6;
 
+	auto topArea = area.removeFromTop(20);
+
+	crossfaderLabel.setBounds(topArea);
+	useCrossfaderButton.setBounds(topArea.removeFromLeft(18));
+
+	area.removeFromTop(Obsidian::GAP_4);
+
 	auto segmentedBand = area.removeFromBottom(segmentedH);
+
 	curveButtonsRowBounds = segmentedBand;
 
 	const int innerPad = 3;

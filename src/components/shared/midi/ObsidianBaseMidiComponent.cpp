@@ -123,6 +123,7 @@ void ObsidianBaseMidiComponent::syncSliderRange(juce::Slider &s, const juce::Str
 	float actualDefaultValue = range.convertFrom0to1(normalizedDefault);
 
 	s.setRange(range.start, range.end, range.interval);
+	s.setSkewFactor(range.skew, range.symmetricSkew);
 	s.setValue(actualValue, juce::dontSendNotification);
 	s.setDoubleClickReturnValue(true, actualDefaultValue);
 }

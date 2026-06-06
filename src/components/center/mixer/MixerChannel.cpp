@@ -2,8 +2,9 @@
 #include "PluginEditor.h"
 #include <string>
 
-MixerChannel::MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData)
-    : ObsidianBaseMidiComponent(processor), trackId(trackId)
+MixerChannel::MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData,
+                           DjIaVstEditor &editor)
+    : ObsidianBaseMidiComponent(processor), trackId(trackId), editor(editor)
 {
 	setupUI();
 	setTrackData(trackData);
@@ -44,6 +45,12 @@ void MixerChannel::cleanup()
 		t->onArmedToStopStateChanged = nullptr;
 	}
 	track = nullptr;
+}
+
+void MixerChannel::setSelected(bool selected)
+{
+	isSelected = selected;
+	repaint();
 }
 
 void MixerChannel::setTrackData(TrackData *trackData)
@@ -122,6 +129,7 @@ void MixerChannel::setTrackData(TrackData *trackData)
 			}
 		};
 	}
+	setSelected(t->isSelected.load());
 }
 
 void MixerChannel::wireParameters()
@@ -293,6 +301,11 @@ void MixerChannel::paint(juce::Graphics &g)
 		borderColour = ColourPalette::samplePending;
 		borderWidth = 2.0f;
 	}
+	else if (isSelected)
+	{
+		borderColour = ColourPalette::lightGrey;
+		borderWidth = 2.0f;
+	}
 	else
 	{
 		borderColour = ColourPalette::backgroundLight.withAlpha(Obsidian::LIGHT_BORDER);
@@ -301,6 +314,12 @@ void MixerChannel::paint(juce::Graphics &g)
 
 	g.setColour(borderColour);
 	g.drawRoundedRectangle(bounds.toFloat().reduced(1), Obsidian::CORNER, borderWidth);
+
+	if (isSelected && !isGenerating)
+	{
+		g.setColour(borderColour.withAlpha(0.3f));
+		g.drawRoundedRectangle(bounds.toFloat().reduced(1), 10.0f, 1.0f);
+	}
 }
 
 void MixerChannel::resized()

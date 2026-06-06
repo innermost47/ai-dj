@@ -2,8 +2,10 @@
 #include "MiniBpm.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "RightPanelWrapper.h"
 #include "SampleBank.h"
 #include "TrackData.h"
+#include "TrackEffectsPanel.h"
 #include "TrackStretchImpl.h"
 #include "signalsmith-stretch.h"
 
@@ -894,6 +896,7 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 						    }
 					    }
 					    editor->mixerPanel->refreshChannel(trackId);
+					    editor->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(trackId);
 				    }
 			    }
 		    });

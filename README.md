@@ -38,7 +38,7 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 - **8 sequences per page** - 256 total patterns for complex live sets
 - **16-step sequencer** with multi-measure support
 - **Quantized page changes** - Seamless transitions locked to measure boundaries
-- **4 pair crossfaders** - Blend each deck A/B pair independently with model-aware color morphing
+- **4 pair crossfaders with master bypass** - Blend each deck A/B pair independently with model-aware color morphing, or toggle the entire crossfader section off for direct routing
 - **Plug-and-play MIDI mapping** - Auto-configured for the [companion mobile controller](https://github.com/innermost47/obsidian-neural-controller), with bidirectional feedback (LED states, knob positions) on dedicated MIDI channels.
   *To use: open the MIDI panel (piano icon, bottom-right) → Load Default Mapping.*
 - **MIDI learn on every parameter** - Map any control to any hardware override, with persistent user mappings
@@ -46,6 +46,12 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 ### Sound design
 - **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
 - **Per-track gain control** - Adjust each sample's level (-12 / +12 dB) before mixing, with visual waveform feedback
+- **Per-track multi-mode filter** - LP/HP/BP with 12 or 24 dB slopes, drive, cutoff and resonance for sculpting each voice
+- **Per-track 8-band graphic EQ + master EQ** - Independent frequency shaping on every voice and global bus, from 40 Hz to 15 kHz
+- **Per-track compressor + master compressor** - Full dynamic control on each voice and on the master bus, with threshold, ratio, attack, release and makeup gain
+- **Per-track limiter + master limiter** - Peak protection on every voice and on the master bus with adjustable release and ceiling
+- **Per-track distortion** - 6 character modes (Soft, Hard, Tube, Fold, Diode, Cubic) with pre/post gain and high-pass cutoff
+- **Per-track chorus** - Modulation effect with rate, depth, delay, feedback and dry/wet control for added stereo width
 - **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
 - **Reverb send** - Per-track reverb with size, damping, width and mix controls
 - **Airwindows Console6 master bus** - Analog-modeled saturation for cohesive mix glue

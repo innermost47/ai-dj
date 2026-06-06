@@ -8,7 +8,7 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-project(OBSIDIAN-Neural VERSION 2.5.3)
+project(OBSIDIAN-Neural VERSION 2.5.4)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(LINK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -152,7 +152,7 @@ configure_file(
 )
 
 juce_add_plugin(ObsidianNeuralVST
-    VERSION "2.5.3"
+    VERSION "2.5.4"
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
     COMPANY_NAME "InnerMost47"
@@ -216,6 +216,8 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/piano.svg
         src/assets/icons/play.svg
         src/assets/icons/plus.svg
+        src/assets/icons/power.svg
+        src/assets/icons/power-fill.svg
         src/assets/icons/prohibit.svg
         src/assets/icons/redo.svg
         src/assets/icons/refresh.svg
@@ -266,14 +268,20 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingStep.cpp
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
+    src/components/right/fx/ChorusComponent.cpp
+    src/components/right/fx/CompressorComponent.cpp
+    src/components/right/fx/DistortionComponent.cpp
+    src/components/right/fx/EqualizerComponent.cpp
+    src/components/right/fx/FilterComponent.cpp
+    src/components/right/fx/LimiterComponent.cpp
+    src/components/right/fx/SendsPanel.cpp
+    src/components/right/fx/TrackEffectsPanel.cpp
     src/components/right/LCDScreen.cpp
     src/components/right/MasterChannel.cpp
     src/components/right/MasterWaveformDisplay.cpp
     src/components/right/RightPanelWrapper.cpp
     src/components/right/ScaleAndDuration.cpp
-    src/components/right/SendsPanel.cpp
     src/components/right/StandaloneTransportComponent.cpp
-    src/components/right/TrackEffectsPanel.cpp
     src/components/right/TrackRecapPanel.cpp
     src/components/shared/accordion/ObsidianAccordion.cpp
     src/components/shared/accordion/ObsidianListItem.cpp
@@ -289,8 +297,15 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/data/TrackData.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
+    src/dsp/Chorus.cpp
+    src/dsp/Compressor.cpp
     src/dsp/DelaySend.cpp
+    src/dsp/Distortion.cpp
+    src/dsp/Equalizer.cpp
+    src/dsp/Filter.cpp
+    src/dsp/Limiter.cpp
     src/dsp/MiniBpm.cpp
+    src/dsp/MonoEQ.cpp
     src/dsp/ReverbSend.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
@@ -334,6 +349,7 @@ target_include_directories(ObsidianNeuralVST PRIVATE
     src/components/left/samplePanel
     src/components/onboarding
     src/components/right
+    src/components/right/fx
     src/components/shared
     src/components/shared/accordion
     src/components/shared/bank

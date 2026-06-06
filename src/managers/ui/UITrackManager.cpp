@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
+#include "TrackEffectsPanel.h"
 
 UITrackManager::UITrackManager(DjIaVstEditor &editor) : editor(editor)
 {
@@ -36,7 +37,7 @@ void UITrackManager::refreshTrackComponents()
 		juce::Timer::callAfterDelay(50, [this]() { refreshTrackComponents(); });
 		return;
 	}
-	auto trackIds = editor.audioProcessor.getAllTrackIds();
+	const std::vector<juce::String> &trackIds = editor.audioProcessor.getAllTrackIds();
 
 	if (trackComponents.size() == trackIds.size())
 	{
@@ -64,8 +65,8 @@ void UITrackManager::refreshTrackComponents()
 	juce::String generatingId = editor.audioProcessor.getGeneratingTrackId();
 	bool wasGeneratingLocal = editor.audioProcessor.getIsGenerating();
 
-	trackComponents.clear();
 	editor.uiLayoutManager->getTracksContainer()->removeAllChildren();
+	trackComponents.clear();
 
 	for (const auto &trackId : trackIds)
 	{
@@ -88,11 +89,17 @@ void UITrackManager::refreshTrackComponents()
 			}
 		};
 
+		trackComp->onSelectTrack = [this](const juce::String &id) { updateSelectedTrack(id); };
+
 		trackComp->onModelChanged = [this](const juce::String &id)
 		{
 			if (editor.mixerPanel)
 			{
 				editor.mixerPanel->updateModelUI(id);
+			}
+			if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+			{
+				editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(id);
 			}
 		};
 
@@ -148,6 +155,32 @@ void UITrackManager::refreshTrackComponents()
 		    }
 	    });
 	editor.uiLayoutManager->getTracksContainer()->repaint();
+}
+
+void UITrackManager::updateSelectedTrack(const juce::String &trackId)
+{
+	const std::vector<juce::String> &tracksIds = editor.audioProcessor.getAllTrackIds();
+
+	for (const juce::String &id : tracksIds)
+	{
+		TrackData *trackData = editor.audioProcessor.getTrack(id);
+		if (id == trackId)
+			trackData->isSelected.store(true);
+		else
+			trackData->isSelected.store(false);
+	}
+
+	for (auto &trackComp : trackComponents)
+	{
+		if (trackComp->getTrackId() == trackId)
+			trackComp->setSelected(true);
+		else
+			trackComp->setSelected(false);
+	}
+	if (editor.mixerPanel)
+		editor.mixerPanel->trackSelected(trackId);
+	if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+		editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->addComponents(trackId);
 }
 
 void UITrackManager::onSampleLoaded(const juce::String &trackId)

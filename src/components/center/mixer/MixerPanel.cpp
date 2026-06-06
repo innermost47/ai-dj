@@ -1,9 +1,23 @@
 ﻿#include "MixerPanel.h"
 #include "MasterChannel.h"
 #include "MixerChannel.h"
+#include "PluginEditor.h"
 #include "PluginProcessor.h"
 
-MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
+MixerPanel::MixerPanel(DjIaVstProcessor &processor, DjIaVstEditor &editor) : audioProcessor(processor), editor(editor)
+{
+	setupUI();
+}
+
+MixerPanel::~MixerPanel()
+{
+	for (auto &channel : mixerChannels)
+		if (channel)
+			channel->setVisible(false);
+	mixerChannels.clear();
+}
+
+void MixerPanel::setupUI()
 {
 	addAndMakeVisible(deckAViewport);
 	deckAViewport.setViewedComponent(&deckAContainer, false);
@@ -17,14 +31,6 @@ MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 	addAndMakeVisible(*crossfader);
 
 	refreshMixerChannels();
-}
-
-MixerPanel::~MixerPanel()
-{
-	for (auto &channel : mixerChannels)
-		if (channel)
-			channel->setVisible(false);
-	mixerChannels.clear();
 }
 
 void MixerPanel::updateTrackName(const juce::String &trackId, const juce::String &newName)
@@ -48,6 +54,15 @@ void MixerPanel::refreshChannel(const juce::String &trackId)
 			channel->updateFromTrackData();
 			break;
 		}
+	}
+}
+
+void MixerPanel::trackSelected(const juce::String &trackId)
+{
+	for (auto &channel : mixerChannels)
+	{
+		bool isThisTrackSelected = (channel->getTrackId() == trackId);
+		channel->setSelected(isThisTrackSelected);
 	}
 }
 
@@ -100,7 +115,7 @@ void MixerPanel::refreshMixerChannels()
 		if (!trackData)
 			continue;
 
-		auto ch = std::make_unique<MixerChannel>(trackId, audioProcessor, trackData);
+		auto ch = std::make_unique<MixerChannel>(trackId, audioProcessor, trackData, editor);
 		ch->setTrackName(trackData->trackName);
 		ch->onTrackRenamed = [this, trackId](const juce::String &newName)
 		{

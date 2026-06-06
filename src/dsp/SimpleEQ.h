@@ -5,7 +5,7 @@
 class SimpleEQ
 {
   public:
-	SimpleEQ() = default;
+	SimpleEQ();
 
 	void prepare(double newSampleRate, int /*samplesPerBlock*/);
 	void processBlock(juce::AudioBuffer<float> &buffer);
@@ -26,4 +26,6 @@ class SimpleEQ
 	juce::IIRFilter highFilters[2];
 	juce::IIRFilter midFilters[2];
 	juce::IIRFilter lowFilters[2];
+
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleEQ)
 };

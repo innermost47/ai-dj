@@ -16,12 +16,12 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor 
 {
 	masterChannel = std::make_unique<MasterChannel>(processor);
 	trackRecap = std::make_unique<TrackRecapPanel>(processor);
-	trackEffects = std::make_unique<TrackEffectsPanel>(processor);
+	trackEffects = std::make_unique<TrackEffectsPanel>(processor, editor);
 	sendsPanel = std::make_unique<SendsPanel>(processor);
 	configComponent = std::make_unique<ConfigComponent>(processor, editor);
 
 	scrollContent.addAndMakeVisible(*trackRecap);
-	// scrollContent.addAndMakeVisible(*trackEffects);
+	scrollContent.addAndMakeVisible(*trackEffects);
 
 	addAndMakeVisible(*masterChannel);
 	addAndMakeVisible(*configComponent);
@@ -78,14 +78,14 @@ void RightPanelWrapper::resized()
 
 	const int viewportW = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
 	const int recapH = trackRecap->getPreferredHeight();
-	// const int effectsH = 400;
+	const int effectsH = 580;
 
 	int y = 0;
+	trackEffects->setBounds(0, y, viewportW, effectsH);
+	y += effectsH + Obsidian::GAP_4;
+
 	trackRecap->setBounds(0, y, viewportW, recapH);
 	y += recapH;
-
-	// trackEffects->setBounds(0, y, viewportW, effectsH);
-	// y += effectsH;
 
 	scrollContent.setSize(viewportW, y);
 }

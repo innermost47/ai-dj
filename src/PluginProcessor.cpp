@@ -20,6 +20,7 @@ DjIaVstProcessor::DjIaVstProcessor()
 {
 	midiLearnManager.setProcessor(this);
 	parameterManager.resolveParameters(this);
+	useCrossfader = parameterManager.useCrossfader();
 	projectId = "legacy";
 	promptBank = std::make_unique<PromptBank>();
 	loadGlobalConfig();
@@ -171,6 +172,32 @@ void DjIaVstProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 
 	masterConsoleBuss.prepare(sampleRate);
 	trackManager.prepareSends(sampleRate, samplesPerBlock);
+
+	juce::dsp::ProcessSpec spec;
+	spec.sampleRate = sampleRate;
+	spec.maximumBlockSize = (juce::uint32)samplesPerBlock;
+	spec.numChannels = (juce::uint32)getMainBusNumOutputChannels();
+
+	limiter.prepare(spec);
+	equalizer.prepare(spec);
+	compressor.prepare(spec);
+	limiter.reset();
+	equalizer.reset();
+	compressor.reset();
+
+	equalizer.setBypassed(Obsidian::EQ_BYPASSED);
+
+	compressor.setThreshold(Obsidian::COMPRESSOR_THRESHOLD);
+	compressor.setRatio(Obsidian::COMPRESSOR_RATIO);
+	compressor.setAttack(Obsidian::COMPRESSOR_ATTACK);
+	compressor.setRelease(Obsidian::COMPRESSOR_RELEASE);
+	compressor.setMakeUpGain(Obsidian::COMPRESSOR_MAKEUP_GAIN);
+	compressor.setBypassed(Obsidian::COMPRESSOR_BYPASSED);
+
+	limiter.setThreshold(Obsidian::LIMITER_THRESHOLD);
+	limiter.setRelease(Obsidian::LIMITER_RELEASE);
+	limiter.setMakeUpGain(Obsidian::LIMITER_MAKEUP_GAIN);
+	limiter.setBypassed(Obsidian::LIMITER_BYPASSED);
 }
 
 void DjIaVstProcessor::releaseResources()
@@ -251,12 +278,6 @@ void DjIaVstProcessor::loadGlobalConfig()
 	if (trackManager.getAllTrackIds().empty())
 	{
 		initTracks();
-		juce::MessageManager::callAsync(
-		    [this]()
-		    {
-			    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-				    editor->uiTrackManager->refreshTrackComponents();
-		    });
 	}
 }
 
@@ -595,6 +616,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	previewBus.clear();
 	float pairCurrent[4];
 	float pairPrev[4];
+	useCrossfader = parameterManager.useCrossfader();
 	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
 		pairCurrent[i] = parameterManager.getPairCrossfader(i);
@@ -609,7 +631,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, hostBpm, pairPrev,
 	                             pairCurrent, globalPrev, globalCurrent, curveMode, timeSignatureNumerator.load(),
-	                             timeSignatureDenominator.load(), getSampleRate());
+	                             timeSignatureDenominator.load(), getSampleRate(), useCrossfader);
 
 	trackManager.processPerTrackDelays(
 	    audioManager.getIndividualOutputBuffers(), mainOutput, hostBpm,
@@ -624,6 +646,13 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	audioManager.copyToIndividualOutputs(buffer);
 	audioManager.applyMasterEffects(mainOutput);
 	masterConsoleBuss.process(mainOutput, 0, mainOutput.getNumSamples());
+
+	juce::dsp::AudioBlock<float> block(mainOutput);
+	juce::dsp::ProcessContextReplacing<float> ctx(block);
+	equalizer.process(ctx);
+	compressor.process(ctx);
+	limiter.process(ctx);
+
 	auto *lastBus = getBus(false, getBusCount(false) - 1);
 	bool previewBusIsEffectivelyEnabled = (lastBus != nullptr && lastBus->isEnabled());
 	audioManager.renderPreviewToOutput(previewBus, mainOutput, buffer.getNumSamples(), getSampleRate(),
