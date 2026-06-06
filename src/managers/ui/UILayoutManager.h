@@ -69,27 +69,27 @@ class UILayoutManager
 
 	TracksContainer *getTracksContainer()
 	{
-		return tracksContainer.get();
+		return tracksContainer ? tracksContainer.get() : nullptr;
 	}
 
 	LeftContainer *getLeftContainer()
 	{
-		return leftContainer.get();
+		return leftContainer ? leftContainer.get() : nullptr;
 	}
 
 	MainContainer *getMainContainer()
 	{
-		return mainContainer.get();
+		return mainContainer ? mainContainer.get() : nullptr;
 	}
 
 	LeftPanelWrapper *getLeftPanelWrapper()
 	{
-		return leftPanelWrapper.get();
+		return leftPanelWrapper ? leftPanelWrapper.get() : nullptr;
 	}
 
 	RightPanelWrapper *getRightPanelWrapper()
 	{
-		return rightPanelWrapper.get();
+		return rightPanelWrapper ? rightPanelWrapper.get() : nullptr;
 	}
 
   private:

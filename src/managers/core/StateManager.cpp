@@ -92,6 +92,8 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("chorusMix", track->chorus.getMix(), nullptr);
 		    trackState.setProperty("chorusBypassed", track->chorus.isBypassed(), nullptr);
 
+		    trackState.setProperty("isSelected", track->isSelected.load(), nullptr);
+
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
@@ -205,6 +207,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->beatRepeatActive = trackState.getProperty("beatRepeatActive", false);
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
+		track->isSelected.store(trackState.getProperty("isSelected", false));
 
 		track->distortion.reset();
 		track->filter.reset();

@@ -29,7 +29,7 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	uiTrackManager = std::make_unique<UITrackManager>(*this);
 	uiPresetManager = std::make_unique<UIPresetManager>(*this);
 	uiMidiManager = std::make_unique<UIMidiManager>(*this);
-	mixerPanel = std::make_unique<MixerPanel>(audioProcessor);
+	mixerPanel = std::make_unique<MixerPanel>(audioProcessor, *this);
 	lcdScreen = std::make_unique<LCDScreen>();
 	masterWaveformDisplay = std::make_unique<MasterWaveformDisplay>();
 
@@ -390,7 +390,8 @@ void DjIaVstEditor::visibilityChanged()
 		                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 		                            {
 			                            if (safeThis != nullptr)
-				                            safeThis->uiTrackManager->refreshTrackComponents();
+				                            if (safeThis->uiLayoutManager)
+					                            safeThis->uiTrackManager->refreshTrackComponents();
 		                            });
 	}
 }

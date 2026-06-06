@@ -152,6 +152,7 @@ void TrackComponent::setTrackData(TrackData *trackData)
 	}
 	refreshWaveformDisplay();
 	updateFromTrackData();
+	setSelected(t->isSelected.load());
 }
 
 bool TrackComponent::isWaveformVisible() const
@@ -551,6 +552,7 @@ void TrackComponent::resized()
 	{
 
 		waveformDisplay = std::make_unique<WaveformDisplay>(audioProcessor, t);
+		waveformDisplay->addMouseListener(this, false);
 		waveformDisplay->onLoopPointsChanged = [this, t](double start, double end)
 		{
 			auto &currentPage = t->getCurrentPage();
@@ -643,6 +645,7 @@ void TrackComponent::resized()
 	{
 		sequencer = std::make_unique<SequencerComponent>(trackId, audioProcessor);
 		addAndMakeVisible(*sequencer);
+		sequencer->addMouseListener(this, false);
 		sequencerVisible = true;
 
 		juce::String currentModel = modelSelector.getText();
@@ -919,6 +922,12 @@ void TrackComponent::performPageChange(int pageIndex)
 	statusCallback("Switched to page " + juce::String(pageName));
 }
 
+void TrackComponent::mouseDown(const juce::MouseEvent &)
+{
+	if (onSelectTrack)
+		onSelectTrack(trackId);
+}
+
 void TrackComponent::updatePagesDisplay()
 {
 	auto *t = getTrack();
@@ -1107,6 +1116,12 @@ void TrackComponent::stopGeneratingAnimation()
 			waveformDisplay->setLoopPoints(currentPage.loopStart, currentPage.loopEnd);
 		}
 	}
+	syncBorderOverlay();
+}
+
+void TrackComponent::setSelected(bool s)
+{
+	isSelected = s;
 	syncBorderOverlay();
 }
 

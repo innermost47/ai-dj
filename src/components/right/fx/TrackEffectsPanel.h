@@ -9,11 +9,12 @@ class CompressorComponent;
 class LimiterComponent;
 class DistortionComponent;
 class ChorusComponent;
+class DjIaVstEditor;
 
 class TrackEffectsPanel : public ObsidianComponent
 {
   public:
-	TrackEffectsPanel(DjIaVstProcessor &processor);
+	TrackEffectsPanel(DjIaVstProcessor &processor, DjIaVstEditor &editor);
 	~TrackEffectsPanel() override;
 
 	void paint(juce::Graphics &g) override;
@@ -21,9 +22,11 @@ class TrackEffectsPanel : public ObsidianComponent
 	void updateModelUI(const juce::String &trackId);
 	void refresh();
 	void setupUI();
+	void addComponents(const juce::String &trackId);
 
   private:
 	DjIaVstProcessor &audioProcessor;
+	DjIaVstEditor &editor;
 
 	juce::String activeTrackId;
 
@@ -36,7 +39,6 @@ class TrackEffectsPanel : public ObsidianComponent
 	std::unique_ptr<DistortionComponent> distortionComponent;
 	std::unique_ptr<ChorusComponent> chorusComponent;
 
-	void addComponents(const juce::String &trackId);
 	void addComponents();
 	void resetComponents();
 
