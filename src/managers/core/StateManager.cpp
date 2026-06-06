@@ -207,7 +207,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->beatRepeatActive = trackState.getProperty("beatRepeatActive", false);
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
-		track->isSelected.store(trackState.getProperty("isSelected", false));
+		track->isSelected.store(trackState.getProperty("isSelected", track->slotIndex == 0));
 
 		track->distortion.reset();
 		track->filter.reset();
