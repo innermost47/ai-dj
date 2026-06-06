@@ -10,10 +10,12 @@ struct StereoLevel
 	float right;
 };
 
+class DjIaVstEditor;
+
 class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 {
   public:
-	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData);
+	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData, DjIaVstEditor &editor);
 	~MixerChannel() override;
 	juce::String getTrackId() const
 	{
@@ -37,16 +39,19 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	void setTrackName(const juce::String &name);
 	void wireParameters();
 	void addEventListeners();
+	void setSelected(bool selected);
 	std::function<void(const juce::String &)> onTrackRenamed;
 
   private:
 	VuMeter vuMeter;
+	DjIaVstEditor &editor;
 
 	juce::String trackId;
 
 	bool isGenerating = false;
 	bool stopBlinkState = false;
 	bool hasSamplePending = false;
+	bool isSelected = false;
 
 	int bypassMidiFrames = 0;
 	std::atomic<bool> isUpdatingButtons{false};

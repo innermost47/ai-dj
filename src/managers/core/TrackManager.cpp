@@ -81,6 +81,10 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	{
 		usedSlots[track->slotIndex] = true;
 	}
+	if (track->slotIndex == 0)
+	{
+		track->isSelected.store(true);
+	}
 
 	if (audioPrepared)
 	{

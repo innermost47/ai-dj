@@ -37,7 +37,7 @@ void UITrackManager::refreshTrackComponents()
 		juce::Timer::callAfterDelay(50, [this]() { refreshTrackComponents(); });
 		return;
 	}
-	auto trackIds = editor.audioProcessor.getAllTrackIds();
+	const std::vector<juce::String> &trackIds = editor.audioProcessor.getAllTrackIds();
 
 	if (trackComponents.size() == trackIds.size())
 	{
@@ -88,6 +88,8 @@ void UITrackManager::refreshTrackComponents()
 				editor.mixerPanel->updateTrackName(id, newName);
 			}
 		};
+
+		trackComp->onSelectTrack = [this](const juce::String &id) { updateSelectedTrack(id); };
 
 		trackComp->onModelChanged = [this](const juce::String &id)
 		{
@@ -153,6 +155,32 @@ void UITrackManager::refreshTrackComponents()
 		    }
 	    });
 	editor.uiLayoutManager->getTracksContainer()->repaint();
+}
+
+void UITrackManager::updateSelectedTrack(const juce::String &trackId)
+{
+	const std::vector<juce::String> &tracksIds = editor.audioProcessor.getAllTrackIds();
+
+	for (const juce::String &id : tracksIds)
+	{
+		TrackData *trackData = editor.audioProcessor.getTrack(id);
+		if (id == trackId)
+			trackData->isSelected.store(true);
+		else
+			trackData->isSelected.store(false);
+	}
+
+	for (auto &trackComp : trackComponents)
+	{
+		if (trackComp->getTrackId() == trackId)
+			trackComp->setSelected(true);
+		else
+			trackComp->setSelected(false);
+	}
+	if (editor.mixerPanel)
+		editor.mixerPanel->trackSelected(trackId);
+	if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+		editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->addComponents(trackId);
 }
 
 void UITrackManager::onSampleLoaded(const juce::String &trackId)

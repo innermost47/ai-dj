@@ -20,6 +20,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	}
 
 	std::function<void(const juce::String &)> onDeleteTrack;
+	std::function<void(const juce::String &)> onSelectTrack;
 	std::function<void(const juce::String &)> onGenerateForTrack;
 	std::function<void(const juce::String &, const juce::String &)> onTrackRenamed;
 	std::function<void(const juce::String &, const juce::String &)> onTrackPromptChanged;
@@ -40,6 +41,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	juce::ComboBox modelSelector;
 
 	void setTrackData(TrackData *trackData);
+	void setSelected(bool s);
 	void refreshWaveformDisplay();
 	bool isWaveformVisible() const;
 	void startGeneratingAnimation();
@@ -59,6 +61,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void loadPromptPresets();
 	void detachWaveformTrack();
 	void syncBorderOverlay();
+	void mouseDown(const juce::MouseEvent &) override;
 
 	void setIsDragOver(bool v)
 	{

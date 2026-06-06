@@ -17,6 +17,7 @@ class UITrackManager
 	void checkLocalModelsAndNotify();
 	void updateUIComponents();
 	void forceFullRefresh();
+	void updateSelectedTrack(const juce::String &trackId);
 
 	std::vector<std::unique_ptr<TrackComponent>> &getTrackComponents()
 	{

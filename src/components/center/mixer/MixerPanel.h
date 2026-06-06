@@ -5,11 +5,12 @@
 
 class MixerChannel;
 class DjIaVstProcessor;
+class DjIaVstEditor;
 
 class MixerPanel : public ObsidianComponent
 {
   public:
-	MixerPanel(DjIaVstProcessor &processor);
+	MixerPanel(DjIaVstProcessor &processor, DjIaVstEditor &editor);
 	~MixerPanel();
 
 	void updateTrackName(const juce::String &trackId, const juce::String &newName);
@@ -25,6 +26,7 @@ class MixerPanel : public ObsidianComponent
 	void stopGeneratingAnimationForTrack(const juce::String &trackId);
 	void clearSamplePending(const juce::String &trackId);
 	void detachAllTracks();
+	void trackSelected(const juce::String &trackId);
 
 	std::function<void(const juce::String &trackId, const juce::String &newName)> onTrackRenamedFromMixer;
 	CrossfaderComponent *getCrossfader()
@@ -34,6 +36,7 @@ class MixerPanel : public ObsidianComponent
 
   private:
 	DjIaVstProcessor &audioProcessor;
+	DjIaVstEditor &editor;
 
 	void setupUI();
 

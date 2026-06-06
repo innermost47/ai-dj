@@ -1,9 +1,10 @@
 ﻿#include "MixerPanel.h"
 #include "MasterChannel.h"
 #include "MixerChannel.h"
+#include "PluginEditor.h"
 #include "PluginProcessor.h"
 
-MixerPanel::MixerPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
+MixerPanel::MixerPanel(DjIaVstProcessor &processor, DjIaVstEditor &editor) : audioProcessor(processor), editor(editor)
 {
 	setupUI();
 }
@@ -56,6 +57,15 @@ void MixerPanel::refreshChannel(const juce::String &trackId)
 	}
 }
 
+void MixerPanel::trackSelected(const juce::String &trackId)
+{
+	for (auto &channel : mixerChannels)
+	{
+		bool isThisTrackSelected = (channel->getTrackId() == trackId);
+		channel->setSelected(isThisTrackSelected);
+	}
+}
+
 void MixerPanel::updateModelUI(const juce::String &trackId)
 {
 	for (auto &channel : mixerChannels)
@@ -105,7 +115,7 @@ void MixerPanel::refreshMixerChannels()
 		if (!trackData)
 			continue;
 
-		auto ch = std::make_unique<MixerChannel>(trackId, audioProcessor, trackData);
+		auto ch = std::make_unique<MixerChannel>(trackId, audioProcessor, trackData, editor);
 		ch->setTrackName(trackData->trackName);
 		ch->onTrackRenamed = [this, trackId](const juce::String &newName)
 		{

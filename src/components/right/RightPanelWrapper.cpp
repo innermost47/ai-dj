@@ -16,7 +16,7 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor 
 {
 	masterChannel = std::make_unique<MasterChannel>(processor);
 	trackRecap = std::make_unique<TrackRecapPanel>(processor);
-	trackEffects = std::make_unique<TrackEffectsPanel>(processor);
+	trackEffects = std::make_unique<TrackEffectsPanel>(processor, editor);
 	sendsPanel = std::make_unique<SendsPanel>(processor);
 	configComponent = std::make_unique<ConfigComponent>(processor, editor);
 

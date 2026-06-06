@@ -5,9 +5,11 @@
 #include "EqualizerComponent.h"
 #include "FilterComponent.h"
 #include "LimiterComponent.h"
+#include "PluginEditor.h"
 #include "PluginProcessor.h"
 
-TrackEffectsPanel::TrackEffectsPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
+TrackEffectsPanel::TrackEffectsPanel(DjIaVstProcessor &processor, DjIaVstEditor &editor)
+    : audioProcessor(processor), editor(editor)
 {
 	setupUI();
 }
@@ -126,7 +128,6 @@ void TrackEffectsPanel::setupUI()
 {
 	int index = 1;
 	auto trackIds = audioProcessor.getAllTrackIds();
-	int selectedValue = 1;
 	for (const auto &trackId : trackIds)
 	{
 		auto *track = audioProcessor.getTrack(trackId);
@@ -141,8 +142,6 @@ void TrackEffectsPanel::setupUI()
 		auto btn = std::make_unique<IconButtonSimple>(label, "");
 		btn->setRadioGroupId(Obsidian::RadioGroupIDs::TrackFXSelector);
 
-		btn->setToggleState(index == selectedValue, juce::dontSendNotification);
-
 		btn->setLabelText(label);
 		btn->setName("trackFXSelector" + trackId);
 		btn->setShowBackground(true);
@@ -152,12 +151,12 @@ void TrackEffectsPanel::setupUI()
 		btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		btn->setColour(juce::TextButton::textColourOnId, textColour);
 
-		btn->onClick = [this, trackId]() { addComponents(trackId); };
+		btn->onClick = [this, trackId]() { editor.uiTrackManager->updateSelectedTrack(trackId); };
 
 		addAndMakeVisible(*btn);
 		trackSelectors.push_back(std::move(btn));
 
-		if (index == selectedValue)
+		if (track->isSelected.load())
 		{
 			addComponents(trackId);
 		}
@@ -204,6 +203,13 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 		addAndMakeVisible(*limiterComponent);
 		chorusComponent = std::make_unique<ChorusComponent>(audioProcessor, currentTrack);
 		addAndMakeVisible(*chorusComponent);
+		for (auto &selector : trackSelectors)
+		{
+			if (selector->getName() == "trackFXSelector" + trackId)
+				selector->setToggleState(true, juce::dontSendNotification);
+			else
+				selector->setToggleState(false, juce::dontSendNotification);
+		}
 		resized();
 	}
 }
