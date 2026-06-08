@@ -159,28 +159,36 @@ void UITrackManager::refreshTrackComponents()
 
 void UITrackManager::updateSelectedTrack(const juce::String &trackId)
 {
-	const std::vector<juce::String> &tracksIds = editor.audioProcessor.getAllTrackIds();
+	juce::MessageManager::callAsync(
+	    [safeEditor = juce::Component::SafePointer<DjIaVstEditor>(&editor), trackId]()
+	    {
+		    auto *e = safeEditor.getComponent();
+		    if (e == nullptr)
+			    return;
 
-	for (const juce::String &id : tracksIds)
-	{
-		TrackData *trackData = editor.audioProcessor.getTrack(id);
-		if (id == trackId)
-			trackData->isSelected.store(true);
-		else
-			trackData->isSelected.store(false);
-	}
+		    const std::vector<juce::String> &tracksIds = e->audioProcessor.getAllTrackIds();
 
-	for (auto &trackComp : trackComponents)
-	{
-		if (trackComp->getTrackId() == trackId)
-			trackComp->setSelected(true);
-		else
-			trackComp->setSelected(false);
-	}
-	if (editor.mixerPanel)
-		editor.mixerPanel->trackSelected(trackId);
-	if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
-		editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->addComponents(trackId);
+		    for (const juce::String &id : tracksIds)
+		    {
+			    TrackData *trackData = e->audioProcessor.getTrack(id);
+			    if (id == trackId)
+				    trackData->isSelected.store(true);
+			    else
+				    trackData->isSelected.store(false);
+		    }
+
+		    for (auto &trackComp : e->uiTrackManager->getTrackComponents())
+		    {
+			    if (trackComp->getTrackId() == trackId)
+				    trackComp->setSelected(true);
+			    else
+				    trackComp->setSelected(false);
+		    }
+		    if (e->mixerPanel)
+			    e->mixerPanel->trackSelected(trackId);
+		    if (e->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+			    e->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->addComponents(trackId);
+	    });
 }
 
 void UITrackManager::onSampleLoaded(const juce::String &trackId)

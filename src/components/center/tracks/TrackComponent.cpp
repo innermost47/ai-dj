@@ -552,9 +552,7 @@ void TrackComponent::resized()
 	{
 
 		waveformDisplay = std::make_unique<WaveformDisplay>(audioProcessor, t);
-#if JUCE_WINDOWS
 		waveformDisplay->addMouseListener(this, false);
-#endif
 		waveformDisplay->onLoopPointsChanged = [this, t](double start, double end)
 		{
 			auto &currentPage = t->getCurrentPage();
@@ -647,9 +645,7 @@ void TrackComponent::resized()
 	{
 		sequencer = std::make_unique<SequencerComponent>(trackId, audioProcessor);
 		addAndMakeVisible(*sequencer);
-#if JUCE_WINDOWS
 		sequencer->addMouseListener(this, false);
-#endif
 		sequencerVisible = true;
 
 		juce::String currentModel = modelSelector.getText();

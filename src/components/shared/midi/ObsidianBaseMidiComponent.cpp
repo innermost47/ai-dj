@@ -62,6 +62,8 @@ void ObsidianBaseMidiComponent::registerButtonParam(const juce::String &paramSuf
 	{
 		if (isDestroyed.load())
 			return;
+		if (track == nullptr)
+			return;
 		if (paramSuffix == "Play" && track->getCurrentPage().numSamples == 0)
 			return;
 		pushButtonToParam(*b);

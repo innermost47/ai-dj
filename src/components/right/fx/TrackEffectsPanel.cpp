@@ -151,13 +151,20 @@ void TrackEffectsPanel::setupUI()
 		btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 		btn->setColour(juce::TextButton::textColourOnId, textColour);
 
-		btn->onClick = [this, trackId]() { editor.uiTrackManager->updateSelectedTrack(trackId); };
+		auto *raw = btn.get();
+
+		btn->onClick = [this, trackId, raw]()
+		{
+			if (raw->getToggleState())
+				editor.uiTrackManager->updateSelectedTrack(trackId);
+		};
 
 		addAndMakeVisible(*btn);
 		trackSelectors.push_back(std::move(btn));
 
 		if (track->isSelected.load())
 		{
+			resetComponents();
 			addComponents(trackId);
 		}
 
@@ -176,10 +183,14 @@ void TrackEffectsPanel::setupUI()
 	btn->setColour(juce::TextButton::buttonOnColourId, ColourPalette::playArmed);
 	btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
 	btn->setColour(juce::TextButton::textColourOnId, textColour);
-	btn->onClick = [this]()
+	auto *raw = btn.get();
+	btn->onClick = [this, raw]()
 	{
-		resetComponents();
-		addComponents();
+		if (raw->getToggleState())
+		{
+			resetComponents();
+			addComponents();
+		}
 	};
 
 	addAndMakeVisible(*btn);
