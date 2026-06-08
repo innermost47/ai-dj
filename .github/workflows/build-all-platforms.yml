@@ -34,17 +34,21 @@ jobs:
         working-directory: .
         run: cmake --build build --config Release
 
-      - name: Upload Windows VST3
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: ObsidianNeural-Windows-VST3
-          path: build/ObsidianNeuralVST_artefacts/Release/VST3/
+      - name: Archive Windows builds
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/ObsidianNeuralVST_artefacts/Release/VST3/* `
+            -DestinationPath OBSIDIAN-Neural-Windows-VST3.zip
+          Compress-Archive -Path build/ObsidianNeuralVST_artefacts/Release/Standalone/* `
+            -DestinationPath OBSIDIAN-Neural-Windows-Standalone.zip
 
-      - name: Upload Windows Standalone
+      - name: Upload Windows archives
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ObsidianNeural-Windows-Standalone
-          path: build/ObsidianNeuralVST_artefacts/Release/Standalone/
+          name: ObsidianNeural-Windows-Archives
+          path: |
+            OBSIDIAN-Neural-Windows-VST3.zip
+            OBSIDIAN-Neural-Windows-Standalone.zip
 
   build-macos-universal:
     name: Build macOS Universal (VST3 + AU)
@@ -198,23 +202,29 @@ jobs:
           xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
           xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
 
-      - name: Upload macOS VST3
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: ObsidianNeural-macOS-Universal-VST3
-          path: build/ObsidianNeuralVST_artefacts/Release/VST3/
+      - name: Re-zip after stapling
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          rm -f OBSIDIAN-Neural-VST3.zip OBSIDIAN-Neural-AU.zip OBSIDIAN-Neural-Standalone.zip
+          ditto -c -k --keepParent \
+            build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3 \
+            OBSIDIAN-Neural-macOS-VST3.zip
+          ditto -c -k --keepParent \
+            build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component \
+            OBSIDIAN-Neural-macOS-AU.zip
+          ditto -c -k --keepParent \
+            build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app \
+            OBSIDIAN-Neural-macOS-Standalone.zip
 
-      - name: Upload macOS AU
+      - name: Upload macOS archives
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ObsidianNeural-macOS-Universal-AU
-          path: build/ObsidianNeuralVST_artefacts/Release/AU/
-
-      - name: Upload macOS Standalone
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: ObsidianNeural-macOS-Universal-Standalone
-          path: build/ObsidianNeuralVST_artefacts/Release/Standalone/
+          name: ObsidianNeural-macOS-Archives
+          path: |
+            OBSIDIAN-Neural-macOS-VST3.zip
+            OBSIDIAN-Neural-macOS-AU.zip
+            OBSIDIAN-Neural-macOS-Standalone.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -239,17 +249,20 @@ jobs:
         working-directory: .
         run: cmake --build build --config Release
 
-      - name: Upload Linux VST3
+      - name: Archive Linux builds
+        run: |
+          tar -czf OBSIDIAN-Neural-Linux-VST3.tar.gz \
+            -C build/ObsidianNeuralVST_artefacts/Release/VST3 .
+          tar -czf OBSIDIAN-Neural-Linux-Standalone.tar.gz \
+            -C build/ObsidianNeuralVST_artefacts/Release/Standalone .
+
+      - name: Upload Linux archives
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ObsidianNeural-Linux-VST3
-          path: build/ObsidianNeuralVST_artefacts/Release/VST3/
-      
-      - name: Upload Linux Standalone
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: ObsidianNeural-Linux-Standalone
-          path: build/ObsidianNeuralVST_artefacts/Release/Standalone/
+          name: ObsidianNeural-Linux-Archives
+          path: |
+            OBSIDIAN-Neural-Linux-VST3.tar.gz
+            OBSIDIAN-Neural-Linux-Standalone.tar.gz
 
   create-release:
     needs: [build-windows, build-macos-universal, build-linux]
@@ -261,57 +274,8 @@ jobs:
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4.3.0
-
-      - name: Create release assets
-        run: |
-          # Windows VST3
-          if [ -d "ObsidianNeural-Windows-VST3" ]; then
-            cd ObsidianNeural-Windows-VST3
-            zip -r ../OBSIDIAN-Neural-Windows-VST3.zip .
-            cd ..
-          fi
-
-          # Windows Standalone
-          if [ -d "ObsidianNeural-Windows-Standalone" ]; then
-            cd ObsidianNeural-Windows-Standalone
-            zip -r ../OBSIDIAN-Neural-Windows-Standalone.zip .
-            cd ..
-          fi
-
-          # macOS VST3
-          if [ -d "ObsidianNeural-macOS-Universal-VST3" ]; then
-            cd ObsidianNeural-macOS-Universal-VST3
-            zip -r ../OBSIDIAN-Neural-macOS-VST3.zip .
-            cd ..
-          fi
-
-          # macOS AU
-          if [ -d "ObsidianNeural-macOS-Universal-AU" ]; then
-            cd ObsidianNeural-macOS-Universal-AU
-            zip -r ../OBSIDIAN-Neural-macOS-AU.zip .
-            cd ..
-          fi
-
-          # macOS Standalone
-          if [ -d "ObsidianNeural-macOS-Universal-Standalone" ]; then
-            cd ObsidianNeural-macOS-Universal-Standalone
-            zip -r ../OBSIDIAN-Neural-macOS-Standalone.zip .
-            cd ..
-          fi
-
-          # Linux VST3
-          if [ -d "ObsidianNeural-Linux-VST3" ]; then
-            cd ObsidianNeural-Linux-VST3
-            tar -czf ../OBSIDIAN-Neural-Linux-VST3.tar.gz .
-            cd ..
-          fi
-
-          # Linux Standalone
-          if [ -d "ObsidianNeural-Linux-Standalone" ]; then
-            cd ObsidianNeural-Linux-Standalone
-            tar -czf ../OBSIDIAN-Neural-Linux-Standalone.tar.gz .
-            cd ..
-          fi
+        with:
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -379,10 +343,10 @@ jobs:
             ⭐ Star the repo if you find OBSIDIAN-Neural useful!
 
           files: |
-            OBSIDIAN-Neural-Windows-VST3.zip
-            OBSIDIAN-Neural-Windows-Standalone.zip
             OBSIDIAN-Neural-macOS-VST3.zip
             OBSIDIAN-Neural-macOS-AU.zip
             OBSIDIAN-Neural-macOS-Standalone.zip
             OBSIDIAN-Neural-Linux-VST3.tar.gz
             OBSIDIAN-Neural-Linux-Standalone.tar.gz
+            OBSIDIAN-Neural-Windows-VST3.zip
+            OBSIDIAN-Neural-Windows-Standalone.zip
