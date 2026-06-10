@@ -156,11 +156,13 @@ int SampleBank::removeUnusedSamples()
 
 	if (removedCount > 0 && onBankChanged)
 	{
+		juce::WeakReference<SampleBank> safeThis(this);
 		juce::MessageManager::callAsync(
-		    [this]()
+		    [safeThis]()
 		    {
-			    if (onBankChanged)
-				    onBankChanged();
+			    if (safeThis)
+				    if (safeThis->onBankChanged)
+					    safeThis->onBankChanged();
 		    });
 	}
 

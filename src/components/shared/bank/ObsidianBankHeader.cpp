@@ -3,7 +3,7 @@
 ObsidianBankHeader::ObsidianBankHeader()
 {
 	addAndMakeVisible(titleLabel);
-	titleLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_TITLE));
+	titleLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_TITLE));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 
 	addAndMakeVisible(helpLabel);

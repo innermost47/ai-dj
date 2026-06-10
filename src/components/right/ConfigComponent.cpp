@@ -26,13 +26,13 @@ void ConfigComponent::setupUI()
 	configLabel.setText("Settings", juce::dontSendNotification);
 	configLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	configLabel.setJustificationType(juce::Justification::left);
-	configLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	configLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_REGULAR));
 
 	addAndMakeVisible(versionLabel);
 	versionLabel.setText("OBSIDIAN Neural - " + Version::VERSION, juce::dontSendNotification);
 	versionLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	versionLabel.setJustificationType(juce::Justification::right);
-	versionLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XXS));
+	versionLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_XXS));
 
 	addAndMakeVisible(buildLabel);
 	buildLabel.setText(Version::BUILD, juce::dontSendNotification);

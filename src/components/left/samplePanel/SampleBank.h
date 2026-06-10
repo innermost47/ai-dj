@@ -73,5 +73,6 @@ class SampleBank
 	void ensureBankDirectoryExists();
 	static juce::Colour deriveColourFromName(const juce::String &name);
 
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBank)
+	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBank);
+	JUCE_DECLARE_WEAK_REFERENCEABLE(SampleBank)
 };

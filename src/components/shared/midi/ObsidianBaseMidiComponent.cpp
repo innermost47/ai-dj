@@ -16,14 +16,6 @@ ObsidianBaseMidiComponent::~ObsidianBaseMidiComponent()
 		if (auto *p = apvts.getParameter(id))
 			p->removeListener(this);
 	}
-
-	for (auto &b : bindings)
-	{
-		if (b->slider)
-			b->slider->onValueChange = nullptr;
-		if (b->button)
-			b->button->onClick = nullptr;
-	}
 }
 
 juce::String ObsidianBaseMidiComponent::fullParamId(const juce::String &paramSuffix) const

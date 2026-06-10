@@ -145,15 +145,18 @@ void DetailPanel::loadAudio()
 		    for (int i = 0; i < num; ++i)
 			    for (int ch = 0; ch < (int)reader->numChannels; ++ch)
 				    buf->setSample(ch, i, full.getSample(ch, i * ratio));
-
+		    juce::Component::SafePointer<DetailPanel> safeThis(this);
 		    juce::MessageManager::callAsync(
-		        [this, buf, v]()
+		        [safeThis, buf, v]()
 		        {
-			        if (!v->load() || destroyed.load())
-				        return;
-			        audioBuf = *buf;
-			        generateThumbnail();
-			        repaint();
+			        if (safeThis)
+			        {
+				        if (!v->load() || safeThis->destroyed.load())
+					        return;
+				        safeThis->audioBuf = *buf;
+				        safeThis->generateThumbnail();
+				        safeThis->repaint();
+			        }
 		        });
 	    });
 }

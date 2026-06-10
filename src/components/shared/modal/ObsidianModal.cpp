@@ -40,7 +40,7 @@ void ObsidianSvgButton::paintButton(juce::Graphics &g, bool shouldDrawButtonAsHi
 	}
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_REGULAR));
+	g.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_REGULAR));
 	g.drawText(getButtonText(), contentBounds, juce::Justification::centredLeft, true);
 }
 
@@ -85,7 +85,7 @@ void ObsidianModalWindow::paint(juce::Graphics &g)
 	    juce::Rectangle<float>(bounds.getX() + 30.0f, bounds.getY(), bounds.getWidth() - 60.0f, titleHeight);
 
 	g.setColour(ColourPalette::textPrimary);
-	g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XL));
+	g.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_XL));
 	g.drawText(title, titleBounds, juce::Justification::centredLeft, true);
 
 	float lineY = bounds.getY() + titleHeight;

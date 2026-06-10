@@ -1050,26 +1050,34 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File &audioFil
 		page.sampleRate = reader->sampleRate;
 		page.isLoaded = true;
 		page.isLoading = false;
-
+		juce::Component::SafePointer<TrackComponent> safeThis(this);
 		juce::MessageManager::callAsync(
-		    [this, pageIndex, t]()
+		    [safeThis, pageIndex, t]()
 		    {
-			    if (t->currentPageIndex.load() == pageIndex)
+			    if (safeThis)
 			    {
-				    updateFromTrackData();
-				    if (waveformDisplay)
+				    if (t->currentPageIndex.load() == pageIndex)
 				    {
-					    refreshWaveformDisplay();
+					    safeThis->updateFromTrackData();
+					    if (safeThis->waveformDisplay)
+					    {
+						    safeThis->refreshWaveformDisplay();
+					    }
 				    }
+				    safeThis->updatePagesDisplay();
 			    }
-			    updatePagesDisplay();
 		    });
 	}
 	catch (const std::exception &)
 	{
 		page.isLoading = false;
-
-		juce::MessageManager::callAsync([this]() { updatePagesDisplay(); });
+		juce::Component::SafePointer<TrackComponent> safeThis(this);
+		juce::MessageManager::callAsync(
+		    [safeThis]()
+		    {
+			    if (safeThis)
+				    safeThis->updatePagesDisplay();
+		    });
 	}
 }
 

@@ -144,6 +144,8 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 
 void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId)
 {
+	if (editor.audioProcessor.getIsLoadingState())
+		return;
 	editor.audioProcessor.setIsGenerating(true);
 
 	TrackData *track = editor.audioProcessor.getTrack(trackId);

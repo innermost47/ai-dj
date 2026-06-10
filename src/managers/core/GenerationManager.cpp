@@ -99,19 +99,19 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 		audioProcessor.setTrackIdWaitingForLoad(trackId);
 		audioProcessor.setCorrectMidiNoteReceived(false);
 	}
+	if (!audioProcessor.getIsLoadingState())
+		if (TrackData *track = audioProcessor.getTrack(trackId))
+		{
+			track->preprocessHasOriginal.store(preprocessResult.hasOriginalVersion);
+			track->preprocessOriginalBpm.store(preprocessResult.originalBpm);
+			track->skipBpmSync.store(true);
+			track->skipDiskReload.store(preprocessResult.stagingFilled);
+			track->hasSamplePending.store(true);
 
-	if (TrackData *track = audioProcessor.getTrack(trackId))
-	{
-		track->preprocessHasOriginal.store(preprocessResult.hasOriginalVersion);
-		track->preprocessOriginalBpm.store(preprocessResult.originalBpm);
-		track->skipBpmSync.store(true);
-		track->skipDiskReload.store(preprocessResult.stagingFilled);
-		track->hasSamplePending.store(true);
-
-		auto &currentPage = track->getCurrentPage();
-		currentPage.prompt = request.prompt;
-		currentPage.bpm = request.bpm;
-	}
+			auto &currentPage = track->getCurrentPage();
+			currentPage.prompt = request.prompt;
+			currentPage.bpm = request.bpm;
+		}
 
 	audioProcessor.setIsGenerating(false);
 	audioProcessor.setGeneratingTrackId("");
@@ -216,7 +216,7 @@ void GenerationManager::notifyGenerationComplete(const juce::String &trackId, co
 void GenerationManager::generateSampleWithImage(const juce::String &trackId, const juce::String &base64Image,
                                                 const juce::StringArray &keywords)
 {
-	if (audioProcessor.getIsGenerating())
+	if (audioProcessor.getIsGenerating() || audioProcessor.getIsLoadingState())
 		return;
 
 	TrackData *track = audioProcessor.getTrack(trackId);
@@ -391,7 +391,7 @@ void GenerationManager::reEnableCanvasGenerate()
 
 void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 {
-	if (audioProcessor.getIsGenerating())
+	if (audioProcessor.getIsGenerating() || audioProcessor.getIsLoadingState())
 		return;
 
 	TrackData *track = audioProcessor.getTrack(trackId);

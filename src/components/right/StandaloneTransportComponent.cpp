@@ -137,7 +137,7 @@ StandaloneTransportComponent::BpmField::BpmField()
 	editor.setInputRestrictions(6, "0123456789.");
 	editor.setJustification(juce::Justification::centred);
 	editor.setColour(EscapableTextEditor::textColourId, ColourPalette::textAccent);
-	editor.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_XXL));
+	editor.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_XXL));
 	editor.setTooltip("BPM\nScroll: +/-1\nShift+Scroll: +/-5\nCmd+Scroll: +/-0.1\nDouble-clic: reset 120");
 }
 
