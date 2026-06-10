@@ -126,9 +126,9 @@ void BasePanel::restoreUIState(const juce::var &state, std::function<void()> ref
 void BasePanel::drawEmptyState(juce::Graphics &g, juce::Drawable &iconSvg, juce::String &noItemYet, juce::String &tip,
                                juce::String noMatch)
 {
-	if (currentSearch.isNotEmpty())
+	if (currentSearch.isNotEmpty() && accordions.size() == 0)
 		drawNoSearchResults(g, noMatch);
-	else
+	else if (accordions.size() == 0)
 		drawEmptyBank(g, iconSvg, noItemYet, tip);
 }
 

@@ -33,19 +33,13 @@ DjIaVstProcessor::DjIaVstProcessor()
 		needsSaveAndRefresh = true;
 	}
 	if (promptBank->seedDefaultPromptsAndCategories())
-	{
 		needsSaveAndRefresh = true;
-	}
 	if (promptBank->seedStableAudio3Medium())
-	{
 		needsSaveAndRefresh = true;
-	}
 	if (needsSaveAndRefresh)
 	{
 		promptBank->saveToFile();
-
-		if (promptBank->onBankChanged)
-			promptBank->onBankChanged();
+		promptBank->loadFromFile();
 	}
 
 	sharedFormatManager.registerBasicFormats();
