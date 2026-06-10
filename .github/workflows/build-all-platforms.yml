@@ -283,8 +283,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.run_number }}
-          overwrite_files: true
-          fail_on_unmatched_files: false
           name: "OBSIDIAN-Neural v${{ github.run_number }}"
           body: |
             # 🎵 OBSIDIAN-Neural Release v${{ github.run_number }}
