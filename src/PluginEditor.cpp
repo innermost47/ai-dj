@@ -168,6 +168,8 @@ void DjIaVstEditor::finalizeInit()
 
 	uiTrackManager->refreshTracks();
 	uiStatusManager->refreshCreditsAsync();
+	if (uiLayoutManager->getLeftPanelWrapper()->getPromptBankPanel())
+		uiLayoutManager->getLeftPanelWrapper()->getPromptBankPanel()->refreshList();
 
 	if (audioProcessor.getIsGenerating())
 	{
