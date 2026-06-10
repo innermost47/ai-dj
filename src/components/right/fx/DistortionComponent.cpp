@@ -112,7 +112,7 @@ void DistortionComponent::setupUI()
 	addAndMakeVisible(componentLabel);
 	componentLabel.setText("Distortion", juce::dontSendNotification);
 	componentLabel.setJustificationType(juce::Justification::topLeft);
-	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	componentLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_REGULAR));
 	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
 	setupDistortionTypeButtons();
@@ -260,15 +260,17 @@ void DistortionComponent::wireParameters()
 		{
 			if (value > 0.5f)
 			{
+				juce::Component::SafePointer<DistortionComponent> safeThis(this);
 				juce::MessageManager::callAsync(
-				    [this, paramID, targetIndex, totalCount]()
+				    [safeThis, paramID, targetIndex, totalCount]()
 				    {
-					    if (auto *p = getProcessor().getParameterTreeState().getParameter(paramID))
-					    {
-						    p->beginChangeGesture();
-						    p->setValueNotifyingHost((float)targetIndex / (float)(totalCount - 1));
-						    p->endChangeGesture();
-					    }
+					    if (safeThis)
+						    if (auto *p = safeThis->getProcessor().getParameterTreeState().getParameter(paramID))
+						    {
+							    p->beginChangeGesture();
+							    p->setValueNotifyingHost((float)targetIndex / (float)(totalCount - 1));
+							    p->endChangeGesture();
+						    }
 				    });
 			}
 		};

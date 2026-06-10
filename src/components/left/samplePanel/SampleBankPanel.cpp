@@ -13,7 +13,19 @@ SampleBankPanel::SampleBankPanel(DjIaVstProcessor &processor) : BasePanel(proces
 	setupUI();
 
 	if (auto *bank = audioProcessor.getSampleBank())
-		bank->onBankChanged = [this]() { juce::MessageManager::callAsync([this]() { refreshSampleList(); }); };
+	{
+		juce::Component::SafePointer<SampleBankPanel> safeThis(this);
+		bank->onBankChanged = [safeThis]()
+		{
+			if (safeThis)
+				juce::MessageManager::callAsync(
+				    [safeThis]()
+				    {
+					    if (safeThis)
+						    safeThis->refreshSampleList();
+				    });
+		};
+	}
 }
 
 SampleBankPanel::~SampleBankPanel()
@@ -370,7 +382,13 @@ void SampleBankPanel::selectEntry(SampleBankEntry *entry)
 	}
 
 	detailPanel.setEntry(entry);
-	juce::MessageManager::callAsync([this]() { scrollToSelected(); });
+	juce::Component::SafePointer<SampleBankPanel> safeThis(this);
+	juce::MessageManager::callAsync(
+	    [safeThis]()
+	    {
+		    if (safeThis)
+			    safeThis->scrollToSelected();
+	    });
 }
 
 void SampleBankPanel::onAccordionExpanded(const juce::String &categoryName, bool expanded)

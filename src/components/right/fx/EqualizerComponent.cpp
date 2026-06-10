@@ -108,7 +108,7 @@ void EqualizerComponent::setupUI()
 	addAndMakeVisible(componentLabel);
 	componentLabel.setText("Equalizer", juce::dontSendNotification);
 	componentLabel.setJustificationType(juce::Justification::topLeft);
-	componentLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	componentLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_REGULAR));
 	componentLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
 	updateModelUI();

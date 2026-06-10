@@ -63,7 +63,7 @@ void MasterChannel::setupUI()
 	masterLabel.setText("MASTER", juce::dontSendNotification);
 	masterLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	masterLabel.setJustificationType(juce::Justification::left);
-	masterLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_SUBTITLE));
+	masterLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_SUBTITLE));
 
 	addAndMakeVisible(highLabel);
 	highLabel.setText("HIGH", juce::dontSendNotification);

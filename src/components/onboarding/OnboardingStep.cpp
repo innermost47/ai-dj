@@ -8,13 +8,13 @@ OnboardingStep::OnboardingStep(const OnboardingStepData &dataIn, OnboardingVaria
 {
 	addAndMakeVisible(headlineLabel);
 	headlineLabel.setText(data.headline, juce::dontSendNotification);
-	headlineLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_XL));
+	headlineLabel.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_XL));
 	headlineLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	headlineLabel.setJustificationType(juce::Justification::topLeft);
 
 	addAndMakeVisible(leadLabel);
 	leadLabel.setText(data.getLeadForVariant(variant), juce::dontSendNotification);
-	leadLabel.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+	leadLabel.setFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 	leadLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	leadLabel.setJustificationType(juce::Justification::topLeft);
 
@@ -36,7 +36,7 @@ void OnboardingStep::resized()
 	headlineLabel.setBounds(bounds.removeFromTop(28));
 	bounds.removeFromTop(Obsidian::GAP);
 
-	juce::Font leadFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+	juce::Font leadFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 	juce::AttributedString attr;
 	attr.append(leadLabel.getText(), leadFont);
 	attr.setWordWrap(juce::AttributedString::byWord);
@@ -68,7 +68,7 @@ int OnboardingStep::getPreferredHeight(int width) const
 
 	if (data.lead.isNotEmpty() || data.getLeadForVariant(variant).isNotEmpty())
 	{
-		juce::Font leadFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+		juce::Font leadFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 		juce::AttributedString attr;
 		attr.append(data.getLeadForVariant(variant), leadFont);
 		attr.setWordWrap(juce::AttributedString::byWord);

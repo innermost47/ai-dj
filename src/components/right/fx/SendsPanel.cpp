@@ -9,7 +9,7 @@ SendsPanel::SendsPanel(DjIaVstProcessor &processor) : ObsidianBaseMidiComponent(
 void SendsPanel::setupUI()
 {
 	delayTitleLbl.setText("DELAY", juce::dontSendNotification);
-	delayTitleLbl.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
+	delayTitleLbl.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_INFO));
 	delayTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	addAndMakeVisible(delayTitleLbl);
 
@@ -37,7 +37,7 @@ void SendsPanel::setupUI()
 	addAndMakeVisible(delayFeedbackKnob);
 
 	reverbTitleLbl.setText("REVERB", juce::dontSendNotification);
-	reverbTitleLbl.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
+	reverbTitleLbl.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_INFO));
 	reverbTitleLbl.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	addAndMakeVisible(reverbTitleLbl);
 
@@ -103,15 +103,17 @@ void SendsPanel::wireParameters()
 		{
 			if (value > 0.5f)
 			{
+				juce::Component::SafePointer<SendsPanel> safeThis(this);
 				juce::MessageManager::callAsync(
-				    [this, paramID, targetIndex, totalCount]()
+				    [safeThis, paramID, targetIndex, totalCount]()
 				    {
-					    if (auto *p = getProcessor().getParameterTreeState().getParameter(paramID))
-					    {
-						    p->beginChangeGesture();
-						    p->setValueNotifyingHost((float)targetIndex / (float)(totalCount - 1));
-						    p->endChangeGesture();
-					    }
+					    if (safeThis)
+						    if (auto *p = safeThis->getProcessor().getParameterTreeState().getParameter(paramID))
+						    {
+							    p->beginChangeGesture();
+							    p->setValueNotifyingHost((float)targetIndex / (float)(totalCount - 1));
+							    p->endChangeGesture();
+						    }
 				    });
 			}
 		};

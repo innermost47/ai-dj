@@ -40,9 +40,9 @@ juce::Typeface::Ptr CustomLookAndFeel::getTypefaceForFont(const juce::Font &f)
 {
 	auto requestedName = f.getTypefaceName();
 
-	if (requestedName == Obsidian::MICHROMA->getName())
+	if (requestedName == Obsidian::michroma()->getName())
 	{
-		return Obsidian::MICHROMA;
+		return Obsidian::michroma();
 	}
 
 	static auto reg =
@@ -72,7 +72,7 @@ juce::TextLayout CustomLookAndFeel::layoutTooltipText(const juce::String &text, 
 	juce::AttributedString s;
 	s.setJustification(juce::Justification::centredLeft);
 
-	s.append(text, juce::Font(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(tooltipFontSize)), colour);
+	s.append(text, juce::Font(juce::FontOptions(Obsidian::notoRegular()).withHeight(tooltipFontSize)), colour);
 
 	juce::TextLayout tl;
 	tl.createLayoutWithBalancedLineLengths(s, (float)maxToolTipWidth);
@@ -135,7 +135,7 @@ void CustomLookAndFeel::drawButtonText(juce::Graphics &g, juce::TextButton &butt
 		textColour = textColour.withAlpha(0.5f);
 
 	g.setColour(textColour);
-	g.setFont(juce::Font(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_REGULAR)));
+	g.setFont(juce::Font(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_REGULAR)));
 
 	g.drawFittedText(button.getButtonText(), button.getLocalBounds(), juce::Justification::centred, 2, 0.8f);
 }
@@ -180,7 +180,7 @@ void CustomLookAndFeel::drawToggleButton(juce::Graphics &g, juce::ToggleButton &
 		textColour = textColour.withAlpha(0.5f);
 
 	g.setColour(textColour);
-	g.setFont(juce::Font(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR)));
+	g.setFont(juce::Font(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR)));
 	g.drawText(button.getButtonText(), bounds, juce::Justification::centred);
 }
 
@@ -221,17 +221,17 @@ void CustomLookAndFeel::drawAlertBox(juce::Graphics &g, juce::AlertWindow &alert
 
 juce::Font CustomLookAndFeel::getAlertWindowTitleFont()
 {
-	return juce::Font(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_SUBTITLE));
+	return juce::Font(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_SUBTITLE));
 }
 
 juce::Font CustomLookAndFeel::getAlertWindowMessageFont()
 {
-	return juce::Font(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_REGULAR));
+	return juce::Font(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_REGULAR));
 }
 
 juce::Font CustomLookAndFeel::getAlertWindowFont()
 {
-	return juce::Font(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+	return juce::Font(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 }
 
 void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, bool isButtonDown, int buttonX,
@@ -280,7 +280,7 @@ void CustomLookAndFeel::drawComboBox(juce::Graphics &g, int width, int height, b
 juce::Font CustomLookAndFeel::getComboBoxFont(juce::ComboBox & /*box*/)
 {
 	auto fontSize = Obsidian::TEXT_REGULAR;
-	return juce::Font(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(fontSize));
+	return juce::Font(juce::FontOptions(Obsidian::notoRegular()).withHeight(fontSize));
 }
 
 void CustomLookAndFeel::positionComboBoxText(juce::ComboBox &box, juce::Label &label)
@@ -314,23 +314,23 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 	auto currentFont = label.getFont();
 	auto fontName = currentFont.getTypefaceName();
 
-	if (fontName == Obsidian::MICHROMA->getName())
+	if (fontName == Obsidian::michroma()->getName())
 	{
-		g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(currentSize));
+		g.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(currentSize));
 	}
 	else
 	{
 		if (label.getFont().isBold())
 		{
-			g.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(currentSize));
+			g.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(currentSize));
 		}
 		else if (label.getFont().isItalic())
 		{
-			g.setFont(juce::FontOptions(Obsidian::NOTO_ITALIC).withHeight(currentSize));
+			g.setFont(juce::FontOptions(Obsidian::notoItalic()).withHeight(currentSize));
 		}
 		else
 		{
-			g.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(currentSize));
+			g.setFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(currentSize));
 		}
 	}
 
@@ -660,7 +660,7 @@ void CustomLookAndFeel::drawPopupMenuItem(juce::Graphics &g, const juce::Rectang
 	auto textColour = (textColourToUse != nullptr) ? *textColourToUse : ColourPalette::textPrimary;
 	if (!isActive)
 		textColour = textColour.withAlpha(0.4f);
-	g.setFont(juce::Font(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR)));
+	g.setFont(juce::Font(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR)));
 
 	auto r = area.reduced(10, 0);
 	if (isTicked)

@@ -11,7 +11,19 @@ PromptBankPanel::PromptBankPanel(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	setupUI();
 
 	if (auto *bank = audioProcessor.getPromptBank())
-		bank->onBankChanged = [this]() { juce::MessageManager::callAsync([this]() { refreshList(); }); };
+	{
+		juce::Component::SafePointer<PromptBankPanel> safeThis(this);
+		bank->onBankChanged = [safeThis]()
+		{
+			if (safeThis)
+				juce::MessageManager::callAsync(
+				    [safeThis]()
+				    {
+					    if (safeThis)
+						    safeThis->refreshList();
+				    });
+		};
+	}
 }
 
 PromptBankPanel::~PromptBankPanel()
@@ -118,7 +130,13 @@ void PromptBankPanel::refreshList()
 	applyFilterAndSort();
 	rebuildAccordions();
 	editor.uiPresetManager->notifyTracksPromptUpdate();
-	juce::MessageManager::callAsync([this]() { scrollToSelected(); });
+	juce::Component::SafePointer<PromptBankPanel> safeThis(this);
+	juce::MessageManager::callAsync(
+	    [safeThis]()
+	    {
+		    if (safeThis)
+			    safeThis->scrollToSelected();
+	    });
 }
 
 void PromptBankPanel::applyFilterAndSort()

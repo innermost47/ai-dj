@@ -87,7 +87,7 @@ void CrossfaderComponent::setupUI()
 	crossfaderLabel.setText("CROSSFADERS", juce::dontSendNotification);
 	crossfaderLabel.setJustificationType(juce::Justification::centred);
 	crossfaderLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
-	crossfaderLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	crossfaderLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_REGULAR));
 	crossfaderLabel.setInterceptsMouseClicks(false, false);
 }
 

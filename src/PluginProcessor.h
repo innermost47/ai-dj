@@ -313,7 +313,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	}
 	bool getIsGenerating() const
 	{
-		return isGenerating;
+		return isGenerating.load();
 	}
 	bool isUsingCrossfader() const
 	{
@@ -345,7 +345,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	}
 	bool isStateReady() const
 	{
-		return stateLoaded;
+		return stateLoaded.load();
 	}
 	bool isHostBpmEnabled() const
 	{
@@ -473,11 +473,11 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	}
 	void setIsGenerating(bool v)
 	{
-		isGenerating = v;
+		isGenerating.store(v);
 	}
 	void setStateReady(bool v)
 	{
-		stateLoaded = v;
+		stateLoaded.store(v);
 	}
 	void setIsLoadingState(bool v)
 	{
@@ -804,7 +804,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	bool hostBpmEnabled = true;
 	bool useLocalModel = false;
-	bool isGenerating = false;
 	bool onboardingDone = false;
 	bool savedPanelVisible = true;
 	bool hasPendingNotification = false;
@@ -823,6 +822,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> correctMidiNoteReceived{false};
 	std::atomic<bool> stateLoaded{false};
 	std::atomic<bool> bypassLLM{true};
+	std::atomic<bool> isGenerating{false};
 	std::atomic<bool> isLoadingFromBank{false};
 	std::atomic<float> pendingDetectedBpm{-1.0f};
 	std::atomic<float> pendingSnappedBpm{-1.0f};

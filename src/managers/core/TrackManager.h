@@ -50,6 +50,11 @@ class TrackManager
 	                            juce::AudioBuffer<float> &mainOutput, float size, float damping, float width, float mix,
 	                            int numSamples);
 
+	juce::ScopedLock getTracksLock() const
+	{
+		return juce::ScopedLock(tracksLock);
+	}
+
   private:
 	mutable juce::CriticalSection tracksLock;
 	std::map<std::string, std::unique_ptr<TrackData>> tracks;

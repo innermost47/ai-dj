@@ -9,7 +9,7 @@ ConceptRowComponent::ConceptRowComponent(const ConceptRow &row) : data(row)
 
 	addAndMakeVisible(titleLabel);
 	titleLabel.setText(data.title, juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_REGULAR));
+	titleLabel.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_REGULAR));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	titleLabel.setJustificationType(juce::Justification::centredLeft);
 }
@@ -76,7 +76,7 @@ int ConceptRowComponent::getPreferredHeight(int width) const
 	const int textX = ICON_BOX_SIZE + LEFT_GAP;
 	const int textWidth = juce::jmax(0, innerWidth - textX);
 
-	juce::Font bodyFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+	juce::Font bodyFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 
 	juce::AttributedString attr;
 	attr.append(data.body, bodyFont);
@@ -119,7 +119,7 @@ void ConceptRowComponent::paint(juce::Graphics &g)
 	auto bodyArea = juce::Rectangle<int>(textX, 10 + TITLE_HEIGHT + TITLE_BODY_GAP, getWidth() - textX - 12,
 	                                     getHeight() - 10 - TITLE_HEIGHT - TITLE_BODY_GAP - 10);
 
-	juce::Font bodyFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+	juce::Font bodyFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 
 	juce::AttributedString attr;
 	attr.append(data.body, bodyFont, ColourPalette::textSecondary);

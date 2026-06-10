@@ -36,7 +36,7 @@ void TrackEffectsPanel::paint(juce::Graphics &g)
 
 	auto titleArea = getLocalBounds().reduced(8, 4).removeFromTop(18);
 	g.setColour(ColourPalette::textAccent);
-	g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_INFO));
+	g.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_INFO));
 	g.drawText("EFFECTS", titleArea, juce::Justification::centredLeft, false);
 }
 

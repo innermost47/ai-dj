@@ -9,13 +9,13 @@ MidiMappingRow::MidiMappingRow(const MidiMapping &mapping, MidiLearnManager *man
 	parameterLabel.setText(mapping.parameterName, juce::dontSendNotification);
 	parameterLabel.setJustificationType(juce::Justification::centredLeft);
 	parameterLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	parameterLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(13.5f));
+	parameterLabel.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(13.5f));
 	addAndMakeVisible(parameterLabel);
 
 	midiInfoLabel.setText(getMidiInfoString(), juce::dontSendNotification);
 	midiInfoLabel.setJustificationType(juce::Justification::centredLeft);
 	midiInfoLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
-	midiInfoLabel.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(12.0f));
+	midiInfoLabel.setFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(12.0f));
 	addAndMakeVisible(midiInfoLabel);
 
 	deleteButton.loadIcon(BinaryData::trash_svg, BinaryData::trash_svgSize);
@@ -78,7 +78,7 @@ void MidiMappingRow::paint(juce::Graphics &g)
 		g.drawRoundedRectangle(badgeBounds, Obsidian::CORNER, 0.6f);
 
 		g.setColour(ColourPalette::textAccent);
-		g.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(10.5f));
+		g.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(10.5f));
 		g.drawText(getMidiTypeShort(), badgeBounds, juce::Justification::centred);
 	}
 }
@@ -176,12 +176,12 @@ juce::String MidiMappingRow::getMidiTypeShort() const
 MidiMappingEditorWindow::MidiMappingEditorWindow(MidiLearnManager *manager) : midiLearnManager(manager)
 {
 	subtitleLabel.setText("Manage mappings or ReLearn to reassign.", juce::dontSendNotification);
-	subtitleLabel.setFont(juce::FontOptions(Obsidian::NOTO_REGULAR).withHeight(Obsidian::TEXT_REGULAR));
+	subtitleLabel.setFont(juce::FontOptions(Obsidian::notoRegular()).withHeight(Obsidian::TEXT_REGULAR));
 	subtitleLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	subtitleLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(subtitleLabel);
 
-	countLabel.setFont(juce::FontOptions(Obsidian::NOTO_BOLD).withHeight(Obsidian::TEXT_INFO));
+	countLabel.setFont(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_INFO));
 	countLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	countLabel.setJustificationType(juce::Justification::centredLeft);
 	addAndMakeVisible(countLabel);

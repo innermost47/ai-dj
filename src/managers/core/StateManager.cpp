@@ -626,7 +626,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setHostBpmEnabled(state.getProperty("hostBpmEnabled", false));
 	audioProcessor.setLastDuration(state.getProperty("lastDuration", 6.0));
 	audioProcessor.setLastKeyIndex(state.getProperty("lastKeyIndex", 1));
-	audioProcessor.setIsGenerating(false);
 	audioProcessor.setGeneratingTrackId(state.getProperty("generatingTrackId", "").toString());
 	audioProcessor.setAutoLoadEnabled(state.getProperty("autoLoadEnabled", true));
 	audioProcessor.setBypassLLM(state.getProperty("bypassLLM", false));

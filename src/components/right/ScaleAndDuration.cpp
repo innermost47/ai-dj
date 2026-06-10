@@ -127,7 +127,7 @@ ScaleAndDurationPanel::ScaleAndDurationPanel(DjIaVstProcessor &processor) : audi
 
 	addAndMakeVisible(titleLabel);
 	titleLabel.setText("Key and duration", juce::dontSendNotification);
-	titleLabel.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_REGULAR));
+	titleLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_REGULAR));
 	titleLabel.setColour(juce::Label::textColourId, ColourPalette::textAccent);
 	titleLabel.setJustificationType(juce::Justification::centredLeft);
 

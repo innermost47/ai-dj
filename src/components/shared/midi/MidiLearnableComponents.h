@@ -55,7 +55,13 @@ class MidiLearnable : public ComponentType, public MidiLearnableBase, private ju
 			}
 			else
 			{
-				juce::MessageManager::callAsync([this]() { this->repaint(); });
+				juce::Component::SafePointer<MidiLearnable> safeThis(this);
+				juce::MessageManager::callAsync(
+				    [safeThis]()
+				    {
+					    if (safeThis)
+						    safeThis->repaint();
+				    });
 			}
 		}
 	}

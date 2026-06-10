@@ -54,7 +54,7 @@ void LeftPanelWrapper::paint(juce::Graphics &g)
 	if (!isExpanded)
 	{
 		g.setColour(ColourPalette::textSecondary);
-		g.setFont(juce::FontOptions(Obsidian::MICHROMA).withHeight(Obsidian::TEXT_TITLE));
+		g.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_TITLE));
 
 		auto area = getLocalBounds();
 

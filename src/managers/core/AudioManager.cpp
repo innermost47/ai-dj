@@ -251,6 +251,8 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	TrackData *track = trackManager.getTrack(trackId);
 	if (track)
 		targetPageIndex = track->currentPageIndex.load();
+	if (audioProcessor.getIsLoadingState())
+		track = nullptr;
 
 	auto stretchedFile = getTrackPageAudioFile(trackId, targetPageIndex);
 	stretchedFile.getParentDirectory().createDirectory();
@@ -259,7 +261,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	{
 		saveBufferToFile(cleanedRawBuffer, stretchedFile, sampleRate);
 
-		if (track)
+		if (track && !audioProcessor.getIsLoadingState())
 		{
 			track->stagingBuffer.makeCopyOf(cleanedRawBuffer);
 			track->stagingNumSamples.store(cleanedRawBuffer.getNumSamples());
@@ -309,7 +311,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	saveBufferToFile(cleanedRawBuffer, originalFile, sampleRate);
 	saveBufferToFile(finalStretchedBuffer, stretchedFile, sampleRate);
 
-	if (track)
+	if (track && !audioProcessor.getIsLoadingState())
 	{
 		track->stagingBuffer.makeCopyOf(cleanedRawBuffer);
 		track->stagingNumSamples.store(cleanedRawBuffer.getNumSamples());
@@ -569,15 +571,11 @@ void AudioManager::saveBufferToFile(const juce::AudioBuffer<float> &buffer, cons
                                     double sampleRate)
 {
 	if (buffer.getNumSamples() == 0)
-	{
 		return;
-	}
 
 	juce::WavAudioFormat wavFormat;
 	if (outputFile.exists())
-	{
 		outputFile.deleteFile();
-	}
 
 	juce::FileOutputStream *fileStream = new juce::FileOutputStream(outputFile);
 	if (!fileStream->openedOk())
@@ -608,9 +606,7 @@ void AudioManager::saveBufferToFile(const juce::AudioBuffer<float> &buffer, cons
 		juce::String filename = outputFile.getFileNameWithoutExtension();
 
 		if (filename.contains("_original"))
-		{
 			return;
-		}
 
 		juce::String trackId = filename;
 
@@ -635,46 +631,44 @@ void AudioManager::saveBufferToFile(const juce::AudioBuffer<float> &buffer, cons
 		}
 
 		if (trackId == audioProcessor.getCurrentBankLoadTrackId())
-		{
 			return;
-		}
 
-		TrackData *track = trackManager.getTrack(trackId);
-		if (!track)
-		{
-			return;
-		}
-
-		juce::String prompt;
+		juce::String prompt, key = "Unknown", modelName, oldSampleId;
 		float bpm = 126.0f;
-		juce::String key = "Unknown";
-		juce::String modelName;
 
-		auto &currentPage = track->getCurrentPage();
-		prompt = currentPage.generationPrompt;
-		if (prompt.isEmpty())
-			prompt = currentPage.selectedPrompt;
-		bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : currentPage.originalBpm;
-		key = currentPage.generationKey.isEmpty() ? "Unknown" : currentPage.generationKey;
-		modelName = currentPage.selectedModel;
-
-		if (prompt.isEmpty())
 		{
+			const juce::ScopedLock sl(trackManager.getTracksLock());
+			TrackData *track = trackManager.getTrack(trackId);
+			if (!track)
+				return;
+			auto &currentPage = track->getCurrentPage();
+			prompt = currentPage.generationPrompt;
+			if (prompt.isEmpty())
+				prompt = currentPage.selectedPrompt;
+			bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : currentPage.originalBpm;
+			key = currentPage.generationKey.isEmpty() ? "Unknown" : currentPage.generationKey;
+			modelName = currentPage.selectedModel;
+			oldSampleId = track->currentSampleId;
+		}
+
+		if (prompt.isEmpty())
 			return;
-		}
 
-		if (!track->currentSampleId.isEmpty())
-		{
-			bank->markSampleAsUnused(track->currentSampleId, audioProcessor.getProjectId());
-		}
+		if (!oldSampleId.isEmpty())
+			bank->markSampleAsUnused(oldSampleId, audioProcessor.getProjectId());
 
 		juce::String sampleId = bank->addSample(prompt, outputFile, bpm, key, modelName);
+		if (sampleId.isEmpty())
+			return;
 
-		if (!sampleId.isEmpty())
+		bank->markSampleAsUsed(sampleId, audioProcessor.getProjectId());
+
 		{
-			bank->markSampleAsUsed(sampleId, audioProcessor.getProjectId());
+			const juce::ScopedLock sl(trackManager.getTracksLock());
+			TrackData *track = trackManager.getTrack(trackId);
+			if (!track)
+				return;
 			track->currentSampleId = sampleId;
-
 			track->getCurrentPage().generationPrompt = "";
 		}
 	}
