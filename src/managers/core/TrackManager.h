@@ -77,6 +77,38 @@ class TrackManager
 		float adsrRelease = 0.0f;
 	};
 
+	struct TrackInfo
+	{
+		float volume;
+		float pan;
+		float leftGain;
+		float rightGain;
+		double currentPosition;
+		double playbackRatio = 1.0;
+		float pitchSemis;
+		float fineCents;
+		float totalSemis;
+		double startSample;
+		double endSample;
+	};
+
+	struct FadeInfo
+	{
+		bool beatRepeatActive;
+		double beatRepeatEnd;
+		double beatRepeatStart;
+		const int BR_FADE_DURATION;
+		const int BR_FADE_IN_LENGTH;
+		double samplesUntilBeatRepeatEnd;
+		double endSampleLoop;
+		int brFadeInCounter;
+		double fadeLength;
+		float fadeRcp;
+		bool fadeOutThisBuffer;
+		double samplesUntilLoopEnd;
+		double FADE_DURATION;
+	};
+
 	double currentSampleRate = Obsidian::SAMPLERATE;
 	int currentMaxBlockSize = Obsidian::MAX_BLOCK_SIZE;
 	bool audioPrepared = false;
@@ -90,17 +122,18 @@ class TrackManager
 	void handleOutput(juce::AudioSampleBuffer &individualOutput, juce::AudioSampleBuffer &mixOutput, TrackData &track,
 	                  double &currentPosition, float volume) const;
 	void prepareOutput(float adsrGain, float safetyFade, const float *leftChannel, const float *rightChannel,
-	                   double absolutePosition, int bufferSize, float leftGain, float rightGain,
-	                   double &currentPosition, double playbackRatio, const bool beatRepeatActive, double endSampleLoop,
-	                   double startSample, juce::AudioSampleBuffer &individualOutput, TrackData &track, int i) const;
+	                   double absolutePosition, int bufferSize, const bool beatRepeatActive, double endSampleLoop,
+	                   juce::AudioSampleBuffer &individualOutput, TrackData &track, int i, TrackInfo &trackInfo) const;
+
 	PageInfo getPageInfo(const TrackPage &page, double sampleRate) const;
+	TrackInfo getTrackInfo(const TrackData &track, const TrackPage &page, const PageInfo &pageInfo) const;
+	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page, const PageInfo &pageInfo,
+	                     int timeSignatureNumerator, int timeSignatureDenominator, double hostBpm,
+	                     int numSamples) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 	float getADSRGain(double absolutePosition, double startSample, double sectionLength, PageInfo &info) const;
-	float prepareSafetyFade(int i, bool beatRepeatActive, double posInLoop, const double fadeLength,
-	                        const float fadeRcp, double loopLength, double samplesUntilBeatRepeatEnd,
-	                        const int BR_FADE_DURATION, const int BR_FADE_IN_LENGTH, const double FADE_DURATION,
-	                        int &brFadeInCounter, bool fadeOutThisBuffer, double samplesUntilLoopEnd) const;
+	float prepareSafetyFade(int i, double posInLoop, double loopLength, FadeInfo &fadeInfo) const;
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };
