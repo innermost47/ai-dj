@@ -567,26 +567,22 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 }
 
 double TrackManager::getNextStepSampleOn(int timeSignatureNumerator, int timeSignatureDenominator,
-                                         double samplesPerMeasure, SequencerData &seqData, int numMeasures) const
+                                         double samplesPerMeasure, SequencerData &seqData, int numMeasures,
+                                         double realPosition) const
 {
 	double stepsPerMeasure = (double)timeSignatureNumerator * (4 / ((double)timeSignatureDenominator / 4));
 	double samplesPerStep = samplesPerMeasure / stepsPerMeasure;
 	double samplesCounter = 0.0;
-	double nextStepSample = 0.0;
 	for (int i = 0; i < numMeasures; i++)
 	{
-		for (int j = 0; j < Obsidian::MAX_STEPS_PER_MEASURE; j++)
+		for (int j = 0; j < stepsPerMeasure; j++)
 		{
+			if (seqData.steps[i][j] && samplesCounter > realPosition)
+				return samplesCounter - realPosition;
 			samplesCounter += samplesPerStep;
-			if (seqData.steps[i][j] && j > seqData.currentStep)
-			{
-				nextStepSample = samplesCounter / numMeasures;
-				return nextStepSample;
-			}
 		}
 	}
-
-	return nextStepSample;
+	return 0.0;
 }
 
 TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page,
@@ -605,8 +601,9 @@ TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackIn
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
 	double endSampleLoop = 0.0;
 	double samplesPerMeasureScaled = samplesPerMeasure * trackInfo.playbackRatio;
-	double nextStepSampleOn = getNextStepSampleOn(timeSignatureNumerator, timeSignatureDenominator,
-	                                              samplesPerMeasureScaled, seqData, numMeasures);
+	double nextStepSampleOn =
+	    getNextStepSampleOn(timeSignatureNumerator, timeSignatureDenominator, samplesPerMeasureScaled, seqData,
+	                        numMeasures, track.numSamplesAccPerMeasure.load());
 
 	if (trackInfo.startSample > 0.0 && trackInfo.endSample - trackInfo.startSample > samplesPerMeasureScaled)
 		endSampleLoop = (samplesPerMeasureScaled * numMeasures) + trackInfo.startSample;
@@ -618,7 +615,9 @@ TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackIn
 		endSampleLoop = samplesPerMeasureScaled * numMeasures;
 
 	const double FADE_DURATION = 512.0;
-	double samplesSourceUntilEnd = endSampleLoop - (trackInfo.startSample + trackInfo.currentPosition);
+
+	double samplesSourceUntilEnd =
+	    nextStepSampleOn > 0.0 ? nextStepSampleOn : endSampleLoop - (trackInfo.startSample + trackInfo.currentPosition);
 	double samplesUntilLoopEnd = samplesSourceUntilEnd / trackInfo.playbackRatio;
 	bool fadeOutThisBuffer = (samplesUntilLoopEnd > 0 && samplesUntilLoopEnd <= FADE_DURATION + numSamples);
 

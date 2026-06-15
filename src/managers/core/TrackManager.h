@@ -136,7 +136,7 @@ class TrackManager
 	float prepareSafetyFade(int i, double posInLoop, double loopLength, FadeInfo &fadeInfo) const;
 
 	double getNextStepSampleOn(int timeSignatureNumerator, int timeSignatureDenominator, double samplesPerMeasure,
-	                           SequencerData &seqData, int numMeasures) const;
+	                           SequencerData &seqData, int numMeasures, double realPosition) const;
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };

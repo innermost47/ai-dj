@@ -399,10 +399,7 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 	{
 
 		if (!track->beatRepeatActive.load())
-		{
 			track->readPosition.store(0.0);
-			track->numSamplesAccPerMeasure.store(0.0);
-		}
 		track->setPlaying(true);
 		triggerSequencerStep(track);
 	}
@@ -425,7 +422,7 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 		if (!track->beatRepeatActive.load())
 		{
 			track->readPosition.store(0.0);
-			if (step == 0)
+			if (step == 0 && measure == 0)
 				track->numSamplesAccPerMeasure.store(0.0);
 		}
 		audioProcessor.addPlayingTrack(track->midiNote, track->trackId);
