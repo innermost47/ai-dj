@@ -274,9 +274,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 	}
 	outputBuffer.clear();
 	for (auto &buffer : individualOutputs)
-	{
 		buffer.clear();
-	}
 
 	for (const auto &pair : tracks)
 	{
@@ -325,26 +323,18 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			if (track->isPreviewMode.load())
 			{
 				if (previewOutput.getNumChannels() >= 2)
-				{
 					for (int ch = 0; ch < previewOutput.getNumChannels(); ++ch)
 						previewOutput.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
-				}
 				else
-				{
 					for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
 						outputBuffer.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
-				}
 			}
 			else
 			{
 				if (shouldHearTrack)
-				{
 					for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
-					{
 						outputBuffer.addFromWithRamp(ch, 0, tempMixBuffer.getReadPointer(ch), numSamples, deckGainStart,
 						                             deckGainEnd);
-					}
-				}
 				for (int ch = 0; ch < std::min(2, individualOutputs[bufferIndex].getNumChannels()); ++ch)
 				{
 					if (!shouldHearTrack)
@@ -366,9 +356,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile)
 {
 	if (!track || pageIndex < 0 || pageIndex >= 4)
-	{
 		return;
-	}
 
 	auto &page = track->pages[pageIndex];
 
@@ -407,9 +395,7 @@ void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const j
 	}
 
 	if (numChannels == 1)
-	{
 		page.audioBuffer.copyFrom(1, 0, page.audioBuffer, 0, 0, numSamples);
-	}
 
 	page.numSamples = numSamples;
 	page.sampleRate = reader->sampleRate;
@@ -421,9 +407,7 @@ void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const j
 	{
 		auto *channelData = page.audioBuffer.getReadPointer(ch);
 		for (int i = 0; i < page.audioBuffer.getNumSamples(); ++i)
-		{
 			maxSample = std::max(maxSample, std::abs(channelData[i]));
-		}
 	}
 }
 
@@ -447,9 +431,7 @@ void TrackManager::forEachTrack(std::function<void(const std::string &, const Tr
 	{
 		auto it = tracks.find(id);
 		if (it != tracks.end())
-		{
 			callback(id, it->second.get());
-		}
 	}
 }
 
@@ -460,9 +442,7 @@ void TrackManager::forEachTrack(std::function<void(const TrackData *)> callback)
 	{
 		auto it = tracks.find(id);
 		if (it != tracks.end())
-		{
 			callback(it->second.get());
-		}
 	}
 }
 
@@ -494,17 +474,13 @@ int TrackManager::findFreeSlot()
 	{
 		const auto &track = pair.second;
 		if (track->slotIndex >= 0 && track->slotIndex < Obsidian::MAX_TRACKS)
-		{
 			actualUsage[track->slotIndex] = true;
-		}
 	}
 
 	for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
 	{
 		if (!usedSlots[i])
-		{
 			return i;
-		}
 	}
 
 	return -1;
@@ -578,9 +554,7 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 	float totalSemis = pitchSemis + (fineCents / 100.0f);
 
 	if (std::abs(totalSemis) > 0.001f)
-	{
 		playbackRatio *= std::pow(2.0f, totalSemis / 12.0f);
-	}
 
 	double startSample = pageInfo.loopStartToUse * pageInfo.sampleRateToUse;
 	double endSample = pageInfo.loopEndToUse * pageInfo.sampleRateToUse;
@@ -590,6 +564,29 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 
 	return TrackInfo{volume,     pan,       leftGain,   rightGain,   currentPosition, playbackRatio,
 	                 pitchSemis, fineCents, totalSemis, startSample, endSample};
+}
+
+double TrackManager::getNextStepSampleOn(int timeSignatureNumerator, int timeSignatureDenominator,
+                                         double samplesPerMeasure, SequencerData &seqData, int numMeasures) const
+{
+	double stepsPerMeasure = (double)timeSignatureNumerator * (4 / ((double)timeSignatureDenominator / 4));
+	double samplesPerStep = samplesPerMeasure / stepsPerMeasure;
+	double samplesCounter = 0.0;
+	double nextStepSample = 0.0;
+	for (int i = 0; i < numMeasures; i++)
+	{
+		for (int j = 0; j < Obsidian::MAX_STEPS_PER_MEASURE; j++)
+		{
+			samplesCounter += samplesPerStep;
+			if (seqData.steps[i][j] && j > seqData.currentStep)
+			{
+				nextStepSample = samplesCounter / numMeasures;
+				return nextStepSample;
+			}
+		}
+	}
+
+	return nextStepSample;
 }
 
 TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page,
@@ -608,6 +605,8 @@ TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackIn
 	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
 	double endSampleLoop = 0.0;
 	double samplesPerMeasureScaled = samplesPerMeasure * trackInfo.playbackRatio;
+	double nextStepSampleOn = getNextStepSampleOn(timeSignatureNumerator, timeSignatureDenominator,
+	                                              samplesPerMeasureScaled, seqData, numMeasures);
 
 	if (trackInfo.startSample > 0.0 && trackInfo.endSample - trackInfo.startSample > samplesPerMeasureScaled)
 		endSampleLoop = (samplesPerMeasureScaled * numMeasures) + trackInfo.startSample;
@@ -658,9 +657,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	{
 		int slot = track.slotIndex;
 		if (slot != -1)
-		{
 			(*safeCallback)(slot, &track);
-		}
 	}
 
 	auto handleEndOfPreview = [this, &track]()
@@ -724,8 +721,9 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		if (absolutePosition >= trackInfo.endSample)
 		{
-			track.readPosition = 0.0;
-			track.isPlaying = false;
+			track.readPosition.store(0.0);
+			track.numSamplesAccPerMeasure.store(0.0);
+			track.isPlaying.store(false);
 			handleEndOfPreview();
 			return;
 		}
@@ -739,7 +737,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		int sampleIndex = static_cast<int>(absolutePosition);
 		if (sampleIndex >= bufferSize)
 		{
-			track.isPlaying = false;
+			track.isPlaying.store(false);
 			handleEndOfPreview();
 			break;
 		}
@@ -754,7 +752,8 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		prepareOutput(adsrGain, safetyFade, leftChannel, rightChannel, absolutePosition, bufferSize,
 		              fadeInfo.beatRepeatActive, fadeInfo.endSampleLoop, individualOutput, track, i, trackInfo);
 	}
-
+	double accumulated = track.numSamplesAccPerMeasure.load() + numSamples;
+	track.numSamplesAccPerMeasure.store(accumulated);
 	handleOutput(individualOutput, mixOutput, track, trackInfo.currentPosition, trackInfo.volume);
 }
 

@@ -190,6 +190,7 @@ struct TrackData
 	std::atomic<bool> isPrepared{false};
 
 	std::atomic<float> lastFeedbackDelaySend{-1.0f};
+	std::atomic<double> numSamplesAccPerMeasure{0.0};
 
 	int slotIndex = -1;
 

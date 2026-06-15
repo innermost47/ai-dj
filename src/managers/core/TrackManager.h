@@ -135,5 +135,8 @@ class TrackManager
 	float getADSRGain(double absolutePosition, double startSample, double sectionLength, PageInfo &info) const;
 	float prepareSafetyFade(int i, double posInLoop, double loopLength, FadeInfo &fadeInfo) const;
 
+	double getNextStepSampleOn(int timeSignatureNumerator, int timeSignatureDenominator, double samplesPerMeasure,
+	                           SequencerData &seqData, int numMeasures) const;
+
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };

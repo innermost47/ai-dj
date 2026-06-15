@@ -32,6 +32,7 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 				track->isArmed.store(false);
 				track->isArmedToStop.store(false);
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerMeasure.store(0.0);
 
 				juce::String playParam = "slot" + juce::String(slotNumber) + "Play";
 				if (auto *p = audioProcessor.getParameterTreeState().getParameter(playParam))
@@ -201,6 +202,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isPlaying.store(false);
 				track->isCurrentlyPlaying.store(false);
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerMeasure.store(0.0);
 				track->limiter.resetReductionAmount();
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
@@ -226,6 +228,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isCurrentlyPlaying.store(false);
 				track->limiter.resetReductionAmount();
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerMeasure.store(0.0);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
 				seqData.stepAccumulator = 0.0;
@@ -398,6 +401,7 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 		if (!track->beatRepeatActive.load())
 		{
 			track->readPosition.store(0.0);
+			track->numSamplesAccPerMeasure.store(0.0);
 		}
 		track->setPlaying(true);
 		triggerSequencerStep(track);
@@ -421,6 +425,8 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 		if (!track->beatRepeatActive.load())
 		{
 			track->readPosition.store(0.0);
+			if (step == 0)
+				track->numSamplesAccPerMeasure.store(0.0);
 		}
 		audioProcessor.addPlayingTrack(track->midiNote, track->trackId);
 		juce::MidiMessage noteOn =
@@ -574,6 +580,7 @@ void SequencerManager::executePendingAction(TrackData *track)
 			if (!track->beatRepeatActive.load())
 			{
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerMeasure.store(0.0);
 			}
 			auto &seqData = track->getCurrentSequencerData();
 			seqData.currentStep = 0;
