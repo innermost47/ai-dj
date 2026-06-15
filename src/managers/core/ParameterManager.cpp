@@ -925,40 +925,9 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		else if (parameterID.endsWith("RetriggerInterval"))
 		{
 			int value = (int)juce::roundToInt(newValue);
-			if (track->randomRetriggerInterval.load() != newValue)
-			{
-				track->randomRetriggerInterval.store(value);
-
-				if (track->beatRepeatActive.load())
-				{
-					double hostBpm = audioProcessor.getHostBpm();
-					if (hostBpm <= 0.0)
-						hostBpm = 120.0;
-
-					double startPosition = track->beatRepeatStartPosition.load();
-					double repeatDuration =
-					    audioProcessor.getSequencerManager().calculateRetriggerInterval(value, hostBpm);
-					double repeatDurationSamples = repeatDuration * track->getCurrentPage().sampleRate;
-
-					const double GATE_SAMPLES = 64.0;
-					double newEnd = startPosition + repeatDurationSamples - GATE_SAMPLES;
-
-					double maxSamples = track->getCurrentPage().numSamples;
-					if (newEnd > maxSamples)
-						newEnd = maxSamples;
-					if (newEnd <= startPosition)
-						newEnd = startPosition + 1.0;
-
-					track->beatRepeatEndPosition.store(newEnd);
-
-					double currentPos = track->readPosition.load();
-					if (currentPos >= newEnd)
-					{
-						track->readPosition.store(startPosition);
-						track->brFadeInPending.store(64);
-					}
-				}
-			}
+			double hostBpm = audioProcessor.getHostBpm();
+			double repeatDuration = audioProcessor.getSequencerManager().calculateRetriggerInterval(value, hostBpm);
+			audioProcessor.getTrackManager().updateBeatRepeat(track, value, hostBpm, repeatDuration);
 		}
 	}
 }
