@@ -567,16 +567,32 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 }
 
 double TrackManager::getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
-                                         int numMeasures, double realPosition) const
+                                         double realPosition) const
 {
 	double samplesCounter = 0.0;
-	for (int i = 0; i < numMeasures; i++)
+	for (int i = 0; i < seqData.numMeasures; i++)
 	{
 		for (int j = 0; j < stepsPerMeasure; j++)
 		{
 			if (seqData.steps[i][j] && samplesCounter > realPosition)
-				return samplesCounter - realPosition;
+				return samplesCounter;
 			samplesCounter += samplesPerStep;
+		}
+	}
+	return 0.0;
+}
+
+double TrackManager::getLastStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
+                                         double totalSamplesPerSequence) const
+{
+	double samplesCounter = totalSamplesPerSequence;
+	for (int i = seqData.numMeasures - 1; i >= 0; i--)
+	{
+		for (int j = (int)stepsPerMeasure - 1; j >= 0; j--)
+		{
+			samplesCounter -= samplesPerStep;
+			if (seqData.steps[i][j])
+				return samplesCounter;
 		}
 	}
 	return 0.0;
@@ -584,51 +600,54 @@ double TrackManager::getNextStepSampleOn(double stepsPerMeasure, double samplesP
 
 TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page,
                                                  const PageInfo &pageInfo, int timeSignatureNumerator,
-                                                 int timeSignatureDenominator, double hostBpm) const
+                                                 int timeSignatureDenominator, double hostBpm, int i) const
 {
+	SequencerData seqData = page.getCurrentSequence();
+
+	const double startSampleLoop = trackInfo.startSample;
+	const double endSampleLoop = trackInfo.endSample;
+	const double sampleLength = endSampleLoop - startSampleLoop;
+
 	const bool beatRepeatActive = track.beatRepeatActive.load();
 	const double beatRepeatStart = beatRepeatActive ? track.beatRepeatStartPosition.load() : 0.0;
 	const double beatRepeatEnd = beatRepeatActive ? track.beatRepeatEndPosition.load() : 0.0;
-	const double fadeLength = 64.0;
-	const float fadeRcp = 1.0f / static_cast<float>(fadeLength);
-	double samplesSourceUntilEnd = 0.0;
+	const float fadeRcp = 1.0f / static_cast<float>(Obsidian::SAFETY_FADE_LENGTH);
 
-	SequencerData seqData = page.getCurrentSequence();
-
-	const int numMeasures = seqData.numMeasures;
 	const double beatsPerMeasure = (double)timeSignatureNumerator * (4.0 / timeSignatureDenominator);
-	double samplesPerBeat = (60.0 / hostBpm) * pageInfo.sampleRateToUse;
-	double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
-	double stepsPerMeasure = (double)timeSignatureNumerator * (4 / ((double)timeSignatureDenominator / 4));
-	double samplesPerMeasureScaled = samplesPerMeasure * trackInfo.playbackRatio;
-	double samplesPerStep = samplesPerMeasureScaled / stepsPerMeasure;
-	double endSampleLoop = 0.0;
-	const double FADE_DURATION = samplesPerStep / 4;
+	const double samplesPerBeat = (60.0 / hostBpm) * pageInfo.sampleRateToUse;
+	const double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
+	const double stepsPerMeasure = (double)timeSignatureNumerator * (4 / ((double)timeSignatureDenominator / 4));
+	const double samplesPerMeasureScaled = samplesPerMeasure * trackInfo.playbackRatio;
+	const double totalSamplesPerSequence = samplesPerMeasureScaled * (double)seqData.numMeasures;
+	const double samplesPerStep = samplesPerMeasureScaled / stepsPerMeasure;
+	const double nextStepSampleOn =
+	    getNextStepSampleOn(stepsPerMeasure, samplesPerStep, seqData, track.numSamplesAccPerSequence.load());
+	const double lastStepSampleOn =
+	    getLastStepSampleOn(stepsPerMeasure, samplesPerStep, seqData, totalSamplesPerSequence);
 
-	double nextStepSampleOn = getNextStepSampleOn(stepsPerMeasure, samplesPerStep, seqData, numMeasures,
-	                                              track.numSamplesAccPerSequence.load());
+	const double numSamplesAccPerSequence = track.numSamplesAccPerSequence.load() + i;
+	const double readPosition = track.readPosition.load() + i;
 
-	bool isEndOfSequence =
-	    track.numSamplesAccPerSequence.load() >= (samplesPerMeasureScaled * numMeasures) - (FADE_DURATION);
-	bool isEndGreaterThanSequenceLength = true;
+	double samplesUntilEnd = 0.0;
 
-	if (trackInfo.endSample - trackInfo.startSample < samplesPerMeasureScaled)
-	{
-		endSampleLoop = trackInfo.endSample;
-		isEndGreaterThanSequenceLength = false;
-	}
-	else
-		endSampleLoop = samplesPerMeasureScaled * numMeasures;
+	bool fadeOutFromNow = false;
 
-	if (nextStepSampleOn > 0.0)
-		samplesSourceUntilEnd = nextStepSampleOn;
-	else if (isEndOfSequence && isEndGreaterThanSequenceLength)
-		samplesSourceUntilEnd = endSampleLoop - (trackInfo.startSample + track.numSamplesAccPerSequence.load());
-	else
-		samplesSourceUntilEnd = endSampleLoop - (trackInfo.startSample + track.readPosition.load());
+	if (lastStepSampleOn > 0.0 && nextStepSampleOn == 0.0)
+		if (sampleLength < totalSamplesPerSequence - lastStepSampleOn)
+			samplesUntilEnd = sampleLength - readPosition;
+		else
+			samplesUntilEnd = (totalSamplesPerSequence - lastStepSampleOn) - readPosition;
+	else if (sampleLength < nextStepSampleOn)
+		samplesUntilEnd = sampleLength - readPosition;
+	else if (nextStepSampleOn > 0.0)
+		samplesUntilEnd = nextStepSampleOn - numSamplesAccPerSequence;
+	else if (sampleLength > totalSamplesPerSequence)
+		samplesUntilEnd = totalSamplesPerSequence - numSamplesAccPerSequence;
+	else if (sampleLength < totalSamplesPerSequence)
+		samplesUntilEnd = sampleLength - readPosition;
 
-	double samplesUntilLoopEnd = samplesSourceUntilEnd / trackInfo.playbackRatio;
-	bool fadeOutThisBuffer = (samplesUntilLoopEnd > 0 && samplesUntilLoopEnd <= FADE_DURATION) || isEndOfSequence;
+	if (samplesUntilEnd <= Obsidian::SAFETY_FADE_LENGTH)
+		fadeOutFromNow = true;
 
 	double samplesUntilBeatRepeatEnd = -1.0;
 	if (beatRepeatActive)
@@ -636,23 +655,24 @@ TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackIn
 		double samplesSourceUntilBREnd = beatRepeatEnd - (trackInfo.startSample + trackInfo.currentPosition);
 		samplesUntilBeatRepeatEnd = samplesSourceUntilBREnd / trackInfo.playbackRatio;
 	}
-	double brLengthSamples = beatRepeatActive ? (beatRepeatEnd - beatRepeatStart) / trackInfo.playbackRatio : 0.0;
-	const int BR_FADE_DURATION = beatRepeatActive ? juce::jlimit(16, 64, static_cast<int>(brLengthSamples / 16.0)) : 64;
-	const int BR_FADE_IN_LENGTH = BR_FADE_DURATION;
 	int brFadeInCounter = 0;
-	int pendingBrFadeIn = track.brFadeInPending.exchange(0);
+	int pendingBrFadeIn = track.brFadeInPending.load();
 	if (pendingBrFadeIn > 0)
+	{
 		brFadeInCounter = pendingBrFadeIn;
+		track.brFadeInPending.store(track.brFadeInPending.load() - 1);
+	}
 	int fadeInCounter = 0;
-	int pendingFadeIn = track.fadeInPending.exchange(0);
+	int pendingFadeIn = track.fadeInPending.load();
 	if (pendingFadeIn > 0)
+	{
 		fadeInCounter = pendingFadeIn;
+		track.fadeInPending.store(track.fadeInPending.load() - 1);
+	}
 
-	return FadeInfo{beatRepeatActive,    beatRepeatEnd,     beatRepeatStart,
-	                BR_FADE_DURATION,    BR_FADE_IN_LENGTH, samplesUntilBeatRepeatEnd,
-	                endSampleLoop,       brFadeInCounter,   fadeInCounter,
-	                fadeLength,          fadeRcp,           fadeOutThisBuffer,
-	                samplesUntilLoopEnd, FADE_DURATION};
+	return FadeInfo{beatRepeatActive, beatRepeatEnd,   beatRepeatStart, samplesUntilBeatRepeatEnd,
+	                endSampleLoop,    brFadeInCounter, fadeInCounter,   fadeRcp,
+	                fadeOutFromNow,   samplesUntilEnd};
 }
 
 void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
@@ -709,11 +729,10 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	const int bufferSize = pageInfo.bufferToUse->getNumSamples();
 
-	FadeInfo fadeInfo =
-	    getFadeInfo(track, trackInfo, currentPage, pageInfo, timeSignatureNumerator, timeSignatureDenominator, hostBpm);
-
 	for (int i = 0; i < numSamples; ++i)
 	{
+		FadeInfo fadeInfo = getFadeInfo(track, trackInfo, currentPage, pageInfo, timeSignatureNumerator,
+		                                timeSignatureDenominator, hostBpm, i);
 		double absolutePosition = trackInfo.startSample + trackInfo.currentPosition;
 		if (fadeInfo.beatRepeatActive)
 		{
@@ -722,7 +741,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			{
 				trackInfo.currentPosition = fadeInfo.beatRepeatStart - trackInfo.startSample;
 				track.readPosition.store(fadeInfo.beatRepeatStart);
-				fadeInfo.brFadeInCounter = fadeInfo.BR_FADE_IN_LENGTH;
+				fadeInfo.brFadeInCounter = Obsidian::SAFETY_FADE_LENGTH;
 				double samplesSourceUntilBREnd =
 				    fadeInfo.beatRepeatEnd - (trackInfo.startSample + trackInfo.currentPosition);
 				fadeInfo.samplesUntilBeatRepeatEnd = (samplesSourceUntilBREnd / trackInfo.playbackRatio) + i;
@@ -754,10 +773,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		float adsrGain = getADSRGain(absolutePosition, trackInfo.startSample, sectionLength, pageInfo);
 
-		double posInLoop = absolutePosition - trackInfo.startSample;
-		double loopLength = fadeInfo.endSampleLoop - trackInfo.startSample;
-
-		float safetyFade = prepareSafetyFade(i, posInLoop, loopLength, fadeInfo);
+		float safetyFade = prepareSafetyFade(fadeInfo);
 
 		prepareOutput(adsrGain, safetyFade, leftChannel, rightChannel, absolutePosition, bufferSize,
 		              fadeInfo.beatRepeatActive, fadeInfo.endSampleLoop, individualOutput, track, i, trackInfo);
@@ -767,42 +783,39 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 	handleOutput(individualOutput, mixOutput, track, trackInfo.currentPosition, trackInfo.volume);
 }
 
-float TrackManager::prepareSafetyFade(int i, double posInLoop, double loopLength, FadeInfo &fadeInfo) const
+float TrackManager::prepareSafetyFade(FadeInfo &fadeInfo) const
 {
 	float safetyFade = 1.0f;
 
 	if (!fadeInfo.beatRepeatActive && fadeInfo.fadeInCounter > 0)
 	{
-		float fadeIn =
-		    (Obsidian::SAFETY_FADE_IN_LENGTH - (double)fadeInfo.fadeInCounter) / Obsidian::SAFETY_FADE_IN_LENGTH;
+		float fadeIn = (float)(Obsidian::SAFETY_FADE_LENGTH - fadeInfo.fadeInCounter) / Obsidian::SAFETY_FADE_LENGTH;
 		safetyFade = std::min(safetyFade, fadeIn);
-		fadeInfo.fadeInCounter--;
 	}
 
 	if (fadeInfo.beatRepeatActive && fadeInfo.samplesUntilBeatRepeatEnd > 0)
 	{
-		double samplesUntilBR = fadeInfo.samplesUntilBeatRepeatEnd - i;
-		if (samplesUntilBR > 0 && samplesUntilBR <= fadeInfo.BR_FADE_DURATION)
+		double samplesUntilBR = fadeInfo.samplesUntilBeatRepeatEnd;
+		if (samplesUntilBR > 0 && samplesUntilBR <= Obsidian::SAFETY_FADE_LENGTH)
 		{
-			float brFade = static_cast<float>(samplesUntilBR / static_cast<double>(fadeInfo.BR_FADE_DURATION));
+			float brFade = static_cast<float>(samplesUntilBR / static_cast<double>(Obsidian::SAFETY_FADE_LENGTH));
 			safetyFade = std::min(safetyFade, brFade);
 		}
 	}
 
 	if (fadeInfo.brFadeInCounter > 0)
 	{
-		float brFadeIn = static_cast<float>(fadeInfo.BR_FADE_IN_LENGTH - fadeInfo.brFadeInCounter) /
-		                 static_cast<float>(fadeInfo.BR_FADE_IN_LENGTH);
+		float brFadeIn = static_cast<float>(Obsidian::SAFETY_FADE_LENGTH - fadeInfo.brFadeInCounter) /
+		                 static_cast<float>(Obsidian::SAFETY_FADE_LENGTH);
 		safetyFade = std::min(safetyFade, brFadeIn);
-		fadeInfo.brFadeInCounter--;
 	}
 
 	if (fadeInfo.fadeOutThisBuffer && !fadeInfo.beatRepeatActive)
 	{
-		double samplesUntilTrigger = fadeInfo.samplesUntilLoopEnd - i;
-		if (samplesUntilTrigger > 0 && samplesUntilTrigger <= fadeInfo.FADE_DURATION)
+		double samplesUntilTrigger = fadeInfo.samplesUntilLoopEnd;
+		if (samplesUntilTrigger > 0 && samplesUntilTrigger <= Obsidian::SAFETY_FADE_LENGTH)
 		{
-			float triggerFade = static_cast<float>(samplesUntilTrigger / fadeInfo.FADE_DURATION);
+			float triggerFade = static_cast<float>(samplesUntilTrigger / Obsidian::SAFETY_FADE_LENGTH);
 			safetyFade = std::min(safetyFade, triggerFade);
 		}
 	}

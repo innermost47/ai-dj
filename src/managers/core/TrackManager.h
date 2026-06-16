@@ -97,17 +97,13 @@ class TrackManager
 		bool beatRepeatActive;
 		double beatRepeatEnd;
 		double beatRepeatStart;
-		const int BR_FADE_DURATION;
-		const int BR_FADE_IN_LENGTH;
 		double samplesUntilBeatRepeatEnd;
 		double endSampleLoop;
 		int brFadeInCounter;
 		int fadeInCounter;
-		double fadeLength;
 		float fadeRcp;
 		bool fadeOutThisBuffer;
 		double samplesUntilLoopEnd;
-		double FADE_DURATION;
 	};
 
 	double currentSampleRate = Obsidian::SAMPLERATE;
@@ -129,14 +125,16 @@ class TrackManager
 	PageInfo getPageInfo(const TrackPage &page, double sampleRate) const;
 	TrackInfo getTrackInfo(const TrackData &track, const TrackPage &page, const PageInfo &pageInfo) const;
 	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page, const PageInfo &pageInfo,
-	                     int timeSignatureNumerator, int timeSignatureDenominator, double hostBpm) const;
+	                     int timeSignatureNumerator, int timeSignatureDenominator, double hostBpm, int i) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 	float getADSRGain(double absolutePosition, double startSample, double sectionLength, PageInfo &info) const;
-	float prepareSafetyFade(int i, double posInLoop, double loopLength, FadeInfo &fadeInfo) const;
+	float prepareSafetyFade(FadeInfo &fadeInfo) const;
 
-	double getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData, int numMeasures,
+	double getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
 	                           double realPosition) const;
+	double getLastStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
+	                           double totalSamplesPerSequence) const;
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };

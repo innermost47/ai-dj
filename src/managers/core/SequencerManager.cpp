@@ -33,7 +33,7 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 				track->isArmedToStop.store(false);
 				track->readPosition.store(0.0);
 				track->numSamplesAccPerSequence.store(0.0);
-				track->fadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
+				track->fadeInPending.store(Obsidian::SAFETY_FADE_LENGTH);
 
 				juce::String playParam = "slot" + juce::String(slotNumber) + "Play";
 				if (auto *p = audioProcessor.getParameterTreeState().getParameter(playParam))
@@ -204,7 +204,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isCurrentlyPlaying.store(false);
 				track->readPosition.store(0.0);
 				track->numSamplesAccPerSequence.store(0.0);
-				track->fadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
+				track->fadeInPending.store(Obsidian::SAFETY_FADE_LENGTH);
 				track->limiter.resetReductionAmount();
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
@@ -231,7 +231,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->limiter.resetReductionAmount();
 				track->readPosition.store(0.0);
 				track->numSamplesAccPerSequence.store(0.0);
-				track->fadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
+				track->fadeInPending.store(Obsidian::SAFETY_FADE_LENGTH);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
 				seqData.stepAccumulator = 0.0;
@@ -252,9 +252,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 void SequencerManager::updateSequencers(bool hostIsPlaying, int numSamples)
 {
 	if (isBypassed())
-	{
 		return;
-	}
 	auto currentPlayHead = audioProcessor.getPlayHead();
 	if (!currentPlayHead)
 		return;
@@ -395,24 +393,13 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 	seqData.currentMeasure = newMeasure;
 
 	if (currentStepIsActive && track->isCurrentlyPlaying.load() && hostIsPlaying)
-	{
-
-		if (!track->beatRepeatActive.load())
-		{
-			track->readPosition.store(0.0);
-			track->fadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
-		}
-		track->setPlaying(true);
 		triggerSequencerStep(track);
-	}
 }
 
 void SequencerManager::triggerSequencerStep(TrackData *track)
 {
 	if (isBypassed())
-	{
 		return;
-	}
 
 	auto &seqData = track->getCurrentSequencerData();
 	int step = seqData.currentStep;
@@ -424,7 +411,7 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 		if (!track->beatRepeatActive.load())
 		{
 			track->readPosition.store(0.0);
-			track->fadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
+			track->fadeInPending.store(Obsidian::SAFETY_FADE_LENGTH);
 			if (step == 0 && measure == 0)
 				track->numSamplesAccPerSequence.store(0.0);
 		}
@@ -502,7 +489,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 				track->beatRepeatActive.store(true);
 				track->beatRepeatPending.store(false);
 				track->pendingBeatNumber.store(-1);
-				track->brFadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
+				track->brFadeInPending.store(Obsidian::SAFETY_FADE_LENGTH);
 				track->readPosition.store(track->beatRepeatStartPosition.load());
 			}
 		}
@@ -528,7 +515,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 				track->beatRepeatStopPending.store(false);
 				track->randomRetriggerActive.store(false);
 				track->lastRetriggerTime.store(-1.0);
-				track->brFadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
+				track->brFadeInPending.store(Obsidian::SAFETY_FADE_LENGTH);
 				track->readPosition.store(track->theoreticalPosition.load());
 				track->pendingStopBeatNumber.store(-1);
 			}
@@ -578,11 +565,7 @@ void SequencerManager::executePendingAction(TrackData *track)
 		if (!track->isPlaying.load() && track->isArmed.load())
 		{
 			if (!track->beatRepeatActive.load())
-			{
-				track->readPosition.store(0.0);
-				track->fadeInPending.store(Obsidian::SAFETY_FADE_IN_LENGTH);
-				track->numSamplesAccPerSequence.store(0.0);
-			}
+				track->setPlaying(true);
 			auto &seqData = track->getCurrentSequencerData();
 			seqData.currentStep = 0;
 			seqData.currentMeasure = 0;
