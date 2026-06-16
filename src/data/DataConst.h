@@ -14,6 +14,7 @@ inline constexpr int MAX_SEQUENCES = 8;
 inline constexpr int MAX_CROSSFADER_PAIR = 4;
 inline constexpr int MAX_BLOCK_SIZE = 512;
 inline constexpr int RNDM_RTRGR_INTRVL = 3;
+inline constexpr int SAFETY_FADE_IN_LENGTH = 256;
 
 inline constexpr double SAMPLERATE = 48000.0;
 

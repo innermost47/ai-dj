@@ -1061,7 +1061,7 @@ void AudioManager::stopTrackPreview(const juce::String &trackId)
 	{
 		track->isPlaying.store(false);
 		track->readPosition.store(0.0);
-		track->numSamplesAccPerMeasure.store(0.0);
+		track->numSamplesAccPerSequence.store(0.0);
 		track->isPreviewMode.store(false);
 		track->previewEndPending.store(false);
 	}

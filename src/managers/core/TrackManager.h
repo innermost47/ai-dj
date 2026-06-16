@@ -102,6 +102,7 @@ class TrackManager
 		double samplesUntilBeatRepeatEnd;
 		double endSampleLoop;
 		int brFadeInCounter;
+		int fadeInCounter;
 		double fadeLength;
 		float fadeRcp;
 		bool fadeOutThisBuffer;
@@ -128,15 +129,14 @@ class TrackManager
 	PageInfo getPageInfo(const TrackPage &page, double sampleRate) const;
 	TrackInfo getTrackInfo(const TrackData &track, const TrackPage &page, const PageInfo &pageInfo) const;
 	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page, const PageInfo &pageInfo,
-	                     int timeSignatureNumerator, int timeSignatureDenominator, double hostBpm,
-	                     int numSamples) const;
+	                     int timeSignatureNumerator, int timeSignatureDenominator, double hostBpm) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 	float getADSRGain(double absolutePosition, double startSample, double sectionLength, PageInfo &info) const;
 	float prepareSafetyFade(int i, double posInLoop, double loopLength, FadeInfo &fadeInfo) const;
 
-	double getNextStepSampleOn(int timeSignatureNumerator, int timeSignatureDenominator, double samplesPerMeasure,
-	                           SequencerData &seqData, int numMeasures, double realPosition) const;
+	double getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData, int numMeasures,
+	                           double realPosition) const;
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
 };

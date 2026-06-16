@@ -190,7 +190,7 @@ struct TrackData
 	std::atomic<bool> isPrepared{false};
 
 	std::atomic<float> lastFeedbackDelaySend{-1.0f};
-	std::atomic<double> numSamplesAccPerMeasure{0.0};
+	std::atomic<double> numSamplesAccPerSequence{0.0};
 
 	int slotIndex = -1;
 
@@ -269,6 +269,7 @@ struct TrackData
 	std::atomic<float> lastFeedbackPitch{-999.0f};
 	std::atomic<float> lastFeedbackFine{-999.0f};
 	std::atomic<int> brFadeInPending{0};
+	std::atomic<int> fadeInPending{Obsidian::SAFETY_FADE_IN_LENGTH};
 	std::atomic<int> stagingNumSamples{0};
 	std::atomic<int> randomRetriggerInterval{Obsidian::RNDM_RTRGR_INTRVL};
 	std::atomic<int> pendingPageIndex{-1};

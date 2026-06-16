@@ -777,7 +777,7 @@ void DjIaVstProcessor::previewTrack(const juce::String &trackId)
 	}
 
 	track->readPosition.store(0.0);
-	track->numSamplesAccPerMeasure.store(0.0);
+	track->numSamplesAccPerSequence.store(0.0);
 	track->isPlaying.store(true);
 	track->isPreviewMode.store(true);
 	track->previewEndPending.store(false);
@@ -828,7 +828,7 @@ void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, in
 		if (!track->beatRepeatActive.load())
 		{
 			track->readPosition.store(0.0);
-			track->numSamplesAccPerMeasure.store(0.0);
+			track->numSamplesAccPerSequence.store(0.0);
 		}
 		track->setPlaying(true);
 		track->isCurrentlyPlaying.store(true);
@@ -851,7 +851,7 @@ void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, in
 	if (!track->beatRepeatActive.load())
 	{
 		track->readPosition.store(0.0);
-		track->numSamplesAccPerMeasure.store(0.0);
+		track->numSamplesAccPerSequence.store(0.0);
 	}
 	track->setPlaying(true);
 	track->isCurrentlyPlaying.store(true);
