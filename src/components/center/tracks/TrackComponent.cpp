@@ -576,6 +576,7 @@ void TrackComponent::resized()
 				if (currentAbs < newStartSample || currentAbs >= newEndSample)
 				{
 					t->readPosition.store(0.0);
+					t->numSamplesAccPerSequence.store(0.0);
 				}
 				else
 				{
@@ -864,6 +865,7 @@ void TrackComponent::performPageChange(int pageIndex)
 	t->isArmedToStop.store(wasArmedToStop);
 	t->isCurrentlyPlaying.store(wasCurrentlyPlaying);
 	t->readPosition.store(0.0);
+	t->numSamplesAccPerSequence.store(0.0);
 
 	const auto &newPage = t->getCurrentPage();
 

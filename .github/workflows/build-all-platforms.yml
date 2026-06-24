@@ -19,16 +19,16 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v5.0.0
         with:
           submodules: recursive
 
-      - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v2
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure CMake
         working-directory: .
-        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
 
       - name: Build
         working-directory: .
@@ -55,7 +55,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v5.0.0
         with:
           submodules: recursive
 
@@ -229,7 +229,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v5.0.0
         with:
           submodules: recursive
 
@@ -270,7 +270,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v5.0.0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4.3.0

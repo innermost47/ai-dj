@@ -46,5 +46,7 @@ class SequencerManager
 
 	std::atomic<bool> bypassSequencer{false};
 
+	void updateSafetyFadeLength(TrackData *track) const;
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SequencerManager)
 };

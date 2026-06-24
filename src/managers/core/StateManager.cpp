@@ -317,7 +317,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 				page.prompt = pageState.getProperty("prompt", "").toString();
 				page.setSelectedPrompt(pageState.getProperty("selectedPrompt", "").toString());
-				page.selectedModel = pageState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
+				page.selectedModel =
+				    pageState.getProperty("selectedModel", juce::String(Obsidian::STABLE_AUDIO_OPEN_V1)).toString();
 				page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 				page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 				page.generationKey = pageState.getProperty("generationKey", "").toString();
@@ -332,7 +333,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.fineOffset.store(pageState.getProperty("fineOffset", 0.0f));
 				page.loopPointsLocked = pageState.getProperty("loopPointsLocked", false);
 				page.savedModelBeforeLocal =
-				    pageState.getProperty("savedModelBeforeLocal", "stable-audio-open-1.0").toString();
+				    pageState.getProperty("savedModelBeforeLocal", juce::String(Obsidian::STABLE_AUDIO_OPEN_V1))
+				        .toString();
 
 				juce::String pageKeywordsStr = pageState.getProperty("selectedKeywords", "");
 				if (pageKeywordsStr.isNotEmpty())
@@ -809,9 +811,9 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 
 juce::File StateManager::getDefaultSessionsFolder()
 {
-	auto folder = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-	                  .getChildFile("OBSIDIAN-Neural")
-	                  .getChildFile("Sessions");
+	auto folder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+	                  .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	                  .getChildFile(Obsidian::SESSIONS_DIR);
 	if (!folder.exists())
 		folder.createDirectory();
 	return folder;

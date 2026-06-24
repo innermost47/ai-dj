@@ -208,7 +208,7 @@ class StandalonePluginHolder : private AudioIODeviceCallback, private Timer, pri
 			f = File(settings->getValue("lastStateFile"));
 
 		if (f == File())
-			f = File::getSpecialLocation(File::userDocumentsDirectory);
+			f = StateManager::getDefaultSessionsFolder();
 
 		return f;
 	}

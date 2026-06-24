@@ -679,8 +679,8 @@ void AudioManager::saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float
                                                    const juce::String &trackId, double sampleRate)
 {
 	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                    .getChildFile("OBSIDIAN-Neural")
-	                    .getChildFile("AudioCache");
+	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
 
 	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
 	{
@@ -902,8 +902,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 juce::File AudioManager::getExportDirectory()
 {
-	auto documentsDir = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory);
-	auto exportDir = documentsDir.getChildFile("OBSIDIAN_Exports");
+	auto documentsDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+	auto exportDir = documentsDir.getChildFile(Obsidian::EXPORTS_DIR);
 
 	if (!exportDir.exists())
 		exportDir.createDirectory();
@@ -938,8 +938,8 @@ juce::File AudioManager::exportSampleForDragDrop(const juce::File &originalFile)
 juce::File AudioManager::getTrackPageAudioFile(const juce::String &trackId, int pageIndex)
 {
 	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                    .getChildFile("OBSIDIAN-Neural")
-	                    .getChildFile("AudioCache");
+	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
 	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
 	{
 		audioDir = audioDir.getChildFile(audioProcessor.getProjectId());
@@ -1061,6 +1061,7 @@ void AudioManager::stopTrackPreview(const juce::String &trackId)
 	{
 		track->isPlaying.store(false);
 		track->readPosition.store(0.0);
+		track->numSamplesAccPerSequence.store(0.0);
 		track->isPreviewMode.store(false);
 		track->previewEndPending.store(false);
 	}

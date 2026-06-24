@@ -13,10 +13,11 @@
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
 	setResizable(true, true);
-	setResizeLimits(1100, 820, 2400, 1600);
+	setResizeLimits(1100, 820, 4000, 2400);
 	setSize(1620, 840);
-	setScaleFactor(1.0f);
+
 	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());
+
 	ObsidianAlertManager::initialize();
 	setWantsKeyboardFocus(true);
 	setMouseClickGrabsKeyboardFocus(false);
@@ -82,18 +83,6 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 				    sequencer->updateFromTrackData();
 		    });
 	};
-
-	juce::Timer::callAfterDelay(4000,
-	                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-	                            {
-		                            if (safeThis == nullptr)
-			                            return;
-		                            if (!safeThis->audioProcessor.updateCheckDone)
-		                            {
-			                            safeThis->audioProcessor.updateCheckDone = true;
-			                            safeThis->uiModalManager->checkForUpdates();
-		                            }
-	                            });
 }
 
 DjIaVstEditor::~DjIaVstEditor()
@@ -106,7 +95,7 @@ DjIaVstEditor::~DjIaVstEditor()
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
 	audioProcessor.setGenerationListener(nullptr);
-
+	uiModalManager->clearAll();
 	uiLayoutManager = nullptr;
 	uiStatusManager = nullptr;
 	uiModalManager = nullptr;
@@ -167,7 +156,7 @@ void DjIaVstEditor::finalizeInit()
 	}
 
 	uiTrackManager->refreshTracks();
-	uiStatusManager->refreshCreditsAsync();
+	creditsLabel.setText("Local Edition", juce::dontSendNotification);
 	if (uiLayoutManager->getLeftPanelWrapper()->getPromptBankPanel())
 		uiLayoutManager->getLeftPanelWrapper()->getPromptBankPanel()->refreshList();
 

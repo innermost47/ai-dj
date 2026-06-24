@@ -32,6 +32,8 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 				track->isArmed.store(false);
 				track->isArmedToStop.store(false);
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerSequence.store(0.0);
+				updateSafetyFadeLength(track);
 
 				juce::String playParam = "slot" + juce::String(slotNumber) + "Play";
 				if (auto *p = audioProcessor.getParameterTreeState().getParameter(playParam))
@@ -201,6 +203,8 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isPlaying.store(false);
 				track->isCurrentlyPlaying.store(false);
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerSequence.store(0.0);
+				updateSafetyFadeLength(track);
 				track->limiter.resetReductionAmount();
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
@@ -226,6 +230,8 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 				track->isCurrentlyPlaying.store(false);
 				track->limiter.resetReductionAmount();
 				track->readPosition.store(0.0);
+				track->numSamplesAccPerSequence.store(0.0);
+				updateSafetyFadeLength(track);
 				seqData.currentStep = 0;
 				seqData.currentMeasure = 0;
 				seqData.stepAccumulator = 0.0;
@@ -246,9 +252,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 void SequencerManager::updateSequencers(bool hostIsPlaying, int numSamples)
 {
 	if (isBypassed())
-	{
 		return;
-	}
 	auto currentPlayHead = audioProcessor.getPlayHead();
 	if (!currentPlayHead)
 		return;
@@ -380,36 +384,36 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 	bool currentStepIsActive = seqData.steps[safeMeasure][safeStep];
 
 	if (newMeasure == 0 && track->isArmed.load() && newStep == 0 && !track->isPlaying.load() && hostIsPlaying)
-	{
 		track->pendingAction = TrackData::PendingAction::StartOnNextMeasure;
-	}
 
 	if ((newMeasure == 0 && newStep == 0) && track->pendingAction != TrackData::PendingAction::None)
-	{
 		executePendingAction(track);
-	}
 
 	seqData.currentStep = newStep;
 	seqData.currentMeasure = newMeasure;
 
 	if (currentStepIsActive && track->isCurrentlyPlaying.load() && hostIsPlaying)
-	{
-
-		if (!track->beatRepeatActive.load())
-		{
-			track->readPosition.store(0.0);
-		}
-		track->setPlaying(true);
 		triggerSequencerStep(track);
+}
+
+void SequencerManager::updateSafetyFadeLength(TrackData *track) const
+{
+	if (track)
+	{
+		const auto &currentPage = track->getCurrentPage();
+		TrackManager::PlaybackRatioInfo playbackRatioInfo =
+		    audioProcessor.getTrackManager().getPlaybackRatio(currentPage);
+		DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(playbackRatioInfo.playbackRatio);
+
+		if (track->fadeInPending.load() != dawInfo.safetyFadeLength)
+			track->fadeInPending.store((int)dawInfo.safetyFadeLength);
 	}
 }
 
 void SequencerManager::triggerSequencerStep(TrackData *track)
 {
 	if (isBypassed())
-	{
 		return;
-	}
 
 	auto &seqData = track->getCurrentSequencerData();
 	int step = seqData.currentStep;
@@ -420,7 +424,10 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 	{
 		if (!track->beatRepeatActive.load())
 		{
+			updateSafetyFadeLength(track);
 			track->readPosition.store(0.0);
+			if (step == 0 && measure == 0)
+				track->numSamplesAccPerSequence.store(0.0);
 		}
 		audioProcessor.addPlayingTrack(track->midiNote, track->trackId);
 		juce::MidiMessage noteOn =
@@ -452,9 +459,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 			int64_t currentHalfBeatNumber = currentSample / (int64_t)halfBeatDurationSamples;
 
 			if (track->pendingBeatNumber.load() < 0)
-			{
 				track->pendingBeatNumber.store(currentHalfBeatNumber);
-			}
 
 			if (currentHalfBeatNumber > track->pendingBeatNumber.load())
 			{
@@ -481,22 +486,18 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 
 				double maxSamples = currentPage.numSamples;
 				if (track->beatRepeatEndPosition.load() > maxSamples)
-				{
 					track->beatRepeatEndPosition.store(maxSamples);
-				}
 
 				const double GATE_SAMPLES = 64.0;
 				double currentEnd = track->beatRepeatEndPosition.load();
 				double gatedEnd = currentEnd - GATE_SAMPLES;
 				if (gatedEnd > track->beatRepeatStartPosition.load())
-				{
 					track->beatRepeatEndPosition.store(gatedEnd);
-				}
 				track->theoreticalPosition.store(currentPosition);
 				track->beatRepeatActive.store(true);
 				track->beatRepeatPending.store(false);
 				track->pendingBeatNumber.store(-1);
-				track->brFadeInPending.store(64);
+				updateSafetyFadeLength(track);
 				track->readPosition.store(track->beatRepeatStartPosition.load());
 			}
 		}
@@ -512,9 +513,7 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 			int64_t currentHalfBeatNumber = currentSample / (int64_t)halfBeatDurationSamples;
 
 			if (track->pendingStopBeatNumber.load() < 0)
-			{
 				track->pendingStopBeatNumber.store(currentHalfBeatNumber);
-			}
 
 			if (currentHalfBeatNumber > track->pendingStopBeatNumber.load())
 			{
@@ -522,7 +521,8 @@ void SequencerManager::checkBeatRepeatWithSampleCounter()
 				track->beatRepeatStopPending.store(false);
 				track->randomRetriggerActive.store(false);
 				track->lastRetriggerTime.store(-1.0);
-				track->brFadeInPending.store(64);
+				updateSafetyFadeLength(track);
+				track->numSamplesAccPerSequence.store(track->theoreticalPosition.load());
 				track->readPosition.store(track->theoreticalPosition.load());
 				track->pendingStopBeatNumber.store(-1);
 			}
@@ -572,9 +572,7 @@ void SequencerManager::executePendingAction(TrackData *track)
 		if (!track->isPlaying.load() && track->isArmed.load())
 		{
 			if (!track->beatRepeatActive.load())
-			{
-				track->readPosition.store(0.0);
-			}
+				track->setPlaying(true);
 			auto &seqData = track->getCurrentSequencerData();
 			seqData.currentStep = 0;
 			seqData.currentMeasure = 0;

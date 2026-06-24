@@ -1,4 +1,5 @@
 #pragma once
+#include "DataConst.h"
 #include <JuceHeader.h>
 #include <functional>
 #include <map>
@@ -57,7 +58,7 @@ class PromptBank
 	void saveToFile();
 
 	void migrateFromCustomPrompts(const juce::StringArray &existing,
-	                              const juce::String &defaultModel = "stable-audio-open-1.0");
+	                              const juce::String &defaultModel = Obsidian::STABLE_AUDIO_OPEN_V1);
 
 	bool hasMigrated() const
 	{

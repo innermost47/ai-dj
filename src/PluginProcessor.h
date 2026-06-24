@@ -735,6 +735,19 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		}
 	}
 
+	struct DawInfo
+	{
+		double beatsPerMeasure;
+		double samplesPerBeat;
+		double samplesPerMeasure;
+		double stepsPerMeasure;
+		double samplesPerMeasureScaled;
+		double samplesPerStep;
+		double safetyFadeLength;
+	};
+
+	DawInfo getDawInfo(double playbackRatio) const;
+
   private:
 	DjIaVstEditor *currentEditor = nullptr;
 	MidiLearnManager midiLearnManager;

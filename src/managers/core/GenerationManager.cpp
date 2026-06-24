@@ -132,9 +132,9 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 
 void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request, const juce::String &trackId)
 {
-	auto appDataDir =
-	    juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory).getChildFile("OBSIDIAN-Neural");
-	auto stableAudioDir = appDataDir.getChildFile("stable-audio");
+	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR);
+	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR);
 
 	StableAudioEngine localEngine;
 	if (!localEngine.initialize(stableAudioDir.getFullPathName()))
@@ -262,7 +262,7 @@ void GenerationManager::generateSampleWithImage(const juce::String &trackId, con
 			                                     : static_cast<float>(audioProcessor.getGlobalDuration());
 
 			    if (request.model.isEmpty())
-				    request.model = "stable-audio-open-1.0";
+				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1;
 
 			    if (request.bpm <= 0)
 				    request.bpm = 127.0f;
@@ -447,7 +447,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 			    }
 
 			    if (request.model.isEmpty())
-				    request.model = "stable-audio-open-1.0";
+				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1;
 
 			    juce::String promptSource = !request.prompt.isEmpty()
 			                                    ? "track prompt: " + request.prompt.substring(0, 20) + "..."
