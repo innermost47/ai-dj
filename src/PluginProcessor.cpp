@@ -13,10 +13,9 @@
 
 DjIaVstProcessor::DjIaVstProcessor()
     : AudioProcessor(createBusLayout()), apiClient("", "http://localhost:8000"), parameterManager(*this),
-      stateManager(*this), generationManager(*this), sequencerManager(*this, trackManager),
+      trackManager(*this), stateManager(*this), generationManager(*this), sequencerManager(*this, trackManager),
       audioManager(*this, trackManager, generationManager), midiManager(*this, midiLearnManager),
-      obsidianEngine(std::make_unique<ObsidianEngine>()), sampleBank(std::make_unique<SampleBank>()),
-      autoLoadEnabled(true)
+      sampleBank(std::make_unique<SampleBank>()), autoLoadEnabled(true)
 {
 	midiLearnManager.setProcessor(this);
 	parameterManager.resolveParameters(this);
@@ -43,7 +42,6 @@ DjIaVstProcessor::DjIaVstProcessor()
 	}
 
 	sharedFormatManager.registerBasicFormats();
-	obsidianEngine->initialize();
 
 	audioManager.initDummySynth();
 	audioManager.initBuffers(Obsidian::MAX_TRACKS);
@@ -144,7 +142,6 @@ void DjIaVstProcessor::cleanProcessor()
 	trackManager.parameterUpdateCallback.store(nullptr);
 
 	audioManager.releaseResources();
-	obsidianEngine.reset();
 }
 
 juce::AudioProcessorEditor *DjIaVstProcessor::createEditor()
@@ -232,14 +229,12 @@ void DjIaVstProcessor::loadGlobalConfig()
 			serverUrl = object->getProperty("serverUrl").toString();
 			requestTimeoutMS = object->getProperty("requestTimeoutMS").toString().getIntValue();
 			onboardingDone = object->getProperty("onboardingDone").toString() == "true";
-			useLocalModel = object->getProperty("useLocalModel").toString() == "true";
+			useLocalModel = false;
 			localModelsPath = object->getProperty("localModelsPath").toString();
 			panelStateJson = object->getProperty("panelStateJson").toString();
 
 			if (!object->hasProperty("useLocalModel"))
-			{
 				useLocalModel = false;
-			}
 
 			auto promptsVar = object->getProperty("customPrompts");
 
@@ -270,9 +265,7 @@ void DjIaVstProcessor::loadGlobalConfig()
 		}
 	}
 	if (trackManager.getAllTrackIds().empty())
-	{
 		initTracks();
-	}
 }
 
 void DjIaVstProcessor::saveGlobalConfig()
@@ -293,16 +286,12 @@ void DjIaVstProcessor::saveGlobalConfig()
 	sortedPrompts.sort(true);
 	juce::Array<juce::var> promptsArray;
 	for (const auto &prompt : sortedPrompts)
-	{
 		promptsArray.add(juce::var(prompt));
-	}
 	config->setProperty("customPrompts", juce::var(promptsArray));
 
 	juce::Array<juce::var> keywordsArray;
 	for (const auto &keyword : customKeywords)
-	{
 		keywordsArray.add(juce::var(keyword));
-	}
 	config->setProperty("customKeywords", juce::var(keywordsArray));
 
 	juce::String jsonString = juce::JSON::toString(juce::var(config.get()));
@@ -422,8 +411,8 @@ void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
 juce::File DjIaVstProcessor::getGlobalConfigFile()
 {
 	return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	    .getChildFile("OBSIDIAN-Neural")
-	    .getChildFile("global_config.json");
+	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	    .getChildFile(Obsidian::GLOBAL_CONFIG_FILE);
 }
 
 float DjIaVstProcessor::getGlobalBpm() const
@@ -623,9 +612,8 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	int curveMode = parameterManager.getCrossfaderCurveMode();
 
-	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, hostBpm, pairPrev,
-	                             pairCurrent, globalPrev, globalCurrent, curveMode, timeSignatureNumerator.load(),
-	                             timeSignatureDenominator.load(), getSampleRate(), useCrossfader);
+	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, pairPrev,
+	                             pairCurrent, globalPrev, globalCurrent, curveMode, getSampleRate(), useCrossfader);
 
 	trackManager.processPerTrackDelays(
 	    audioManager.getIndividualOutputBuffers(), mainOutput, hostBpm,
@@ -666,6 +654,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 		onMasterOutput(buffer.getReadPointer(0), buffer.getNumChannels() > 1 ? buffer.getReadPointer(1) : nullptr,
 		               buffer.getNumSamples(), ppq);
 	}
+
 	audioManager.computeAndSetPeakLevels(buffer);
 	checkIfUIUpdateNeeded(midiMessages);
 	sample_time += buffer.getNumSamples();
@@ -911,8 +900,8 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 	{
 		char pageName = static_cast<char>('A' + track->currentPageIndex.load());
 		auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		                    .getChildFile("OBSIDIAN-Neural")
-		                    .getChildFile("AudioCache");
+		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
 		if (projectId != "legacy" && !projectId.isEmpty())
 		{
 			audioDir = audioDir.getChildFile(projectId);
@@ -946,8 +935,8 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 	{
 		int asciiCode = 'A' + track->currentPageIndex.load();
 		auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		                    .getChildFile("OBSIDIAN-Neural")
-		                    .getChildFile("AudioCache");
+		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
 		if (projectId != "legacy" && !projectId.isEmpty())
 		{
 			audioDir = audioDir.getChildFile(projectId);
@@ -1030,7 +1019,7 @@ void DjIaVstProcessor::addCustomPrompt(const juce::String &prompt)
 		if (p->text == prompt)
 			return;
 
-	promptBank->addPrompt(prompt, "stable-audio-open-1.0", "");
+	promptBank->addPrompt(prompt, Obsidian::STABLE_AUDIO_OPEN_V1, "");
 }
 
 const juce::StringArray DjIaVstProcessor::getCustomPrompts() const
@@ -1092,4 +1081,23 @@ void DjIaVstProcessor::editCustomPrompt(const juce::String &oldPrompt, const juc
 		customPrompts.set(index, newPrompt);
 		saveGlobalConfig();
 	}
+}
+
+DjIaVstProcessor::DawInfo DjIaVstProcessor::getDawInfo(double playbackRatio) const
+{
+	const double beatsPerMeasure = (double)timeSignatureNumerator.load() * (4.0 / timeSignatureDenominator.load());
+	const double samplesPerBeat = (60.0 / getHostBpm()) * hostSampleRate;
+	const double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
+	const double stepsPerMeasure =
+	    (double)timeSignatureNumerator.load() * (4 / ((double)timeSignatureDenominator.load() / 4));
+	const double samplesPerMeasureScaled = samplesPerMeasure * playbackRatio;
+	const double samplesPerStep = samplesPerMeasureScaled / stepsPerMeasure;
+	const double safetyFadeLength = (double)Obsidian::SAFETY_FADE_LENGTH;
+
+	DawInfo info = {
+	    beatsPerMeasure,         samplesPerBeat, samplesPerMeasure, stepsPerMeasure,
+	    samplesPerMeasureScaled, samplesPerStep, safetyFadeLength,
+	};
+
+	return info;
 }

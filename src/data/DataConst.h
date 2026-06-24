@@ -61,6 +61,27 @@ inline constexpr bool FILTER_BYPASSED = false;
 inline constexpr bool DISTORTION_BYPASSED = true;
 inline constexpr bool CHORUS_BYPASSED = false;
 
+inline static const std::string STABLE_AUDIO_OPEN_V1 = "stable-audio-open-1.0";
+inline static const std::string STABLE_AUDIO_OPEN_V3_MEDIUM = "stable-audio-3-medium";
+inline static const std::string FOUNDATION_1 = "foundation-1";
+inline static const std::string AUDIOLAB_EDM = "audialab-edm-elements";
+inline static const std::string INFINITE_PIANO = "rc-infinite-pianos";
+inline static const std::string RC_VOCAL = "rc-vocal-textures";
+inline static const std::string SAO_INSTRUMENTAL = "sao-instrumental";
+inline static const std::string STABLEBEAT = "stablebeat";
+inline static const std::string GLUTEN_V1 = "gluten-v1";
+inline static const std::string STABLE_AUDIO_OPEN_V1_TFLITE = "stable-audio-open-small-tflite";
+
+inline static const std::string OBSIDIAN_BASE_DIR = "OBSIDIAN-Neural";
+inline static const std::string EXPORTS_DIR = "OBSIDIAN_Exports";
+inline static const std::string SAMPLE_BANK_DIR = "SampleBank";
+inline static const std::string SESSIONS_DIR = "Sessions";
+inline static const std::string STABLE_AUDIO_DIR = "stable-audio";
+inline static const std::string CATEGORIES_FILE = "categories.json";
+inline static const std::string GLOBAL_CONFIG_FILE = "global_config.json";
+inline static const std::string PROMPTS_FILE = "prompts.json";
+inline static const std::string AUDIO_CACHE_DIR = "AudioCache";
+
 enum RadioGroupIDs
 {
 	FilterTypeGroup = 1,

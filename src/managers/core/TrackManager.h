@@ -3,10 +3,12 @@
 #include "TrackData.h"
 #include <JuceHeader.h>
 
+class DjIaVstProcessor;
+
 class TrackManager
 {
   public:
-	TrackManager() = default;
+	TrackManager(DjIaVstProcessor &processor);
 
 	std::atomic<std::function<void(int slot, TrackData *track)> *> parameterUpdateCallback{nullptr};
 	std::function<void(const juce::String &)> onPreviewEnded;
@@ -20,16 +22,14 @@ class TrackManager
 
 	void renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 	                     std::vector<juce::AudioBuffer<float>> &individualOutputs,
-	                     juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
-	                     const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-	                     int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate,
-	                     bool useCrossfader);
+	                     juce::AudioBuffer<float> &previewOutput, const float pairPrev[4], const float pairCurrent[4],
+	                     float globalPrev, float globalCurrent, int curveMode, double sampleRate, bool useCrossfader);
 
 	void loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile);
-	void addTrack(const std::string &trackId, std::unique_ptr<TrackData> track);
+	void addTrack(const juce::String &trackId, std::unique_ptr<TrackData> track);
 	void prepareTrack(TrackData &track);
 	void clearAllTracks();
-	void forEachTrack(std::function<void(const std::string &, const TrackData *)> callback) const;
+	void forEachTrack(std::function<void(const juce::String &, const TrackData *)> callback) const;
 	void forEachTrack(std::function<void(const TrackData *)> callback) const;
 	void setSlotUsed(int index, bool used);
 	void resetAllSlots();
@@ -51,15 +51,26 @@ class TrackManager
 	                            juce::AudioBuffer<float> &mainOutput, float size, float damping, float width, float mix,
 	                            int numSamples);
 
+	struct PlaybackRatioInfo
+	{
+		double playbackRatio;
+		float pitchSemis;
+		float fineCents;
+		float totalSemis;
+	};
+
+	PlaybackRatioInfo getPlaybackRatio(const TrackPage &page) const;
+
 	juce::ScopedLock getTracksLock() const
 	{
 		return juce::ScopedLock(tracksLock);
 	}
 
   private:
+	DjIaVstProcessor &audioProcessor;
 	mutable juce::CriticalSection tracksLock;
-	std::map<std::string, std::unique_ptr<TrackData>> tracks;
-	std::vector<std::string> trackOrder;
+	std::map<juce::String, std::unique_ptr<TrackData>> tracks;
+	std::vector<juce::String> trackOrder;
 	juce::AudioBuffer<float> perTrackFxBuffer;
 
 	struct PageInfo
@@ -96,6 +107,7 @@ class TrackManager
 	{
 		bool beatRepeatActive;
 		double beatRepeatEnd;
+		double safetyFadeLength;
 		double beatRepeatStart;
 		double samplesUntilBeatRepeatEnd;
 		double endSampleLoop;
@@ -104,6 +116,7 @@ class TrackManager
 		float fadeRcp;
 		bool fadeOutThisBuffer;
 		double samplesUntilLoopEnd;
+		double totalSamplesPerSequence;
 	};
 
 	double currentSampleRate = Obsidian::SAMPLERATE;
@@ -113,23 +126,20 @@ class TrackManager
 	std::array<bool, 8> usedSlots{false};
 
 	void renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
-	                       juce::AudioBuffer<float> &individualOutput, juce::AudioBuffer<float> & /* previewOutput */,
-	                       int numSamples, int /* trackIndex */, double hostBpm, int timeSignatureNumerator,
-	                       int timeSignatureDenominator, double sampleRate) const;
+	                       juce::AudioBuffer<float> &individualOutput, int numSamples, double sampleRate) const;
 	void handleOutput(juce::AudioSampleBuffer &individualOutput, juce::AudioSampleBuffer &mixOutput, TrackData &track,
 	                  double &currentPosition, float volume) const;
-	void prepareOutput(float adsrGain, float safetyFade, const float *leftChannel, const float *rightChannel,
-	                   double absolutePosition, int bufferSize, const bool beatRepeatActive, double endSampleLoop,
-	                   juce::AudioSampleBuffer &individualOutput, TrackData &track, int i, TrackInfo &trackInfo) const;
+	void prepareOutput(float adsrGain, const float *leftChannel, const float *rightChannel, double absolutePosition,
+	                   int bufferSize, juce::AudioSampleBuffer &individualOutput, TrackData &track, int i,
+	                   TrackInfo &trackInfo, FadeInfo &fadeInfo) const;
 
 	PageInfo getPageInfo(const TrackPage &page, double sampleRate) const;
 	TrackInfo getTrackInfo(const TrackData &track, const TrackPage &page, const PageInfo &pageInfo) const;
-	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page, const PageInfo &pageInfo,
-	                     int timeSignatureNumerator, int timeSignatureDenominator, double hostBpm, int i) const;
+	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page, int i) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 	float getADSRGain(double absolutePosition, double startSample, double sectionLength, PageInfo &info) const;
-	float prepareSafetyFade(FadeInfo &fadeInfo) const;
+	void updateSafetyFade(FadeInfo &fadeInfo, TrackData &track) const;
 
 	double getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
 	                           double realPosition) const;

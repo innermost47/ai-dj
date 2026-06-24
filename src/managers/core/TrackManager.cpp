@@ -1,5 +1,10 @@
 ﻿#include "TrackManager.h"
+#include "PluginProcessor.h"
 #include "TrackData.h"
+
+TrackManager::TrackManager(DjIaVstProcessor &processor) : audioProcessor(processor)
+{
+}
 
 void TrackManager::prepareTrack(TrackData &track)
 {
@@ -74,7 +79,7 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	track->trackName = name + " " + juce::String(tracks.size() + 1);
 	track->midiNote = 60 + static_cast<int>(tracks.size());
 	juce::String trackId = track->trackId;
-	std::string stdId = trackId.toStdString();
+	juce::String stdId = trackId.toStdString();
 	track->slotIndex = findFreeSlot();
 
 	if (track->slotIndex != -1)
@@ -96,7 +101,7 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	return trackId;
 }
 
-void TrackManager::addTrack(const std::string &trackId, std::unique_ptr<TrackData> track)
+void TrackManager::addTrack(const juce::String &trackId, std::unique_ptr<TrackData> track)
 {
 	const juce::ScopedLock sl(tracksLock);
 
@@ -254,10 +259,9 @@ void TrackManager::processPerTrackReverbs(std::vector<juce::AudioBuffer<float>> 
 
 void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    std::vector<juce::AudioBuffer<float>> &individualOutputs,
-                                   juce::AudioBuffer<float> &previewOutput, double hostBpm, const float pairPrev[4],
+                                   juce::AudioBuffer<float> &previewOutput, const float pairPrev[4],
                                    const float pairCurrent[4], float globalPrev, float globalCurrent, int curveMode,
-                                   int timeSignatureNumerator, int timeSignatureDenominator, double sampleRate,
-                                   bool useCrossfader)
+                                   double sampleRate, bool useCrossfader)
 {
 	const int numSamples = outputBuffer.getNumSamples();
 	bool anyTrackSolo = false;
@@ -288,8 +292,7 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
 			juce::AudioBuffer<float> tempIndividualBuffer(2, numSamples);
 			tempMixBuffer.clear();
 			tempIndividualBuffer.clear();
-			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, previewOutput, numSamples, bufferIndex,
-			                  hostBpm, timeSignatureNumerator, timeSignatureDenominator, sampleRate);
+			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, numSamples, sampleRate);
 
 			track->consoleChannel.process(tempIndividualBuffer, 0, numSamples);
 
@@ -424,7 +427,7 @@ void TrackManager::clearAllTracks()
 	trackOrder.clear();
 }
 
-void TrackManager::forEachTrack(std::function<void(const std::string &, const TrackData *)> callback) const
+void TrackManager::forEachTrack(std::function<void(const juce::String &, const TrackData *)> callback) const
 {
 	const juce::ScopedLock sl(tracksLock);
 	for (const auto &id : trackOrder)
@@ -533,6 +536,22 @@ TrackManager::PageInfo TrackManager::getPageInfo(const TrackPage &page, double s
 	                page.adsrRelease.load()};
 }
 
+TrackManager::PlaybackRatioInfo TrackManager::getPlaybackRatio(const TrackPage &page) const
+{
+	double playbackRatio = 1.0;
+
+	float pitchSemis = juce::jlimit(-12.0f, 12.0f, page.pitchSemitones.load());
+	float fineCents = juce::jlimit(-50.0f, 50.0f, page.fineOffset.load());
+	float totalSemis = pitchSemis + (fineCents / 100.0f);
+
+	if (std::abs(totalSemis) > 0.001f)
+		playbackRatio *= std::pow(2.0f, totalSemis / 12.0f);
+
+	PlaybackRatioInfo info = PlaybackRatioInfo{playbackRatio, pitchSemis, fineCents, totalSemis};
+
+	return info;
+}
+
 TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const TrackPage &page,
                                                    const PageInfo &pageInfo) const
 {
@@ -547,14 +566,7 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 		leftGain = 1.0f - pan;
 
 	double currentPosition = track.readPosition.load();
-	double playbackRatio = 1.0;
-
-	float pitchSemis = juce::jlimit(-12.0f, 12.0f, page.pitchSemitones.load());
-	float fineCents = juce::jlimit(-50.0f, 50.0f, page.fineOffset.load());
-	float totalSemis = pitchSemis + (fineCents / 100.0f);
-
-	if (std::abs(totalSemis) > 0.001f)
-		playbackRatio *= std::pow(2.0f, totalSemis / 12.0f);
+	PlaybackRatioInfo playbackRatioInfo = getPlaybackRatio(page);
 
 	double startSample = pageInfo.loopStartToUse * pageInfo.sampleRateToUse;
 	double endSample = pageInfo.loopEndToUse * pageInfo.sampleRateToUse;
@@ -562,8 +574,17 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 	startSample = juce::jlimit(0.0, (double)pageInfo.numSamplesToUse - 1, startSample);
 	endSample = juce::jlimit(startSample + 1, (double)pageInfo.numSamplesToUse, endSample);
 
-	return TrackInfo{volume,     pan,       leftGain,   rightGain,   currentPosition, playbackRatio,
-	                 pitchSemis, fineCents, totalSemis, startSample, endSample};
+	return TrackInfo{volume,
+	                 pan,
+	                 leftGain,
+	                 rightGain,
+	                 currentPosition,
+	                 playbackRatioInfo.playbackRatio,
+	                 playbackRatioInfo.pitchSemis,
+	                 playbackRatioInfo.fineCents,
+	                 playbackRatioInfo.totalSemis,
+	                 startSample,
+	                 endSample};
 }
 
 double TrackManager::getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
@@ -574,7 +595,7 @@ double TrackManager::getNextStepSampleOn(double stepsPerMeasure, double samplesP
 	{
 		for (int j = 0; j < stepsPerMeasure; j++)
 		{
-			if (seqData.steps[i][j] && samplesCounter > realPosition)
+			if (seqData.steps[i][j] && samplesCounter >= realPosition)
 				return samplesCounter;
 			samplesCounter += samplesPerStep;
 		}
@@ -599,34 +620,27 @@ double TrackManager::getLastStepSampleOn(double stepsPerMeasure, double samplesP
 }
 
 TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page,
-                                                 const PageInfo &pageInfo, int timeSignatureNumerator,
-                                                 int timeSignatureDenominator, double hostBpm, int i) const
+                                                 int i) const
 {
 	SequencerData seqData = page.getCurrentSequence();
+	DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(trackInfo.playbackRatio);
+
+	const bool beatRepeatActive = track.beatRepeatActive.load();
 
 	const double startSampleLoop = trackInfo.startSample;
 	const double endSampleLoop = trackInfo.endSample;
 	const double sampleLength = endSampleLoop - startSampleLoop;
-
-	const bool beatRepeatActive = track.beatRepeatActive.load();
 	const double beatRepeatStart = beatRepeatActive ? track.beatRepeatStartPosition.load() : 0.0;
 	const double beatRepeatEnd = beatRepeatActive ? track.beatRepeatEndPosition.load() : 0.0;
-	const float fadeRcp = 1.0f / static_cast<float>(Obsidian::SAFETY_FADE_LENGTH);
-
-	const double beatsPerMeasure = (double)timeSignatureNumerator * (4.0 / timeSignatureDenominator);
-	const double samplesPerBeat = (60.0 / hostBpm) * pageInfo.sampleRateToUse;
-	const double samplesPerMeasure = samplesPerBeat * beatsPerMeasure;
-	const double stepsPerMeasure = (double)timeSignatureNumerator * (4 / ((double)timeSignatureDenominator / 4));
-	const double samplesPerMeasureScaled = samplesPerMeasure * trackInfo.playbackRatio;
-	const double totalSamplesPerSequence = samplesPerMeasureScaled * (double)seqData.numMeasures;
-	const double samplesPerStep = samplesPerMeasureScaled / stepsPerMeasure;
-	const double nextStepSampleOn =
-	    getNextStepSampleOn(stepsPerMeasure, samplesPerStep, seqData, track.numSamplesAccPerSequence.load());
-	const double lastStepSampleOn =
-	    getLastStepSampleOn(stepsPerMeasure, samplesPerStep, seqData, totalSamplesPerSequence);
-
 	const double numSamplesAccPerSequence = track.numSamplesAccPerSequence.load() + i;
+	const double totalSamplesPerSequence = dawInfo.samplesPerMeasureScaled * (double)seqData.numMeasures;
 	const double readPosition = track.readPosition.load() + i;
+	const double nextStepSampleOn =
+	    getNextStepSampleOn(dawInfo.stepsPerMeasure, dawInfo.samplesPerStep, seqData, readPosition);
+	const double lastStepSampleOn =
+	    getLastStepSampleOn(dawInfo.stepsPerMeasure, dawInfo.samplesPerStep, seqData, totalSamplesPerSequence);
+
+	const float fadeRcp = 1.0f / static_cast<float>(dawInfo.safetyFadeLength);
 
 	double samplesUntilEnd = 0.0;
 
@@ -636,17 +650,17 @@ TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackIn
 		if (sampleLength < totalSamplesPerSequence - lastStepSampleOn)
 			samplesUntilEnd = sampleLength - readPosition;
 		else
-			samplesUntilEnd = (totalSamplesPerSequence - lastStepSampleOn) - readPosition;
+			samplesUntilEnd = totalSamplesPerSequence - numSamplesAccPerSequence;
 	else if (sampleLength < nextStepSampleOn)
 		samplesUntilEnd = sampleLength - readPosition;
 	else if (nextStepSampleOn > 0.0)
 		samplesUntilEnd = nextStepSampleOn - numSamplesAccPerSequence;
 	else if (sampleLength > totalSamplesPerSequence)
 		samplesUntilEnd = totalSamplesPerSequence - numSamplesAccPerSequence;
-	else if (sampleLength < totalSamplesPerSequence)
+	else if (sampleLength <= totalSamplesPerSequence)
 		samplesUntilEnd = sampleLength - readPosition;
 
-	if (samplesUntilEnd <= Obsidian::SAFETY_FADE_LENGTH)
+	if (samplesUntilEnd >= 0 && samplesUntilEnd <= dawInfo.safetyFadeLength)
 		fadeOutFromNow = true;
 
 	double samplesUntilBeatRepeatEnd = -1.0;
@@ -670,16 +684,23 @@ TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackIn
 		track.fadeInPending.store(track.fadeInPending.load() - 1);
 	}
 
-	return FadeInfo{beatRepeatActive, beatRepeatEnd,   beatRepeatStart, samplesUntilBeatRepeatEnd,
-	                endSampleLoop,    brFadeInCounter, fadeInCounter,   fadeRcp,
-	                fadeOutFromNow,   samplesUntilEnd};
+	return FadeInfo{beatRepeatActive,
+	                beatRepeatEnd,
+	                dawInfo.safetyFadeLength,
+	                beatRepeatStart,
+	                samplesUntilBeatRepeatEnd,
+	                endSampleLoop,
+	                brFadeInCounter,
+	                fadeInCounter,
+	                fadeRcp,
+	                fadeOutFromNow,
+	                samplesUntilEnd,
+	                totalSamplesPerSequence};
 }
 
 void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> &mixOutput,
-                                     juce::AudioBuffer<float> &individualOutput,
-                                     juce::AudioBuffer<float> & /* previewOutput */, int numSamples,
-                                     int /* trackIndex */, double hostBpm, int timeSignatureNumerator,
-                                     int timeSignatureDenominator, double sampleRate) const
+                                     juce::AudioBuffer<float> &individualOutput, int numSamples,
+                                     double sampleRate) const
 {
 
 	auto *safeCallback = parameterUpdateCallback.load();
@@ -731,8 +752,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	for (int i = 0; i < numSamples; ++i)
 	{
-		FadeInfo fadeInfo = getFadeInfo(track, trackInfo, currentPage, pageInfo, timeSignatureNumerator,
-		                                timeSignatureDenominator, hostBpm, i);
+		FadeInfo fadeInfo = getFadeInfo(track, trackInfo, currentPage, i);
 		double absolutePosition = trackInfo.startSample + trackInfo.currentPosition;
 		if (fadeInfo.beatRepeatActive)
 		{
@@ -741,7 +761,7 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			{
 				trackInfo.currentPosition = fadeInfo.beatRepeatStart - trackInfo.startSample;
 				track.readPosition.store(fadeInfo.beatRepeatStart);
-				fadeInfo.brFadeInCounter = Obsidian::SAFETY_FADE_LENGTH;
+				fadeInfo.brFadeInCounter = (int)fadeInfo.safetyFadeLength;
 				double samplesSourceUntilBREnd =
 				    fadeInfo.beatRepeatEnd - (trackInfo.startSample + trackInfo.currentPosition);
 				fadeInfo.samplesUntilBeatRepeatEnd = (samplesSourceUntilBREnd / trackInfo.playbackRatio) + i;
@@ -773,63 +793,69 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 		float adsrGain = getADSRGain(absolutePosition, trackInfo.startSample, sectionLength, pageInfo);
 
-		float safetyFade = prepareSafetyFade(fadeInfo);
+		updateSafetyFade(fadeInfo, track);
 
-		prepareOutput(adsrGain, safetyFade, leftChannel, rightChannel, absolutePosition, bufferSize,
-		              fadeInfo.beatRepeatActive, fadeInfo.endSampleLoop, individualOutput, track, i, trackInfo);
+		prepareOutput(adsrGain, leftChannel, rightChannel, absolutePosition, bufferSize, individualOutput, track, i,
+		              trackInfo, fadeInfo);
 	}
 	double accumulated = track.numSamplesAccPerSequence.load() + numSamples;
 	track.numSamplesAccPerSequence.store(accumulated);
 	handleOutput(individualOutput, mixOutput, track, trackInfo.currentPosition, trackInfo.volume);
 }
 
-float TrackManager::prepareSafetyFade(FadeInfo &fadeInfo) const
+void TrackManager::updateSafetyFade(FadeInfo &fadeInfo, TrackData &track) const
 {
 	float safetyFade = 1.0f;
 
 	if (!fadeInfo.beatRepeatActive && fadeInfo.fadeInCounter > 0)
 	{
-		float fadeIn = (float)(Obsidian::SAFETY_FADE_LENGTH - fadeInfo.fadeInCounter) / Obsidian::SAFETY_FADE_LENGTH;
+		float fadeIn =
+		    (float)((int)fadeInfo.safetyFadeLength - fadeInfo.fadeInCounter) / (float)fadeInfo.safetyFadeLength;
 		safetyFade = std::min(safetyFade, fadeIn);
 	}
 
 	if (fadeInfo.beatRepeatActive && fadeInfo.samplesUntilBeatRepeatEnd > 0)
 	{
 		double samplesUntilBR = fadeInfo.samplesUntilBeatRepeatEnd;
-		if (samplesUntilBR > 0 && samplesUntilBR <= Obsidian::SAFETY_FADE_LENGTH)
+		if (samplesUntilBR > 0 && samplesUntilBR <= fadeInfo.safetyFadeLength)
 		{
-			float brFade = static_cast<float>(samplesUntilBR / static_cast<double>(Obsidian::SAFETY_FADE_LENGTH));
+			float brFade = static_cast<float>(samplesUntilBR / static_cast<double>(fadeInfo.safetyFadeLength));
 			safetyFade = std::min(safetyFade, brFade);
 		}
 	}
 
 	if (fadeInfo.brFadeInCounter > 0)
 	{
-		float brFadeIn = static_cast<float>(Obsidian::SAFETY_FADE_LENGTH - fadeInfo.brFadeInCounter) /
-		                 static_cast<float>(Obsidian::SAFETY_FADE_LENGTH);
+		float brFadeIn = static_cast<float>(fadeInfo.safetyFadeLength - fadeInfo.brFadeInCounter) /
+		                 static_cast<float>(fadeInfo.safetyFadeLength);
 		safetyFade = std::min(safetyFade, brFadeIn);
 	}
 
 	if (fadeInfo.fadeOutThisBuffer && !fadeInfo.beatRepeatActive)
 	{
 		double samplesUntilTrigger = fadeInfo.samplesUntilLoopEnd;
-		if (samplesUntilTrigger > 0 && samplesUntilTrigger <= Obsidian::SAFETY_FADE_LENGTH)
+		if (samplesUntilTrigger > 0 && samplesUntilTrigger <= fadeInfo.safetyFadeLength)
 		{
-			float triggerFade = static_cast<float>(samplesUntilTrigger / Obsidian::SAFETY_FADE_LENGTH);
+			float triggerFade = static_cast<float>(samplesUntilTrigger / fadeInfo.safetyFadeLength);
 			safetyFade = std::min(safetyFade, triggerFade);
+		}
+		else
+		{
+			safetyFade = 0.f;
+			track.fadeInPending.store((int)fadeInfo.safetyFadeLength);
 		}
 	}
 
 	safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
-	return safetyFade;
+
+	track.safetyFade.store(safetyFade);
 }
 
-void TrackManager::prepareOutput(float adsrGain, float safetyFade, const float *leftChannel, const float *rightChannel,
-                                 double absolutePosition, int bufferSize, const bool beatRepeatActive,
-                                 double endSampleLoop, juce::AudioSampleBuffer &individualOutput, TrackData &track,
-                                 int i, TrackInfo &trackInfo) const
+void TrackManager::prepareOutput(float adsrGain, const float *leftChannel, const float *rightChannel,
+                                 double absolutePosition, int bufferSize, juce::AudioSampleBuffer &individualOutput,
+                                 TrackData &track, int i, TrackInfo &trackInfo, FadeInfo &fadeInfo) const
 {
-	float totalGain = adsrGain * safetyFade;
+	float totalGain = adsrGain * track.safetyFade.load();
 
 	float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
 	float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
@@ -845,16 +871,13 @@ void TrackManager::prepareOutput(float adsrGain, float safetyFade, const float *
 
 	trackInfo.currentPosition += trackInfo.playbackRatio;
 
-	if (beatRepeatActive)
+	if (fadeInfo.beatRepeatActive)
 	{
 		double newTheoretical = track.theoreticalPosition.load() + trackInfo.playbackRatio;
 
-		if (newTheoretical >= endSampleLoop)
-		{
-			double loopLen = endSampleLoop - trackInfo.startSample;
-			double overshoot = newTheoretical - endSampleLoop;
-			newTheoretical = trackInfo.startSample + std::fmod(overshoot, loopLen);
-		}
+		const double seqLen = fadeInfo.totalSamplesPerSequence;
+		if (seqLen > 0.0 && newTheoretical >= seqLen)
+			newTheoretical = std::fmod(newTheoretical, seqLen);
 
 		track.theoreticalPosition.store(newTheoretical);
 	}

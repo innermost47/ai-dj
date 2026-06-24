@@ -263,8 +263,8 @@ void SampleBank::analyzeSampleFile(SampleBankEntry *entry, const juce::File &aud
 juce::File SampleBank::getBankDirectory()
 {
 	return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	    .getChildFile("OBSIDIAN-Neural")
-	    .getChildFile("SampleBank");
+	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	    .getChildFile(Obsidian::SAMPLE_BANK_DIR);
 }
 
 void SampleBank::ensureBankDirectoryExists()
@@ -342,8 +342,8 @@ void SampleBank::saveBankData()
 void SampleBank::runLegacyCategoriesMigration()
 {
 	juce::File legacyFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                            .getChildFile("OBSIDIAN-Neural")
-	                            .getChildFile("categories.json");
+	                            .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	                            .getChildFile(Obsidian::CATEGORIES_FILE);
 
 	if (!legacyFile.exists())
 		return;

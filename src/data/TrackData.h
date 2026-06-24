@@ -268,9 +268,10 @@ struct TrackData
 	std::atomic<float> lastFeedbackPan{-999.0f};
 	std::atomic<float> lastFeedbackPitch{-999.0f};
 	std::atomic<float> lastFeedbackFine{-999.0f};
+	std::atomic<float> safetyFade{1.f};
 	std::atomic<int> brFadeInPending{0};
-	std::atomic<int> fadeInPending{Obsidian::SAFETY_FADE_LENGTH};
-	std::atomic<int> fadeOutPending{Obsidian::SAFETY_FADE_LENGTH};
+	std::atomic<int> fadeInPending{0};
+	std::atomic<int> fadeOutPending{0};
 	std::atomic<int> stagingNumSamples{0};
 	std::atomic<int> randomRetriggerInterval{Obsidian::RNDM_RTRGR_INTRVL};
 	std::atomic<int> pendingPageIndex{-1};

@@ -176,7 +176,7 @@ void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId
 	currentPage.generationKey = editor.audioProcessor.getGlobalKey();
 	currentPage.generationDuration = editor.audioProcessor.getGlobalDuration();
 	if (currentPage.selectedModel.isEmpty())
-		currentPage.selectedModel = "stable-audio-open-1.0";
+		currentPage.selectedModel = Obsidian::STABLE_AUDIO_OPEN_V1;
 
 	startGenerationUI(currentGeneratingTrackId);
 
