@@ -28,7 +28,7 @@ jobs:
 
       - name: Configure CMake
         working-directory: .
-        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
 
       - name: Build
         working-directory: .
