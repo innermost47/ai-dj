@@ -12,9 +12,11 @@
 
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
+
+	setSize(Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
 	setResizable(true, true);
-	setResizeLimits(1100, 820, 4000, 2400);
-	setSize(1620, 840);
+	setResizeLimits(Obsidian::MIN_PLUGIN_WIDTH, Obsidian::MIN_PLUGIN_HEIGHT, Obsidian::MAX_PLUGIN_WIDTH,
+	                Obsidian::MAX_PLUGIN_HEIGHT);
 
 	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());
 
@@ -273,6 +275,34 @@ void DjIaVstEditor::timerCallback()
 	}
 }
 
+void DjIaVstEditor::setupScreen()
+{
+
+	if (juce::JUCEApplicationBase::isStandaloneApp())
+	{
+		auto *display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
+		if (display != nullptr)
+		{
+			auto screenBounds = display->userArea;
+			float scaleW = screenBounds.getWidth() / (float)Obsidian::BASE_PLUGIN_WIDTH;
+			float scaleH = screenBounds.getHeight() / (float)Obsidian::BASE_PLUGIN_HEIGHT;
+			currentScaleFactor = juce::jmin(scaleW, scaleH);
+			juce::Desktop::getInstance().setGlobalScaleFactor(currentScaleFactor);
+		}
+		setSize(Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+	}
+	else
+	{
+		int savedW = audioProcessor.getSavedWindowWidth();
+		int savedH = audioProcessor.getSavedWindowHeight();
+		if (savedW > 0 && savedH > 0 && savedW >= Obsidian::MIN_PLUGIN_WIDTH && savedW <= Obsidian::MAX_PLUGIN_WIDTH &&
+		    savedH >= Obsidian::MIN_PLUGIN_HEIGHT && savedH <= Obsidian::MAX_PLUGIN_HEIGHT)
+			setSize(savedW, savedH);
+		else
+			setSize(Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+	}
+}
+
 void DjIaVstEditor::setupUI()
 {
 
@@ -311,6 +341,7 @@ void DjIaVstEditor::setupUI()
 	}
 
 	addEventListeners();
+	setupScreen();
 }
 
 void DjIaVstEditor::addEventListeners()

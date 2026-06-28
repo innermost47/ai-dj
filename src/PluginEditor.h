@@ -84,6 +84,8 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	void parentHierarchyChanged() override;
 #endif
 
+	void setupScreen();
+
 	bool mixerVisible = false;
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
@@ -92,6 +94,8 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::Label midiIndicator;
 	juce::String lastMidiNote;
 	juce::Label creditsLabel;
+
+	float currentScaleFactor = 1.f;
 
 	CustomLookAndFeel customLookAndFeel;
 

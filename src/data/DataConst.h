@@ -16,6 +16,13 @@ inline constexpr int MAX_BLOCK_SIZE = 512;
 inline constexpr int RNDM_RTRGR_INTRVL = 3;
 inline constexpr int SAFETY_FADE_LENGTH = 512;
 
+inline constexpr int MIN_PLUGIN_WIDTH = 1100;
+inline constexpr int MIN_PLUGIN_HEIGHT = 820;
+inline constexpr int MAX_PLUGIN_WIDTH = 4000;
+inline constexpr int MAX_PLUGIN_HEIGHT = 2400;
+inline constexpr int BASE_PLUGIN_WIDTH = 1620;
+inline constexpr int BASE_PLUGIN_HEIGHT = 840;
+
 inline constexpr double SAMPLERATE = 48000.0;
 
 inline constexpr float COMPRESSOR_THRESHOLD = -12.f;
