@@ -471,6 +471,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		useLocalModel = v;
 	}
+	void setNeedsUIRefreshAfterLoad(bool v)
+	{
+		stateJustLoaded.store(v);
+	}
 	void setIsGenerating(bool v)
 	{
 		isGenerating.store(v);
@@ -873,9 +877,12 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<int> currentNoteNumber{-1};
 	std::atomic<bool> isNotePlaying{false};
 	std::atomic<bool> canLoad{false};
+	std::atomic<bool> stateJustLoaded{false};
 	std::atomic<double> lastHostBpmForQuantization{120.0};
 	std::atomic<double> cachedHostBpm{126.0};
 	std::uint64_t sample_time = 0;
+
+	std::shared_ptr<std::function<void(int, TrackData *)>> parameterUpdateCallbackHolder;
 
 #if JucePlugin_Build_Standalone
 	struct EngineData

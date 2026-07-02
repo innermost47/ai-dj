@@ -170,6 +170,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 {
 	audioProcessor.getTrackManager().clearAllTracks();
 	audioProcessor.getTrackManager().resetAllSlots();
+	audioProcessor.getSequencerManager().setWasPlaying(false);
 
 	for (auto trackState : state)
 	{
@@ -799,14 +800,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 
 	audioProcessor.setStateReady(true);
 	audioProcessor.setIsLoadingState(false);
-	juce::MessageManager::callAsync(
-	    [this]()
-	    {
-		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-		    {
-			    editor->updateUIFromProcessor();
-		    }
-	    });
+	audioProcessor.setNeedsUIRefreshAfterLoad(true);
 }
 
 juce::File StateManager::getDefaultSessionsFolder()

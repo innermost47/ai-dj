@@ -30,6 +30,10 @@ class SequencerManager
 	{
 		return bypassSequencer.load();
 	}
+	void setWasPlaying(bool v)
+	{
+		wasPlaying.store(v);
+	}
 
 	double calculateRetriggerInterval(int intervalValue, double hostBpm) const;
 
@@ -45,6 +49,7 @@ class SequencerManager
 	juce::CriticalSection sequencerMidiLock;
 
 	std::atomic<bool> bypassSequencer{false};
+	std::atomic<bool> wasPlaying{false};
 
 	void updateSafetyFadeLength(TrackData *track) const;
 

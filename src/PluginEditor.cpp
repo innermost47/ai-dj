@@ -131,7 +131,7 @@ void DjIaVstEditor::parentHierarchyChanged()
 	{
 		window->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons, false);
 
-		static bool isFullscreen = false;
+		isFullscreen = false;
 		if (!isFullscreen && juce::JUCEApplication::isStandaloneApp())
 		{
 			window->setFullScreen(true);
@@ -254,14 +254,14 @@ void DjIaVstEditor::timerCallback()
 	}
 	if (!anyTrackPlaying)
 	{
-		static int skipFrames = 0;
+		skipFrames = 0;
 		skipFrames++;
 		if (skipFrames < 10)
 			return;
 		skipFrames = 0;
 	}
 
-	static double lastHostBpm = 0.0;
+	lastHostBpm = 0.0;
 	double currentHostBpm = audioProcessor.getHostBpm();
 	if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
 	{
@@ -390,6 +390,8 @@ void DjIaVstEditor::removeModal(ObsidianModalOverlay *overlay)
 
 void DjIaVstEditor::updateUIFromProcessor()
 {
+	if (!isInitialized.load() || !uiLayoutManager)
+		return;
 	uiLayoutManager->getRightPanelWrapper()->getConfigComponent()->updateFromProcessor();
 	uiTrackManager->refreshTrackComponents();
 }

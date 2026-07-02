@@ -49,13 +49,13 @@ DjIaVstProcessor::DjIaVstProcessor()
 	trackManager.onPreviewEnded = [this](const juce::String &trackId)
 	{ juce::MessageManager::callAsync([this, trackId]() { audioManager.stopTrackPreview(trackId); }); };
 
-	static auto safeCallback = std::make_shared<std::function<void(int, TrackData *)>>(
+	parameterUpdateCallbackHolder = std::make_shared<std::function<void(int, TrackData *)>>(
 	    [this](int slot, TrackData *track)
 	    {
 		    parameterManager.handleSampleParams(slot, track);
 		    parameterManager.handleSendsParams();
 	    });
-	trackManager.parameterUpdateCallback.store(safeCallback.get());
+	trackManager.parameterUpdateCallback.store(parameterUpdateCallbackHolder.get());
 
 	startTimerHz(30);
 	autoLoadEnabled.store(true);
@@ -433,6 +433,17 @@ DjIaClient::LoopRequest DjIaVstProcessor::createGlobalLoopRequest() const
 
 void DjIaVstProcessor::timerCallback()
 {
+	if (stateJustLoaded.load())
+	{
+		if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
+			if (editor->isInitialized.load())
+			{
+				stateJustLoaded.store(false);
+				editor->updateUIFromProcessor();
+			}
+			else
+				stateJustLoaded.store(false);
+	}
 	if (!needsUIUpdate.load())
 		return;
 	if (onUIUpdateNeeded)

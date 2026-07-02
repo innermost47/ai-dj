@@ -161,12 +161,9 @@ void SequencerManager::handleSequenceChange(int slotNum, int targetSequence)
 void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 {
 	if (isBypassed())
-	{
 		return;
-	}
-	static bool wasPlaying = false;
 
-	if (hostIsPlaying && !wasPlaying)
+	if (hostIsPlaying && !wasPlaying.load())
 	{
 		internalSampleCounter.store(0);
 		auto trackIds = trackManager.getAllTrackIds();
@@ -185,7 +182,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 			}
 		}
 	}
-	else if (!hostIsPlaying && wasPlaying)
+	else if (!hostIsPlaying && wasPlaying.load())
 	{
 		auto trackIds = trackManager.getAllTrackIds();
 		for (const auto &trackId : trackIds)
@@ -218,7 +215,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 		}
 		audioProcessor.needsUIUpdate.store(true);
 	}
-	else if (!hostIsPlaying && !wasPlaying)
+	else if (!hostIsPlaying && !wasPlaying.load())
 	{
 		auto trackIds = trackManager.getAllTrackIds();
 		for (const auto &trackId : trackIds)
@@ -246,7 +243,7 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 		}
 	}
 	audioProcessor.needsUIUpdate.store(true);
-	wasPlaying = hostIsPlaying;
+	wasPlaying.store(hostIsPlaying);
 }
 
 void SequencerManager::updateSequencers(bool hostIsPlaying, int numSamples)

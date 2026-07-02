@@ -97,6 +97,11 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 
 	float currentScaleFactor = 1.f;
 
+	int skipFrames = 0;
+	double lastHostBpm = 0.0;
+
+	bool isFullscreen = false;
+
 	CustomLookAndFeel customLookAndFeel;
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(DjIaVstEditor)
