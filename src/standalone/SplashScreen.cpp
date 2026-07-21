@@ -9,7 +9,14 @@ SplashScreen::SplashScreen()
 	if (imagePtr.isValid())
 		logoImage = imagePtr;
 
-	startTimerHz(30);
+	lastFrameTime = juce::Time::getMillisecondCounterHiRes() / 1000.0;
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
+}
+
+SplashScreen::~SplashScreen()
+{
+	vBlankAttachment.reset();
 }
 
 void SplashScreen::paint(juce::Graphics &g)
@@ -55,8 +62,14 @@ void SplashScreen::paint(juce::Graphics &g)
 	g.fillRoundedRectangle(barArea.withWidth(barArea.getWidth() * progress), 1.5f);
 }
 
-void SplashScreen::timerCallback()
+void SplashScreen::handleVBlank()
 {
-	progress += (1.0f - progress) * 0.015f;
+	double now = juce::Time::getMillisecondCounterHiRes() / 1000.0;
+	double dt = now - lastFrameTime;
+	lastFrameTime = now;
+
+	float factor = 1.0f - std::pow(1.0f - 0.015f, (float)(dt / 0.033333));
+
+	progress += (1.0f - progress) * factor;
 	repaint();
 }

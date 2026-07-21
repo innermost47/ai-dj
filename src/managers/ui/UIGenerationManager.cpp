@@ -53,7 +53,6 @@ void UIGenerationManager::onGenerationComplete(const juce::String &trackId, cons
 			                            });
 		}
 	}
-	editor.uiStatusManager->refreshCredits();
 }
 
 void UIGenerationManager::startGenerationUI(const juce::String &trackId)
@@ -126,14 +125,11 @@ void UIGenerationManager::stopGenerationUI(const juce::String &trackId, bool suc
 	}
 
 	if (editor.mixerPanel)
-	{
 		editor.mixerPanel->stopGeneratingAnimationForTrack(trackId);
-	}
 
 	isGenerating_.store(false);
 	wasGenerating_.store(false);
 	generatingTrackId.clear();
-	editor.stopTimer();
 
 	if (!success && !errorMessage.isEmpty())
 	{
@@ -176,7 +172,7 @@ void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId
 	currentPage.generationKey = editor.audioProcessor.getGlobalKey();
 	currentPage.generationDuration = editor.audioProcessor.getGlobalDuration();
 	if (currentPage.selectedModel.isEmpty())
-		currentPage.selectedModel = Obsidian::STABLE_AUDIO_OPEN_V1;
+		currentPage.selectedModel = "stable-audio-open-1.0";
 
 	startGenerationUI(currentGeneratingTrackId);
 

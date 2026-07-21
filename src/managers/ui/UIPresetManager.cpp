@@ -13,8 +13,6 @@ void UIPresetManager::notifyTracksPromptUpdate()
 		juce::String currentModel;
 		if (auto *track = editor.audioProcessor.getTrack(trackComp->getTrackId()))
 			currentModel = track->getCurrentPage().selectedModel;
-
-		juce::StringArray prompts = editor.audioProcessor.getAvailablePromptsForModel(currentModel);
-		trackComp->updatePromptPresets(prompts);
+		trackComp->populatePromptPresets(currentModel);
 	}
 }

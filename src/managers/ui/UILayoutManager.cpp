@@ -121,13 +121,15 @@ UILayoutManager::UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &edi
 	editor.mainViewport.setViewedComponent(mainContainer.get());
 	editor.mainViewport.setScrollBarsShown(false, true);
 
-	editor.addAndMakeVisible(*leftContainer);
-	editor.addAndMakeVisible(*leftPanelWrapper);
-	editor.addAndMakeVisible(*rightPanelWrapper);
-	editor.addAndMakeVisible(editor.mainViewport);
+	contentRoot.addAndMakeVisible(*leftPanelWrapper);
+	contentRoot.addAndMakeVisible(*rightPanelWrapper);
+	contentRoot.addAndMakeVisible(editor.mainViewport);
+
+	contentRoot.onResized = [this]() { performLayout(); };
+	editor.addAndMakeVisible(contentRoot);
 }
 
-void UILayoutManager::resized()
+void UILayoutManager::performLayout()
 {
 	using Track = juce::Grid::TrackInfo;
 	using Fr = juce::Grid::Fr;
@@ -157,7 +159,7 @@ void UILayoutManager::resized()
 	GridItem rightPanel(rightPanelWrapper.get());
 
 	grid.items = {leftPanel, main, rightPanel};
-	grid.performLayout(editor.getBounds());
+	grid.performLayout(contentRoot.getLocalBounds());
 
 	int minWidth = 1070;
 
@@ -165,5 +167,4 @@ void UILayoutManager::resized()
 	int contentHeight = editor.mainViewport.getHeight();
 
 	mainContainer->setSize(contentWidth, contentHeight);
-	audioProcessor.setWindowSize(editor.getWidth(), editor.getHeight());
 }

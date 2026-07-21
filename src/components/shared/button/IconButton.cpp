@@ -217,28 +217,37 @@ void IconButtonRepeat::mouseDown(const juce::MouseEvent &e)
 	if (isEnabled())
 	{
 		repeatCount = 0;
-		startTimer(400);
+		currentInterval = 120;
+		nextTriggerTime = juce::Time::getMillisecondCounter() + 400;
+		vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 	}
 }
 
 void IconButtonRepeat::mouseUp(const juce::MouseEvent &e)
 {
-	stopTimer();
+	vBlankAttachment.reset();
 	juce::TextButton::mouseUp(e);
 }
 
-void IconButtonRepeat::timerCallback()
+void IconButtonRepeat::handleVBlank()
 {
-	++repeatCount;
-	if (onClick)
-		onClick();
+	auto now = juce::Time::getMillisecondCounter();
 
-	if (repeatCount == 1)
-		startTimer(120);
-	else if (repeatCount == 10)
-		startTimer(60);
-	else if (repeatCount == 25)
-		startTimer(30);
-	else if (repeatCount == 50)
-		startTimer(15);
+	if (now >= nextTriggerTime)
+	{
+		++repeatCount;
+		if (onClick)
+			onClick();
+
+		if (repeatCount >= 50)
+			currentInterval = 15;
+		else if (repeatCount >= 25)
+			currentInterval = 30;
+		else if (repeatCount >= 10)
+			currentInterval = 60;
+		else
+			currentInterval = 120;
+
+		nextTriggerTime = now + currentInterval;
+	}
 }

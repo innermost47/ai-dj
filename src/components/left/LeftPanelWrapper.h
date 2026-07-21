@@ -50,6 +50,7 @@ class LeftPanelWrapper : public ObsidianComponent
 
 	void updateTabVisibility();
 	void collapseExpand(bool expanded);
+	void setupUI();
 
 	std::unique_ptr<SampleBankPanel> sampleBank;
 	std::unique_ptr<PromptBankPanel> promptBank;

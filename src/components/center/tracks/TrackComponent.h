@@ -9,7 +9,7 @@ class WaveformDisplay;
 class SequencerComponent;
 class DjIaVstProcessor;
 
-class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, public juce::DragAndDropTarget
+class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDropTarget
 {
   public:
 	TrackComponent(const juce::String &trackId, DjIaVstProcessor &processor);
@@ -51,18 +51,21 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void updateWaveformWithTimeStretch();
 	void updatePlaybackPosition(double timeInSeconds);
 	void refreshWaveformIfNeeded();
-	void updatePromptPresets(const juce::StringArray &presets, const juce::String &selectedPrompt = "");
 	void updatePromptSelection(const juce::String &promptText);
 	void onPageSelected(int pageIndex);
 	void performPageChange(int pageIndex);
 	void updatePagesDisplay();
 	void setPreviewPlaying(bool playing);
 	void syncTrackName(const juce::String &name);
-	void loadPromptPresets();
 	void detachWaveformTrack();
 	void syncBorderOverlay();
+	void populatePromptPresets(const juce::String &modelName, const juce::String &forceSelectedPrompt = {});
 	void mouseDown(const juce::MouseEvent &) override;
-
+	void startPagePendingBlink()
+	{
+		blinkTicking = true;
+		blinkCounter = 1;
+	}
 	void setIsDragOver(bool v)
 	{
 		isDragOver = v;
@@ -133,6 +136,8 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	int lastWaveformNumSamples = 0;
 	juce::Colour cachedModelColour{ColourPalette::buttonPrimary};
 
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+
 	BorderOverlay borderOverlay;
 
 	juce::Component::SafePointer<DrawingCanvas> drawingCanvasPtr;
@@ -147,11 +152,13 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 
 	IconButtonSimple drawButton{"DrawBtn", "DRAW"};
 	IconButton generateButton{"GenerateBtn", "GEN"};
+	IconButton reverseButton{"ReverseBtn", "REV"};
+	IconButton transientScatterButton{"TransientScatterBtn", "SCAT"};
 
 	IconButtonSimple originalSyncButton{"OriginalSyncBtn", "ORIG"};
 	IconButtonSimple previewButton{"PreviewBtn", "PREVIEW"};
 
-	IconButton beatRepeatButton{"RandomRetriggerBtn", "REPEAT"};
+	IconButton beatRepeatButton{"BeatRepeatActiveBtn", "REPEAT"};
 	IconButtonSimple randomDurationToggle{"RandomDurationBtn", "RND"};
 
 	MidiLearnableSlider intervalKnob;
@@ -167,6 +174,9 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 
 	juce::Label infoLabel;
 
+	int blinkCounter = 0;
+
+	bool blinkTicking = false;
 	bool isGenerating = false;
 	bool blinkState = false;
 	bool isSelected = false;
@@ -189,7 +199,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void calculateHostBasedDisplay();
 	void paint(juce::Graphics &g);
 	void resized();
-	void timerCallback() override;
+	void handleVBlank();
 	void setupUI();
 	void setupIconButtons();
 	void updateButtonsEnabledState();
@@ -198,7 +208,9 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::Timer, pub
 	void toggleOriginalSync();
 	void statusCallback(const juce::String &message);
 	void onIntervalChanged();
-	void updateBeatRepeatButtonColor();
+	void updateBeatRepeatButtonState();
+	void updateReverseButtonState();
+	void updateTransientScatterButtonState();
 	void updateRandomDurationButtonColor();
 	void openDrawingCanvas();
 	void updatePreviewButton();

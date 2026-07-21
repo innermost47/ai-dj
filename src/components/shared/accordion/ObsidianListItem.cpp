@@ -130,3 +130,48 @@ void ObsidianListItem::showDefaultContextMenu(const juce::MouseEvent &e)
 		                   }
 	                   });
 }
+
+float ObsidianListItem::measureTextWidth(const juce::Font &font, const juce::String &text) const
+{
+	return juce::GlyphArrangement::getStringWidth(font, text);
+}
+
+juce::StringArray ObsidianListItem::truncateToLines(const juce::Font &font, const juce::String &text, float maxWidth,
+                                                    int maxLines) const
+{
+	juce::StringArray lines;
+	juce::String remaining = text;
+
+	for (int i = 0; i < maxLines && remaining.isNotEmpty(); ++i)
+	{
+		if (measureTextWidth(font, remaining) <= maxWidth)
+		{
+			lines.add(remaining);
+			remaining.clear();
+			break;
+		}
+
+		bool isLastLine = (i == maxLines - 1);
+		int cut = remaining.length();
+
+		while (cut > 0 && measureTextWidth(font, remaining.substring(0, cut) + (isLastLine ? "..." : "")) > maxWidth)
+			--cut;
+
+		if (!isLastLine)
+		{
+			int lastSpace = remaining.substring(0, cut).lastIndexOfChar(' ');
+			if (lastSpace > 0)
+				cut = lastSpace;
+		}
+
+		lines.add(remaining.substring(0, cut) + (isLastLine ? "..." : ""));
+		remaining = remaining.substring(cut).trimStart();
+	}
+
+	return lines;
+}
+
+int ObsidianListItem::getPreferredHeight(int /*width*/) const
+{
+	return getBaseHeight();
+}

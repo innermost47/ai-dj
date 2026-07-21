@@ -5,7 +5,7 @@
 
 class DjIaVstProcessor;
 
-class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
+class CrossfaderComponent : public ObsidianBaseMidiComponent
 {
   public:
 	CrossfaderComponent(DjIaVstProcessor &processor);
@@ -13,15 +13,12 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void timerCallback() override;
-
 	void refreshFromProcessor();
 	void updatePairColours();
 	void onModelChanged()
 	{
 		updatePairColours();
 	}
-
 	void refreshCurveButtons();
 
   private:
@@ -31,8 +28,9 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 	IconButton curveLinearButton{"CurveLinear", "LIN"};
 	IconButton curveEqualPowerButton{"CurveEqualPower", "EQ"};
 	IconButton curveDjButton{"CurveDJ", "DJ"};
-
 	IconButton useCrossfaderButton{"UseCrossfader", ""};
+
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
 
 	juce::Rectangle<int> pairRowBounds[4];
 	juce::Rectangle<int> globalRowBounds;
@@ -46,7 +44,10 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 	static constexpr int ledZoneWidth = ledPadX + ledDiameter + 4 + labelWidth + 4;
 
 	double lastPpqForBeat = -1.0;
+
 	float beatPhase = 0.0f;
+
+	int lastLedQuantized[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 
 	void setupUI();
 	void setupCurveButtons();
@@ -58,14 +59,15 @@ class CrossfaderComponent : public ObsidianBaseMidiComponent, public juce::Timer
 	void selectCurveMode(int mode);
 	void paintOverChildren(juce::Graphics &g) override;
 	void wireParameters();
+	void handleVBlank();
+
+	float computeLedIntensity(int pairIdx, bool left, float pulseIntensity, float deckAGain, float deckBGain) const;
 
   protected:
 	juce::String getMidiLearnDescriptionPrefix() const override
 	{
 		return {};
 	}
-
 	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
-
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossfaderComponent)
 };

@@ -26,6 +26,4 @@ class GenerationManager
 	DjIaVstProcessor &audioProcessor;
 
 	juce::CriticalSection apiLock;
-
-	juce::File createTempAudioFile(const std::vector<float> &audioData, float /*duration*/);
 };

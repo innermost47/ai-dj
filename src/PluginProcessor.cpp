@@ -57,7 +57,6 @@ DjIaVstProcessor::DjIaVstProcessor()
 	    });
 	trackManager.parameterUpdateCallback.store(parameterUpdateCallbackHolder.get());
 
-	startTimerHz(30);
 	autoLoadEnabled.store(true);
 #if JucePlugin_Build_Standalone
 	link.reset(new ableton::Link{120});
@@ -111,7 +110,6 @@ DjIaVstProcessor::DjIaVstProcessor()
 
 DjIaVstProcessor::~DjIaVstProcessor()
 {
-	stopTimer();
 	try
 	{
 		cleanProcessor();
@@ -229,7 +227,7 @@ void DjIaVstProcessor::loadGlobalConfig()
 			serverUrl = object->getProperty("serverUrl").toString();
 			requestTimeoutMS = object->getProperty("requestTimeoutMS").toString().getIntValue();
 			onboardingDone = object->getProperty("onboardingDone").toString() == "true";
-			useLocalModel = false;
+			useLocalModel = object->getProperty("useLocalModel").toString() == "true";
 			localModelsPath = object->getProperty("localModelsPath").toString();
 			panelStateJson = object->getProperty("panelStateJson").toString();
 
@@ -317,8 +315,12 @@ void DjIaVstProcessor::initTracks()
 		{
 			track->slotIndex = i;
 			attachPageChangeCallback(track);
-			auto serverModels = AiModelDefinitions::getModelsForMode(false);
+			auto serverModels = AiModelDefinitions::getModelsForMode(useLocalModel);
 			juce::String modelName = serverModels[i % serverModels.size()];
+
+			juce::String effectiveModel = modelName;
+			if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_V1_TFLITE)
+				effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1;
 
 			for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 			{
@@ -328,7 +330,7 @@ void DjIaVstProcessor::initTracks()
 					promptForThisModel = defaultPrompt;
 					for (auto *prompt : all)
 					{
-						if (prompt->modelName == modelName)
+						if (prompt->modelName == effectiveModel)
 						{
 							promptForThisModel = prompt->text;
 							if (all.size() > 1)
@@ -352,22 +354,27 @@ void DjIaVstProcessor::initTracks()
 	trackManager.isInitializing.store(false);
 }
 
-juce::StringArray DjIaVstProcessor::getAvailablePromptsForModel(const juce::String &modelName) const
+std::vector<PromptInfo> DjIaVstProcessor::getAvailablePromptsWithCategoryForModel(const juce::String &modelName) const
 {
-	juce::StringArray result;
+	std::vector<PromptInfo> result;
 	if (!promptBank)
 		return result;
 
-	auto allPrompts = const_cast<PromptBank *>(promptBank.get())->getAllPrompts();
+	juce::String effectiveModel = modelName;
+	if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_V1_TFLITE)
+		effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1;
 
+	auto allPrompts = const_cast<PromptBank *>(promptBank.get())->getAllPrompts();
 	for (auto *p : allPrompts)
 	{
-		if (modelName.isNotEmpty() && p->modelName != modelName)
+		if (effectiveModel.isNotEmpty() && p->modelName != effectiveModel)
 			continue;
-		result.add(p->text);
+		result.push_back({p->text, p->category});
 	}
 
-	result.sort(true);
+	std::sort(result.begin(), result.end(),
+	          [](const PromptInfo &a, const PromptInfo &b) { return a.text.compareIgnoreCase(b.text) < 0; });
+
 	return result;
 }
 
@@ -429,28 +436,6 @@ DjIaClient::LoopRequest DjIaVstProcessor::createGlobalLoopRequest() const
 	request.key = globalKey;
 	request.generationDuration = static_cast<float>(globalDuration);
 	return request;
-}
-
-void DjIaVstProcessor::timerCallback()
-{
-	if (stateJustLoaded.load())
-	{
-		if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-			if (editor->isInitialized.load())
-			{
-				stateJustLoaded.store(false);
-				editor->updateUIFromProcessor();
-			}
-			else
-				stateJustLoaded.store(false);
-	}
-	if (!needsUIUpdate.load())
-		return;
-	if (onUIUpdateNeeded)
-	{
-		onUIUpdateNeeded();
-	}
-	needsUIUpdate.store(false);
 }
 
 bool DjIaVstProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
@@ -553,11 +538,17 @@ void DjIaVstProcessor::setLinkTempo(double bpm)
 
 void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midiMessages)
 {
+	const double sr = getSampleRate();
+	if (sr <= 0.0)
+	{
+		buffer.clear();
+		return;
+	}
 #if JucePlugin_Build_Standalone
 	if (juce::JUCEApplicationBase::isStandaloneApp())
-		if (link->isEnabled())
+		if (link && link->isEnabled())
 		{
-			calculateOutputTime(getSampleRate(), buffer.getNumSamples());
+			calculateOutputTime(sr, buffer.getNumSamples());
 			const auto engine_data = pull_engine_data();
 			const auto localSession = processSessionState(engine_data);
 
@@ -568,14 +559,13 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 			if (standaloneTransport)
 			{
 				standaloneTransport->setPlaying(linkIsPlaying);
-				standaloneTransport->setBpm(linkBpm);
+				if (linkBpm > 0.0)
+					standaloneTransport->setBpm(linkBpm);
 				standaloneTransport->setPpqPosition(linkBeat);
 			}
 		}
 		else
-		{
-			standaloneTransport->advance(buffer.getNumSamples(), getSampleRate());
-		}
+			standaloneTransport->advance(buffer.getNumSamples(), sr);
 #endif
 
 	sequencerManager.internalSampleCounter += buffer.getNumSamples();
@@ -591,13 +581,13 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	lastHostBpmForQuantization.store(hostBpm);
 	if (hasPendingAudioData.load())
-	{
 		audioManager.processIncomingAudio(hostIsPlaying);
-	}
 	audioManager.checkAndSwapStagingBuffers();
 	sequencerManager.handleSequencerPlayState(hostIsPlaying);
 	sequencerManager.updateSequencers(hostIsPlaying, buffer.getNumSamples());
 	sequencerManager.checkBeatRepeatWithSampleCounter();
+	sequencerManager.checkReverseWithSampleCounter();
+	sequencerManager.checkTransientScatterWithSampleCounter();
 	sequencerManager.flushMidiBuffer(midiMessages, buffer.getNumSamples());
 
 	midiManager.processMidiMessages(midiMessages, hostIsPlaying, hostBpm);
@@ -624,7 +614,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	int curveMode = parameterManager.getCrossfaderCurveMode();
 
 	trackManager.renderAllTracks(mainOutput, audioManager.getIndividualOutputBuffers(), previewBus, pairPrev,
-	                             pairCurrent, globalPrev, globalCurrent, curveMode, getSampleRate(), useCrossfader);
+	                             pairCurrent, globalPrev, globalCurrent, curveMode, sr, useCrossfader);
 
 	trackManager.processPerTrackDelays(
 	    audioManager.getIndividualOutputBuffers(), mainOutput, hostBpm,
@@ -648,7 +638,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 
 	auto *lastBus = getBus(false, getBusCount(false) - 1);
 	bool previewBusIsEffectivelyEnabled = (lastBus != nullptr && lastBus->isEnabled());
-	audioManager.renderPreviewToOutput(previewBus, mainOutput, buffer.getNumSamples(), getSampleRate(),
+	audioManager.renderPreviewToOutput(previewBus, mainOutput, buffer.getNumSamples(), sr,
 	                                   previewBusIsEffectivelyEnabled);
 
 	if (onMasterOutput)
@@ -700,21 +690,15 @@ int DjIaVstProcessor::getCrossfaderCurveMode() const
 void DjIaVstProcessor::checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages)
 {
 	bool anyTrackPlaying = false;
-	auto trackIds = trackManager.getAllTrackIds();
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *track = trackManager.getTrack(trackId);
-		if (track && track->isPlaying.load())
-		{
-			anyTrackPlaying = true;
-			break;
-		}
-	}
+	trackManager.forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    if (track->isPlaying.load())
+			    anyTrackPlaying = true;
+	    });
 
 	if (anyTrackPlaying || midiMessages.getNumEvents() > 0)
-	{
 		needsUIUpdate.store(true);
-	}
 }
 
 void DjIaVstProcessor::getDawInformations(juce::AudioPlayHead *currentPlayHead, bool &hostIsPlaying, double &hostBpm,
@@ -764,17 +748,17 @@ void DjIaVstProcessor::getDawInformations(juce::AudioPlayHead *currentPlayHead, 
 void DjIaVstProcessor::previewTrack(const juce::String &trackId)
 {
 	TrackData *track = trackManager.getTrack(trackId);
+	if (!track)
+		return;
 	auto &currentPage = track->getCurrentPage();
-	if (!track || currentPage.numSamples <= 0)
+	if (currentPage.numSamples <= 0)
 		return;
 
 	if (track->isPreviewMode.load())
 		return;
 
 	if (track->isPlaying.load())
-	{
 		return;
-	}
 
 	track->readPosition.store(0.0);
 	track->numSamplesAccPerSequence.store(0.0);
@@ -794,69 +778,63 @@ void DjIaVstProcessor::previewTrack(const juce::String &trackId)
 void DjIaVstProcessor::playTrack(const juce::MidiMessage &message, double hostBpm)
 {
 	int noteNumber = message.getNoteNumber();
-	juce::String noteName = juce::MidiMessage::getMidiNoteName(noteNumber, true, true, 3);
-	bool trackFound = false;
-	auto trackIds = trackManager.getAllTrackIds();
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *track = trackManager.getTrack(trackId);
-		auto &currentPage = track->getCurrentPage();
-		if (track && track->midiNote == noteNumber)
-		{
-			if (trackId == trackIdWaitingForLoad)
-			{
-				correctMidiNoteReceived = true;
-			}
-			if (currentPage.numSamples > 0)
-			{
-				startNotePlaybackForTrack(trackId, noteNumber, hostBpm);
-				trackFound = true;
-			}
-			break;
-		}
-	}
+	trackManager.forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    if (track->midiNote != noteNumber)
+			    return;
+		    if (track->trackId == trackIdWaitingForLoad)
+			    correctMidiNoteReceived = true;
+		    if (track->getCurrentPage().numSamples > 0)
+			    startNotePlaybackForTrack(track, noteNumber, hostBpm);
+	    });
 }
 
-void DjIaVstProcessor::startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double /*hostBpm*/)
+void DjIaVstProcessor::startNotePlaybackForTrack(TrackData *track, int noteNumber, double hostBpm)
 {
-	TrackData *track = trackManager.getTrack(trackId);
-	auto &currentPage = track->getCurrentPage();
-	if (!track || currentPage.numSamples == 0)
+	if (!track)
 		return;
+	auto &currentPage = track->getCurrentPage();
+	if (currentPage.numSamples == 0)
+		return;
+
 	if (getBypassSequencer())
 	{
-		if (!track->beatRepeatActive.load())
+		const bool anchorPending = track->beatRepeatAnchorPending.exchange(false);
+		if (!track->beatRepeatActive.load() || anchorPending)
 		{
-			track->readPosition.store(0.0);
+			track->seekTo(sequencerManager.getStartReadPosition(track));
 			track->numSamplesAccPerSequence.store(0.0);
+
+			if (anchorPending)
+				sequencerManager.setupBeatRepeatZone(track, hostBpm);
 		}
 		track->setPlaying(true);
 		track->isCurrentlyPlaying.store(true);
-		playingTracks[noteNumber] = trackId;
-		return;
-	}
-	if (track->isArmedToStop.load())
-	{
-		return;
-	}
-	if (!track->isArmed.load() && !track->isCurrentlyPlaying.load())
-	{
-		return;
-	}
-	if (track->isPlaying.load())
-	{
+		playingTracks[noteNumber] = track;
 		return;
 	}
 
-	if (!track->beatRepeatActive.load())
+	if (track->isArmedToStop.load())
+		return;
+	if (!track->isArmed.load() && !track->isCurrentlyPlaying.load())
+		return;
+	if (track->isPlaying.load())
+		return;
+
+	const bool anchorPending = track->beatRepeatAnchorPending.exchange(false);
+	if (!track->beatRepeatActive.load() || anchorPending)
 	{
-		track->readPosition.store(0.0);
+		track->seekTo(sequencerManager.getStartReadPosition(track));
 		track->numSamplesAccPerSequence.store(0.0);
+
+		if (anchorPending)
+			sequencerManager.setupBeatRepeatZone(track, hostBpm);
 	}
 	track->setPlaying(true);
 	track->isCurrentlyPlaying.store(true);
 	track->isArmed.store(false);
-	playingTracks[noteNumber] = trackId;
+	playingTracks[noteNumber] = track;
 }
 
 void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
@@ -864,10 +842,9 @@ void DjIaVstProcessor::stopNotePlaybackForTrack(int noteNumber)
 	auto it = playingTracks.find(noteNumber);
 	if (it != playingTracks.end())
 	{
-		TrackData *track = trackManager.getTrack(it->second);
-		if (track)
+		if (TrackData *track = it->second)
 		{
-			track->isPlaying.store(false);
+			track->requestStop();
 			if (!track->isArmed.load() && !track->isCurrentlyPlaying.load())
 				midiManager.sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
 				                             MidiMapping::feedbackIdle);
@@ -1061,16 +1038,7 @@ TrackData *DjIaVstProcessor::getTrackFromParamId(const juce::String &parameterID
 		return nullptr;
 
 	int slotNum = parameterID.substring(4, 5).getIntValue();
-	if (slotNum < 1 || slotNum > Obsidian::MAX_TRACKS)
-		return nullptr;
-
-	for (const auto &tid : getAllTrackIds())
-	{
-		TrackData *t = getTrack(tid);
-		if (t && t->slotIndex == slotNum - 1)
-			return t;
-	}
-	return nullptr;
+	return trackManager.getTrackBySlot(slotNum - 1);
 }
 
 void DjIaVstProcessor::parameterChanged(const juce::String &parameterID, float newValue)

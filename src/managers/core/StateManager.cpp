@@ -24,7 +24,7 @@ juce::ValueTree StateManager::saveState() const
 
 		    trackState.setProperty("id", track->trackId, nullptr);
 		    trackState.setProperty("name", track->trackName, nullptr);
-
+		    trackState.setProperty("currentSampleId", track->currentSampleId, nullptr);
 		    trackState.setProperty("slotIndex", track->slotIndex, nullptr);
 		    trackState.setProperty("style", track->style, nullptr);
 		    trackState.setProperty("midiNote", track->midiNote, nullptr);
@@ -42,7 +42,8 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("isCurrentlyPlaying", false, nullptr);
 		    trackState.setProperty("nextHasOriginalVersion", track->nextHasOriginalVersion.load(), nullptr);
 		    trackState.setProperty("randomRetriggerEnabled", track->randomRetriggerEnabled.load(), nullptr);
-		    trackState.setProperty("randomRetriggerInterval", track->randomRetriggerInterval.load(), nullptr);
+		    trackState.setProperty("randomBeatRepeatInterval", track->randomBeatRepeatInterval.load(), nullptr);
+		    trackState.setProperty("reverseActive", track->reverseActive.load(), nullptr);
 		    trackState.setProperty("beatRepeatPending", track->beatRepeatPending.load(), nullptr);
 		    trackState.setProperty("beatRepeatStopPending", track->beatRepeatStopPending.load(), nullptr);
 		    trackState.setProperty("originalReadPosition", track->originalReadPosition.load(), nullptr);
@@ -92,7 +93,27 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("chorusMix", track->chorus.getMix(), nullptr);
 		    trackState.setProperty("chorusBypassed", track->chorus.isBypassed(), nullptr);
 
+		    trackState.setProperty("phaserRate", track->phaser.getRate(), nullptr);
+		    trackState.setProperty("phaserDepth", track->phaser.getDepth(), nullptr);
+		    trackState.setProperty("phaserCentre", track->phaser.getCentre(), nullptr);
+		    trackState.setProperty("phaserFeedback", track->phaser.getFeedback(), nullptr);
+		    trackState.setProperty("phaserMix", track->phaser.getMix(), nullptr);
+		    trackState.setProperty("phaserBypassed", track->phaser.isBypassed(), nullptr);
+
+		    trackState.setProperty("flangerRate", track->flanger.getRate(), nullptr);
+		    trackState.setProperty("flangerDepth", track->flanger.getDepth(), nullptr);
+		    trackState.setProperty("flangerCentre", track->flanger.getCentre(), nullptr);
+		    trackState.setProperty("flangerFeedback", track->flanger.getFeedback(), nullptr);
+		    trackState.setProperty("flangerMix", track->flanger.getMix(), nullptr);
+		    trackState.setProperty("flangerBypassed", track->flanger.isBypassed(), nullptr);
+
+		    trackState.setProperty("bitcrusherBitDepth", track->bitCrusher.getBitDepth(), nullptr);
+		    trackState.setProperty("bitcrusherRate", track->bitCrusher.getSampleRateReduction(), nullptr);
+		    trackState.setProperty("bitcrusherMix", track->bitCrusher.getMix(), nullptr);
+		    trackState.setProperty("bitcrusherBypassed", track->bitCrusher.isBypassed(), nullptr);
+
 		    trackState.setProperty("isSelected", track->isSelected.load(), nullptr);
+		    trackState.setProperty("transientScatterActive", track->transientScatterActive.load(), nullptr);
 
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
@@ -101,6 +122,7 @@ juce::ValueTree StateManager::saveState() const
 
 			    pageState.setProperty("index", pageIndex, nullptr);
 			    pageState.setProperty("audioFilePath", page.audioFilePath, nullptr);
+			    pageState.setProperty("originalFilePath", page.originalFilePath, nullptr);
 			    pageState.setProperty("numSamples", page.numSamples, nullptr);
 			    pageState.setProperty("sampleRate", page.sampleRate, nullptr);
 			    pageState.setProperty("originalBpm", page.originalBpm, nullptr);
@@ -169,6 +191,7 @@ juce::ValueTree StateManager::saveState() const
 void StateManager::loadState(const juce::ValueTree &state)
 {
 	audioProcessor.getTrackManager().clearAllTracks();
+	audioProcessor.clearPlayingTracks();
 	audioProcessor.getTrackManager().resetAllSlots();
 	audioProcessor.getSequencerManager().setWasPlaying(false);
 
@@ -179,7 +202,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 
 		auto track = std::make_unique<TrackData>();
 		audioProcessor.attachPageChangeCallback(track.get());
-
+		track->currentSampleId = trackState.getProperty("currentSampleId", "").toString();
 		track->trackId = trackState.getProperty("id", juce::Uuid().toString());
 		track->trackName = trackState.getProperty("name", "Track");
 		track->slotIndex = trackState.getProperty("slotIndex", -1);
@@ -199,7 +222,8 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->isCurrentlyPlaying = trackState.getProperty("isCurrentlyPlaying", false);
 		track->nextHasOriginalVersion = trackState.getProperty("nextHasOriginalVersion", false);
 		track->randomRetriggerEnabled = trackState.getProperty("randomRetriggerEnabled", false);
-		track->randomRetriggerInterval = trackState.getProperty("randomRetriggerInterval", 3);
+		track->reverseActive.store(trackState.getProperty("reverseActive", false));
+		track->randomBeatRepeatInterval = trackState.getProperty("randomBeatRepeatInterval", 3);
 		track->beatRepeatPending = trackState.getProperty("beatRepeatPending", false);
 		track->beatRepeatStopPending = trackState.getProperty("beatRepeatStopPending", false);
 		track->originalReadPosition = trackState.getProperty("originalReadPosition", 0.0);
@@ -209,13 +233,17 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->randomRetriggerDurationEnabled = trackState.getProperty("randomRetriggerDurationEnabled", false);
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 		track->isSelected.store(trackState.getProperty("isSelected", track->slotIndex == 0));
+		track->transientScatterActive.store(trackState.getProperty("transientScatterActive", false));
 
 		track->distortion.reset();
+		track->bitCrusher.reset();
 		track->filter.reset();
 		track->equalizer.reset();
 		track->compressor.reset();
 		track->limiter.reset();
 		track->chorus.reset();
+		track->phaser.reset();
+		track->flanger.reset();
 		track->delaySendProcessor.reset();
 		track->reverbSendProcessor.reset();
 
@@ -225,11 +253,14 @@ void StateManager::loadState(const juce::ValueTree &state)
 		spec.sampleRate = audioProcessor.getSampleRate();
 
 		track->distortion.prepare(spec);
+		track->bitCrusher.prepare(spec);
 		track->filter.prepare(spec);
 		track->equalizer.prepare(spec);
 		track->compressor.prepare(spec);
 		track->limiter.prepare(spec);
 		track->chorus.prepare(spec);
+		track->phaser.prepare(spec);
+		track->flanger.prepare(spec);
 
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
@@ -284,6 +315,26 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->chorus.setMix(trackState.getProperty("chorusMix", Obsidian::CHORUS_MIX));
 		track->chorus.setBypassed(trackState.getProperty("chorusBypassed", Obsidian::CHORUS_BYPASSED));
 
+		track->phaser.setRate(trackState.getProperty("phaserRate", Obsidian::PHASER_RATE));
+		track->phaser.setDepth(trackState.getProperty("phaserDepth", Obsidian::PHASER_DEPTH));
+		track->phaser.setCentre(trackState.getProperty("phaserCentre", Obsidian::PHASER_CENTRE));
+		track->phaser.setFeedback(trackState.getProperty("phaserFeedback", Obsidian::PHASER_FEEDBACK));
+		track->phaser.setMix(trackState.getProperty("phaserMix", Obsidian::PHASER_MIX));
+		track->phaser.setBypassed(trackState.getProperty("phaserBypassed", Obsidian::PHASER_BYPASSED));
+
+		track->flanger.setRate(trackState.getProperty("flangerRate", Obsidian::FLANGER_RATE));
+		track->flanger.setDepth(trackState.getProperty("flangerDepth", Obsidian::FLANGER_DEPTH));
+		track->flanger.setCentre(trackState.getProperty("flangerCentre", Obsidian::FLANGER_CENTRE));
+		track->flanger.setFeedback(trackState.getProperty("flangerFeedback", Obsidian::FLANGER_FEEDBACK));
+		track->flanger.setMix(trackState.getProperty("flangerMix", Obsidian::FLANGER_MIX));
+		track->flanger.setBypassed(trackState.getProperty("flangerBypassed", Obsidian::FLANGER_BYPASSED));
+
+		track->bitCrusher.setBitDepth(trackState.getProperty("bitcrusherBitDepth", Obsidian::BITCRUSHER_BIT_DEPTH));
+		track->bitCrusher.setSampleRateReduction(
+		    trackState.getProperty("bitcrusherRate", Obsidian::BITCRUSHER_SAMPLE_RATE_REDUCTION));
+		track->bitCrusher.setMix(trackState.getProperty("bitcrusherMix", Obsidian::BITCRUSHER_MIX));
+		track->bitCrusher.setBypassed(trackState.getProperty("bitcrusherBypassed", Obsidian::BITCRUSHER_BYPASSED));
+
 		track->delaySendProcessor.prepare(audioProcessor.getSampleRate(),
 		                                  static_cast<juce::uint32>(audioProcessor.getBlockSize()));
 		track->reverbSendProcessor.prepare(audioProcessor.getSampleRate(),
@@ -312,14 +363,14 @@ void StateManager::loadState(const juce::ValueTree &state)
 			if (pageState.isValid())
 			{
 				auto &page = track->pages[pageIndex];
+				page.originalFilePath = pageState.getProperty("originalFilePath", "").toString();
 				page.audioFilePath = pageState.getProperty("audioFilePath", "").toString();
 				page.numSamples = pageState.getProperty("numSamples", 0);
 				page.sampleRate = pageState.getProperty("sampleRate", Obsidian::SAMPLERATE);
 				page.originalBpm = pageState.getProperty("originalBpm", 126.0f);
 				page.prompt = pageState.getProperty("prompt", "").toString();
 				page.setSelectedPrompt(pageState.getProperty("selectedPrompt", "").toString());
-				page.selectedModel =
-				    pageState.getProperty("selectedModel", juce::String(Obsidian::STABLE_AUDIO_OPEN_V1)).toString();
+				page.selectedModel = pageState.getProperty("selectedModel", "stable-audio-open-1.0").toString();
 				page.generationPrompt = pageState.getProperty("generationPrompt", "").toString();
 				page.generationBpm = pageState.getProperty("generationBpm", 126.0f);
 				page.generationKey = pageState.getProperty("generationKey", "").toString();
@@ -334,8 +385,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 				page.fineOffset.store(pageState.getProperty("fineOffset", 0.0f));
 				page.loopPointsLocked = pageState.getProperty("loopPointsLocked", false);
 				page.savedModelBeforeLocal =
-				    pageState.getProperty("savedModelBeforeLocal", juce::String(Obsidian::STABLE_AUDIO_OPEN_V1))
-				        .toString();
+				    pageState.getProperty("savedModelBeforeLocal", "stable-audio-open-1.0").toString();
 
 				juce::String pageKeywordsStr = pageState.getProperty("selectedKeywords", "");
 				if (pageKeywordsStr.isNotEmpty())
@@ -345,10 +395,12 @@ void StateManager::loadState(const juce::ValueTree &state)
 
 				page.isLoaded = false;
 				page.currentSequenceIndex = pageState.getProperty("currentSequenceIndex", 0);
-				page.adsrAttack.store(pageState.getProperty("adsrAttack", 0.01f));
-				page.adsrDecay.store(pageState.getProperty("adsrDecay", 4.0f));
-				page.adsrSustain.store(pageState.getProperty("adsrSustain", 1.0f));
-				page.adsrRelease.store(pageState.getProperty("adsrRelease", 0.0f));
+				page.adsrAttack.store(pageState.getProperty("adsrAttack", Obsidian::ADSRDefaultValues::ATTACK_DEFAULT));
+				page.adsrDecay.store(pageState.getProperty("adsrDecay", Obsidian::ADSRDefaultValues::DECAY_DEFAULT));
+				page.adsrSustain.store(
+				    pageState.getProperty("adsrSustain", Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT));
+				page.adsrRelease.store(
+				    pageState.getProperty("adsrRelease", Obsidian::ADSRDefaultValues::RELEASE_DEFAULT));
 				page.gain.store(pageState.getProperty("gain", 0.0f));
 
 				for (int seqIdx = 0; seqIdx < Obsidian::MAX_SEQUENCES; ++seqIdx)
@@ -410,32 +462,41 @@ void StateManager::loadState(const juce::ValueTree &state)
 
 						if (page.useOriginalFile.load() && page.hasOriginalVersion.load())
 						{
-							char pageName = static_cast<char>('A' + pageIndex);
-							juce::String fileName = audioFile.getFileNameWithoutExtension();
-							juce::String legacySuffix = "_" + juce::String(65 + pageIndex);
-							juce::String newSuffix = "_" + juce::String::charToString(pageName);
-
-							juce::String baseTrackId;
-							juce::String actualSuffix;
-
-							if (fileName.endsWith(newSuffix))
+							if (page.originalFilePath.isNotEmpty())
 							{
-								baseTrackId = fileName.dropLastCharacters(newSuffix.length());
-								actualSuffix = newSuffix;
-							}
-							else if (fileName.endsWith(legacySuffix))
-							{
-								baseTrackId = fileName.dropLastCharacters(legacySuffix.length());
-								actualSuffix = legacySuffix;
-							}
-							if (baseTrackId.isNotEmpty())
-							{
-								juce::File originalFile = audioFile.getParentDirectory().getChildFile(
-								    baseTrackId + "_original" + actualSuffix + ".wav");
-
+								juce::File originalFile(page.originalFilePath);
 								if (originalFile.existsAsFile())
-								{
 									fileToLoad = originalFile;
+							}
+							else
+							{
+								char pageName = static_cast<char>('A' + pageIndex);
+								juce::String fileName = audioFile.getFileNameWithoutExtension();
+								juce::String legacySuffix = "_" + juce::String(65 + pageIndex);
+								juce::String newSuffix = "_" + juce::String::charToString(pageName);
+
+								juce::String baseTrackId;
+								juce::String actualSuffix;
+
+								if (fileName.endsWith(newSuffix))
+								{
+									baseTrackId = fileName.dropLastCharacters(newSuffix.length());
+									actualSuffix = newSuffix;
+								}
+								else if (fileName.endsWith(legacySuffix))
+								{
+									baseTrackId = fileName.dropLastCharacters(legacySuffix.length());
+									actualSuffix = legacySuffix;
+								}
+								if (baseTrackId.isNotEmpty())
+								{
+									juce::File originalFile = audioFile.getParentDirectory().getChildFile(
+									    baseTrackId + "_original" + actualSuffix + ".wav");
+
+									if (originalFile.existsAsFile())
+									{
+										fileToLoad = originalFile;
+									}
 								}
 							}
 						}
@@ -455,7 +516,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 		}
 
-		std::string stdId = track->trackId.toStdString();
+		juce::String stdId = track->trackId.toStdString();
 		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
 	int trackCount = static_cast<int>(audioProcessor.getTrackManager().getNumTracks());
@@ -479,7 +540,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		if (track->slotIndex >= 0 && track->slotIndex < Obsidian::MAX_TRACKS)
 			audioProcessor.getTrackManager().setSlotUsed(track->slotIndex, true);
 
-		std::string stdId = track->trackId.toStdString();
+		juce::String stdId = track->trackId.toStdString();
 		audioProcessor.getTrackManager().addTrack(stdId, std::move(track));
 	}
 }
@@ -490,6 +551,10 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 
 	state.setProperty("formatVersion", 1, nullptr);
 	state.setProperty("appVersion", juce::String(Version::FULL), nullptr);
+
+	const juce::String lineageToken = juce::Uuid().toString();
+	state.setProperty("lineageToken", lineageToken, nullptr);
+	getLineageSidecarFile(audioProcessor.getProjectId()).replaceWithText(lineageToken);
 
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
@@ -621,7 +686,43 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 		}
 	}
 
-	audioProcessor.setProjectId(state.getProperty("projectId", "legacy").toString());
+	juce::String projectId = state.getProperty("projectId", "legacy").toString();
+	bool forkedFromClone = false;
+
+	const juce::String stateToken = state.getProperty("lineageToken", "").toString();
+	if (stateToken.isNotEmpty())
+	{
+		auto sidecar = getLineageSidecarFile(projectId);
+		const juce::String diskToken = sidecar.existsAsFile() ? sidecar.loadFileAsString().trim() : juce::String();
+
+		if (diskToken.isNotEmpty() && diskToken != stateToken)
+		{
+			auto redirectFile = sidecar.getSiblingFile(Obsidian::FORKS_FILE);
+			juce::String previousForkId;
+			if (redirectFile.existsAsFile())
+			{
+				juce::StringArray lines;
+				lines.addLines(redirectFile.loadFileAsString());
+				for (const auto &line : lines)
+					if (line.startsWith(stateToken + " "))
+					{
+						previousForkId = line.fromFirstOccurrenceOf(" ", false, false).trim();
+						break;
+					}
+			}
+
+			if (previousForkId.isNotEmpty())
+				projectId = previousForkId;
+			else
+			{
+				projectId = juce::Uuid().toString();
+				forkedFromClone = true;
+				redirectFile.appendText(stateToken + " " + projectId + "\n");
+				getLineageSidecarFile(projectId).replaceWithText(stateToken);
+			}
+		}
+	}
+	audioProcessor.setProjectId(projectId);
 	audioProcessor.setLastPrompt(state.getProperty("lastPrompt", "").toString());
 	audioProcessor.setLastKey(state.getProperty("lastKey", "C minor").toString());
 	audioProcessor.setLastBpm(state.getProperty("lastBpm", 126.0));
@@ -678,12 +779,19 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	if (tracksState.isValid())
 	{
 		loadState(tracksState);
+		if (forkedFromClone)
+			if (auto *bank = audioProcessor.getSampleBank())
+				for (const auto &trackId : audioProcessor.getAllTrackIds())
+				{
+					auto *track = audioProcessor.getTrack(trackId);
+					if (track && track->currentSampleId.isNotEmpty())
+						bank->markSampleAsUsed(track->currentSampleId, projectId);
+				}
+
 		const double sampleRate = audioProcessor.getSampleRate();
 		const int blockSize = audioProcessor.getBlockSize();
 		if (sampleRate > 0 && blockSize > 0)
-		{
 			audioProcessor.getTrackManager().prepareSends(sampleRate, blockSize);
-		}
 	}
 
 	audioProcessor.setCrossfaderValue((float)state.getProperty("crossfaderValue", juce::var(0.5f)));
@@ -794,7 +902,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 			}
 		}
 	}
-	audioProcessor.setProjectId(state.getProperty("projectId", "legacy").toString());
 
 	juce::Timer::callAfterDelay(2000, [this]() { audioProcessor.getMidiManager().sendFullStateFeedback(); });
 
@@ -808,8 +915,10 @@ juce::File StateManager::getDefaultSessionsFolder()
 	auto folder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
 	                  .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
 	                  .getChildFile(Obsidian::SESSIONS_DIR);
+
 	if (!folder.exists())
 		folder.createDirectory();
+
 	return folder;
 }
 
@@ -828,7 +937,9 @@ bool StateManager::saveToFile(const juce::File &file)
 	auto xmlString = xml->toString();
 
 	juce::MemoryOutputStream stream;
-	stream.write("OBSIDIAN", 8);
+	std::string magicStr = Obsidian::MAGIC;
+	stream.write(magicStr.data(), magicStr.length());
+	std::fill(magicStr.begin(), magicStr.end(), 0);
 	stream.writeInt(1);
 	stream.writeInt((int)xmlString.getNumBytesAsUTF8());
 	stream.write(xmlString.toRawUTF8(), xmlString.getNumBytesAsUTF8());
@@ -849,7 +960,7 @@ bool StateManager::loadFromFile(const juce::File &file)
 
 	char magic[9] = {};
 	stream.read(magic, 8);
-	if (juce::String(magic) != "OBSIDIAN")
+	if (juce::String(magic).toStdString() != Obsidian::MAGIC)
 		return false;
 
 	[[maybe_unused]] int version = stream.readInt();
@@ -869,4 +980,15 @@ bool StateManager::loadFromFile(const juce::File &file)
 	audioProcessor.copyXmlToBinary(*xml, stateData);
 	setStateInformation(stateData.getData(), (int)stateData.getSize());
 	return true;
+}
+
+juce::File StateManager::getLineageSidecarFile(const juce::String &projectId) const
+{
+	auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+	               .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
+	               .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+	if (projectId != "legacy" && projectId.isNotEmpty())
+		dir = dir.getChildFile(projectId);
+	dir.createDirectory();
+	return dir.getChildFile(Obsidian::LINEAGE_FILE);
 }

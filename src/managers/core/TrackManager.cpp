@@ -8,6 +8,8 @@ TrackManager::TrackManager(DjIaVstProcessor &processor) : audioProcessor(process
 
 void TrackManager::prepareTrack(TrackData &track)
 {
+	track.playGate.reset(currentSampleRate, JumpSmoother::kMaxLength / currentSampleRate);
+
 	if (!track.isPrepared.load())
 	{
 		track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
@@ -39,6 +41,25 @@ void TrackManager::prepareTrack(TrackData &track)
 		track.chorus.setMix(Obsidian::CHORUS_MIX);
 		track.chorus.setBypassed(Obsidian::CHORUS_BYPASSED);
 
+		track.phaser.setRate(Obsidian::PHASER_RATE);
+		track.phaser.setDepth(Obsidian::PHASER_DEPTH);
+		track.phaser.setCentre(Obsidian::PHASER_CENTRE);
+		track.phaser.setFeedback(Obsidian::PHASER_FEEDBACK);
+		track.phaser.setMix(Obsidian::PHASER_MIX);
+		track.phaser.setBypassed(Obsidian::PHASER_BYPASSED);
+
+		track.flanger.setRate(Obsidian::FLANGER_RATE);
+		track.flanger.setDepth(Obsidian::FLANGER_DEPTH);
+		track.flanger.setCentre(Obsidian::FLANGER_CENTRE);
+		track.flanger.setFeedback(Obsidian::FLANGER_FEEDBACK);
+		track.flanger.setMix(Obsidian::FLANGER_MIX);
+		track.flanger.setBypassed(Obsidian::FLANGER_BYPASSED);
+
+		track.bitCrusher.setBitDepth(Obsidian::BITCRUSHER_BIT_DEPTH);
+		track.bitCrusher.setSampleRateReduction(Obsidian::BITCRUSHER_SAMPLE_RATE_REDUCTION);
+		track.bitCrusher.setMix(Obsidian::BITCRUSHER_MIX);
+		track.bitCrusher.setBypassed(Obsidian::BITCRUSHER_BYPASSED);
+
 		track.distortion.setPre(Obsidian::DISTORTION_PRE);
 		track.distortion.setPost(Obsidian::DISTORTION_POST);
 		track.distortion.setCut(Obsidian::DISTORTION_CUT);
@@ -58,6 +79,9 @@ void TrackManager::prepareTrack(TrackData &track)
 		track.equalizer.prepare(spec);
 		track.filter.prepare(spec);
 		track.chorus.prepare(spec);
+		track.phaser.prepare(spec);
+		track.flanger.prepare(spec);
+		track.bitCrusher.prepare(spec);
 		track.compressor.prepare(spec);
 		track.limiter.prepare(spec);
 	}
@@ -83,21 +107,16 @@ juce::String TrackManager::createTrack(const juce::String &name)
 	track->slotIndex = findFreeSlot();
 
 	if (track->slotIndex != -1)
-	{
 		usedSlots[track->slotIndex] = true;
-	}
 	if (track->slotIndex == 0)
-	{
 		track->isSelected.store(true);
-	}
 
 	if (audioPrepared)
-	{
 		prepareTrack(*track);
-	}
 
 	tracks[stdId] = std::move(track);
 	trackOrder.push_back(stdId);
+	publishSlotRegistry();
 	return trackId;
 }
 
@@ -106,12 +125,11 @@ void TrackManager::addTrack(const juce::String &trackId, std::unique_ptr<TrackDa
 	const juce::ScopedLock sl(tracksLock);
 
 	if (audioPrepared && track)
-	{
 		prepareTrack(*track);
-	}
 
 	tracks[trackId] = std::move(track);
 	trackOrder.push_back(trackId);
+	publishSlotRegistry();
 }
 
 TrackData *TrackManager::getTrack(const juce::String &trackId)
@@ -126,12 +144,9 @@ std::vector<juce::String> TrackManager::getAllTrackIds() const
 	juce::ScopedLock lock(tracksLock);
 	std::vector<juce::String> ids;
 	for (const auto &stdId : trackOrder)
-	{
 		if (tracks.count(stdId))
-		{
 			ids.push_back(juce::String(stdId));
-		}
-	}
+
 	return ids;
 }
 
@@ -143,6 +158,8 @@ void TrackManager::prepareSends(double sampleRate, int maxBlockSize)
 	audioPrepared = true;
 
 	perTrackFxBuffer.setSize(2, maxBlockSize, false, false, true);
+	tempMixBuffer.setSize(2, maxBlockSize, false, false, true);
+	tempIndividualBuffer.setSize(2, maxBlockSize, false, false, true);
 
 	int interval = static_cast<int>(sampleRate * 0.05);
 	for (const auto &pair : tracks)
@@ -191,10 +208,8 @@ void TrackManager::processPerTrackDelays(std::vector<juce::AudioBuffer<float>> &
 
 		perTrackFxBuffer.clear(0, numSamples);
 		if (sendLevel > 0.0001f)
-		{
 			for (int ch = 0; ch < 2; ++ch)
 				perTrackFxBuffer.addFrom(ch, 0, trackBuffer, ch, 0, numSamples, sendLevel);
-		}
 
 		track->delaySendProcessor.process(perTrackFxBuffer, 0, numSamples);
 
@@ -257,6 +272,19 @@ void TrackManager::processPerTrackReverbs(std::vector<juce::AudioBuffer<float>> 
 	}
 }
 
+void TrackManager::publishSlotRegistry()
+{
+	std::array<TrackData *, Obsidian::MAX_TRACKS> next{};
+	for (const auto &pair : tracks)
+	{
+		auto *t = pair.second.get();
+		if (t && t->slotIndex >= 0 && t->slotIndex < Obsidian::MAX_TRACKS)
+			next[(size_t)t->slotIndex] = t;
+	}
+	for (size_t i = 0; i < (size_t)Obsidian::MAX_TRACKS; ++i)
+		slotRegistry[i].store(next[i], std::memory_order_release);
+}
+
 void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    std::vector<juce::AudioBuffer<float>> &individualOutputs,
                                    juce::AudioBuffer<float> &previewOutput, const float pairPrev[4],
@@ -264,96 +292,97 @@ void TrackManager::renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
                                    double sampleRate, bool useCrossfader)
 {
 	const int numSamples = outputBuffer.getNumSamples();
-	bool anyTrackSolo = false;
+	if (tempMixBuffer.getNumSamples() < numSamples)
 	{
-		juce::ScopedLock lock(tracksLock);
-		for (const auto &pair : tracks)
-		{
-			if (pair.second->isSolo.load())
-			{
-				anyTrackSolo = true;
-				break;
-			}
-		}
+		tempMixBuffer.setSize(2, numSamples, false, false, true);
+		tempIndividualBuffer.setSize(2, numSamples, false, false, true);
 	}
+	bool anyTrackSolo = false;
+	forEachTrackAudio(
+	    [&](TrackData *t)
+	    {
+		    if (t->isSolo.load())
+			    anyTrackSolo = true;
+	    });
 	outputBuffer.clear();
 	for (auto &buffer : individualOutputs)
 		buffer.clear();
 
-	for (const auto &pair : tracks)
-	{
-		auto *track = pair.second.get();
-		auto &currentPage = track->getCurrentPage();
-		if (track->isEnabled.load() && currentPage.numSamples > 0 && track->slotIndex >= 0 &&
-		    track->slotIndex < individualOutputs.size())
-		{
-			int bufferIndex = track->slotIndex;
-			juce::AudioBuffer<float> tempMixBuffer(outputBuffer.getNumChannels(), numSamples);
-			juce::AudioBuffer<float> tempIndividualBuffer(2, numSamples);
-			tempMixBuffer.clear();
-			tempIndividualBuffer.clear();
-			renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, numSamples, sampleRate);
+	forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    auto &currentPage = track->getCurrentPage();
+		    if (track->isEnabled.load() && currentPage.numSamples > 0 && track->slotIndex >= 0 &&
+		        track->slotIndex < individualOutputs.size())
+		    {
+			    int bufferIndex = track->slotIndex;
+			    tempMixBuffer.clear(0, 0, numSamples);
+			    tempMixBuffer.clear(1, 0, numSamples);
+			    tempIndividualBuffer.clear(0, 0, numSamples);
+			    tempIndividualBuffer.clear(1, 0, numSamples);
+			    renderSingleTrack(*track, tempMixBuffer, tempIndividualBuffer, numSamples, sampleRate);
 
-			track->consoleChannel.process(tempIndividualBuffer, 0, numSamples);
+			    track->consoleChannel.process(tempIndividualBuffer, 0, numSamples);
 
-			for (int ch = 0; ch < std::min(tempMixBuffer.getNumChannels(), tempIndividualBuffer.getNumChannels()); ++ch)
-				tempMixBuffer.copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
+			    for (int ch = 0; ch < std::min(tempMixBuffer.getNumChannels(), tempIndividualBuffer.getNumChannels());
+			         ++ch)
+				    tempMixBuffer.copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
 
-			bool isA = track->isDeckA();
-			constexpr float kUnityHeadroom = 0.707f;
-			float trackVol = track->volume.load();
+			    bool isA = track->isDeckA();
+			    constexpr float kUnityHeadroom = 0.707f;
+			    float trackVol = track->volume.load();
 
-			float deckGainStart = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
-			float deckGainEnd = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
-			int pairIdx = track->getPairIndex();
-			if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR && useCrossfader)
-			{
-				float pairXfStart = pairPrev[pairIdx];
-				float globalXfStart = globalPrev;
-				float pairGainStart = applyCrossfadeCurve(pairXfStart, isA, curveMode);
-				float globalGainStart = applyCrossfadeCurve(globalXfStart, isA, curveMode);
-				deckGainStart = pairGainStart * globalGainStart;
+			    float deckGainStart = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
+			    float deckGainEnd = useCrossfader ? 1.0f : trackVol * kUnityHeadroom;
+			    int pairIdx = track->getPairIndex();
+			    if (pairIdx >= 0 && pairIdx < Obsidian::MAX_CROSSFADER_PAIR && useCrossfader)
+			    {
+				    float pairXfStart = pairPrev[pairIdx];
+				    float globalXfStart = globalPrev;
+				    float pairGainStart = applyCrossfadeCurve(pairXfStart, isA, curveMode);
+				    float globalGainStart = applyCrossfadeCurve(globalXfStart, isA, curveMode);
+				    deckGainStart = pairGainStart * globalGainStart;
 
-				float pairXfEnd = pairCurrent[pairIdx];
-				float globalXfEnd = globalCurrent;
-				float pairGainEnd = applyCrossfadeCurve(pairXfEnd, isA, curveMode);
-				float globalGainEnd = applyCrossfadeCurve(globalXfEnd, isA, curveMode);
-				deckGainEnd = pairGainEnd * globalGainEnd;
-			}
+				    float pairXfEnd = pairCurrent[pairIdx];
+				    float globalXfEnd = globalCurrent;
+				    float pairGainEnd = applyCrossfadeCurve(pairXfEnd, isA, curveMode);
+				    float globalGainEnd = applyCrossfadeCurve(globalXfEnd, isA, curveMode);
+				    deckGainEnd = pairGainEnd * globalGainEnd;
+			    }
 
-			bool shouldHearTrack = !track->isMuted.load() && (!anyTrackSolo || track->isSolo.load());
+			    bool shouldHearTrack = !track->isMuted.load() && (!anyTrackSolo || track->isSolo.load());
 
-			if (track->isPreviewMode.load())
-			{
-				if (previewOutput.getNumChannels() >= 2)
-					for (int ch = 0; ch < previewOutput.getNumChannels(); ++ch)
-						previewOutput.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
-				else
-					for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
-						outputBuffer.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
-			}
-			else
-			{
-				if (shouldHearTrack)
-					for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
-						outputBuffer.addFromWithRamp(ch, 0, tempMixBuffer.getReadPointer(ch), numSamples, deckGainStart,
-						                             deckGainEnd);
-				for (int ch = 0; ch < std::min(2, individualOutputs[bufferIndex].getNumChannels()); ++ch)
-				{
-					if (!shouldHearTrack)
-					{
-						individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
-						individualOutputs[bufferIndex].applyGain(ch, 0, numSamples, 0.0f);
-					}
-					else
-					{
-						individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
-						individualOutputs[bufferIndex].applyGainRamp(ch, 0, numSamples, deckGainStart, deckGainEnd);
-					}
-				}
-			}
-		}
-	}
+			    if (track->isPreviewMode.load())
+			    {
+				    if (previewOutput.getNumChannels() >= 2)
+					    for (int ch = 0; ch < previewOutput.getNumChannels(); ++ch)
+						    previewOutput.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
+				    else
+					    for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
+						    outputBuffer.addFrom(ch, 0, tempMixBuffer, ch, 0, numSamples);
+			    }
+			    else
+			    {
+				    if (shouldHearTrack)
+					    for (int ch = 0; ch < outputBuffer.getNumChannels(); ++ch)
+						    outputBuffer.addFromWithRamp(ch, 0, tempMixBuffer.getReadPointer(ch), numSamples,
+						                                 deckGainStart, deckGainEnd);
+				    for (int ch = 0; ch < std::min(2, individualOutputs[bufferIndex].getNumChannels()); ++ch)
+				    {
+					    if (!shouldHearTrack)
+					    {
+						    individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
+						    individualOutputs[bufferIndex].applyGain(ch, 0, numSamples, 0.0f);
+					    }
+					    else
+					    {
+						    individualOutputs[bufferIndex].copyFrom(ch, 0, tempIndividualBuffer, ch, 0, numSamples);
+						    individualOutputs[bufferIndex].applyGainRamp(ch, 0, numSamples, deckGainStart, deckGainEnd);
+					    }
+				    }
+			    }
+		    }
+	    });
 }
 
 void TrackManager::loadAudioFileForPage(TrackData *track, int pageIndex, const juce::File &audioFile)
@@ -422,6 +451,12 @@ size_t TrackManager::getNumTracks() const
 
 void TrackManager::clearAllTracks()
 {
+	{
+		const juce::ScopedLock sl(tracksLock);
+		for (auto &slot : slotRegistry)
+			slot.store(nullptr, std::memory_order_release);
+	}
+	juce::Thread::sleep(50);
 	const juce::ScopedLock sl(tracksLock);
 	tracks.clear();
 	trackOrder.clear();
@@ -491,32 +526,43 @@ int TrackManager::findFreeSlot()
 
 void TrackManager::updateBeatRepeat(TrackData *track, int value, double hostBpm, double repeatDuration)
 {
-	if (track->randomRetriggerInterval.load() != value)
+	if (track->randomBeatRepeatInterval.load() != value)
 	{
-		track->randomRetriggerInterval.store(value);
+		track->randomBeatRepeatInterval.store(value);
 
 		if (track->beatRepeatActive.load())
 		{
 			if (hostBpm <= 0.0)
 				hostBpm = 120.0;
 
-			double startPosition = track->beatRepeatStartPosition.load();
-			double repeatDurationSamples = repeatDuration * track->getCurrentPage().sampleRate;
+			const auto &page = track->getCurrentPage();
+			double repeatDurationSamples = repeatDuration * page.sampleRate;
 
+			const double startAbs = juce::jlimit(0.0, (double)page.numSamples - 1.0, page.loopStart * page.sampleRate);
+			const double endAbs = juce::jlimit(startAbs + 1.0, (double)page.numSamples, page.loopEnd * page.sampleRate);
+
+			const double anchorAbs = track->originalReadPosition.load();
 			const double GATE_SAMPLES = 64.0;
-			double newEnd = startPosition + repeatDurationSamples - GATE_SAMPLES;
+			const bool rev = track->reverseActive.load();
 
-			double maxSamples = track->getCurrentPage().numSamples;
-			if (newEnd > maxSamples)
-				newEnd = maxSamples;
-			if (newEnd <= startPosition)
-				newEnd = startPosition + 1.0;
-
-			track->beatRepeatEndPosition.store(newEnd);
-
-			double currentPos = track->readPosition.load();
-			if (currentPos >= newEnd)
-				track->brFadeInPending.store(64);
+			if (rev)
+			{
+				double newStart = std::max(anchorAbs - repeatDurationSamples, startAbs);
+				if (newStart + GATE_SAMPLES < anchorAbs)
+					newStart += GATE_SAMPLES;
+				if (newStart >= anchorAbs)
+					newStart = anchorAbs - 1.0;
+				track->beatRepeatStartPosition.store(newStart);
+			}
+			else
+			{
+				double newEnd = std::min(anchorAbs + repeatDurationSamples, endAbs);
+				if (newEnd - GATE_SAMPLES > anchorAbs)
+					newEnd -= GATE_SAMPLES;
+				if (newEnd <= anchorAbs)
+					newEnd = anchorAbs + 1.0;
+				track->beatRepeatEndPosition.store(newEnd);
+			}
 		}
 	}
 }
@@ -587,114 +633,30 @@ TrackManager::TrackInfo TrackManager::getTrackInfo(const TrackData &track, const
 	                 endSample};
 }
 
-double TrackManager::getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
-                                         double realPosition) const
+TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackInfo &trackInfo,
+                                                 const TrackPage &page) const
 {
-	double samplesCounter = 0.0;
-	for (int i = 0; i < seqData.numMeasures; i++)
-	{
-		for (int j = 0; j < stepsPerMeasure; j++)
-		{
-			if (seqData.steps[i][j] && samplesCounter >= realPosition)
-				return samplesCounter;
-			samplesCounter += samplesPerStep;
-		}
-	}
-	return 0.0;
-}
-
-double TrackManager::getLastStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
-                                         double totalSamplesPerSequence) const
-{
-	double samplesCounter = totalSamplesPerSequence;
-	for (int i = seqData.numMeasures - 1; i >= 0; i--)
-	{
-		for (int j = (int)stepsPerMeasure - 1; j >= 0; j--)
-		{
-			samplesCounter -= samplesPerStep;
-			if (seqData.steps[i][j])
-				return samplesCounter;
-		}
-	}
-	return 0.0;
-}
-
-TrackManager::FadeInfo TrackManager::getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page,
-                                                 int i) const
-{
-	SequencerData seqData = page.getCurrentSequence();
 	DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(trackInfo.playbackRatio);
 
 	const bool beatRepeatActive = track.beatRepeatActive.load();
+	const bool rev = track.reverseActive.load();
+	const double sampleLength = trackInfo.endSample - trackInfo.startSample;
 
-	const double startSampleLoop = trackInfo.startSample;
-	const double endSampleLoop = trackInfo.endSample;
-	const double sampleLength = endSampleLoop - startSampleLoop;
-	const double beatRepeatStart = beatRepeatActive ? track.beatRepeatStartPosition.load() : 0.0;
-	const double beatRepeatEnd = beatRepeatActive ? track.beatRepeatEndPosition.load() : 0.0;
-	const double numSamplesAccPerSequence = track.numSamplesAccPerSequence.load() + i;
+	const SequencerData &seqData = page.getCurrentSequence();
 	const double totalSamplesPerSequence = dawInfo.samplesPerMeasureScaled * (double)seqData.numMeasures;
-	const double readPosition = track.readPosition.load() + i;
-	const double nextStepSampleOn =
-	    getNextStepSampleOn(dawInfo.stepsPerMeasure, dawInfo.samplesPerStep, seqData, readPosition);
-	const double lastStepSampleOn =
-	    getLastStepSampleOn(dawInfo.stepsPerMeasure, dawInfo.samplesPerStep, seqData, totalSamplesPerSequence);
 
-	const float fadeRcp = 1.0f / static_cast<float>(dawInfo.safetyFadeLength);
+	const bool reverseWillStop = rev && (sampleLength < totalSamplesPerSequence * trackInfo.playbackRatio);
+	const bool fadeOutArmed = rev ? reverseWillStop : true;
 
-	double samplesUntilEnd = 0.0;
-
-	bool fadeOutFromNow = false;
-
-	if (lastStepSampleOn > 0.0 && nextStepSampleOn == 0.0)
-		if (sampleLength < totalSamplesPerSequence - lastStepSampleOn)
-			samplesUntilEnd = sampleLength - readPosition;
-		else
-			samplesUntilEnd = totalSamplesPerSequence - numSamplesAccPerSequence;
-	else if (sampleLength < nextStepSampleOn)
-		samplesUntilEnd = sampleLength - readPosition;
-	else if (nextStepSampleOn > 0.0)
-		samplesUntilEnd = nextStepSampleOn - numSamplesAccPerSequence;
-	else if (sampleLength > totalSamplesPerSequence)
-		samplesUntilEnd = totalSamplesPerSequence - numSamplesAccPerSequence;
-	else if (sampleLength <= totalSamplesPerSequence)
-		samplesUntilEnd = sampleLength - readPosition;
-
-	if (samplesUntilEnd >= 0 && samplesUntilEnd <= dawInfo.safetyFadeLength)
-		fadeOutFromNow = true;
-
-	double samplesUntilBeatRepeatEnd = -1.0;
-	if (beatRepeatActive)
-	{
-		double samplesSourceUntilBREnd = beatRepeatEnd - (trackInfo.startSample + trackInfo.currentPosition);
-		samplesUntilBeatRepeatEnd = samplesSourceUntilBREnd / trackInfo.playbackRatio;
-	}
-	int brFadeInCounter = 0;
-	int pendingBrFadeIn = track.brFadeInPending.load();
-	if (pendingBrFadeIn > 0)
-	{
-		brFadeInCounter = pendingBrFadeIn;
-		track.brFadeInPending.store(track.brFadeInPending.load() - 1);
-	}
-	int fadeInCounter = 0;
-	int pendingFadeIn = track.fadeInPending.load();
-	if (pendingFadeIn > 0)
-	{
-		fadeInCounter = pendingFadeIn;
-		track.fadeInPending.store(track.fadeInPending.load() - 1);
-	}
+	const double distSource = rev ? trackInfo.currentPosition : (sampleLength - trackInfo.currentPosition);
+	const double samplesUntilEnd = distSource / trackInfo.playbackRatio;
 
 	return FadeInfo{beatRepeatActive,
-	                beatRepeatEnd,
-	                dawInfo.safetyFadeLength,
-	                beatRepeatStart,
-	                samplesUntilBeatRepeatEnd,
-	                endSampleLoop,
-	                brFadeInCounter,
-	                fadeInCounter,
-	                fadeRcp,
-	                fadeOutFromNow,
+	                track.beatRepeatEndPosition.load(),
+	                track.beatRepeatStartPosition.load(),
+	                fadeOutArmed,
 	                samplesUntilEnd,
+	                dawInfo.safetyFadeLength,
 	                totalSamplesPerSequence};
 }
 
@@ -702,7 +664,6 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
                                      juce::AudioBuffer<float> &individualOutput, int numSamples,
                                      double sampleRate) const
 {
-
 	auto *safeCallback = parameterUpdateCallback.load();
 	if (safeCallback != nullptr && *safeCallback)
 	{
@@ -720,6 +681,16 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		}
 	};
 
+	auto stopTrackNow = [&]()
+	{
+		track.playGate.setCurrentAndTargetValue(0.0f);
+		track.jumpSmoother.reset();
+		track.isPlaying.store(false);
+		track.readPosition.store(0.0);
+		track.numSamplesAccPerSequence.store(0.0);
+		handleEndOfPreview();
+	};
+
 	const auto &currentPage = track.getCurrentPage();
 	PageInfo pageInfo = getPageInfo(currentPage, sampleRate);
 
@@ -730,10 +701,39 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 		track.meterAccumPeakLeft = 0.0f;
 		track.meterAccumPeakRight = 0.0f;
 		track.meterSampleCounter = 0;
+		track.jumpSmoother.reset();
+		track.seekPending.store(false);
+		track.stopRequested.store(false);
+		track.playGate.setCurrentAndTargetValue(0.0f);
 		return;
 	}
 
+	if (track.playGate.getCurrentValue() <= 0.0f && track.playGate.getTargetValue() <= 0.0f)
+	{
+		track.playGate.setTargetValue(1.0f);
+		track.filter.reset();
+		track.equalizer.reset();
+		track.chorus.reset();
+		track.phaser.reset();
+		track.flanger.reset();
+		track.compressor.reset();
+		track.limiter.reset();
+		track.distortion.reset();
+		track.bitCrusher.reset();
+	}
+
+	if (track.stopRequested.exchange(false))
+		track.playGate.setTargetValue(0.0f);
+
 	TrackInfo trackInfo = getTrackInfo(track, currentPage, pageInfo);
+
+	if (track.seekPending.exchange(false))
+	{
+		const double signedStep = track.reverseActive.load() ? -trackInfo.playbackRatio : trackInfo.playbackRatio;
+		track.jumpSmoother.trigger(trackInfo.startSample + track.seekFromPosition.load(), signedStep);
+		trackInfo.currentPosition = track.readPosition.load();
+		track.playGate.setTargetValue(1.0f);
+	}
 
 	double sectionLength = trackInfo.endSample - trackInfo.startSample;
 
@@ -750,128 +750,148 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 
 	const int bufferSize = pageInfo.bufferToUse->getNumSamples();
 
+	FadeInfo fadeInfo = getFadeInfo(track, trackInfo, currentPage);
+
+	auto refreshSamplesUntilEnd = [&]()
+	{
+		const double distSource =
+		    track.reverseActive.load() ? trackInfo.currentPosition : (sectionLength - trackInfo.currentPosition);
+		fadeInfo.samplesUntilEnd = distSource / trackInfo.playbackRatio;
+	};
+
+	bool stopNow = false;
+
 	for (int i = 0; i < numSamples; ++i)
 	{
-		FadeInfo fadeInfo = getFadeInfo(track, trackInfo, currentPage, i);
+		if (track.playGate.getTargetValue() <= 0.0f && !track.playGate.isSmoothing())
+		{
+			stopNow = true;
+			break;
+		}
+
 		double absolutePosition = trackInfo.startSample + trackInfo.currentPosition;
+
+		if (fadeInfo.fadeOutArmed && !fadeInfo.beatRepeatActive && fadeInfo.samplesUntilEnd >= 0 &&
+		    fadeInfo.samplesUntilEnd <= fadeInfo.safetyFadeLength)
+			track.playGate.setTargetValue(0.0f);
+
 		if (fadeInfo.beatRepeatActive)
 		{
-			double absolutePos = trackInfo.startSample + trackInfo.currentPosition;
-			if (absolutePos >= fadeInfo.beatRepeatEnd)
+			const bool rev = track.reverseActive.load();
+			const double zoneLenOut = (fadeInfo.beatRepeatEnd - fadeInfo.beatRepeatStart) / trackInfo.playbackRatio;
+			const int fadeLen = (int)std::min<double>(JumpSmoother::kMaxLength, zoneLenOut);
+
+			if (!rev && absolutePosition >= fadeInfo.beatRepeatEnd)
 			{
+				track.jumpSmoother.trigger(absolutePosition, trackInfo.playbackRatio, fadeLen);
 				trackInfo.currentPosition = fadeInfo.beatRepeatStart - trackInfo.startSample;
-				track.readPosition.store(fadeInfo.beatRepeatStart);
-				fadeInfo.brFadeInCounter = (int)fadeInfo.safetyFadeLength;
-				double samplesSourceUntilBREnd =
-				    fadeInfo.beatRepeatEnd - (trackInfo.startSample + trackInfo.currentPosition);
-				fadeInfo.samplesUntilBeatRepeatEnd = (samplesSourceUntilBREnd / trackInfo.playbackRatio) + i;
+				track.readPosition.store(trackInfo.currentPosition);
+				absolutePosition = trackInfo.startSample + trackInfo.currentPosition;
+				refreshSamplesUntilEnd();
+			}
+			else if (rev && absolutePosition <= fadeInfo.beatRepeatStart)
+			{
+				track.jumpSmoother.trigger(absolutePosition, -trackInfo.playbackRatio, fadeLen);
+				trackInfo.currentPosition = (fadeInfo.beatRepeatEnd - 1.0) - trackInfo.startSample;
+				track.readPosition.store(trackInfo.currentPosition);
+				absolutePosition = trackInfo.startSample + trackInfo.currentPosition;
+				refreshSamplesUntilEnd();
 			}
 		}
 
-		if (absolutePosition >= trackInfo.endSample)
+		if (absolutePosition >= trackInfo.endSample && !track.reverseActive.load())
 		{
-			track.readPosition.store(0.0);
-			track.numSamplesAccPerSequence.store(0.0);
-			track.isPlaying.store(false);
-			handleEndOfPreview();
-			return;
+			stopNow = true;
+			break;
 		}
 
-		if (absolutePosition >= pageInfo.numSamplesToUse)
+		if (absolutePosition >= pageInfo.numSamplesToUse && !track.reverseActive.load())
 		{
 			trackInfo.currentPosition = 0.0;
 			absolutePosition = trackInfo.startSample;
+			refreshSamplesUntilEnd();
+		}
+
+		if (track.reverseActive.load() && !fadeInfo.beatRepeatActive && absolutePosition <= trackInfo.startSample)
+		{
+			const double sequenceLengthSource = fadeInfo.totalSamplesPerSequence * trackInfo.playbackRatio;
+			const double startReadPosition = std::min(sectionLength, sequenceLengthSource) - 1.0;
+
+			if (sectionLength < sequenceLengthSource && track.readPosition.load() != startReadPosition)
+			{
+				stopNow = true;
+				break;
+			}
+
+			track.jumpSmoother.trigger(absolutePosition, -trackInfo.playbackRatio);
+			trackInfo.currentPosition = sequenceLengthSource - 1.0;
+			track.readPosition.store(trackInfo.currentPosition);
+			absolutePosition = trackInfo.startSample + trackInfo.currentPosition;
+			refreshSamplesUntilEnd();
 		}
 
 		int sampleIndex = static_cast<int>(absolutePosition);
 		if (sampleIndex >= bufferSize)
 		{
-			track.isPlaying.store(false);
-			handleEndOfPreview();
+			stopNow = true;
 			break;
 		}
 
 		float adsrGain = getADSRGain(absolutePosition, trackInfo.startSample, sectionLength, pageInfo);
+		const float oldAdsrGain =
+		    track.jumpSmoother.isActive()
+		        ? getADSRGain(track.jumpSmoother.position, trackInfo.startSample, sectionLength, pageInfo)
+		        : 0.0f;
 
-		updateSafetyFade(fadeInfo, track);
+		prepareOutput(adsrGain, oldAdsrGain, leftChannel, rightChannel, absolutePosition, bufferSize, individualOutput,
+		              track, i, trackInfo, fadeInfo);
 
-		prepareOutput(adsrGain, leftChannel, rightChannel, absolutePosition, bufferSize, individualOutput, track, i,
-		              trackInfo, fadeInfo);
+		fadeInfo.samplesUntilEnd -= 1.0;
 	}
-	double accumulated = track.numSamplesAccPerSequence.load() + numSamples;
-	track.numSamplesAccPerSequence.store(accumulated);
+	if (!stopNow)
+		track.numSamplesAccPerSequence.store(track.numSamplesAccPerSequence.load() + numSamples);
+
 	handleOutput(individualOutput, mixOutput, track, trackInfo.currentPosition, trackInfo.volume);
+
+	if (stopNow)
+		stopTrackNow();
 }
 
-void TrackManager::updateSafetyFade(FadeInfo &fadeInfo, TrackData &track) const
-{
-	float safetyFade = 1.0f;
-
-	if (!fadeInfo.beatRepeatActive && fadeInfo.fadeInCounter > 0)
-	{
-		float fadeIn =
-		    (float)((int)fadeInfo.safetyFadeLength - fadeInfo.fadeInCounter) / (float)fadeInfo.safetyFadeLength;
-		safetyFade = std::min(safetyFade, fadeIn);
-	}
-
-	if (fadeInfo.beatRepeatActive && fadeInfo.samplesUntilBeatRepeatEnd > 0)
-	{
-		double samplesUntilBR = fadeInfo.samplesUntilBeatRepeatEnd;
-		if (samplesUntilBR > 0 && samplesUntilBR <= fadeInfo.safetyFadeLength)
-		{
-			float brFade = static_cast<float>(samplesUntilBR / static_cast<double>(fadeInfo.safetyFadeLength));
-			safetyFade = std::min(safetyFade, brFade);
-		}
-	}
-
-	if (fadeInfo.brFadeInCounter > 0)
-	{
-		float brFadeIn = static_cast<float>(fadeInfo.safetyFadeLength - fadeInfo.brFadeInCounter) /
-		                 static_cast<float>(fadeInfo.safetyFadeLength);
-		safetyFade = std::min(safetyFade, brFadeIn);
-	}
-
-	if (fadeInfo.fadeOutThisBuffer && !fadeInfo.beatRepeatActive)
-	{
-		double samplesUntilTrigger = fadeInfo.samplesUntilLoopEnd;
-		if (samplesUntilTrigger > 0 && samplesUntilTrigger <= fadeInfo.safetyFadeLength)
-		{
-			float triggerFade = static_cast<float>(samplesUntilTrigger / fadeInfo.safetyFadeLength);
-			safetyFade = std::min(safetyFade, triggerFade);
-		}
-		else
-		{
-			safetyFade = 0.f;
-			track.fadeInPending.store((int)fadeInfo.safetyFadeLength);
-		}
-	}
-
-	safetyFade = juce::jlimit(0.0f, 1.0f, safetyFade);
-
-	track.safetyFade.store(safetyFade);
-}
-
-void TrackManager::prepareOutput(float adsrGain, const float *leftChannel, const float *rightChannel,
+void TrackManager::prepareOutput(float adsrGain, float oldAdsrGain, const float *leftChannel, const float *rightChannel,
                                  double absolutePosition, int bufferSize, juce::AudioSampleBuffer &individualOutput,
                                  TrackData &track, int i, TrackInfo &trackInfo, FadeInfo &fadeInfo) const
 {
-	float totalGain = adsrGain * track.safetyFade.load();
+	float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize) * adsrGain;
+	float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize) * adsrGain;
 
-	float leftSample = interpolateLinear(leftChannel, absolutePosition, bufferSize);
-	float rightSample = interpolateLinear(rightChannel, absolutePosition, bufferSize);
+	applyJumpSmoothing(track, leftSample, rightSample, leftChannel, rightChannel, bufferSize, oldAdsrGain);
 
 	float gainDb = juce::jlimit(-60.0f, 12.0f, track.getCurrentPage().gain.load());
 	float gainLinear = std::pow(10.0f, gainDb / 20.0f);
 
-	leftSample *= trackInfo.leftGain * totalGain * gainLinear;
-	rightSample *= trackInfo.rightGain * totalGain * gainLinear;
+	float driftCoeff = track.analogDriftCoeff.load();
+	float driftGain = 1.0f;
+	if (driftCoeff < 0.999f)
+	{
+		double phase = (track.readPosition.load() + i) * 0.0000045;
+		float depth = 1.0f - driftCoeff;
+		float slow = std::sin((float)phase) * std::sin((float)phase * 0.37f + 1.3f);
+		driftGain = 1.0f - depth * 0.5f * (0.5f + 0.5f * slow);
+	}
+
+	const float commonGain = track.playGate.getNextValue() * gainLinear * driftGain;
+	leftSample *= trackInfo.leftGain * commonGain;
+	rightSample *= trackInfo.rightGain * commonGain;
 
 	individualOutput.setSample(0, i, leftSample);
 	individualOutput.setSample(1, i, rightSample);
 
-	trackInfo.currentPosition += trackInfo.playbackRatio;
+	if (track.reverseActive.load())
+		trackInfo.currentPosition -= trackInfo.playbackRatio;
+	else
+		trackInfo.currentPosition += trackInfo.playbackRatio;
 
-	if (fadeInfo.beatRepeatActive)
+	if (track.ownsTheoreticalTimeline())
 	{
 		double newTheoretical = track.theoreticalPosition.load() + trackInfo.playbackRatio;
 
@@ -891,9 +911,12 @@ void TrackManager::handleOutput(juce::AudioSampleBuffer &individualOutput, juce:
 	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);
 
 	track.distortion.process(contextToUse);
+	track.bitCrusher.process(contextToUse);
 	track.equalizer.process(contextToUse);
 	track.filter.process(contextToUse);
 	track.chorus.process(contextToUse);
+	track.flanger.process(contextToUse);
+	track.phaser.process(contextToUse);
 	track.compressor.process(contextToUse);
 	track.limiter.process(contextToUse);
 
@@ -934,6 +957,8 @@ void TrackManager::handleOutput(juce::AudioSampleBuffer &individualOutput, juce:
 float TrackManager::interpolateLinear(const float *buffer, double position, int bufferSize) const
 {
 	int index = static_cast<int>(position);
+	if (index < 0)
+		return buffer[0];
 	if (index >= bufferSize - 1)
 		return buffer[bufferSize - 1];
 
@@ -1009,4 +1034,87 @@ float TrackManager::applyCrossfadeCurve(float xfaderValue, bool isDeckA, int cur
 	default:
 		return x;
 	}
+}
+
+void TrackManager::ensureTransientsAnalyzed(TrackPage &page) const
+{
+	const int bufferSamples = page.audioBuffer.getNumSamples();
+	const int nch = page.audioBuffer.getNumChannels();
+	const int safeNumSamples = juce::jmin(page.numSamples, bufferSamples);
+
+	if (page.transientsAnalyzedForNumSamples == page.numSamples && !page.transientPositions.empty())
+		return;
+	page.transientPositions.clear();
+	page.transients.clear();
+	page.transientsAnalyzedForNumSamples = page.numSamples;
+
+	if (safeNumSamples <= 0 || nch == 0)
+		return;
+
+	const int windowSize = 512;
+	const int hopSize = 256;
+
+	if (safeNumSamples < windowSize)
+		return;
+
+	const float *dataL = page.audioBuffer.getReadPointer(0);
+	const float *dataR = nch > 1 ? page.audioBuffer.getReadPointer(1) : dataL;
+
+	std::vector<float> energy;
+	for (int pos = 0; pos + windowSize <= safeNumSamples; pos += hopSize)
+	{
+		float sum = 0.0f;
+		for (int i = 0; i < windowSize; ++i)
+		{
+			float s = juce::jmax(std::abs(dataL[pos + i]), std::abs(dataR[pos + i]));
+			sum += s * s;
+		}
+		energy.push_back(std::sqrt(sum / windowSize));
+	}
+
+	const float riseThreshold = 2.f;
+	const int minGapWindows = (int)(0.05 * page.sampleRate / hopSize);
+	int lastTransientWindow = -minGapWindows;
+
+	for (size_t i = 1; i < energy.size(); ++i)
+	{
+		if (energy[i] > energy[i - 1] * riseThreshold && energy[i] > 0.02f &&
+		    (int)i - lastTransientWindow >= minGapWindows)
+		{
+			const int posSamples = (int)i * hopSize;
+
+			float rise = energy[i] / (energy[i - 1] + 1.0e-6f);
+			float peakEnergy = energy[i];
+			float raw = std::log10(1.0f + rise) * peakEnergy;
+
+			page.transientPositions.push_back(posSamples);
+			page.transients.push_back({posSamples, raw});
+
+			lastTransientWindow = (int)i;
+		}
+	}
+
+	float maxStrength = 0.0f;
+	for (auto &t : page.transients)
+		maxStrength = juce::jmax(maxStrength, t.strength);
+	if (maxStrength > 0.0f)
+		for (auto &t : page.transients)
+			t.strength /= maxStrength;
+}
+
+void TrackManager::applyJumpSmoothing(TrackData &track, float &left, float &right, const float *leftChannel,
+                                      const float *rightChannel, int bufferSize, float oldAdsrGain) const
+{
+	auto &js = track.jumpSmoother;
+	if (!js.isActive())
+		return;
+
+	const float oldWeight = (float)js.samplesRemaining / (float)js.length;
+	const float oldL = interpolateLinear(leftChannel, js.position, bufferSize) * oldAdsrGain;
+	const float oldR = interpolateLinear(rightChannel, js.position, bufferSize) * oldAdsrGain;
+	left += (oldL - left) * oldWeight;
+	right += (oldR - right) * oldWeight;
+
+	js.position += js.step;
+	--js.samplesRemaining;
 }

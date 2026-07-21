@@ -7,8 +7,11 @@ class FilterComponent;
 class EqualizerComponent;
 class CompressorComponent;
 class LimiterComponent;
+class BitCrusherComponent;
+class FlangerComponent;
 class DistortionComponent;
 class ChorusComponent;
+class PhaserComponent;
 class DjIaVstEditor;
 
 class TrackEffectsPanel : public ObsidianComponent
@@ -24,6 +27,10 @@ class TrackEffectsPanel : public ObsidianComponent
 	void setupUI();
 	void addComponents(const juce::String &trackId);
 
+	int getPreferredHeight() const;
+
+	std::function<void()> onContentChanged;
+
   private:
 	DjIaVstProcessor &audioProcessor;
 	DjIaVstEditor &editor;
@@ -38,6 +45,9 @@ class TrackEffectsPanel : public ObsidianComponent
 	std::unique_ptr<LimiterComponent> limiterComponent;
 	std::unique_ptr<DistortionComponent> distortionComponent;
 	std::unique_ptr<ChorusComponent> chorusComponent;
+	std::unique_ptr<PhaserComponent> phaserComponent;
+	std::unique_ptr<FlangerComponent> flangerComponent;
+	std::unique_ptr<BitCrusherComponent> bitCrusherComponent;
 
 	void addComponents();
 	void resetComponents();

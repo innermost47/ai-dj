@@ -112,14 +112,15 @@ TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &pr
 {
 	setupUI();
 	setupAdsrKnobs();
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 TrackComponent::~TrackComponent()
 {
 	markForDestruction();
+	vBlankAttachment.reset();
 	clearAllBindings();
 	setVisible(false);
-	stopTimer();
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 	{
@@ -131,9 +132,7 @@ TrackComponent::~TrackComponent()
 	drawingCanvas.reset();
 
 	if (auto *t = getTrack())
-	{
 		t->onPlayStateChanged = nullptr;
-	}
 	track = nullptr;
 }
 
@@ -147,9 +146,7 @@ void TrackComponent::setTrackData(TrackData *trackData)
 		state = PageButtonState{};
 	setupPagesUI();
 	if (t && t->slotIndex != -1)
-	{
 		wireParameters();
-	}
 	refreshWaveformDisplay();
 	updateFromTrackData();
 	setSelected(t->isSelected.load());
@@ -187,37 +184,47 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 			return;
 		}
 	}
-	else if (paramSuffix == "RandomRetrigger")
+	else if (paramSuffix == "BeatRepeatActive")
 	{
 		auto *t = getTrack();
 		if (t)
 		{
-			updateBeatRepeatButtonColor();
+			updateBeatRepeatButtonState();
 			statusCallback("Beat Repeat " + juce::String(track->randomRetriggerEnabled.load() ? "ON" : "OFF"));
 		}
 	}
-	else if (paramSuffix == "RetriggerInterval")
+	else if (paramSuffix == "ReverseActive")
+	{
+		auto *t = getTrack();
+		if (t)
+		{
+			updateReverseButtonState();
+			statusCallback("Reverse " + juce::String(track->reverseActive.load() ? "OFF" : "ON"));
+		}
+	}
+	else if (paramSuffix == "TransientScatterActive")
+	{
+		auto *t = getTrack();
+		if (t)
+		{
+			updateTransientScatterButtonState();
+			statusCallback("Transient Scatter " + juce::String(track->transientScatterActive.load() ? "OFF" : "ON"));
+		}
+	}
+	else if (paramSuffix == "BeatRepeatInterval")
 	{
 		if (auto *t = getTrack())
-		{
 			onIntervalChanged();
-		}
 	}
 	else if (paramSuffix == "Gain")
 	{
 		if (auto *t = getTrack())
-		{
 			if (waveformDisplay)
-			{
 				refreshWaveformDisplay();
-			}
-		}
 	}
 	else if (paramSuffix == "AdsrAttack" || paramSuffix == "AdsrDecay" || paramSuffix == "AdsrSustain" ||
 	         paramSuffix == "AdsrRelease")
-	{
 		syncAdsrToWaveform();
-	}
 }
 
 void TrackComponent::calculateHostBasedDisplay()
@@ -295,13 +302,9 @@ void TrackComponent::updateFromTrackData()
 	{
 		if (!isLocalMode && !t->getCurrentPage().savedModelBeforeLocal.isEmpty() &&
 		    modelsForMode.contains(t->getCurrentPage().savedModelBeforeLocal))
-		{
 			modelToSet = t->getCurrentPage().savedModelBeforeLocal;
-		}
 		else
-		{
 			modelToSet = modelsForMode[0];
-		}
 		t->getCurrentPage().selectedModel = modelToSet;
 	}
 
@@ -313,9 +316,8 @@ void TrackComponent::updateFromTrackData()
 	}
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
-	{
 		pageButtons[i].setVisible(true);
-	}
+
 	pageButtons[t->currentPageIndex.load()].setToggleState(true, juce::dontSendNotification);
 	updatePagesDisplay();
 
@@ -344,20 +346,20 @@ void TrackComponent::updateFromTrackData()
 
 	if (!intervalKnob.isMouseButtonDown())
 	{
-		int interval = t->randomRetriggerInterval.load();
+		int interval = t->randomBeatRepeatInterval.load();
 		intervalKnob.setValue(interval, juce::dontSendNotification);
 		intervalLabel.setText(getIntervalName(interval), juce::dontSendNotification);
 	}
 
-	updateBeatRepeatButtonColor();
+	updateBeatRepeatButtonState();
+	updateReverseButtonState();
+	updateTransientScatterButtonState();
 	updateRandomDurationButtonColor();
 
 	updateButtonsEnabledState();
 
 	if (t->isCurrentlyPlaying.load() && !isPreviewPlaying)
-	{
 		previewButton.setEnabled(false);
-	}
 
 	updateTrackInfo();
 	updateAdsrKnobsFromPage();
@@ -381,9 +383,7 @@ float TrackComponent::calculateEffectiveBpm()
 		float totalSemis = pitchSemis + (fineCents / 100.0f);
 
 		if (std::abs(totalSemis) > 0.001f)
-		{
 			effectiveBpm *= std::pow(2.0f, totalSemis / 12.0f);
-		}
 	}
 
 	return juce::jlimit(40.0f, 250.0f, effectiveBpm);
@@ -416,10 +416,21 @@ void TrackComponent::setupAdsrKnobs()
 		label.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 	};
 
-	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", 0.001f, 4.0f, 0.001f, "ADSR Attack time (seconds)");
-	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", 0.001f, 4.0f, 4.0f, "ADSR Decay time (seconds)");
-	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", 0.0f, 1.0f, 1.0f, "ADSR Sustain level (0-1)");
-	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", 0.001f, 4.0f, 0.001f, "ADSR Release time (seconds)");
+	setupKnob(adsrAttackKnob, adsrAttackLabel, "A", Obsidian::ADSRDefaultValues::ATTACK_MIN,
+	          Obsidian::ADSRDefaultValues::ATTACK_MAX, Obsidian::ADSRDefaultValues::ATTACK_DEFAULT,
+	          "ADSR Attack time (seconds)");
+
+	setupKnob(adsrDecayKnob, adsrDecayLabel, "D", Obsidian::ADSRDefaultValues::DECAY_MIN,
+	          Obsidian::ADSRDefaultValues::DECAY_MAX, Obsidian::ADSRDefaultValues::DECAY_DEFAULT,
+	          "ADSR Decay time (seconds)");
+
+	setupKnob(adsrSustainKnob, adsrSustainLabel, "S", Obsidian::ADSRDefaultValues::SUSTAIN_MIN,
+	          Obsidian::ADSRDefaultValues::SUSTAIN_MAX, Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT,
+	          "ADSR Sustain level (0-1)");
+
+	setupKnob(adsrReleaseKnob, adsrReleaseLabel, "R", Obsidian::ADSRDefaultValues::RELEASE_MIN,
+	          Obsidian::ADSRDefaultValues::RELEASE_MAX, Obsidian::ADSRDefaultValues::RELEASE_DEFAULT,
+	          "ADSR Release time (seconds)");
 
 	adsrSustainKnob.setSkewFactor(1.0);
 }
@@ -466,8 +477,8 @@ void TrackComponent::resized()
 	layoutPagesButtons(pagesArea);
 
 	{
-		const int rightElementsWidth = 36 + Obsidian::SPACER_SM + 36 + Obsidian::SPACER_SM + Obsidian::SPACER_SM + 34 +
-		                               Obsidian::SPACER_SM + 34 + Obsidian::SPACER_SM + 38 + Obsidian::SPACER_SM +
+		const int rightElementsWidth = 36 + Obsidian::SPACER_XS + 36 + Obsidian::SPACER_XS + Obsidian::SPACER_XS + 34 +
+		                               Obsidian::SPACER_XS + 34 + Obsidian::SPACER_XS + 38 + Obsidian::SPACER_XS +
 		                               (32 * 4);
 
 		const int pagesWidth = 38;
@@ -488,32 +499,37 @@ void TrackComponent::resized()
 		                        selectorsArea.getWidth(), selectorHeight);
 	}
 
-	headerArea.removeFromLeft(Obsidian::SPACER_SM);
+	headerArea.removeFromLeft(Obsidian::SPACER_XS);
 
 	{
-		const int createButtonWidth = 34;
+		const int createButtonWidth = 28;
 		generateButton.setBounds(headerArea.removeFromRight(createButtonWidth));
 	}
-	headerArea.removeFromRight(Obsidian::SPACER_MD);
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
 
-	{
-		const int labelledButtonWidth = 36;
-		originalSyncButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
-		headerArea.removeFromRight(Obsidian::SPACER_SM);
-		previewButton.setBounds(headerArea.removeFromRight(labelledButtonWidth));
-	}
-	headerArea.removeFromRight(Obsidian::SPACER_SM);
+	const int iconBtnWidth = 26;
 
-	const int iconBtnWidth = 34;
+	originalSyncButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
+
+	previewButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
+
+	transientScatterButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
+
+	reverseButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
+
 	beatRepeatButton.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(Obsidian::SPACER_SM);
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
 
 	randomDurationToggle.setBounds(headerArea.removeFromRight(iconBtnWidth));
-	headerArea.removeFromRight(Obsidian::SPACER_SM);
+	headerArea.removeFromRight(Obsidian::SPACER_XS);
 
 	{
-		auto knobArea = headerArea.removeFromRight(38);
-		const int knobDiameter = 34;
+		auto knobArea = headerArea.removeFromRight(34);
+		const int knobDiameter = 30;
 		const int labelHeight = 8;
 		const int stackHeight = knobDiameter + labelHeight;
 		int knobsYOffset = (knobArea.getHeight() - stackHeight) / 2;
@@ -523,9 +539,9 @@ void TrackComponent::resized()
 		                        labelHeight);
 	}
 
-	headerArea.removeFromLeft(Obsidian::SPACER_SM);
+	headerArea.removeFromLeft(Obsidian::SPACER_XS);
 	{
-		const int adsrKnobDiam = 32;
+		const int adsrKnobDiam = 30;
 		const int adsrLabelH = 8;
 		const int adsrStack = adsrKnobDiam + adsrLabelH;
 		const int adsrSpacing = 0;
@@ -579,9 +595,7 @@ void TrackComponent::resized()
 					t->numSamplesAccPerSequence.store(0.0);
 				}
 				else
-				{
 					t->readPosition.store(newRelative);
-				}
 			}
 		};
 
@@ -711,9 +725,7 @@ void TrackComponent::openDrawingCanvas()
 		canvas->setState(state);
 	}
 	else if (!currentPage.canvasData.isEmpty())
-	{
 		canvas->loadFromBase64(currentPage.canvasData);
-	}
 
 	canvas->setGenerating(canvasIsGenerating);
 
@@ -810,15 +822,12 @@ void TrackComponent::onPageSelected(int pageIndex)
 	}
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
-	{
 		pageButtons[i].setToggleState(i == t->currentPageIndex.load(), juce::dontSendNotification);
-	}
 
 	if (t->pageChangePending.load() && t->pendingPageIndex.load() == pageIndex)
 	{
 		t->pageChangePending.store(false);
 		t->pendingPageIndex.store(-1);
-		stopTimer();
 		lastPageStates[pageIndex] = PageButtonState{};
 		updatePagesDisplay();
 		statusCallback("Page change cancelled");
@@ -832,9 +841,7 @@ void TrackComponent::onPageSelected(int pageIndex)
 
 		auto *param = audioProcessor.getParameterTreeState().getParameter(paramName);
 		if (param)
-		{
 			param->setValueNotifyingHost(1.0f);
-		}
 	}
 }
 
@@ -870,25 +877,15 @@ void TrackComponent::performPageChange(int pageIndex)
 	const auto &newPage = t->getCurrentPage();
 
 	if (newPage.numSamples == 0)
-	{
 		if (t->onPlayStateChanged)
-		{
 			t->onPlayStateChanged(false);
-		}
-	}
 
 	t->pageChangePending.store(false);
 	t->pendingPageIndex.store(-1);
 
-	if (!isGenerating && !t->pageChangePending.load())
-	{
-		stopTimer();
-	}
-
 	updateFromTrackData();
 
-	juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(newPage.selectedModel);
-	updatePromptPresets(prompts, newPage.selectedPrompt);
+	populatePromptPresets(newPage.selectedModel, newPage.selectedPrompt);
 
 	if (sequencer)
 	{
@@ -916,9 +913,7 @@ void TrackComponent::performPageChange(int pageIndex)
 	}
 
 	if (!newPage.isLoaded.load() && !newPage.audioFilePath.isEmpty())
-	{
 		loadPageIfNeeded(pageIndex);
-	}
 
 	char pageName = 'A' + static_cast<char>(pageIndex);
 	statusCallback("Switched to page " + juce::String(pageName));
@@ -1044,9 +1039,7 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File &audioFil
 		reader->read(&page.audioBuffer, 0, numSamples, 0, true, true);
 
 		if (numChannels == 1)
-		{
 			page.audioBuffer.copyFrom(1, 0, page.audioBuffer, 0, 0, numSamples);
-		}
 
 		page.numSamples = numSamples;
 		page.sampleRate = reader->sampleRate;
@@ -1062,9 +1055,7 @@ void TrackComponent::loadPageAudioFile(int pageIndex, const juce::File &audioFil
 				    {
 					    safeThis->updateFromTrackData();
 					    if (safeThis->waveformDisplay)
-					    {
 						    safeThis->refreshWaveformDisplay();
-					    }
 				    }
 				    safeThis->updatePagesDisplay();
 			    }
@@ -1088,16 +1079,10 @@ void TrackComponent::startGeneratingAnimation()
 	isGenerating = true;
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
-	{
 		pageButtons[i].setEnabled(false);
-	}
 
 	syncBorderOverlay();
-
-	if (!isTimerRunning())
-	{
-		startTimer(200);
-	}
+	blinkTicking = true;
 }
 
 void TrackComponent::stopGeneratingAnimation()
@@ -1108,14 +1093,7 @@ void TrackComponent::stopGeneratingAnimation()
 	isGenerating = false;
 	isDragOver = false;
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
-	{
 		pageButtons[i].setEnabled(true);
-	}
-
-	if (!t->pageChangePending.load())
-	{
-		stopTimer();
-	}
 
 	if (waveformDisplay)
 	{
@@ -1135,28 +1113,43 @@ void TrackComponent::setSelected(bool s)
 	syncBorderOverlay();
 }
 
-void TrackComponent::timerCallback()
+void TrackComponent::handleVBlank()
 {
+	if (!blinkTicking)
+		return;
+
 	auto *t = getTrack();
 	if (!t)
 	{
-		stopTimer();
+		blinkTicking = false;
 		return;
 	}
+
+	bool currentGlobalBlink = (juce::Time::getMillisecondCounter() / Obsidian::BLINKING_DURATION_TIME) % 2 == 0;
+	bool stateChanged = false;
+
 	if (isGenerating)
 	{
-		blinkState = !blinkState;
-		syncBorderOverlay();
+		if (blinkState != currentGlobalBlink)
+		{
+			blinkState = currentGlobalBlink;
+			syncBorderOverlay();
+			stateChanged = true;
+		}
 	}
 
 	if (t->pageChangePending.load())
 	{
-		pageBlinkState = !pageBlinkState;
-		updatePagesDisplay();
+		if (pageBlinkState != currentGlobalBlink)
+		{
+			pageBlinkState = currentGlobalBlink;
+			updatePagesDisplay();
+			stateChanged = true;
+		}
 	}
 
-	if (!isGenerating && !t->pageChangePending.load())
-		stopTimer();
+	if (stateChanged)
+		blinkTicking = isGenerating || t->pageChangePending.load();
 }
 
 void TrackComponent::refreshWaveformDisplay()
@@ -1215,19 +1208,13 @@ void TrackComponent::setupUI()
 	const bool isLocalMode = audioProcessor.getUseLocalModel();
 	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
 	for (int i = 0; i < modelsForMode.size(); ++i)
-	{
 		modelSelector.addItem(modelsForMode[i], i + 1);
-	}
 
 	int trackNum = trackId.retainCharacters("0123456789").getIntValue();
 	if (trackNum >= 1 && trackNum <= modelsForMode.size())
-	{
 		modelSelector.setSelectedId(trackNum, juce::dontSendNotification);
-	}
 	else
-	{
 		modelSelector.setSelectedId(1, juce::dontSendNotification);
-	}
 
 	updateModelUI();
 
@@ -1237,10 +1224,7 @@ void TrackComponent::setupUI()
 		if (!t)
 			return;
 		auto selectedModel = modelSelector.getText();
-
-		t->getCurrentPage().selectedModel = selectedModel;
-		juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(selectedModel);
-		updatePromptPresets(prompts);
+		populatePromptPresets(t->getCurrentPage().selectedModel);
 		updateModelUI();
 		if (onModelChanged)
 			onModelChanged(trackId);
@@ -1263,9 +1247,7 @@ void TrackComponent::setupUI()
 	intervalLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
-	{
 		pageButtons[i].setVisible(true);
-	}
 
 	addAndMakeVisible(borderOverlay);
 }
@@ -1302,7 +1284,7 @@ void TrackComponent::setupIconButtons()
 	generateButton.setTooltip("Generate AI audio with current prompt for this track");
 
 	addAndMakeVisible(previewButton);
-	previewButton.loadIcon(BinaryData::play_svg, BinaryData::play_svgSize);
+	previewButton.loadIcon(BinaryData::headphones_svg, BinaryData::headphones_svgSize);
 	previewButton.loadIconToggled(BinaryData::square_svg, BinaryData::square_svgSize);
 	previewButton.setHasToggledIcon(true);
 	previewButton.setLabelText("PREV");
@@ -1341,6 +1323,19 @@ void TrackComponent::setupIconButtons()
 	setupToggleButton(beatRepeatButton);
 	beatRepeatButton.setTooltip("Beat repeat - re-trigger current section at interval while ON");
 
+	addAndMakeVisible(reverseButton);
+	reverseButton.loadIcon(BinaryData::rewind_svg, BinaryData::rewind_svgSize);
+	reverseButton.setShowBackground(false);
+	setupToggleButton(reverseButton);
+	reverseButton.setTooltip("Apply reverse effect to track");
+
+	addAndMakeVisible(transientScatterButton);
+	transientScatterButton.loadIcon(BinaryData::radioactive_svg, BinaryData::radioactive_svgSize);
+	transientScatterButton.setShowBackground(false);
+	setupToggleButton(transientScatterButton);
+	transientScatterButton.setTooltip(
+	    "Transient scatter - jumps to a new random pre-transient position in the loop window every 2 steps");
+
 	addAndMakeVisible(randomDurationToggle);
 	randomDurationToggle.loadIcon(BinaryData::shuffle_svg, BinaryData::shuffle_svgSize);
 	randomDurationToggle.setShowBackground(false);
@@ -1371,21 +1366,36 @@ void TrackComponent::updateButtonsEnabledState()
 
 	previewButton.setEnabled(hasAudio);
 	beatRepeatButton.setEnabled(hasAudio);
-
 	originalSyncButton.setEnabled(hasAudio && hasOriginal);
-
 	randomDurationToggle.setEnabled(hasAudio);
-
+	reverseButton.setEnabled(hasAudio);
+	transientScatterButton.setEnabled(hasAudio);
 	intervalKnob.setEnabled(hasAudio);
 	intervalLabel.setEnabled(hasAudio);
 }
 
-void TrackComponent::updateBeatRepeatButtonColor()
+void TrackComponent::updateBeatRepeatButtonState()
 {
 	auto *t = getTrack();
 	if (!t)
 		return;
 	beatRepeatButton.setToggleState(t->randomRetriggerEnabled.load(), juce::dontSendNotification);
+}
+
+void TrackComponent::updateReverseButtonState()
+{
+	auto *t = getTrack();
+	if (!t)
+		return;
+	reverseButton.setToggleState(t->reverseActive.load(), juce::dontSendNotification);
+}
+
+void TrackComponent::updateTransientScatterButtonState()
+{
+	auto *t = getTrack();
+	if (!t)
+		return;
+	transientScatterButton.setToggleState(t->transientScatterActive.load(), juce::dontSendNotification);
 }
 
 void TrackComponent::updateRandomDurationButtonColor()
@@ -1438,105 +1448,75 @@ juce::String TrackComponent::getIntervalName(int value)
 	}
 }
 
+void TrackComponent::populatePromptPresets(const juce::String &modelName, const juce::String &forceSelectedPrompt)
+{
+	auto *t = getTrack();
+	if (!t)
+		return;
+
+	juce::String currentSelection = promptPresetSelector.getText();
+
+	auto promptInfos = audioProcessor.getAvailablePromptsWithCategoryForModel(modelName);
+
+	std::map<juce::String, std::vector<PromptInfo>> byCategory;
+	for (const auto &info : promptInfos)
+	{
+		juce::String cat = info.category.isEmpty() ? "Uncategorized" : info.category;
+		byCategory[cat].push_back(info);
+	}
+
+	promptPresetSelector.clear();
+	promptPresets.clear();
+	int itemId = 1;
+
+	for (auto &pair : byCategory)
+	{
+		promptPresetSelector.addSectionHeading(pair.first);
+		for (const auto &info : pair.second)
+		{
+			promptPresetSelector.addItem(info.text, itemId++);
+			promptPresets.add(info.text);
+		}
+	}
+
+	juce::String targetPrompt =
+	    forceSelectedPrompt.isNotEmpty() ? forceSelectedPrompt : t->getCurrentPage().selectedPrompt;
+	if (targetPrompt.isEmpty())
+		targetPrompt = currentSelection;
+
+	bool found = false;
+	for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+	{
+		if (promptPresetSelector.getItemText(i) == targetPrompt)
+		{
+			promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
+			found = true;
+			break;
+		}
+	}
+
+	if (!found && targetPrompt.isNotEmpty())
+	{
+		promptPresetSelector.addItem(targetPrompt, itemId++);
+		promptPresets.add(targetPrompt);
+		promptPresetSelector.setSelectedId(itemId - 1, juce::dontSendNotification);
+		found = true;
+	}
+
+	if (!found && promptPresets.size() > 0)
+		promptPresetSelector.setSelectedItemIndex(0, juce::dontSendNotification);
+
+	t->getCurrentPage().setSelectedPrompt(promptPresetSelector.getText());
+
+	if (forceSelectedPrompt.isEmpty())
+		onTrackPresetSelected();
+}
+
 void TrackComponent::statusCallback(const juce::String &message)
 {
 	if (onStatusMessage)
 	{
 		onStatusMessage(message);
-	}
-}
-
-void TrackComponent::loadPromptPresets()
-{
-	juce::Component::SafePointer<TrackComponent> safeThis(this);
-
-	juce::MessageManager::callAsync(
-	    [safeThis]() mutable
-	    {
-		    if (safeThis == nullptr)
-			    return;
-		    auto *t = safeThis->getTrack();
-		    if (!t)
-			    return;
-
-		    safeThis->promptPresetSelector.clear(juce::dontSendNotification);
-
-		    auto &audioProcessor = safeThis->audioProcessor;
-		    juce::String currentModel = t->getCurrentPage().selectedModel;
-		    juce::StringArray allPrompts = audioProcessor.getAvailablePromptsForModel(currentModel);
-
-		    safeThis->promptPresets = allPrompts;
-
-		    for (int i = 0; i < allPrompts.size(); ++i)
-		    {
-			    safeThis->promptPresetSelector.addItem(allPrompts[i], i + 1);
-		    }
-
-		    bool selected = false;
-		    const auto &selectedPrompt = t->getCurrentPage().selectedPrompt;
-
-		    if (selectedPrompt.isNotEmpty())
-		    {
-			    int index = allPrompts.indexOf(selectedPrompt);
-			    if (index >= 0)
-			    {
-				    safeThis->promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
-				    selected = true;
-			    }
-		    }
-
-		    if (!selected && allPrompts.size() > 0)
-		    {
-			    safeThis->promptPresetSelector.setSelectedId(1, juce::dontSendNotification);
-			    t->getCurrentPage().setSelectedPrompt(allPrompts[0]);
-		    }
-	    });
-}
-
-void TrackComponent::updatePromptPresets(const juce::StringArray &presets, const juce::String &selectedPrompt)
-{
-	auto *t = getTrack();
-	if (!t)
-		return;
-	juce::String currentSelection = promptPresetSelector.getText();
-	promptPresets = presets;
-	promptPresets.sort(true);
-	promptPresetSelector.clear();
-
-	for (int i = 0; i < promptPresets.size(); ++i)
-		promptPresetSelector.addItem(promptPresets[i], i + 1);
-
-	int index = promptPresets.indexOf(currentSelection);
-	if (index >= 0 && selectedPrompt.isEmpty())
-		promptPresetSelector.setSelectedId(index + 1, juce::dontSendNotification);
-	else if (promptPresets.size() > 0)
-	{
-		if (t->getCurrentPage().selectedPrompt.isNotEmpty())
-		{
-			bool found = false;
-			if (selectedPrompt.isNotEmpty() && t->getCurrentPage().selectedPrompt != selectedPrompt)
-			{
-				t->getCurrentPage().selectedPrompt = selectedPrompt;
-			}
-
-			for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
-			{
-				if (promptPresetSelector.getItemText(i) == t->getCurrentPage().selectedPrompt)
-				{
-					promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-					found = true;
-					break;
-				}
-			}
-
-			if (!found)
-			{
-				promptPresetSelector.addItem(t->getCurrentPage().selectedPrompt, promptPresets.size() + 1);
-				promptPresetSelector.setSelectedId(promptPresets.size() + 1, juce::dontSendNotification);
-			}
-		}
-
-		onTrackPresetSelected();
 	}
 }
 
@@ -1707,28 +1687,38 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		auto *sampleEntry = sampleBank->getSample(sampleId);
 		if (sampleEntry)
 		{
+			const bool isLocalMode = audioProcessor.getUseLocalModel();
+
 			if (!sampleEntry->originalPrompt.isEmpty())
 			{
-				if (!sampleEntry->modelName.isEmpty())
-				{
-					juce::StringArray prompts = audioProcessor.getAvailablePromptsForModel(sampleEntry->modelName);
-					updatePromptPresets(prompts, sampleEntry->originalPrompt);
-				}
+				if (!isLocalMode && !sampleEntry->modelName.isEmpty())
+					populatePromptPresets(sampleEntry->modelName, sampleEntry->originalPrompt);
 				else
 				{
+					bool found = false;
 					for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
 					{
 						if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
 						{
 							promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
-							t->getCurrentPage().setSelectedPrompt(sampleEntry->originalPrompt);
+							found = true;
 							break;
 						}
 					}
+					if (!found)
+					{
+						const int newId = promptPresetSelector.getNumItems() + 1;
+						promptPresetSelector.addItem(sampleEntry->originalPrompt, newId);
+						promptPresets.add(sampleEntry->originalPrompt);
+						promptPresetSelector.setSelectedId(newId, juce::dontSendNotification);
+					}
+					t->getCurrentPage().setSelectedPrompt(sampleEntry->originalPrompt);
+					if (onTrackPromptChanged)
+						onTrackPromptChanged(trackId, sampleEntry->originalPrompt);
 				}
 			}
 
-			if (!sampleEntry->modelName.isEmpty())
+			if (!isLocalMode && !sampleEntry->modelName.isEmpty())
 			{
 				for (int i = 0; i < modelSelector.getNumItems(); ++i)
 				{
@@ -1826,6 +1816,8 @@ void TrackComponent::updateModelUI()
 	setupToggleColours(originalSyncButton);
 	setupToggleColours(beatRepeatButton);
 	setupToggleColours(randomDurationToggle);
+	setupToggleColours(reverseButton);
+	setupToggleColours(transientScatterButton);
 
 	if (sequencer)
 		sequencer->setAccentColour(modelColour);
@@ -1852,7 +1844,8 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 	if (!entry)
 		return;
 
-	if (entry->modelName.isNotEmpty())
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	if (!isLocalMode && entry->modelName.isNotEmpty())
 	{
 		for (int i = 0; i < modelSelector.getNumItems(); ++i)
 		{
@@ -1872,8 +1865,7 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 		{
 			if (promptPresetSelector.getItemText(i) == entry->text)
 			{
-				promptPresetSelector.setSelectedItemIndex(i, juce::sendNotification);
-				t->getCurrentPage().setSelectedPrompt(entry->text);
+				promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
 				found = true;
 				break;
 			}
@@ -1881,10 +1873,15 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 
 		if (!found)
 		{
-			promptPresetSelector.addItem(entry->text, promptPresetSelector.getNumItems() + 1);
-			promptPresetSelector.setSelectedId(promptPresetSelector.getNumItems(), juce::sendNotification);
-			t->getCurrentPage().setSelectedPrompt(entry->text);
+			const int newId = promptPresetSelector.getNumItems() + 1;
+			promptPresetSelector.addItem(entry->text, newId);
+			promptPresets.add(entry->text);
+			promptPresetSelector.setSelectedId(newId, juce::dontSendNotification);
 		}
+
+		t->getCurrentPage().setSelectedPrompt(entry->text);
+		if (onTrackPromptChanged)
+			onTrackPromptChanged(trackId, entry->text);
 	}
 
 	bank->incrementUsage(promptId);
@@ -1900,17 +1897,21 @@ void TrackComponent::wireParameters()
 	registerSliderParam("AdsrSustain", adsrSustainKnob);
 	registerSliderParam("AdsrRelease", adsrReleaseKnob);
 
-	registerSliderParam("RetriggerInterval", intervalKnob);
-	registerButtonParam("RandomRetrigger", beatRepeatButton);
+	registerSliderParam("BeatRepeatInterval", intervalKnob);
+	registerButtonParam("BeatRepeatActive", beatRepeatButton);
 	registerButtonParam("Generate", generateButton, true);
+	registerButtonParam("ReverseActive", reverseButton);
+	registerButtonParam("TransientScatterActive", transientScatterButton);
 
 	registerMidiLearn("AdsrAttack", &adsrAttackKnob);
 	registerMidiLearn("AdsrDecay", &adsrDecayKnob);
 	registerMidiLearn("AdsrSustain", &adsrSustainKnob);
 	registerMidiLearn("AdsrRelease", &adsrReleaseKnob);
-	registerMidiLearn("RetriggerInterval", &intervalKnob);
-	registerMidiLearn("RandomRetrigger", &beatRepeatButton);
+	registerMidiLearn("BeatRepeatInterval", &intervalKnob);
+	registerMidiLearn("BeatRepeatActive", &beatRepeatButton);
 	registerMidiLearn("Generate", &generateButton);
+	registerMidiLearn("ReverseActive", &reverseButton);
+	registerMidiLearn("TransientScatterActive", &transientScatterButton);
 
 	subscribeToParam("Gain");
 }

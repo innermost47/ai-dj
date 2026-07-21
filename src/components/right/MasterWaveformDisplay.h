@@ -2,7 +2,7 @@
 #include "ObsidianBase.h"
 #include <JuceHeader.h>
 
-class MasterWaveformDisplay : public ObsidianComponent, public juce::Timer
+class MasterWaveformDisplay : public ObsidianComponent
 {
   public:
 	MasterWaveformDisplay();
@@ -10,11 +10,13 @@ class MasterWaveformDisplay : public ObsidianComponent, public juce::Timer
 
 	void pushSamples(const float *left, const float *right, int numSamples);
 	void setPositionInBeats(double ppqPosition);
-	void timerCallback() override;
 	void paint(juce::Graphics &g) override;
 
   private:
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+
 	void rebuildPaths(juce::Rectangle<float> inner, int w, float cy, float hH, float ppx);
+	void handleVBlank();
 
 	std::vector<float> writeBuffer;
 	std::vector<float> readBuffer;
@@ -26,11 +28,8 @@ class MasterWaveformDisplay : public ObsidianComponent, public juce::Timer
 	float lastPeak{0.0f};
 	int idleFrames{0};
 
-	juce::Path cachedTop, cachedBot, cachedEchoTop, cachedEchoBot;
+	juce::Path cachedTop, cachedBot;
 	bool pathsDirty{true};
-	float cachedMaxPeakVal{0.0f};
-	float cachedMaxPeakX{0.0f};
-	float cachedPeakAbs{0.0f};
 	int lastW{0}, lastH{0};
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MasterWaveformDisplay)

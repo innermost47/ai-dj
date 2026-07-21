@@ -18,6 +18,13 @@ class TrackManager
 
 	TrackData *getTrack(const juce::String &trackId);
 
+	TrackData *getTrackBySlot(int slot) const noexcept
+	{
+		if (slot < 0 || slot >= Obsidian::MAX_TRACKS)
+			return nullptr;
+		return slotRegistry[(size_t)slot].load(std::memory_order_acquire);
+	}
+
 	std::vector<juce::String> getAllTrackIds() const;
 
 	void renderAllTracks(juce::AudioBuffer<float> &outputBuffer,
@@ -50,6 +57,7 @@ class TrackManager
 	void processPerTrackReverbs(std::vector<juce::AudioBuffer<float>> &individualOutputs,
 	                            juce::AudioBuffer<float> &mainOutput, float size, float damping, float width, float mix,
 	                            int numSamples);
+	void ensureTransientsAnalyzed(TrackPage &page) const;
 
 	struct PlaybackRatioInfo
 	{
@@ -66,12 +74,22 @@ class TrackManager
 		return juce::ScopedLock(tracksLock);
 	}
 
+	template <typename Fn> void forEachTrackAudio(Fn &&callback)
+	{
+		for (int i = 0; i < Obsidian::MAX_TRACKS; ++i)
+			if (auto *t = slotRegistry[(size_t)i].load(std::memory_order_acquire))
+				callback(t);
+	}
+
   private:
 	DjIaVstProcessor &audioProcessor;
 	mutable juce::CriticalSection tracksLock;
 	std::map<juce::String, std::unique_ptr<TrackData>> tracks;
 	std::vector<juce::String> trackOrder;
 	juce::AudioBuffer<float> perTrackFxBuffer;
+	juce::AudioBuffer<float> tempMixBuffer;
+	juce::AudioBuffer<float> tempIndividualBuffer;
+	std::array<std::atomic<TrackData *>, Obsidian::MAX_TRACKS> slotRegistry{};
 
 	struct PageInfo
 	{
@@ -82,10 +100,10 @@ class TrackManager
 		double loopStartToUse = 0;
 		double loopEndToUse = 0;
 		float originalBpmToUse = 126.0f;
-		float adsrAttack = 0.0f;
-		float adsrDecay = 4.0f;
-		float adsrSustain = 1.0f;
-		float adsrRelease = 0.0f;
+		float adsrAttack = Obsidian::ADSRDefaultValues::ATTACK_DEFAULT;
+		float adsrDecay = Obsidian::ADSRDefaultValues::DECAY_DEFAULT;
+		float adsrSustain = Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT;
+		float adsrRelease = Obsidian::ADSRDefaultValues::RELEASE_DEFAULT;
 	};
 
 	struct TrackInfo
@@ -107,15 +125,10 @@ class TrackManager
 	{
 		bool beatRepeatActive;
 		double beatRepeatEnd;
-		double safetyFadeLength;
 		double beatRepeatStart;
-		double samplesUntilBeatRepeatEnd;
-		double endSampleLoop;
-		int brFadeInCounter;
-		int fadeInCounter;
-		float fadeRcp;
-		bool fadeOutThisBuffer;
-		double samplesUntilLoopEnd;
+		bool fadeOutArmed;
+		double samplesUntilEnd;
+		double safetyFadeLength;
 		double totalSamplesPerSequence;
 	};
 
@@ -129,22 +142,21 @@ class TrackManager
 	                       juce::AudioBuffer<float> &individualOutput, int numSamples, double sampleRate) const;
 	void handleOutput(juce::AudioSampleBuffer &individualOutput, juce::AudioSampleBuffer &mixOutput, TrackData &track,
 	                  double &currentPosition, float volume) const;
-	void prepareOutput(float adsrGain, const float *leftChannel, const float *rightChannel, double absolutePosition,
-	                   int bufferSize, juce::AudioSampleBuffer &individualOutput, TrackData &track, int i,
-	                   TrackInfo &trackInfo, FadeInfo &fadeInfo) const;
+	void prepareOutput(float adsrGain, float oldAdsrGain, const float *leftChannel, const float *rightChannel,
+	                   double absolutePosition, int bufferSize, juce::AudioSampleBuffer &individualOutput,
+	                   TrackData &track, int i, TrackInfo &trackInfo, FadeInfo &fadeInfo) const;
 
 	PageInfo getPageInfo(const TrackPage &page, double sampleRate) const;
 	TrackInfo getTrackInfo(const TrackData &track, const TrackPage &page, const PageInfo &pageInfo) const;
-	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page, int i) const;
+	FadeInfo getFadeInfo(TrackData &track, const TrackInfo &trackInfo, const TrackPage &page) const;
 
 	float interpolateLinear(const float *buffer, double position, int bufferSize) const;
 	float getADSRGain(double absolutePosition, double startSample, double sectionLength, PageInfo &info) const;
-	void updateSafetyFade(FadeInfo &fadeInfo, TrackData &track) const;
 
-	double getNextStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
-	                           double realPosition) const;
-	double getLastStepSampleOn(double stepsPerMeasure, double samplesPerStep, SequencerData &seqData,
-	                           double totalSamplesPerSequence) const;
+	void applyJumpSmoothing(TrackData &track, float &left, float &right, const float *leftChannel,
+	                        const float *rightChannel, int bufferSize, float oldAdsrGain) const;
 
 	static float applyCrossfadeCurve(float xfaderValue, bool isDeckA, int curveMode);
+
+	void publishSlotRegistry();
 };

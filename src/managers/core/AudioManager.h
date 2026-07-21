@@ -1,4 +1,5 @@
 #pragma once
+#include "BpmDetector.h"
 #include "DummySynth.h"
 #include "GenerationManager.h"
 #include "SimpleEQ.h"
@@ -25,6 +26,12 @@ class AudioManager
 		bool stagingFilled = false;
 	};
 
+	struct GenerationFiles
+	{
+		juce::File stretched;
+		juce::File original;
+	};
+
 	PreprocessResult preprocessAudioFile(const juce::File &rawFile, float serverSnappedBpm,
 	                                     const juce::String &trackId);
 
@@ -43,9 +50,6 @@ class AudioManager
 	void processAudioBPMAndSync(TrackData *track, float sampleBpm = -1.0f);
 	void updateMasterEQ();
 	void saveBufferToFile(const juce::AudioBuffer<float> &buffer, const juce::File &outputFile, double sampleRate);
-	void saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float> &originalBuffer,
-	                                     const juce::AudioBuffer<float> &stretchedBuffer, const juce::String &trackId,
-	                                     double sampleRate);
 	void loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile);
 	void loadSampleToBankPage(const juce::String &trackId, int pageIndex, const juce::File &sampleFile,
 	                          const juce::String &sampleId, float sampleBpm, double fileSampleRate);
@@ -81,6 +85,11 @@ class AudioManager
 		return individualOutputBuffers;
 	}
 
+	int getBlockSize() const
+	{
+		return blockSize;
+	}
+
 	void renderPreviewToOutput(juce::AudioBuffer<float> &previewBus, juce::AudioBuffer<float> &mainOutput,
 	                           int numSamples, double currentSampleRate, bool previewBusIsEffectivelyEnabled);
 
@@ -112,6 +121,8 @@ class AudioManager
 
 	std::vector<juce::AudioBuffer<float>> individualOutputBuffers;
 
+	std::unique_ptr<BpmDetector> bpmDetector = createBpmDetector();
+
 	float smoothedMasterVol = 1.0f;
 	float smoothedMasterPan = 0.0f;
 
@@ -121,8 +132,16 @@ class AudioManager
 		int firstValidSample;
 	};
 
-	AudioData getAudioTrimmed(int outputSamples, int numChannels, juce::AudioBuffer<float> &finalStretchedAudio,
-	                          float threshold = 0.08f);
+	AudioData getAudioTrimmed(int outputSamples, int numChannels, juce::AudioBuffer<float> &finalStretchedAudio);
+	GenerationFiles createGenerationFiles(const juce::String &trackId, int pageIndex);
+
+	float getBPM(double hostBpm, juce::AudioBuffer<float> &cleanedRawBuffer, const int cleanedNumSamples,
+	             const double sampleRate);
+	juce::AudioBuffer<float> stretchAndTrim(const juce::AudioBuffer<float> &inputBuffer, double ratio,
+	                                        double sampleRate);
+
+	void registerGeneratedSample(const juce::String &trackId, const juce::File &stretchedFile,
+	                             const juce::File &originalFile);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioManager)
 };

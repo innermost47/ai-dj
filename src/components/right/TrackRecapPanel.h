@@ -4,7 +4,7 @@
 
 class DjIaVstProcessor;
 
-class TrackRecapPanel : public ObsidianComponent, private juce::Timer
+class TrackRecapPanel : public ObsidianComponent
 {
   public:
 	TrackRecapPanel(DjIaVstProcessor &processor);
@@ -16,10 +16,15 @@ class TrackRecapPanel : public ObsidianComponent, private juce::Timer
 	int getPreferredHeight() const;
 
   private:
-	void timerCallback() override;
+	void handleVBlank();
 	void paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bounds, int trackIndex);
 
 	DjIaVstProcessor &audioProcessor;
+
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+
+	std::map<juce::String, int> lastActivePages;
+	std::map<juce::String, juce::String> lastPrompts;
 
 	static constexpr int CARD_HEIGHT = 86;
 	static constexpr int CARD_SPACING = 3;

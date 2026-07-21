@@ -11,6 +11,7 @@ struct SampleBankEntry
 	juce::String filename;
 	juce::String originalPrompt;
 	juce::String description;
+	juce::StringArray cacheFiles;
 	juce::String modelName;
 	juce::String filePath;
 	juce::Time creationTime;
@@ -42,16 +43,20 @@ class SampleBank
 	                       const juce::String &category = "");
 
 	bool removeSample(const juce::String &sampleId);
+
+	int removeSamples(const juce::StringArray &sampleIds);
+
 	SampleBankEntry *getSample(const juce::String &sampleId);
 	std::vector<SampleBankEntry *> getAllSamples();
 
 	std::vector<juce::String> getUnusedSamples() const;
+
 	int removeUnusedSamples();
 	void markSampleAsUsed(const juce::String &sampleId, const juce::String &projectId);
 	void markSampleAsUnused(const juce::String &sampleId, const juce::String &projectId);
-
 	void saveBankData();
 	void loadBankData();
+	void addCacheFiles(const juce::String &sampleId, const juce::String &cachePath, const juce::String &originalPath);
 
 	std::function<void(const juce::String &name, juce::Colour colour)> onMigrateLegacyCategory;
 	std::function<bool(const juce::String &name)> onCheckCategoryExists;

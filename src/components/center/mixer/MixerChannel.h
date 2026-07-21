@@ -12,7 +12,7 @@ struct StereoLevel
 
 class DjIaVstEditor;
 
-class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
+class MixerChannel : public ObsidianBaseMidiComponent
 {
   public:
 	MixerChannel(const juce::String &trackId, DjIaVstProcessor &processor, TrackData *trackData, DjIaVstEditor &editor);
@@ -45,6 +45,8 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
   private:
 	VuMeter vuMeter;
 	DjIaVstEditor &editor;
+
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
 
 	juce::String trackId;
 
@@ -94,6 +96,10 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	float peakHoldRight = 0.0f;
 	int peakHoldTimerLeft = 0;
 	int peakHoldTimerRight = 0;
+	int lastQuantizedL = -1, lastQuantizedR = -1;
+	int blinkCounter = 0;
+
+	bool blinkTicking = false;
 
 	juce::Component vuMeterContainer;
 
@@ -107,7 +113,7 @@ class MixerChannel : public ObsidianBaseMidiComponent, public juce::Timer
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 	void updateVUMeter();
-	void timerCallback() override;
+	void handleVBlank();
 	void setupUI();
 	void stopTrackImmediatly();
 
