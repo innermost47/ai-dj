@@ -331,6 +331,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/engines/StableAudioEngine.cpp
     src/managers/core/AudioManager.cpp
     src/managers/core/GenerationManager.cpp
+    src/managers/core/LocalGenerationEngine.cpp
     src/managers/core/MiniBpmDetector.cpp
     src/managers/core/ParameterManager.cpp
     src/managers/core/SequencerManager.cpp

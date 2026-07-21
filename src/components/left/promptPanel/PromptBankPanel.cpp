@@ -414,7 +414,7 @@ void PromptBankPanel::addPromptDialog()
 	auto safeThis = juce::Component::SafePointer<PromptBankPanel>(this);
 
 	juce::String modelName =
-	    audioProcessor.getUseLocalModel() ? Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM : Obsidian::STABLE_AUDIO_OPEN_V1;
+	    audioProcessor.getUseLocalModel() ? Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM() : Obsidian::STABLE_AUDIO_OPEN_V1();
 
 	ObsidianAlertManager::showPromptEditor(this, "", modelName, "", availCats,
 	                                       [this, safeThis](const ObsidianAlertManager::PromptEditorResult &res)

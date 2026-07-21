@@ -734,8 +734,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 juce::File AudioManager::getExportDirectory()
 {
 	auto documentsDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                        .getChildFile(Obsidian::OBSIDIAN_BASE_DIR);
-	auto exportDir = documentsDir.getChildFile(Obsidian::EXPORTS_DIR);
+	                        .getChildFile(Obsidian::OBSIDIAN_BASE_DIR());
+	auto exportDir = documentsDir.getChildFile(Obsidian::EXPORTS_DIR());
 
 	if (!exportDir.exists())
 		exportDir.createDirectory();
@@ -770,8 +770,8 @@ juce::File AudioManager::exportSampleForDragDrop(const juce::File &originalFile)
 juce::File AudioManager::getTrackPageAudioFile(const juce::String &trackId, int pageIndex)
 {
 	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
 	{
 		audioDir = audioDir.getChildFile(audioProcessor.getProjectId());
@@ -1015,8 +1015,8 @@ juce::AudioBuffer<float> AudioManager::stretchAndTrim(const juce::AudioBuffer<fl
 AudioManager::GenerationFiles AudioManager::createGenerationFiles(const juce::String &trackId, int pageIndex)
 {
 	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
 		audioDir = audioDir.getChildFile(audioProcessor.getProjectId());
 	audioDir.createDirectory();

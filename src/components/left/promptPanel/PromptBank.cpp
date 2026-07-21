@@ -11,8 +11,8 @@ PromptBank::~PromptBank() = default;
 juce::File PromptBank::getPromptBankFile()
 {
 	return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	    .getChildFile(Obsidian::PROMPTS_FILE);
+	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	    .getChildFile(Obsidian::PROMPTS_FILE());
 }
 
 juce::String PromptBank::generateId()
