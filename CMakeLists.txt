@@ -253,7 +253,9 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/wind.svg
         src/assets/icons/x.svg
         src/assets/icons/zap.svg
-        src/assets/logo.png   
+        src/assets/jucelogo.png
+        src/assets/logo.png  
+        src/assets/sailogo.png
 )
 
 target_sources(ObsidianNeuralVST PRIVATE
