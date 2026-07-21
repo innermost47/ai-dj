@@ -183,12 +183,12 @@ StandaloneTransportComponent::StandaloneTransportComponent(StandaloneTransport &
 {
 	setupUI();
 	syncFromTransport();
-	startTimerHz(30);
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 StandaloneTransportComponent::~StandaloneTransportComponent()
 {
-	stopTimer();
+	vBlankAttachment.reset();
 }
 
 void StandaloneTransportComponent::setupUI()
@@ -431,7 +431,7 @@ void StandaloneTransportComponent::paint(juce::Graphics & /*g*/)
 {
 }
 
-void StandaloneTransportComponent::timerCallback()
+void StandaloneTransportComponent::handleVBlank()
 {
 	if (isPaused)
 	{

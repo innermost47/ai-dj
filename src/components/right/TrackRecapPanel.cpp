@@ -4,17 +4,39 @@
 
 TrackRecapPanel::TrackRecapPanel(DjIaVstProcessor &processor) : audioProcessor(processor)
 {
-	startTimerHz(10);
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 TrackRecapPanel::~TrackRecapPanel()
 {
-	stopTimer();
+	vBlankAttachment.reset();
 }
 
-void TrackRecapPanel::timerCallback()
+void TrackRecapPanel::handleVBlank()
 {
-	repaint();
+	bool stateChanged = false;
+	auto trackIds = audioProcessor.getAllTrackIds();
+
+	for (const auto &id : trackIds)
+	{
+		auto *track = audioProcessor.getTrack(id);
+		if (!track)
+			continue;
+		int currentPage = track->currentPageIndex.load();
+		if (lastActivePages[id] != currentPage)
+		{
+			lastActivePages[id] = currentPage;
+			stateChanged = true;
+		}
+		juce::String currentPrompt = track->getCurrentPage().selectedPrompt;
+		if (lastPrompts[id] != currentPrompt)
+		{
+			lastPrompts[id] = currentPrompt;
+			stateChanged = true;
+		}
+	}
+	if (stateChanged)
+		repaint();
 }
 
 void TrackRecapPanel::paint(juce::Graphics &g)

@@ -1,5 +1,6 @@
 #pragma once
 #include "DjIaClient.h"
+#include "LocalGenerationEngine.h"
 #include "TrackData.h"
 #include <JuceHeader.h>
 
@@ -24,8 +25,6 @@ class GenerationManager
 
   private:
 	DjIaVstProcessor &audioProcessor;
-
+	std::unique_ptr<LocalGenerationEngine> localEngine;
 	juce::CriticalSection apiLock;
-
-	juce::File createTempAudioFile(const std::vector<float> &audioData, float /*duration*/);
 };

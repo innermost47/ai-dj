@@ -33,7 +33,6 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 				track->isArmedToStop.store(false);
 				track->readPosition.store(0.0);
 				track->numSamplesAccPerSequence.store(0.0);
-				updateSafetyFadeLength(track);
 
 				juce::String playParam = "slot" + juce::String(slotNumber) + "Play";
 				if (auto *p = audioProcessor.getParameterTreeState().getParameter(playParam))
@@ -115,8 +114,7 @@ void SequencerManager::handlePageChange(const juce::String &parameterID)
 						    {
 							    if (trackComp->getTrackId() == trackId)
 							    {
-								    if (!trackComp->isTimerRunning())
-									    trackComp->startTimer(200);
+								    trackComp->startPagePendingBlink();
 								    trackComp->updatePagesDisplay();
 								    safeEditor->uiStatusManager->setStatusWithTimeout(
 								        "Page " + juce::String((char)('A' + pageIndex)) +
@@ -166,81 +164,71 @@ void SequencerManager::handleSequencerPlayState(bool hostIsPlaying)
 	if (hostIsPlaying && !wasPlaying.load())
 	{
 		internalSampleCounter.store(0);
-		auto trackIds = trackManager.getAllTrackIds();
-		for (const auto &trackId : trackIds)
-		{
-			TrackData *track = trackManager.getTrack(trackId);
-			if (track)
-			{
-				auto &seqData = track->getCurrentSequencerData();
-				seqData.isPlaying = true;
-				seqData.currentStep = 0;
-				seqData.currentMeasure = 0;
-				seqData.stepAccumulator = 0.0;
-				track->customStepCounter = 0;
-				track->lastPpqPosition = -1.0;
-			}
-		}
+		trackManager.forEachTrackAudio(
+		    [&](TrackData *track)
+		    {
+			    auto &seqData = track->getCurrentSequencerData();
+			    seqData.isPlaying = true;
+			    seqData.currentStep = 0;
+			    seqData.currentMeasure = 0;
+			    seqData.stepAccumulator = 0.0;
+			    track->customStepCounter = 0;
+			    track->lastPpqPosition = -1.0;
+		    });
 	}
 	else if (!hostIsPlaying && wasPlaying.load())
 	{
 		auto trackIds = trackManager.getAllTrackIds();
-		for (const auto &trackId : trackIds)
-		{
-			TrackData *track = trackManager.getTrack(trackId);
-			bool isArmed = false;
-			if (track->isCurrentlyPlaying.load())
-				isArmed = true;
-			if (track)
-			{
-				auto &seqData = track->getCurrentSequencerData();
-				seqData.isPlaying = false;
-				track->setStop();
-				track->isArmed.store(isArmed);
-				track->isPlaying.store(false);
-				track->isCurrentlyPlaying.store(false);
-				track->readPosition.store(0.0);
-				track->numSamplesAccPerSequence.store(0.0);
-				updateSafetyFadeLength(track);
-				track->limiter.resetReductionAmount();
-				seqData.currentStep = 0;
-				seqData.currentMeasure = 0;
-				seqData.stepAccumulator = 0.0;
-				track->customStepCounter = 0;
-				track->lastPpqPosition = -1.0;
-				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
-				                                                 isArmed ? MidiMapping::feedbackPending
-				                                                         : MidiMapping::feedbackIdle);
-			}
-		}
+		trackManager.forEachTrackAudio(
+		    [&](TrackData *track)
+		    {
+			    bool isArmed = false;
+			    if (track->isCurrentlyPlaying.load())
+				    isArmed = true;
+			    auto &seqData = track->getCurrentSequencerData();
+			    seqData.isPlaying = false;
+			    track->setStop();
+			    track->isArmed.store(isArmed);
+			    track->isPlaying.store(false);
+			    track->isCurrentlyPlaying.store(false);
+			    track->readPosition.store(0.0);
+			    track->numSamplesAccPerSequence.store(0.0);
+			    track->limiter.resetReductionAmount();
+			    seqData.currentStep = 0;
+			    seqData.currentMeasure = 0;
+			    seqData.stepAccumulator = 0.0;
+			    track->customStepCounter = 0;
+			    track->lastPpqPosition = -1.0;
+			    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
+			                                                     isArmed ? MidiMapping::feedbackPending
+			                                                             : MidiMapping::feedbackIdle);
+		    });
 		audioProcessor.needsUIUpdate.store(true);
 	}
 	else if (!hostIsPlaying && !wasPlaying.load())
 	{
-		auto trackIds = trackManager.getAllTrackIds();
-		for (const auto &trackId : trackIds)
-		{
-			TrackData *track = trackManager.getTrack(trackId);
-			if (track && track->isCurrentlyPlaying.load())
-			{
-				auto &seqData = track->getCurrentSequencerData();
-				track->isCurrentlyPlaying.store(false);
-				track->limiter.resetReductionAmount();
-				track->readPosition.store(0.0);
-				track->numSamplesAccPerSequence.store(0.0);
-				updateSafetyFadeLength(track);
-				seqData.currentStep = 0;
-				seqData.currentMeasure = 0;
-				seqData.stepAccumulator = 0.0;
-				track->customStepCounter = 0;
-				track->lastPpqPosition = -1.0;
-				seqData.isPlaying = false;
-				track->isArmed.store(false);
-				track->isPlaying.store(false);
-				audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
-				                                                 MidiMapping::feedbackIdle);
-			}
-		}
+		trackManager.forEachTrackAudio(
+		    [&](TrackData *track)
+		    {
+			    if (track->isCurrentlyPlaying.load())
+			    {
+				    auto &seqData = track->getCurrentSequencerData();
+				    track->isCurrentlyPlaying.store(false);
+				    track->limiter.resetReductionAmount();
+				    track->readPosition.store(0.0);
+				    track->numSamplesAccPerSequence.store(0.0);
+				    seqData.currentStep = 0;
+				    seqData.currentMeasure = 0;
+				    seqData.stepAccumulator = 0.0;
+				    track->customStepCounter = 0;
+				    track->lastPpqPosition = -1.0;
+				    seqData.isPlaying = false;
+				    track->isArmed.store(false);
+				    track->isPlaying.store(false);
+				    audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPlay(track->slotIndex + 1),
+				                                                     MidiMapping::feedbackIdle);
+			    }
+		    });
 	}
 	audioProcessor.needsUIUpdate.store(true);
 	wasPlaying.store(hostIsPlaying);
@@ -271,37 +259,33 @@ void SequencerManager::updateSequencers(bool hostIsPlaying, int numSamples)
 	double bufferDurationInPpq = numSamples / samplesPerPpq;
 	double ppqEndOfBuffer = currentPpq + bufferDurationInPpq;
 
-	auto trackIds = trackManager.getAllTrackIds();
-	for (const auto &trackId : trackIds)
-	{
-		TrackData *track = trackManager.getTrack(trackId);
-		if (track)
-		{
-			double expectedPpqForNextStep = track->lastPpqPosition + stepInPpq;
+	trackManager.forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    double expectedPpqForNextStep = track->lastPpqPosition + stepInPpq;
 
-			bool shouldAdvanceStep = false;
-			if (track->lastPpqPosition < 0)
-			{
-				double totalStepsFromStart = currentPpq / stepInPpq;
-				track->customStepCounter = static_cast<int>(totalStepsFromStart);
-				track->lastPpqPosition = track->customStepCounter * stepInPpq;
-				shouldAdvanceStep = true;
-			}
-			else if (ppqEndOfBuffer >= expectedPpqForNextStep)
-			{
-				track->customStepCounter++;
-				track->lastPpqPosition = expectedPpqForNextStep;
-				shouldAdvanceStep = true;
-			}
+		    bool shouldAdvanceStep = false;
+		    if (track->lastPpqPosition < 0)
+		    {
+			    double totalStepsFromStart = currentPpq / stepInPpq;
+			    track->customStepCounter = static_cast<int>(totalStepsFromStart);
+			    track->lastPpqPosition = track->customStepCounter * stepInPpq;
+			    shouldAdvanceStep = true;
+		    }
+		    else if (ppqEndOfBuffer >= expectedPpqForNextStep)
+		    {
+			    track->customStepCounter++;
+			    track->lastPpqPosition = expectedPpqForNextStep;
+			    shouldAdvanceStep = true;
+		    }
 
-			if (shouldAdvanceStep)
-			{
-				handleAdvanceStep(track, hostIsPlaying);
-				if (onSequencerUpdateNeeded)
-					onSequencerUpdateNeeded(trackId);
-			}
-		}
-	}
+		    if (shouldAdvanceStep)
+		    {
+			    handleAdvanceStep(track, hostIsPlaying);
+			    if (onSequencerUpdateNeeded)
+				    onSequencerUpdateNeeded(track->trackId);
+		    }
+	    });
 }
 
 void SequencerManager::addSequencerMidiMessage(const juce::MidiMessage &message)
@@ -317,26 +301,29 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 
 	int stepsPerBeat;
 	if (denominator == 8)
-	{
 		stepsPerBeat = 2;
-	}
 	else if (denominator == 4)
-	{
 		stepsPerBeat = 4;
-	}
 	else if (denominator == 2)
-	{
 		stepsPerBeat = 8;
-	}
 	else
-	{
 		stepsPerBeat = 4;
-	}
 
 	auto &seqData = track->getCurrentSequencerData();
 	int stepsPerMeasure = numerator * stepsPerBeat;
 	int newStep = track->customStepCounter % stepsPerMeasure;
 	int newMeasure = (track->customStepCounter / stepsPerMeasure) % seqData.numMeasures;
+
+	if (track->transientScatterActive.load() && !track->beatRepeatActive.load() && hostIsPlaying &&
+	    track->isCurrentlyPlaying.load() && track->customStepCounter % 2 == 0)
+	{
+		auto &page = track->getCurrentPage();
+		TrackManager::PlaybackRatioInfo ratioInfo = trackManager.getPlaybackRatio(page);
+		DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(ratioInfo.playbackRatio);
+
+		double startPos = getTransientScatterStartPosition(track);
+		track->seekTo(startPos);
+	}
 
 	if (newMeasure == 0 && newStep == 0 && track->pageChangePending.load())
 	{
@@ -393,20 +380,6 @@ void SequencerManager::handleAdvanceStep(TrackData *track, bool hostIsPlaying)
 		triggerSequencerStep(track);
 }
 
-void SequencerManager::updateSafetyFadeLength(TrackData *track) const
-{
-	if (track)
-	{
-		const auto &currentPage = track->getCurrentPage();
-		TrackManager::PlaybackRatioInfo playbackRatioInfo =
-		    audioProcessor.getTrackManager().getPlaybackRatio(currentPage);
-		DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(playbackRatioInfo.playbackRatio);
-
-		if (track->fadeInPending.load() != dawInfo.safetyFadeLength)
-			track->fadeInPending.store((int)dawInfo.safetyFadeLength);
-	}
-}
-
 void SequencerManager::triggerSequencerStep(TrackData *track)
 {
 	if (isBypassed())
@@ -421,113 +394,146 @@ void SequencerManager::triggerSequencerStep(TrackData *track)
 	{
 		if (!track->beatRepeatActive.load())
 		{
-			updateSafetyFadeLength(track);
-			track->readPosition.store(0.0);
+			if (track->isPlaying.load())
+				track->seekTo(getStartReadPosition(track));
+			else
+				track->readPosition.store(getStartReadPosition(track));
 			if (step == 0 && measure == 0)
 				track->numSamplesAccPerSequence.store(0.0);
 		}
-		audioProcessor.addPlayingTrack(track->midiNote, track->trackId);
+		audioProcessor.addPlayingTrack(track->midiNote, track);
 		juce::MidiMessage noteOn =
 		    juce::MidiMessage::noteOn(1, track->midiNote, (juce::uint8)(seqData.velocities[measure][step] * 127));
 		addSequencerMidiMessage(noteOn);
 	}
 }
 
-void SequencerManager::checkBeatRepeatWithSampleCounter()
+void SequencerManager::setupBeatRepeatZone(TrackData *track, double hostBpm) const
 {
-	auto trackIds = trackManager.getAllTrackIds();
-	for (const auto &trackId : trackIds)
+	auto &currentPage = track->getCurrentPage();
+
+	double repeatDuration = calculateBeatRepeatInterval(track->randomBeatRepeatInterval.load(), hostBpm);
+	double repeatDurationSamples = repeatDuration * currentPage.sampleRate;
+
+	const double startAbs =
+	    juce::jlimit(0.0, (double)currentPage.numSamples - 1.0, currentPage.loopStart * currentPage.sampleRate);
+	const double endAbs =
+	    juce::jlimit(startAbs + 1.0, (double)currentPage.numSamples, currentPage.loopEnd * currentPage.sampleRate);
+
+	double anchorAbs = startAbs + track->readPosition.load();
+	anchorAbs = juce::jlimit(startAbs, endAbs - 1.0, anchorAbs);
+
+	const double GATE_SAMPLES = 64.0;
+	double zoneStart, zoneEnd;
+
+	if (track->reverseActive.load())
 	{
-		TrackData *track = trackManager.getTrack(trackId);
-
-		if (!track)
-			continue;
-
-		auto &currentPage = track->getCurrentPage();
-
-		if (track->beatRepeatPending.load())
-		{
-			double hostBpm = audioProcessor.getLastHostBpmForQuantization();
-			if (hostBpm <= 0.0)
-				hostBpm = 120.0;
-
-			double halfBeatDurationSamples = (60.0 / hostBpm) * audioProcessor.getHostSampleRate() * 0.5;
-			int64_t currentSample = internalSampleCounter.load();
-			int64_t currentHalfBeatNumber = currentSample / (int64_t)halfBeatDurationSamples;
-
-			if (track->pendingBeatNumber.load() < 0)
-				track->pendingBeatNumber.store(currentHalfBeatNumber);
-
-			if (currentHalfBeatNumber > track->pendingBeatNumber.load())
-			{
-				if (track->randomRetriggerDurationEnabled.load())
-				{
-					int randomInterval = 1 + (rand() % 10);
-					track->randomRetriggerInterval.store(randomInterval);
-					juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + "RetriggerInterval";
-					auto *param = audioProcessor.getParameterTreeState().getParameter(paramName);
-					if (param)
-					{
-						float normalizedValue = (randomInterval - 1.0f) / 9.0f;
-						param->setValueNotifyingHost(normalizedValue);
-					}
-				}
-
-				double currentPosition = track->readPosition.load();
-				double repeatDuration = calculateRetriggerInterval(track->randomRetriggerInterval.load(), hostBpm);
-				double repeatDurationSamples = repeatDuration * currentPage.sampleRate;
-
-				track->originalReadPosition.store(currentPosition);
-				track->beatRepeatStartPosition.store(currentPosition);
-				track->beatRepeatEndPosition.store(currentPosition + repeatDurationSamples);
-
-				double maxSamples = currentPage.numSamples;
-				if (track->beatRepeatEndPosition.load() > maxSamples)
-					track->beatRepeatEndPosition.store(maxSamples);
-
-				const double GATE_SAMPLES = 64.0;
-				double currentEnd = track->beatRepeatEndPosition.load();
-				double gatedEnd = currentEnd - GATE_SAMPLES;
-				if (gatedEnd > track->beatRepeatStartPosition.load())
-					track->beatRepeatEndPosition.store(gatedEnd);
-				track->theoreticalPosition.store(currentPosition);
-				track->beatRepeatActive.store(true);
-				track->beatRepeatPending.store(false);
-				track->pendingBeatNumber.store(-1);
-				updateSafetyFadeLength(track);
-				track->readPosition.store(track->beatRepeatStartPosition.load());
-			}
-		}
-
-		if (track->beatRepeatStopPending.load())
-		{
-			double hostBpm = audioProcessor.getLastHostBpmForQuantization();
-			if (hostBpm <= 0.0)
-				hostBpm = 120.0;
-
-			double halfBeatDurationSamples = (60.0 / hostBpm) * audioProcessor.getHostSampleRate() * 0.5;
-			int64_t currentSample = internalSampleCounter.load();
-			int64_t currentHalfBeatNumber = currentSample / (int64_t)halfBeatDurationSamples;
-
-			if (track->pendingStopBeatNumber.load() < 0)
-				track->pendingStopBeatNumber.store(currentHalfBeatNumber);
-
-			if (currentHalfBeatNumber > track->pendingStopBeatNumber.load())
-			{
-				track->beatRepeatActive.store(false);
-				track->beatRepeatStopPending.store(false);
-				track->randomRetriggerActive.store(false);
-				track->lastRetriggerTime.store(-1.0);
-				updateSafetyFadeLength(track);
-				track->numSamplesAccPerSequence.store(track->theoreticalPosition.load());
-				track->readPosition.store(track->theoreticalPosition.load());
-				track->pendingStopBeatNumber.store(-1);
-			}
-		}
+		zoneEnd = anchorAbs;
+		zoneStart = std::max(anchorAbs - repeatDurationSamples, startAbs);
+		if (zoneStart + GATE_SAMPLES < zoneEnd)
+			zoneStart += GATE_SAMPLES;
 	}
+	else
+	{
+		zoneStart = anchorAbs;
+		zoneEnd = std::min(anchorAbs + repeatDurationSamples, endAbs);
+		if (zoneEnd - GATE_SAMPLES > zoneStart)
+			zoneEnd -= GATE_SAMPLES;
+	}
+
+	track->originalReadPosition.store(anchorAbs);
+	track->beatRepeatStartPosition.store(zoneStart);
+	track->beatRepeatEndPosition.store(zoneEnd);
+	track->readPosition.store(anchorAbs - startAbs);
 }
 
-double SequencerManager::calculateRetriggerInterval(int intervalValue, double hostBpm) const
+void SequencerManager::checkBeatRepeatWithSampleCounter()
+{
+	double hostBpm = audioProcessor.getLastHostBpmForQuantization();
+	int64_t currentHalfBeatNumber = getCurrentHalfBeatNumber(hostBpm);
+
+	trackManager.forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    checkQuantizedToggle(
+		        track->beatRepeatPending, track->beatRepeatStopPending, track->pendingBeatNumber,
+		        track->pendingStopBeatNumber, track->beatRepeatActive, currentHalfBeatNumber,
+		        [this, track, hostBpm]()
+		        {
+			        if (track->randomRetriggerDurationEnabled.load())
+			        {
+				        int randomInterval = 1 + (rand() % 10);
+				        track->randomBeatRepeatInterval.store(randomInterval);
+				        juce::String paramName = "slot" + juce::String(track->slotIndex + 1) + "BeatRepeatInterval";
+				        auto *param = audioProcessor.getParameterTreeState().getParameter(paramName);
+				        if (param)
+				        {
+					        float normalizedValue = (randomInterval - 1.0f) / 9.0f;
+					        param->setValueNotifyingHost(normalizedValue);
+				        }
+			        }
+
+			        if (track->isPlaying.load())
+				        setupBeatRepeatZone(track, hostBpm);
+			        else
+				        track->beatRepeatAnchorPending.store(true);
+
+			        acquireTheoreticalPosition(track);
+		        },
+		        [this, track]()
+		        {
+			        track->beatRepeatAnchorPending.store(false);
+			        releaseTheoreticalPosition(track);
+			        track->randomRetriggerActive.store(false);
+			        track->lastRetriggerTime.store(-1.0);
+		        });
+	    });
+}
+
+void SequencerManager::checkReverseWithSampleCounter()
+{
+	double hostBpm = audioProcessor.getLastHostBpmForQuantization();
+	int64_t currentHalfBeatNumber = getCurrentHalfBeatNumber(hostBpm);
+
+	trackManager.forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    checkQuantizedToggle(
+		        track->reversePending, track->reverseStopPending, track->pendingReverseBeatNumber,
+		        track->pendingReverseStopBeatNumber, track->reverseActive, currentHalfBeatNumber, [this, track]()
+		        { acquireTheoreticalPosition(track); }, [this, track]() { releaseTheoreticalPosition(track); });
+	    });
+}
+
+void SequencerManager::acquireTheoreticalPosition(TrackData *track) const
+{
+	if (!track->ownsTheoreticalTimeline())
+		track->theoreticalPosition.store(track->readPosition.load());
+}
+
+void SequencerManager::releaseTheoreticalPosition(TrackData *track) const
+{
+	if (track->ownsTheoreticalTimeline())
+		return;
+
+	const double theoretical = track->theoreticalPosition.load();
+	track->numSamplesAccPerSequence.store(theoretical);
+	track->seekTo(theoretical);
+}
+
+int64_t SequencerManager::getCurrentHalfBeatNumber(double hostBpm) const
+{
+	if (hostBpm <= 0.0)
+		hostBpm = 120.0;
+
+	double halfBeatDurationSamples = (60.0 / hostBpm) * audioProcessor.getHostSampleRate() * 0.5;
+	int64_t currentSample = internalSampleCounter.load();
+	int64_t currentHalfBeatNumber = currentSample / (int64_t)halfBeatDurationSamples;
+
+	return currentHalfBeatNumber;
+}
+
+double SequencerManager::calculateBeatRepeatInterval(int intervalValue, double hostBpm) const
 {
 	if (hostBpm <= 0.0)
 		return 1.0;
@@ -603,4 +609,125 @@ void SequencerManager::flushMidiBuffer(juce::MidiBuffer &destination, int numSam
 	juce::ScopedLock lock(sequencerMidiLock);
 	destination.addEvents(sequencerMidiBuffer, 0, numSamples, 0);
 	sequencerMidiBuffer.clear();
+}
+
+void SequencerManager::checkTransientScatterWithSampleCounter()
+{
+	double hostBpm = audioProcessor.getLastHostBpmForQuantization();
+	int64_t currentHalfBeatNumber = getCurrentHalfBeatNumber(hostBpm);
+
+	trackManager.forEachTrackAudio(
+	    [&](TrackData *track)
+	    {
+		    checkQuantizedToggle(
+		        track->transientScatterPending, track->transientScatterStopPending,
+		        track->pendingTransientScatterBeatNumber, track->pendingTransientScatterStopBeatNumber,
+		        track->transientScatterActive, currentHalfBeatNumber, [this, track]()
+		        { acquireTheoreticalPosition(track); }, [this, track]() { releaseTheoreticalPosition(track); });
+	    });
+}
+
+double SequencerManager::getEffectiveWindowLength(TrackData *track, const TrackPage &page,
+                                                  bool applyPlaybackRatio) const
+{
+	TrackManager::PlaybackRatioInfo ratioInfo = audioProcessor.getTrackManager().getPlaybackRatio(page);
+	DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(ratioInfo.playbackRatio);
+
+	const double sampleLength = (page.loopEnd - page.loopStart) * page.sampleRate;
+	double seqLenSource = dawInfo.samplesPerMeasureScaled * (double)track->getCurrentSequencerData().numMeasures;
+	if (applyPlaybackRatio)
+		seqLenSource *= ratioInfo.playbackRatio;
+
+	return std::min(sampleLength, seqLenSource);
+}
+
+double SequencerManager::getStartReadPosition(TrackData *track) const
+{
+	if (!track->reverseActive.load())
+		return 0.0;
+
+	const auto &page = track->getCurrentPage();
+	return getEffectiveWindowLength(track, page) - 1.0;
+}
+
+double SequencerManager::getTransientScatterStartPosition(TrackData *track) const
+{
+	auto &page = track->getCurrentPage();
+	trackManager.ensureTransientsAnalyzed(page);
+	TrackManager::PlaybackRatioInfo ratioInfo = trackManager.getPlaybackRatio(page);
+	DjIaVstProcessor::DawInfo dawInfo = audioProcessor.getDawInfo(ratioInfo.playbackRatio);
+	const double twoStepsLength = dawInfo.samplesPerStep * 2.0;
+	const double startAbs = page.loopStart * page.sampleRate;
+	const double windowLength = getEffectiveWindowLength(track, page, false);
+	const double endAbs = startAbs + windowLength;
+	const double latestAllowedStart = endAbs - twoStepsLength;
+
+	std::vector<const TrackPage::TransientInfo *> candidates;
+	double totalWeight = 0.0;
+	for (const auto &t : page.transients)
+	{
+		if (t.position >= startAbs && t.position < latestAllowedStart)
+		{
+			candidates.push_back(&t);
+			totalWeight += (double)t.strength * t.strength;
+		}
+	}
+
+	double chosenAbs;
+	if (!candidates.empty() && totalWeight > 0.0)
+	{
+		double r = (rand() / (double)RAND_MAX) * totalWeight;
+		double acc = 0.0;
+		const TrackPage::TransientInfo *pick = candidates.back();
+		for (auto *t : candidates)
+		{
+			acc += (double)t->strength * t->strength;
+			if (r <= acc)
+			{
+				pick = t;
+				break;
+			}
+		}
+		chosenAbs = pick->position;
+	}
+	else
+		chosenAbs = startAbs + (rand() / (double)RAND_MAX) * std::max(1.0, windowLength - twoStepsLength);
+
+	return juce::jlimit(0.0, std::max(0.0, windowLength - twoStepsLength), chosenAbs - startAbs);
+}
+
+void SequencerManager::checkQuantizedToggle(std::atomic<bool> &pending, std::atomic<bool> &stopPending,
+                                            std::atomic<int64_t> &pendingBeat, std::atomic<int64_t> &pendingStopBeat,
+                                            std::atomic<bool> &active, int64_t currentHalfBeatNumber,
+                                            std::function<void()> onActivate, std::function<void()> onDeactivate)
+{
+	if (pending.load())
+	{
+		if (pendingBeat.load() < 0)
+			pendingBeat.store(currentHalfBeatNumber);
+
+		if (currentHalfBeatNumber > pendingBeat.load())
+		{
+			if (onActivate)
+				onActivate();
+			active.store(true);
+			pending.store(false);
+			pendingBeat.store(-1);
+		}
+	}
+
+	if (stopPending.load())
+	{
+		if (pendingStopBeat.load() < 0)
+			pendingStopBeat.store(currentHalfBeatNumber);
+
+		if (currentHalfBeatNumber > pendingStopBeat.load())
+		{
+			active.store(false);
+			if (onDeactivate)
+				onDeactivate();
+			stopPending.store(false);
+			pendingStopBeat.store(-1);
+		}
+	}
 }

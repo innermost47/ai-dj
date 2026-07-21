@@ -55,16 +55,23 @@ void MidiManager::sendFullStateFeedback()
 		sendMidiFeedback(MidiMapping::ccFeedbackSeq(slot), track->getCurrentPage().currentSequenceIndex);
 
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrAttack(slot),
-		                 MidiMapping::adsrToMidi(pm.getAttack(slotIdx), 0.001f, 4.0f),
+		                 MidiMapping::adsrToMidi(pm.getAttack(slotIdx), Obsidian::ADSRDefaultValues::ATTACK_MIN,
+		                                         Obsidian::ADSRDefaultValues::ATTACK_MAX),
 		                 MidiMapping::feedbackChannelShaping);
+
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrDecay(slot),
-		                 MidiMapping::adsrToMidi(pm.getDecay(slotIdx), 0.001f, 4.0f),
+		                 MidiMapping::adsrToMidi(pm.getDecay(slotIdx), Obsidian::ADSRDefaultValues::DECAY_MIN,
+		                                         Obsidian::ADSRDefaultValues::DECAY_MAX),
 		                 MidiMapping::feedbackChannelShaping);
+
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrSustain(slot),
-		                 MidiMapping::adsrToMidi(pm.getSustain(slotIdx), 0.0f, 1.0f),
+		                 MidiMapping::adsrToMidi(pm.getSustain(slotIdx), Obsidian::ADSRDefaultValues::SUSTAIN_MIN,
+		                                         Obsidian::ADSRDefaultValues::SUSTAIN_MAX),
 		                 MidiMapping::feedbackChannelShaping);
+
 		sendMidiFeedback(MidiMapping::ccFeedbackAdsrRelease(slot),
-		                 MidiMapping::adsrToMidi(pm.getRelease(slotIdx), 0.001f, 4.0f),
+		                 MidiMapping::adsrToMidi(pm.getRelease(slotIdx), Obsidian::ADSRDefaultValues::RELEASE_MIN,
+		                                         Obsidian::ADSRDefaultValues::RELEASE_MAX),
 		                 MidiMapping::feedbackChannelShaping);
 		sendMidiFeedback(MidiMapping::ccFeedbackDelaySend(slot), MidiMapping::volumeToMidi(pm.getDelaySend(slotIdx)),
 		                 MidiMapping::feedbackChannelSends);

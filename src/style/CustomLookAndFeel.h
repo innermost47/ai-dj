@@ -88,6 +88,14 @@ class CustomLookAndFeel : public juce::LookAndFeel_V4
 
 	juce::CaretComponent *createCaretComponent(juce::Component *keyFocusOwner) override;
 
+	void drawProgressBar(juce::Graphics &g, juce::ProgressBar &bar, int width, int height, double progress,
+	                     const juce::String &textToShow) override;
+
+	bool isProgressBarOpaque(juce::ProgressBar & /*bar*/) override
+	{
+		return false;
+	}
+
   private:
 	void drawGraduationTicks(juce::Graphics &g, juce::Rectangle<float> trackRect, int numTicks, bool isVertical,
 	                         bool small = false);

@@ -407,7 +407,7 @@ bool MidiLearnManager::isBooleanParameter(const juce::String &parameterName)
 {
 	return parameterName.contains("Play") || parameterName.contains("Stop") || parameterName.contains("Mute") ||
 	       parameterName.contains("Solo") || parameterName.contains("Generate") ||
-	       parameterName.contains("RandomRetrigger") || parameterName == "nextTrack" || parameterName == "prevTrack" ||
+	       parameterName.contains("BeatRepeatActive") || parameterName == "nextTrack" || parameterName == "prevTrack" ||
 	       parameterName == "generate";
 }
 
@@ -551,7 +551,7 @@ void MidiLearnManager::loadDefaultMappings(DjIaVstProcessor *processor)
 		addCC(s + "AdsrDecay", 49 + i, CH_SHAPE, d + " ADSR Decay");
 		addCC(s + "AdsrSustain", 59 + i, CH_SHAPE, d + " ADSR Sustain");
 		addCC(s + "AdsrRelease", 69 + i, CH_SHAPE, d + " ADSR Release");
-		addCC(s + "RandomRetrigger", 79 + i, CH_SHAPE, d + " Beat Repeat");
+		addCC(s + "BeatRepeatActive", 79 + i, CH_SHAPE, d + " Beat Repeat");
 		addCC(s + "Page", 89 + i, CH_SHAPE, d + " Page");
 		addCC(s + "DelaySend", 30 + i, CH_FX, d + " Delay Send");
 		addCC(s + "ReverbSend", 39 + i, CH_FX, d + " Reverb Send");

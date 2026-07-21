@@ -73,6 +73,7 @@ juce::String SampleBank::addSample(const juce::String &prompt, const juce::File 
 bool SampleBank::removeSample(const juce::String &sampleId)
 {
 	juce::File fileToDelete;
+	juce::StringArray cachePathsToDelete;
 	bool needsCallback = false;
 
 	{
@@ -87,6 +88,8 @@ bool SampleBank::removeSample(const juce::String &sampleId)
 
 		fileToDelete = juce::File((*it)->filePath);
 
+		cachePathsToDelete = (*it)->cacheFiles;
+
 		samples.erase(it);
 		needsCallback = true;
 
@@ -94,14 +97,17 @@ bool SampleBank::removeSample(const juce::String &sampleId)
 	}
 
 	if (fileToDelete.exists())
-	{
 		fileToDelete.deleteFile();
+
+	for (const auto &p : cachePathsToDelete)
+	{
+		juce::File f(p);
+		if (f.existsAsFile())
+			f.deleteFile();
 	}
 
 	if (needsCallback && onBankChanged)
-	{
 		onBankChanged();
-	}
 
 	return true;
 }
@@ -143,15 +149,38 @@ std::vector<juce::String> SampleBank::getUnusedSamples() const
 	return unused;
 }
 
-int SampleBank::removeUnusedSamples()
+int SampleBank::removeSamples(const juce::StringArray &sampleIds)
 {
-	auto unusedIds = getUnusedSamples();
+	juce::StringArray pathsToDelete;
 	int removedCount = 0;
 
-	for (const auto &id : unusedIds)
 	{
-		if (removeSample(id))
-			removedCount++;
+		juce::ScopedLock lock(bankLock);
+
+		for (const auto &sampleId : sampleIds)
+		{
+			auto it =
+			    std::find_if(samples.begin(), samples.end(), [&sampleId](const std::unique_ptr<SampleBankEntry> &entry)
+			                 { return entry->id == sampleId; });
+			if (it == samples.end())
+				continue;
+
+			pathsToDelete.add((*it)->filePath);
+			pathsToDelete.addArray((*it)->cacheFiles);
+
+			samples.erase(it);
+			++removedCount;
+		}
+
+		if (removedCount > 0)
+			saveBankData();
+	}
+
+	for (const auto &p : pathsToDelete)
+	{
+		juce::File f(p);
+		if (f.existsAsFile())
+			f.deleteFile();
 	}
 
 	if (removedCount > 0 && onBankChanged)
@@ -160,13 +189,20 @@ int SampleBank::removeUnusedSamples()
 		juce::MessageManager::callAsync(
 		    [safeThis]()
 		    {
-			    if (safeThis)
-				    if (safeThis->onBankChanged)
-					    safeThis->onBankChanged();
+			    if (safeThis && safeThis->onBankChanged)
+				    safeThis->onBankChanged();
 		    });
 	}
 
 	return removedCount;
+}
+
+int SampleBank::removeUnusedSamples()
+{
+	juce::StringArray ids;
+	for (const auto &id : getUnusedSamples())
+		ids.add(id);
+	return removeSamples(ids);
 }
 
 void SampleBank::markSampleAsUsed(const juce::String &sampleId, const juce::String &projectId)
@@ -263,8 +299,8 @@ void SampleBank::analyzeSampleFile(SampleBankEntry *entry, const juce::File &aud
 juce::File SampleBank::getBankDirectory()
 {
 	return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	    .getChildFile(Obsidian::SAMPLE_BANK_DIR);
+	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	    .getChildFile(Obsidian::SAMPLE_BANK_DIR());
 }
 
 void SampleBank::ensureBankDirectoryExists()
@@ -302,6 +338,10 @@ void SampleBank::saveBankData()
 			sampleData->setProperty("description", entry->description);
 			sampleData->setProperty("modelName", entry->modelName);
 			sampleData->setProperty("filePath", entry->filePath);
+			juce::Array<juce::var> cacheArray;
+			for (const auto &p : entry->cacheFiles)
+				cacheArray.add(p);
+			sampleData->setProperty("cacheFiles", cacheArray);
 			sampleData->setProperty("creationTime", entry->creationTime.toMilliseconds());
 			sampleData->setProperty("duration", static_cast<double>(entry->duration));
 			sampleData->setProperty("bpm", static_cast<double>(entry->bpm));
@@ -342,16 +382,14 @@ void SampleBank::saveBankData()
 void SampleBank::runLegacyCategoriesMigration()
 {
 	juce::File legacyFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                            .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	                            .getChildFile(Obsidian::CATEGORIES_FILE);
+	                            .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	                            .getChildFile(Obsidian::CATEGORIES_FILE());
 
 	if (!legacyFile.exists())
 		return;
 
 	if (onMigrateLegacyCategory == nullptr)
-	{
 		return;
-	}
 
 	auto json = juce::JSON::parse(legacyFile);
 	if (!json.isObject())
@@ -394,13 +432,9 @@ void SampleBank::runLegacyCategoriesMigration()
 		juce::Colour colour;
 		auto colourVar = catObj->getProperty("colour");
 		if (!colourVar.isVoid())
-		{
 			colour = juce::Colour((juce::uint32)(int)colourVar);
-		}
 		else
-		{
 			colour = deriveColourFromName(name);
-		}
 
 		onMigrateLegacyCategory(name, colour);
 		++migratedCount;
@@ -465,6 +499,10 @@ void SampleBank::loadBankData()
 		entry->description = sampleObj->getProperty("description").toString();
 		entry->modelName = sampleObj->getProperty("modelName").toString();
 		entry->filePath = sampleObj->getProperty("filePath").toString();
+		auto cacheVar = sampleObj->getProperty("cacheFiles");
+		if (cacheVar.isArray())
+			for (const auto &v : *cacheVar.getArray())
+				entry->cacheFiles.add(v.toString());
 		auto creationTimeVar = sampleObj->getProperty("creationTime");
 		entry->creationTime = juce::Time(creationTimeVar.isVoid() ? 0 : (juce::int64)creationTimeVar);
 		entry->duration = static_cast<float>(sampleObj->getProperty("duration"));
@@ -476,9 +514,7 @@ void SampleBank::loadBankData()
 
 		auto categoryVar = sampleObj->getProperty("category");
 		if (!categoryVar.isVoid() && categoryVar.toString().isNotEmpty())
-		{
 			entry->category = categoryVar.toString();
-		}
 		else
 		{
 			auto categoriesVar = sampleObj->getProperty("categories");
@@ -500,8 +536,20 @@ void SampleBank::loadBankData()
 
 		juce::File sampleFile(entry->filePath);
 		if (sampleFile.exists())
-		{
 			samples.push_back(std::move(entry));
-		}
+	}
+}
+
+void SampleBank::addCacheFiles(const juce::String &sampleId, const juce::String &cachePath,
+                               const juce::String &originalPath)
+{
+	juce::ScopedLock lock(bankLock);
+	if (auto *entry = getSample(sampleId))
+	{
+		if (cachePath.isNotEmpty())
+			entry->cacheFiles.addIfNotAlreadyThere(cachePath);
+		if (originalPath.isNotEmpty())
+			entry->cacheFiles.addIfNotAlreadyThere(originalPath);
+		saveBankData();
 	}
 }

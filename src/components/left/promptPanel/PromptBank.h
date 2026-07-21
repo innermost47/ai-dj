@@ -25,6 +25,12 @@ struct PromptCategoryInfo
 	bool isBuiltIn = false;
 };
 
+struct PromptInfo
+{
+	juce::String text;
+	juce::String category;
+};
+
 class PromptBank
 {
   public:
@@ -58,7 +64,7 @@ class PromptBank
 	void saveToFile();
 
 	void migrateFromCustomPrompts(const juce::StringArray &existing,
-	                              const juce::String &defaultModel = Obsidian::STABLE_AUDIO_OPEN_V1);
+	                              const juce::String &defaultModel = Obsidian::STABLE_AUDIO_OPEN_V1());
 
 	bool hasMigrated() const
 	{

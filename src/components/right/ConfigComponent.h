@@ -17,6 +17,7 @@ class ConfigComponent : public ObsidianComponent
 	void setupUI();
 	void addEventListeners();
 	void updateFromProcessor();
+	void updateUseLLM();
 
   private:
 	DjIaVstProcessor &audioProcessor;
@@ -29,12 +30,14 @@ class ConfigComponent : public ObsidianComponent
 	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
 	IconButtonSimple helpButton{"Help", ""};
 	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
+	IconButtonSimple creditsButton{"BypassLLM", ""};
 
 	juce::Image logoImage;
+	juce::Image stabilityAiLogoImage;
+	juce::Image juceLogoImage;
 
 	juce::Label configLabel;
-	juce::Label versionLabel;
-	juce::Label buildLabel;
+	juce::Label poweredByLabel;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ConfigComponent)
 };

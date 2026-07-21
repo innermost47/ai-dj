@@ -9,7 +9,7 @@
 
 class DjIaVstProcessor;
 
-class SampleBankPanel : public BasePanel, private juce::Timer
+class SampleBankPanel : public BasePanel
 {
   public:
 	enum SortType
@@ -48,8 +48,9 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	}
 
   private:
-	void timerCallback() override;
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
 
+	void handleVBlank();
 	void applyFiltersAndSort();
 	void rebuildAccordions(bool autoExpandOnSort = false);
 	void onAccordionExpanded(const juce::String &categoryName, bool expanded);
@@ -74,6 +75,8 @@ class SampleBankPanel : public BasePanel, private juce::Timer
 	DetailPanel detailPanel;
 
 	SortType currentSortType{Time};
+
+	uint32_t previewStartTime = 0;
 
 	std::vector<SampleBankEntry *> filteredSamples;
 

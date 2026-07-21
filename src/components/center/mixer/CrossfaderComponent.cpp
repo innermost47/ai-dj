@@ -8,24 +8,56 @@ CrossfaderComponent::CrossfaderComponent(DjIaVstProcessor &processor) : Obsidian
 	setupCurveButtons();
 	wireParameters();
 	refreshFromProcessor();
-	startTimerHz(30);
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 CrossfaderComponent::~CrossfaderComponent()
 {
 	markForDestruction();
+	vBlankAttachment.reset();
 	setVisible(false);
-	stopTimer();
 }
 
-void CrossfaderComponent::timerCallback()
+void CrossfaderComponent::handleVBlank()
 {
+	bool hostIsPlaying = false;
+	double currentPpq = 0.0;
+	if (auto *ph = audioProcessor.getPlayHead())
+		if (auto pos = ph->getPosition())
+		{
+			hostIsPlaying = pos->getIsPlaying();
+			if (auto ppq = pos->getPpqPosition())
+				currentPpq = *ppq;
+		}
+
+	float pulseIntensity = 1.0f;
+	if (hostIsPlaying)
+	{
+		float beatPhaseLocal = (float)(currentPpq - std::floor(currentPpq));
+		pulseIntensity = juce::jmax(0.25f, std::pow(1.0f - beatPhaseLocal, 2.5f));
+	}
+
+	float globalX = audioProcessor.getGlobalCrossfaderValue();
+	float deckAGain = 1.0f - globalX;
+	float deckBGain = globalX;
+
 	for (int i = 0; i < Obsidian::MAX_CROSSFADER_PAIR; ++i)
 	{
-		if (!pairRowBounds[i].isEmpty())
+		if (pairRowBounds[i].isEmpty())
+			continue;
+
+		const int qL = (int)(computeLedIntensity(i, true, pulseIntensity, deckAGain, deckBGain) * 32.0f);
+		const int qR = (int)(computeLedIntensity(i, false, pulseIntensity, deckAGain, deckBGain) * 32.0f);
+
+		auto rb = pairRowBounds[i];
+		if (qL != lastLedQuantized[i * 2])
 		{
-			auto rb = pairRowBounds[i];
+			lastLedQuantized[i * 2] = qL;
 			repaint(rb.getX(), rb.getY(), ledZoneWidth, rb.getHeight());
+		}
+		if (qR != lastLedQuantized[i * 2 + 1])
+		{
+			lastLedQuantized[i * 2 + 1] = qR;
 			repaint(rb.getRight() - ledZoneWidth, rb.getY(), ledZoneWidth, rb.getHeight());
 		}
 	}
@@ -178,35 +210,18 @@ void CrossfaderComponent::onParameterChangedUI(const juce::String &paramSuffix, 
 	}
 }
 
-static TrackData *getTrackBySlot(DjIaVstProcessor &processor, int slotIndex)
-{
-	for (const auto &id : processor.getAllTrackIds())
-	{
-		auto *trackLocal = processor.getTrack(id);
-		if (trackLocal && trackLocal->slotIndex == slotIndex)
-			return trackLocal;
-	}
-	return nullptr;
-}
-
 void CrossfaderComponent::updateSliderColour(MidiLearnableSlider &slider, int pairIdx)
 {
-	auto *trackLeft = getTrackBySlot(audioProcessor, pairIdx);
-	auto *trackRight = getTrackBySlot(audioProcessor, pairIdx + 4);
+	auto *trackLeft = audioProcessor.getTrackManager().getTrackBySlot(pairIdx);
+	auto *trackRight = audioProcessor.getTrackManager().getTrackBySlot(pairIdx + 4);
 
 	juce::Colour leftColour = ColourPalette::sliderThumb;
 	juce::Colour rightColour = ColourPalette::sliderThumb;
 
 	if (trackLeft)
-	{
-		auto &leftPage = trackLeft->getCurrentPage();
-		leftColour = AiModelDefinitions::getColourForModel(leftPage.selectedModel);
-	}
+		leftColour = AiModelDefinitions::getColourForModel(trackLeft->getCurrentPage().selectedModel);
 	if (trackRight)
-	{
-		auto &rightPage = trackRight->getCurrentPage();
-		rightColour = AiModelDefinitions::getColourForModel(rightPage.selectedModel);
-	}
+		rightColour = AiModelDefinitions::getColourForModel(trackRight->getCurrentPage().selectedModel);
 
 	float pos = static_cast<float>(slider.getValue());
 	juce::Colour morphed = leftColour.interpolatedWith(rightColour, pos);
@@ -389,17 +404,15 @@ void CrossfaderComponent::paintOverChildren(juce::Graphics &g)
 		if (rowBounds.isEmpty())
 			continue;
 
-		auto *trackLeft = getTrackBySlot(audioProcessor, i);
-		auto *trackRight = getTrackBySlot(audioProcessor, i + 4);
+		auto *trackLeft = audioProcessor.getTrackManager().getTrackBySlot(i);
+		auto *trackRight = audioProcessor.getTrackManager().getTrackBySlot(i + 4);
 
 		juce::Colour leftColour = ColourPalette::sliderThumb;
 		juce::Colour rightColour = ColourPalette::sliderThumb;
-		auto &leftPage = trackLeft->getCurrentPage();
-		auto &rightPage = trackRight->getCurrentPage();
 		if (trackLeft)
-			leftColour = AiModelDefinitions::getColourForModel(leftPage.selectedModel);
+			leftColour = AiModelDefinitions::getColourForModel(trackLeft->getCurrentPage().selectedModel);
 		if (trackRight)
-			rightColour = AiModelDefinitions::getColourForModel(rightPage.selectedModel);
+			rightColour = AiModelDefinitions::getColourForModel(trackRight->getCurrentPage().selectedModel);
 
 		float pairX = audioProcessor.getPairCrossfaderValue(i);
 		float leftPairGain = 1.0f - pairX;
@@ -480,4 +493,15 @@ void CrossfaderComponent::resized()
 	}
 
 	globalSlider.setVisible(false);
+}
+
+float CrossfaderComponent::computeLedIntensity(int pairIdx, bool left, float pulseIntensity, float deckAGain,
+                                               float deckBGain) const
+{
+	if (!audioProcessor.isUsingCrossfader())
+		return 0.0f;
+	float pairX = audioProcessor.getPairCrossfaderValue(pairIdx);
+	float pairGain = left ? (1.0f - pairX) : pairX;
+	float deckGain = left ? deckAGain : deckBGain;
+	return juce::jmax(0.0f, deckGain * pairGain * pulseIntensity);
 }

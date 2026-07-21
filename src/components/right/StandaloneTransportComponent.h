@@ -5,7 +5,7 @@
 
 class DjIaVstProcessor;
 
-class StandaloneTransportComponent : public ObsidianComponent, private juce::Timer
+class StandaloneTransportComponent : public ObsidianComponent
 {
   public:
 	StandaloneTransportComponent(StandaloneTransport &transport, DjIaVstProcessor &processor);
@@ -20,8 +20,10 @@ class StandaloneTransportComponent : public ObsidianComponent, private juce::Tim
 	std::function<void()> onTimeSignatureChanged;
 
   private:
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+
+	void handleVBlank();
 	void setupUI();
-	void timerCallback() override;
 	void updateBeatDisplay();
 	void onBpmEditorChanged();
 	void handleTimeSigChange();

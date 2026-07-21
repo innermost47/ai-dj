@@ -97,14 +97,16 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotGenerateParams[i] = apvts.getRawParameterValue(s + "Generate");
 		slotPitchParams[i] = apvts.getRawParameterValue(s + "Pitch");
 		slotFineParams[i] = apvts.getRawParameterValue(s + "Fine");
-		slotRandomRetriggerParams[i] = apvts.getRawParameterValue(s + "RandomRetrigger");
-		slotRetriggerIntervalParams[i] = apvts.getRawParameterValue(s + "RetriggerInterval");
+		slotBeatRepeatActiveParams[i] = apvts.getRawParameterValue(s + "BeatRepeatActive");
+		slotBeatRepeatIntervalParams[i] = apvts.getRawParameterValue(s + "BeatRepeatInterval");
+		slotReverseActiveParams[i] = apvts.getRawParameterValue(s + "ReverseActive");
 		slotAdsrAttackParams[i] = apvts.getRawParameterValue(s + "AdsrAttack");
 		slotAdsrDecayParams[i] = apvts.getRawParameterValue(s + "AdsrDecay");
 		slotAdsrSustainParams[i] = apvts.getRawParameterValue(s + "AdsrSustain");
 		slotAdsrReleaseParams[i] = apvts.getRawParameterValue(s + "AdsrRelease");
 		slotDelaySendParams[i] = apvts.getRawParameterValue(s + "DelaySend");
 		slotReverbSendParams[i] = apvts.getRawParameterValue(s + "ReverbSend");
+		slotTransientScatterActiveParams[i] = apvts.getRawParameterValue(s + "TransientScatterActive");
 
 		slotCutoffParams[i] = apvts.getRawParameterValue(s + "Cutoff");
 		slotResonanceParams[i] = apvts.getRawParameterValue(s + "Resonance");
@@ -147,6 +149,25 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotChorusMixParams[i] = apvts.getRawParameterValue(s + "ChorusMix");
 		slotChorusBypassedParams[i] = apvts.getRawParameterValue(s + "ChorusBypassed");
 
+		slotPhaserRateParams[i] = apvts.getRawParameterValue(s + "PhaserRate");
+		slotPhaserDepthParams[i] = apvts.getRawParameterValue(s + "PhaserDepth");
+		slotPhaserCentreParams[i] = apvts.getRawParameterValue(s + "PhaserCentre");
+		slotPhaserFeedbackParams[i] = apvts.getRawParameterValue(s + "PhaserFeedback");
+		slotPhaserMixParams[i] = apvts.getRawParameterValue(s + "PhaserMix");
+		slotPhaserBypassedParams[i] = apvts.getRawParameterValue(s + "PhaserBypassed");
+
+		slotFlangerRateParams[i] = apvts.getRawParameterValue(s + "FlangerRate");
+		slotFlangerDepthParams[i] = apvts.getRawParameterValue(s + "FlangerDepth");
+		slotFlangerCentreParams[i] = apvts.getRawParameterValue(s + "FlangerCentre");
+		slotFlangerFeedbackParams[i] = apvts.getRawParameterValue(s + "FlangerFeedback");
+		slotFlangerMixParams[i] = apvts.getRawParameterValue(s + "FlangerMix");
+		slotFlangerBypassedParams[i] = apvts.getRawParameterValue(s + "FlangerBypassed");
+
+		slotBitCrusherBitDepthParams[i] = apvts.getRawParameterValue(s + "BitCrusherBitDepth");
+		slotBitCrusherSampleRateReductionParams[i] = apvts.getRawParameterValue(s + "BitCrusherRate");
+		slotBitCrusherMixParams[i] = apvts.getRawParameterValue(s + "BitCrusherMix");
+		slotBitCrusherBypassedParams[i] = apvts.getRawParameterValue(s + "BitCrusherBypassed");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -163,8 +184,8 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "Solo", listener);
 		apvts.addParameterListener(s + "Volume", listener);
 		apvts.addParameterListener(s + "Pan", listener);
-		apvts.addParameterListener(s + "RandomRetrigger", listener);
-		apvts.addParameterListener(s + "RetriggerInterval", listener);
+		apvts.addParameterListener(s + "BeatRepeatActive", listener);
+		apvts.addParameterListener(s + "BeatRepeatInterval", listener);
 
 		apvts.addParameterListener(s + "Cutoff", listener);
 		apvts.addParameterListener(s + "Resonance", listener);
@@ -206,6 +227,28 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		apvts.addParameterListener(s + "ChorusFeedback", listener);
 		apvts.addParameterListener(s + "ChorusMix", listener);
 		apvts.addParameterListener(s + "ChorusBypassed", listener);
+
+		apvts.addParameterListener(s + "PhaserRate", listener);
+		apvts.addParameterListener(s + "PhaserDepth", listener);
+		apvts.addParameterListener(s + "PhaserCentre", listener);
+		apvts.addParameterListener(s + "PhaserFeedback", listener);
+		apvts.addParameterListener(s + "PhaserMix", listener);
+		apvts.addParameterListener(s + "PhaserBypassed", listener);
+
+		apvts.addParameterListener(s + "FlangerRate", listener);
+		apvts.addParameterListener(s + "FlangerDepth", listener);
+		apvts.addParameterListener(s + "FlangerCentre", listener);
+		apvts.addParameterListener(s + "FlangerFeedback", listener);
+		apvts.addParameterListener(s + "FlangerMix", listener);
+		apvts.addParameterListener(s + "FlangerBypassed", listener);
+
+		apvts.addParameterListener(s + "BitCrusherBitDepth", listener);
+		apvts.addParameterListener(s + "BitCrusherRate", listener);
+		apvts.addParameterListener(s + "BitCrusherMix", listener);
+		apvts.addParameterListener(s + "BitCrusherBypassed", listener);
+
+		apvts.addParameterListener(s + "ReverseActive", listener);
+		apvts.addParameterListener(s + "TransientScatterActive", listener);
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -291,8 +334,8 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "Volume", listener);
 		apvts.removeParameterListener(s + "Pan", listener);
 		apvts.removeParameterListener(s + "Gain", listener);
-		apvts.removeParameterListener(s + "RandomRetrigger", listener);
-		apvts.removeParameterListener(s + "RetriggerInterval", listener);
+		apvts.removeParameterListener(s + "BeatRepeatActive", listener);
+		apvts.removeParameterListener(s + "BeatRepeatInterval", listener);
 
 		apvts.removeParameterListener(s + "Cutoff", listener);
 		apvts.removeParameterListener(s + "Resonance", listener);
@@ -334,6 +377,28 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 		apvts.removeParameterListener(s + "ChorusFeedback", listener);
 		apvts.removeParameterListener(s + "ChorusMix", listener);
 		apvts.removeParameterListener(s + "ChorusBypassed", listener);
+
+		apvts.removeParameterListener(s + "PhaserRate", listener);
+		apvts.removeParameterListener(s + "PhaserDepth", listener);
+		apvts.removeParameterListener(s + "PhaserCentre", listener);
+		apvts.removeParameterListener(s + "PhaserFeedback", listener);
+		apvts.removeParameterListener(s + "PhaserMix", listener);
+		apvts.removeParameterListener(s + "PhaserBypassed", listener);
+
+		apvts.removeParameterListener(s + "FlangerRate", listener);
+		apvts.removeParameterListener(s + "FlangerDepth", listener);
+		apvts.removeParameterListener(s + "FlangerCentre", listener);
+		apvts.removeParameterListener(s + "FlangerFeedback", listener);
+		apvts.removeParameterListener(s + "FlangerMix", listener);
+		apvts.removeParameterListener(s + "FlangerBypassed", listener);
+
+		apvts.removeParameterListener(s + "BitCrusherBitDepth", listener);
+		apvts.removeParameterListener(s + "BitCrusherRate", listener);
+		apvts.removeParameterListener(s + "BitCrusherMix", listener);
+		apvts.removeParameterListener(s + "BitCrusherBypassed", listener);
+
+		apvts.removeParameterListener(s + "ReverseActive", listener);
+		apvts.removeParameterListener(s + "TransientScatterActive", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -462,11 +527,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(
 		    std::make_unique<juce::AudioParameterFloat>(slotId + "Fine", slotName + " Fine", -50.0f, 50.0f, 0.0f));
 
-		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "RandomRetrigger",
-		                                                            slotName + " Random Retrigger", false));
+		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "BeatRepeatActive",
+		                                                            slotName + " Beat Repeat Active", false));
 		params.push_back(
-		    std::make_unique<juce::AudioParameterFloat>(slotId + "RetriggerInterval", slotName + " Retrigger Interval",
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "BeatRepeatInterval", slotName + " Retrigger Interval",
 		                                                juce::NormalisableRange<float>(1.0f, 10.0f, 1.0f), 3.0f));
+
+		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "TransientScatterActive",
+		                                                            slotName + " Transient Scatter Active", false));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "DelaySend", slotName + " Delay Send",
 		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
@@ -571,16 +639,69 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		                                                             juce::NormalisableRange<float>(0.f, 1.f, 0.f),
 		                                                             Obsidian::CHORUS_MIX));
 
+		juce::NormalisableRange<float> phaserRateRange(0.0f, 10.0f);
+		phaserRateRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "PhaserRate", slotName + " Phaser Rate",
+		                                                             phaserRateRange, Obsidian::PHASER_RATE));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "PhaserDepth", slotName + " Phaser Depth",
+		                                                             juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		                                                             Obsidian::PHASER_DEPTH));
+
+		juce::NormalisableRange<float> phaserCentreRange(20.0f, 5000.0f, 0.f, 0.25f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "PhaserCentre", slotName + " Phaser Centre", phaserCentreRange, Obsidian::PHASER_CENTRE));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "PhaserFeedback", slotName + " Phaser Feedback",
+		    juce::NormalisableRange<float>(-0.95f, 0.95f, 0.f), Obsidian::PHASER_FEEDBACK));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "PhaserMix", slotName + " Phaser Mix",
+		                                                             juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		                                                             Obsidian::PHASER_MIX));
+
+		juce::NormalisableRange<float> flangerRateRange(0.0f, 10.0f);
+		flangerRateRange.skew = std::log(0.5f) / std::log(1.f / 10.f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "FlangerRate", slotName + " Flanger Rate",
+		                                                             flangerRateRange, Obsidian::FLANGER_RATE));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "FlangerDepth", slotName + " Flanger Depth", juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		    Obsidian::FLANGER_DEPTH));
+		juce::NormalisableRange<float> flangerCentreDelayRange(1.0f, 15.0f, 0.f, 0.5f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "FlangerCentre", slotName + " Flanger Centre", flangerCentreDelayRange, Obsidian::FLANGER_CENTRE));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "FlangerFeedback", slotName + " Flanger Feedback",
+		    juce::NormalisableRange<float>(-0.95f, 0.95f, 0.f), Obsidian::FLANGER_FEEDBACK));
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "FlangerMix", slotName + " Flanger Mix",
+		                                                             juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		                                                             Obsidian::FLANGER_MIX));
+
+		juce::NormalisableRange<float> bitcrusherDepthRange(1.0f, 16.0f, 0.f, 0.4f);
+		params.push_back(
+		    std::make_unique<juce::AudioParameterFloat>(slotId + "BitCrusherBitDepth", slotName + " Bitcrusher Depth",
+		                                                bitcrusherDepthRange, Obsidian::BITCRUSHER_BIT_DEPTH));
+
+		juce::NormalisableRange<float> bitcrusherRateRange(1.0f, 50.0f, 0.f, 0.3f);
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "BitCrusherRate", slotName + " Bitcrusher Rate Reduction", bitcrusherRateRange,
+		    Obsidian::BITCRUSHER_SAMPLE_RATE_REDUCTION));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "BitCrusherMix", slotName + " Bitcrusher Mix", juce::NormalisableRange<float>(0.f, 1.f, 0.f),
+		    Obsidian::BITCRUSHER_MIX));
+
 		params.push_back(makeTrigg(slotId + "DistortionBypassed", slotName + " Distortion Bypassed"));
 		params.push_back(makeTrigg(slotId + "CompressorBypassed", slotName + " Compressor Bypassed"));
 		params.push_back(makeTrigg(slotId + "LimiterBypassed", slotName + " Limiter Bypassed"));
 		params.push_back(makeTrigg(slotId + "EQBypassed", slotName + " EQ Bypassed"));
 		params.push_back(makeTrigg(slotId + "FilterBypassed", slotName + " Filter Bypassed"));
 		params.push_back(makeTrigg(slotId + "ChorusBypassed", slotName + " Chorus Bypassed"));
+		params.push_back(makeTrigg(slotId + "PhaserBypassed", slotName + " Phaser Bypassed"));
+		params.push_back(makeTrigg(slotId + "FlangerBypassed", slotName + " Flanger Bypassed"));
+		params.push_back(makeTrigg(slotId + "BitCrusherBypassed", slotName + " Bitcrusher Bypassed"));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
 		params.push_back(makeTrigg(slotId + "Generate", slotName + " Generate"));
+		params.push_back(makeTrigg(slotId + "ReverseActive", slotName + " Reverse Active"));
 		params.push_back(makeTrigg(slotId + "PageA", slotName + " Page A"));
 		params.push_back(makeTrigg(slotId + "PageB", slotName + " Page B"));
 		params.push_back(makeTrigg(slotId + "PageC", slotName + " Page C"));
@@ -590,13 +711,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		                                                           Obsidian::MAX_TRACKS, 1));
 
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "AdsrAttack", slotName + " ADSR Attack", juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));
+		    slotId + "AdsrAttack", slotName + " ADSR Attack",
+		    juce::NormalisableRange<float>(Obsidian::ADSRDefaultValues::ATTACK_MIN,
+		                                   Obsidian::ADSRDefaultValues::ATTACK_MAX),
+		    Obsidian::ADSRDefaultValues::ATTACK_DEFAULT));
+
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "AdsrDecay", slotName + " ADSR Decay", juce::NormalisableRange<float>(0.001f, 4.0f), 4.0f));
-		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "AdsrSustain", slotName + " ADSR Sustain",
-		                                                             juce::NormalisableRange<float>(0.0f, 1.0f), 1.0f));
+		    slotId + "AdsrDecay", slotName + " ADSR Decay",
+		    juce::NormalisableRange<float>(Obsidian::ADSRDefaultValues::DECAY_MIN,
+		                                   Obsidian::ADSRDefaultValues::DECAY_MAX),
+		    Obsidian::ADSRDefaultValues::DECAY_DEFAULT));
+
 		params.push_back(std::make_unique<juce::AudioParameterFloat>(
-		    slotId + "AdsrRelease", slotName + " ADSR Release", juce::NormalisableRange<float>(0.001f, 4.0f), 0.0f));
+		    slotId + "AdsrSustain", slotName + " ADSR Sustain",
+		    juce::NormalisableRange<float>(Obsidian::ADSRDefaultValues::SUSTAIN_MIN,
+		                                   Obsidian::ADSRDefaultValues::SUSTAIN_MAX),
+		    Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "AdsrRelease", slotName + " ADSR Release",
+		    juce::NormalisableRange<float>(Obsidian::ADSRDefaultValues::RELEASE_MIN,
+		                                   Obsidian::ADSRDefaultValues::RELEASE_MAX),
+		    Obsidian::ADSRDefaultValues::RELEASE_DEFAULT));
 	}
 
 	return {params.begin(), params.end()};
@@ -610,9 +746,7 @@ void ParameterManager::applyPlayState(bool shouldArm, TrackData *track)
 
 	auto &currentPage = track->getCurrentPage();
 	if (currentPage.numSamples <= 0)
-	{
 		return;
-	}
 
 	const bool isPlaying = track->isCurrentlyPlaying.load();
 	const bool emptySeq = track->allSequencerStepsAreFalse();
@@ -658,9 +792,7 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 {
 
 	if (parameterID == "generate" && newValue > 0.5f)
-	{
 		juce::MessageManager::callAsync([this]() { getAPVTS().getParameter("generate")->setValueNotifyingHost(0.0f); });
-	}
 	else if (parameterID == "globalCrossfader" || parameterID.startsWith("pairCrossfader") ||
 	         parameterID == "useCrossfader")
 	{
@@ -761,21 +893,13 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			auto &page = track->getCurrentPage();
 
 			if (parameterID.endsWith("AdsrAttack"))
-			{
 				page.adsrAttack.store(newValue);
-			}
 			else if (parameterID.endsWith("AdsrDecay"))
-			{
 				page.adsrDecay.store(newValue);
-			}
 			else if (parameterID.endsWith("AdsrSustain"))
-			{
 				page.adsrSustain.store(newValue);
-			}
 			else if (parameterID.endsWith("AdsrRelease"))
-			{
 				page.adsrRelease.store(newValue);
-			}
 		}
 		else if (parameterID.endsWith("Mute"))
 		{
@@ -799,9 +923,7 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		else if (parameterID.endsWith("CompressorMakeUpGain"))
 			track->compressor.setMakeUpGain(newValue);
 		else if (parameterID.endsWith("DistortionPreGain"))
-		{
 			track->distortion.setPre(newValue);
-		}
 		else if (parameterID.endsWith("DistortionPostGain"))
 			track->distortion.setPost(newValue);
 		else if (parameterID.endsWith("LimiterMakeUpGain"))
@@ -885,6 +1007,32 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->chorus.setFeedback(newValue);
 		else if (parameterID.endsWith("ChorusMix"))
 			track->chorus.setMix(newValue);
+		else if (parameterID.endsWith("PhaserRate"))
+			track->phaser.setRate(newValue);
+		else if (parameterID.endsWith("PhaserDepth"))
+			track->phaser.setDepth(newValue);
+		else if (parameterID.endsWith("PhaserCentre"))
+			track->phaser.setCentre(newValue);
+		else if (parameterID.endsWith("PhaserFeedback"))
+			track->phaser.setFeedback(newValue);
+		else if (parameterID.endsWith("PhaserMix"))
+			track->phaser.setMix(newValue);
+		else if (parameterID.endsWith("FlangerRate"))
+			track->flanger.setRate(newValue);
+		else if (parameterID.endsWith("FlangerDepth"))
+			track->flanger.setDepth(newValue);
+		else if (parameterID.endsWith("FlangerCentre"))
+			track->flanger.setCentre(newValue);
+		else if (parameterID.endsWith("FlangerFeedback"))
+			track->flanger.setFeedback(newValue);
+		else if (parameterID.endsWith("FlangerMix"))
+			track->flanger.setMix(newValue);
+		else if (parameterID.endsWith("BitCrusherBitDepth"))
+			track->bitCrusher.setBitDepth(newValue);
+		else if (parameterID.endsWith("BitCrusherRate"))
+			track->bitCrusher.setSampleRateReduction(newValue);
+		else if (parameterID.endsWith("BitCrusherMix"))
+			track->bitCrusher.setMix(newValue);
 		else if (parameterID.endsWith("DistortionBypassed"))
 			track->distortion.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("EQBypassed"))
@@ -897,6 +1045,12 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			track->compressor.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("ChorusBypassed"))
 			track->chorus.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("PhaserBypassed"))
+			track->phaser.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("FlangerBypassed"))
+			track->flanger.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("BitCrusherBypassed"))
+			track->bitCrusher.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);
@@ -909,24 +1063,36 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackFine(slot),
 			                                                 MidiMapping::fineToMidi(getFine(slotIdx)));
 		}
-		else if (parameterID.endsWith("RandomRetrigger"))
+		else if (parameterID.endsWith("BeatRepeatActive"))
 		{
 			bool isEnabled = newValue > 0.5f;
 			track->randomRetriggerEnabled.store(isEnabled);
 			if (isEnabled)
-			{
 				track->beatRepeatPending.store(true);
-			}
 			else
-			{
 				track->beatRepeatStopPending.store(true);
-			}
 		}
-		else if (parameterID.endsWith("RetriggerInterval"))
+		else if (parameterID.endsWith("ReverseActive"))
+		{
+			bool isEnabled = newValue > 0.5f;
+			if (isEnabled)
+				track->reversePending.store(true);
+			else
+				track->reverseStopPending.store(true);
+		}
+		else if (parameterID.endsWith("TransientScatterActive"))
+		{
+			bool isEnabled = newValue > 0.5f;
+			if (isEnabled)
+				track->transientScatterPending.store(true);
+			else
+				track->transientScatterStopPending.store(true);
+		}
+		else if (parameterID.endsWith("BeatRepeatInterval"))
 		{
 			int value = (int)juce::roundToInt(newValue);
 			double hostBpm = audioProcessor.getHostBpm();
-			double repeatDuration = audioProcessor.getSequencerManager().calculateRetriggerInterval(value, hostBpm);
+			double repeatDuration = audioProcessor.getSequencerManager().calculateBeatRepeatInterval(value, hostBpm);
 			audioProcessor.getTrackManager().updateBeatRepeat(track, value, hostBpm, repeatDuration);
 		}
 	}
@@ -936,9 +1102,9 @@ void ParameterManager::handleSampleParams(int slot, TrackData *track)
 {
 	if (audioProcessor.isShuttingDown.load())
 		return;
-	float paramRandomRetrigger = getRandomRetrigger(slot);
+	float paramBeatRepeatActive = getBeatRepeatActive(slot);
 	int slotNumber = slot + 1;
-	bool isRetriggerEnabled = paramRandomRetrigger > 0.5f;
+	bool isRetriggerEnabled = paramBeatRepeatActive > 0.5f;
 
 	if (track->lastFeedbackBeatRepeat.load() != isRetriggerEnabled)
 	{

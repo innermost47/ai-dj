@@ -27,10 +27,11 @@ class ObsidianModalWindow : public ObsidianComponent
 	void paint(juce::Graphics &g) override;
 	void resized() override;
 
+	juce::OwnedArray<ObsidianSvgButton> buttons;
+
   private:
 	juce::String title;
 	std::unique_ptr<juce::Component> content;
-	juce::OwnedArray<ObsidianSvgButton> buttons;
 };
 
 class ObsidianModalOverlay;
@@ -54,9 +55,10 @@ class ObsidianModalOverlay : public ObsidianComponent
 	void mouseDown(const juce::MouseEvent &e) override;
 	void close();
 
+	bool closing = false;
+
 	std::unique_ptr<ObsidianModalWindow> modalWindow;
 
   private:
-	bool closing = false;
 	JUCE_DECLARE_WEAK_REFERENCEABLE(ObsidianModalOverlay)
 };

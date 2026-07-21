@@ -4,6 +4,7 @@
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
+#include "StableAudioEngine.h"
 #include "TrackEffectsPanel.h"
 
 UITrackManager::UITrackManager(DjIaVstEditor &editor) : editor(editor)
@@ -24,7 +25,10 @@ void UITrackManager::refreshTracks()
 	trackComponents.clear();
 	refreshTrackComponents();
 	for (auto &trackComp : trackComponents)
-		trackComp->loadPromptPresets();
+	{
+		if (auto *t = editor.audioProcessor.getTrack(trackComp->getTrackId()))
+			trackComp->populatePromptPresets(t->getCurrentPage().selectedModel);
+	}
 	editor.repaint();
 }
 
@@ -84,9 +88,7 @@ void UITrackManager::refreshTrackComponents()
 		trackComp->onTrackRenamed = [this](const juce::String &id, const juce::String &newName)
 		{
 			if (editor.mixerPanel)
-			{
 				editor.mixerPanel->updateTrackName(id, newName);
-			}
 		};
 
 		trackComp->onSelectTrack = [this](const juce::String &id) { updateSelectedTrack(id); };
@@ -94,13 +96,9 @@ void UITrackManager::refreshTrackComponents()
 		trackComp->onModelChanged = [this](const juce::String &id)
 		{
 			if (editor.mixerPanel)
-			{
 				editor.mixerPanel->updateModelUI(id);
-			}
 			if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
-			{
 				editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(id);
-			}
 		};
 
 		trackComp->onSampleDropped = [this](const juce::String &id)
@@ -130,9 +128,7 @@ void UITrackManager::refreshTrackComponents()
 		{ editor.audioProcessor.getAudioManager().stopTrackPreview(trackId); };
 
 		if (wasGeneratingLocal && trackId == generatingId)
-		{
 			trackComp->startGeneratingAnimation();
-		}
 
 		editor.uiLayoutManager->getTracksContainer()->addAndMakeVisible(trackComp.get());
 		trackComponents.push_back(std::move(trackComp));
@@ -270,8 +266,8 @@ void UITrackManager::refreshUIForMode()
 void UITrackManager::checkLocalModelsAndNotify()
 {
 	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR);
-	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR);
+	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR());
+	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR());
 
 	StableAudioEngine tempEngine;
 	bool modelsPresent = tempEngine.initialize(stableAudioDir.getFullPathName());
@@ -306,7 +302,6 @@ void UITrackManager::updateUIComponents()
 	{
 		editor.uiGenerationManager->setIsGenerating(true);
 		editor.uiGenerationManager->setWasGenerating(true);
-		editor.startTimer(200);
 	}
 	for (auto &trackComp : trackComponents)
 	{
@@ -314,19 +309,13 @@ void UITrackManager::updateUIComponents()
 		{
 			TrackData *track = editor.audioProcessor.getTrack(trackComp->getTrackId());
 			if (track && !trackComp->isEditingLabel)
-			{
 				trackComp->updateFromTrackData();
-			}
 		}
 	}
 	if (editor.mixerPanel)
-	{
 		editor.mixerPanel->updateAllMixerComponents();
-	}
 	if (editor.uiLayoutManager)
-	{
 		editor.uiLayoutManager->getRightPanelWrapper()->updateComponents();
-	}
 
 	if (!editor.lastMidiNote.isEmpty())
 	{
@@ -356,12 +345,9 @@ void UITrackManager::updateUIComponents()
 	static bool currentWasGenerating = false;
 	bool isCurrentlyGenerating = editor.audioProcessor.getIsGenerating();
 	if (currentWasGenerating && !isCurrentlyGenerating)
-	{
 		for (auto &trackComp : trackComponents)
-		{
 			trackComp->refreshWaveformIfNeeded();
-		}
-	}
+
 	currentWasGenerating = isCurrentlyGenerating;
 }
 

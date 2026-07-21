@@ -22,6 +22,7 @@ class UIModalManager
 	void clearAll();
 	void showOnboarding(OnboardingVariant variant);
 	void advanceOnboardingTo(int stepIndex);
+	void showCredits();
 
   private:
 	DjIaVstEditor &editor;

@@ -961,3 +961,231 @@ void ObsidianAlertManager::showPromptEditor(juce::Component *parent, const juce:
 		                                overlay->close();
 	                                });
 }
+
+void ObsidianAlertManager::showCredits(juce::Component *parent)
+{
+	struct CreditEntry
+	{
+		juce::String name;
+		juce::String copyright;
+		juce::String license;
+		juce::String url;
+	};
+
+	struct EarlyAdopterEntry
+	{
+		juce::String name;
+		juce::String url;
+	};
+
+	static const std::vector<EarlyAdopterEntry> earlyAdopters = {
+	    {"Brian Bullock", "https://rethinkstudios.tv"},
+	    {"Moteka", "https://linktr.ee/motekamusic"},
+	    {"Steven Wagenheim", "https://soundcloud.com/steven-wagenheim"},
+	};
+
+	static const std::vector<CreditEntry> entries = {
+	    {"JUCE", "Copyright (c) Raw Material Software Limited.", "JUCE License", "https://juce.com"},
+	    {"MiniBPM", "Copyright (c) 2007-2025 Particular Programs Ltd (Chris Cannam / Breakfast Quay).",
+	     "GNU General Public License", "https://breakfastquay.com/minibpm/"},
+	    {"Airwindows (Console6)", "Copyright (c) Chris Johnson (Airwindows).", "MIT License",
+	     "https://www.airwindows.com/"},
+	    {"nlohmann/json", "Copyright (c) 2013-2025 Niels Lohmann.", "MIT License", "https://github.com/nlohmann/json"},
+	    {"Signalsmith Stretch", "Copyright (c) Signalsmith Audio Ltd.", "MIT License",
+	     "https://github.com/Signalsmith-Audio/signalsmith-stretch"},
+	    {"Ableton Link", "Copyright (c) Ableton AG, Berlin.", "Commercial License (Ableton AG)",
+	     "https://github.com/Ableton/link"},
+	};
+
+	class CreditsContent : public ObsidianComponent
+	{
+	  public:
+		juce::Viewport viewport;
+		juce::Component container;
+
+		struct Row : public ObsidianComponent
+		{
+			juce::Label nameLbl, copyrightLbl, licenseLbl;
+			juce::HyperlinkButton urlBtn;
+			juce::String url;
+
+			Row(const CreditEntry &e) : url(e.url)
+			{
+				auto styleLabel = [](juce::Label &lbl, const juce::String &text, bool bold, juce::Colour col)
+				{
+					lbl.setText(text, juce::dontSendNotification);
+					lbl.setColour(juce::Label::textColourId, col);
+					lbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, bold ? juce::Font::bold : juce::Font::plain));
+				};
+
+				styleLabel(nameLbl, e.name, true, ColourPalette::textPrimary);
+				styleLabel(copyrightLbl, e.copyright, false, ColourPalette::textSecondary);
+				styleLabel(licenseLbl, e.license, false, ColourPalette::slate);
+
+				urlBtn.setButtonText(e.url);
+				urlBtn.setURL(juce::URL(e.url));
+				urlBtn.setColour(juce::HyperlinkButton::textColourId, ColourPalette::buttonPrimary);
+				urlBtn.setJustificationType(juce::Justification::centredLeft);
+				urlBtn.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+				addAndMakeVisible(urlBtn);
+
+				addAndMakeVisible(nameLbl);
+				addAndMakeVisible(copyrightLbl);
+				addAndMakeVisible(licenseLbl);
+				addAndMakeVisible(urlBtn);
+			}
+
+			void paint(juce::Graphics &g) override
+			{
+				g.setColour(ColourPalette::backgroundDeep);
+				g.fillRoundedRectangle(getLocalBounds().toFloat(), Obsidian::CORNER);
+				g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
+				g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(0.5f), Obsidian::CORNER, 1.0f);
+			}
+
+			void resized() override
+			{
+				auto area = getLocalBounds().reduced(10, 6);
+				nameLbl.setBounds(area.removeFromTop(18));
+				area.removeFromTop(2);
+				copyrightLbl.setBounds(area.removeFromTop(16));
+				area.removeFromTop(2);
+
+				auto bottom = area.removeFromTop(18);
+				licenseLbl.setBounds(bottom.removeFromLeft(bottom.getWidth() / 2));
+				urlBtn.setBounds(bottom);
+			}
+		};
+
+		struct AdopterRow : public ObsidianComponent
+		{
+			juce::Label nameLbl;
+			juce::HyperlinkButton urlBtn;
+
+			AdopterRow(const EarlyAdopterEntry &e)
+			{
+				nameLbl.setText(e.name, juce::dontSendNotification);
+				nameLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+				nameLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
+				addAndMakeVisible(nameLbl);
+
+				urlBtn.setButtonText(e.url);
+				urlBtn.setURL(juce::URL(e.url));
+				urlBtn.setColour(juce::HyperlinkButton::textColourId, ColourPalette::buttonPrimary);
+				urlBtn.setJustificationType(juce::Justification::centredLeft);
+				urlBtn.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+				addAndMakeVisible(urlBtn);
+			}
+
+			void paint(juce::Graphics &g) override
+			{
+				g.setColour(ColourPalette::backgroundDeep);
+				g.fillRoundedRectangle(getLocalBounds().toFloat(), Obsidian::CORNER);
+				g.setColour(ColourPalette::backgroundLight.withAlpha(0.3f));
+				g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(0.5f), Obsidian::CORNER, 1.0f);
+			}
+
+			void resized() override
+			{
+				auto area = getLocalBounds().reduced(10, 6);
+				nameLbl.setBounds(area.removeFromTop(18));
+				area.removeFromTop(2);
+				urlBtn.setBounds(area.removeFromTop(18));
+			}
+		};
+
+		std::vector<std::unique_ptr<Row>> rows;
+		std::vector<std::unique_ptr<AdopterRow>> adopterRows;
+		juce::Label header;
+		juce::Label adoptersHeader;
+		juce::HyperlinkButton authorLink;
+
+		CreditsContent()
+		{
+			authorLink.setButtonText("Developed by innermost47");
+			authorLink.setURL(juce::URL("https://github.com/innermost47"));
+			authorLink.setColour(juce::HyperlinkButton::textColourId, ColourPalette::buttonPrimary);
+			authorLink.setJustificationType(juce::Justification::centredLeft);
+			authorLink.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+			container.addAndMakeVisible(authorLink);
+
+			adoptersHeader.setText("Thanks to Obsidian Neural Early Adopters", juce::dontSendNotification);
+			adoptersHeader.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			adoptersHeader.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
+			adoptersHeader.setJustificationType(juce::Justification::centredLeft);
+			container.addAndMakeVisible(adoptersHeader);
+
+			for (const auto &a : earlyAdopters)
+			{
+				auto row = std::make_unique<AdopterRow>(a);
+				container.addAndMakeVisible(*row);
+				adopterRows.push_back(std::move(row));
+			}
+
+			header.setText("OBSIDIAN Neural - Third-Party Components", juce::dontSendNotification);
+			header.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			header.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
+			header.setJustificationType(juce::Justification::centredLeft);
+			container.addAndMakeVisible(header);
+
+			for (const auto &e : entries)
+			{
+				auto row = std::make_unique<Row>(e);
+				container.addAndMakeVisible(*row);
+				rows.push_back(std::move(row));
+			}
+
+			viewport.setViewedComponent(&container, false);
+			viewport.setScrollBarsShown(true, false);
+			addAndMakeVisible(viewport);
+		}
+
+		void resized() override
+		{
+			viewport.setBounds(getLocalBounds());
+
+			const int w = viewport.getWidth() - 12;
+			const int rowH = 78;
+			const int adopterRowH = 44;
+			const int spacing = 6;
+			const int headerH = 28;
+			const int topPad = 8;
+
+			int y = topPad;
+
+			authorLink.setBounds(4, y, w, 20);
+			y += 20 + 14;
+
+			adoptersHeader.setBounds(0, y, w, headerH);
+			y += headerH + 4;
+
+			for (auto &row : adopterRows)
+			{
+				row->setBounds(0, y, w, adopterRowH);
+				y += adopterRowH + spacing;
+			}
+			y += 10;
+
+			header.setBounds(0, y, w, headerH);
+			y += headerH + 4;
+
+			for (auto &row : rows)
+			{
+				row->setBounds(0, y, w, rowH);
+				y += rowH + spacing;
+			}
+
+			container.setSize(w, juce::jmax(y + topPad, viewport.getHeight()));
+		}
+	};
+
+	auto modal = std::make_unique<ObsidianModalWindow>("Credits & Licenses", 600, 560);
+	modal->setContent(std::make_unique<CreditsContent>());
+
+	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr)
+		return;
+
+	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive,
+	                                [overlay]() { overlay->close(); });
+}

@@ -360,8 +360,13 @@ void CustomLookAndFeel::drawLabel(juce::Graphics &g, juce::Label &label)
 		auto textColour = label.findColour(juce::Label::textColourId).withMultipliedAlpha(alpha);
 		g.setColour(textColour);
 		auto textArea = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
+
+		float fontHeight = label.getFont().getHeight();
+		if (textArea.isEmpty() || fontHeight <= 0.0f)
+			return;
+
 		g.drawFittedText(label.getText(), textArea, label.getJustificationType(),
-		                 juce::jmax(1, (int)((float)textArea.getHeight() / label.getFont().getHeight())), 1.0f);
+		                 juce::jmax(1, (int)((float)textArea.getHeight() / fontHeight)), 1.0f);
 	}
 	else if (label.isEnabled())
 	{
@@ -718,6 +723,68 @@ void CustomLookAndFeel::drawTextEditorOutline(juce::Graphics &g, int width, int 
 	{
 		g.setColour(ColourPalette::lightGrey.withAlpha(0.4f));
 		g.drawRoundedRectangle(bounds, corner, 0.8f);
+	}
+}
+
+void CustomLookAndFeel::drawProgressBar(juce::Graphics &g, juce::ProgressBar &bar, int width, int height,
+                                        double progress, const juce::String &textToShow)
+{
+	const auto background = bar.findColour(juce::ProgressBar::backgroundColourId);
+	const auto foreground = bar.findColour(juce::ProgressBar::foregroundColourId);
+
+	auto bounds = juce::Rectangle<float>(0.5f, 0.5f, (float)width - 1.0f, (float)height - 1.0f);
+	const float corner = Obsidian::CORNER;
+
+	g.setColour(juce::Colours::black.withAlpha(0.25f));
+	g.fillRoundedRectangle(bounds.translated(0, 1.0f), corner);
+
+	g.setColour(background);
+	g.fillRoundedRectangle(bounds, corner);
+
+	juce::Rectangle<float> filled;
+
+	if (progress >= 0.0)
+		filled = bounds.withWidth(bounds.getWidth() * (float)juce::jlimit(0.0, 1.0, progress));
+	else
+	{
+		const float phase = (float)(juce::Time::getMillisecondCounter() % 2000) / 2000.0f;
+		const float t = phase < 0.5f ? phase * 2.0f : (1.0f - phase) * 2.0f;
+		const float segW = bounds.getWidth() * 0.3f;
+		filled = bounds.withWidth(segW).withX(bounds.getX() + t * (bounds.getWidth() - segW));
+	}
+
+	if (filled.getWidth() > 1.0f)
+	{
+		g.setColour(foreground);
+		g.fillRoundedRectangle(filled, corner);
+
+		g.setColour(juce::Colours::white.withAlpha(0.06f));
+		g.fillRoundedRectangle(filled.withHeight(filled.getHeight() * 0.45f), corner);
+	}
+
+	g.setColour(foreground.brighter(0.2f).withAlpha(0.4f));
+	g.drawRoundedRectangle(bounds, corner, Obsidian::LIGHT_BORDER);
+
+	if (textToShow.isNotEmpty() && progress >= 0.0)
+	{
+		g.setFont(juce::Font(juce::FontOptions(Obsidian::notoBold()).withHeight(Obsidian::TEXT_REGULAR)));
+
+		const auto textArea = juce::Rectangle<int>(0, 0, width, height);
+		const auto filledInt = filled.getSmallestIntegerContainer();
+
+		{
+			juce::Graphics::ScopedSaveState save(g);
+			g.excludeClipRegion(filledInt);
+			g.setColour(ColourPalette::textPrimary.withAlpha(0.9f));
+			g.drawText(textToShow, textArea, juce::Justification::centred);
+		}
+
+		{
+			juce::Graphics::ScopedSaveState save(g);
+			g.reduceClipRegion(filledInt);
+			g.setColour(background.darker(0.2f));
+			g.drawText(textToShow, textArea, juce::Justification::centred);
+		}
 	}
 }
 

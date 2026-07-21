@@ -73,5 +73,7 @@ class RightPanelWrapper : public ObsidianComponent
 	juce::Component scrollContent;
 	juce::Viewport contentViewport;
 
+	void setupUI();
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RightPanelWrapper)
 };

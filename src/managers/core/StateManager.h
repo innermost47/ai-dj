@@ -15,6 +15,9 @@ class StateManager
 	void setStateInformation(const void *data, int sizeInBytes);
 	bool saveToFile(const juce::File &file);
 	bool loadFromFile(const juce::File &file);
+
+	juce::File getLineageSidecarFile(const juce::String &projectId) const;
+
 	static juce::File getDefaultSessionsFolder();
 
   private:

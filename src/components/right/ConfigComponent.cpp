@@ -9,9 +9,15 @@ ConfigComponent::ConfigComponent(DjIaVstProcessor &processor, DjIaVstEditor &edi
     : audioProcessor(processor), editor(editor)
 {
 	auto imagePtr = juce::ImageCache::getFromMemory(BinaryData::logo_png, BinaryData::logo_pngSize);
+	auto stabilityAiPtr = juce::ImageCache::getFromMemory(BinaryData::sailogo_png, BinaryData::sailogo_pngSize);
+	auto jucePtr = juce::ImageCache::getFromMemory(BinaryData::jucelogo_png, BinaryData::jucelogo_pngSize);
 
 	if (imagePtr.isValid())
 		logoImage = imagePtr;
+	if (stabilityAiPtr.isValid())
+		stabilityAiLogoImage = stabilityAiPtr;
+	if (jucePtr.isValid())
+		juceLogoImage = jucePtr;
 
 	scaleAndDurationPanel = std::make_unique<ScaleAndDurationPanel>(processor);
 
@@ -28,42 +34,29 @@ void ConfigComponent::setupUI()
 	configLabel.setJustificationType(juce::Justification::left);
 	configLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_REGULAR));
 
-	addAndMakeVisible(versionLabel);
-	versionLabel.setText("OBSIDIAN Neural - " + Version::VERSION, juce::dontSendNotification);
-	versionLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
-	versionLabel.setJustificationType(juce::Justification::right);
-	versionLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_XXS));
-
-	addAndMakeVisible(buildLabel);
-	buildLabel.setText(Version::BUILD, juce::dontSendNotification);
-	buildLabel.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
-	buildLabel.setJustificationType(juce::Justification::right);
-	buildLabel.setFont(juce::FontOptions(Obsidian::TEXT_XXS));
+	addAndMakeVisible(poweredByLabel);
+	poweredByLabel.setText("Powered By", juce::dontSendNotification);
+	poweredByLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+	poweredByLabel.setJustificationType(juce::Justification::topLeft);
+	poweredByLabel.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_XXS));
 
 	addAndMakeVisible(bypassSequencerButton);
 	bypassSequencerButton.setClickingTogglesState(true);
 	bypassSequencerButton.setToggleState(audioProcessor.getBypassSequencer(), juce::dontSendNotification);
 	if (audioProcessor.getBypassSequencer())
-	{
 		bypassSequencerButton.loadIcon(BinaryData::cpuregular_svg, BinaryData::cpuregular_svgSize);
-	}
 	else
-	{
 		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
-	}
 	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
 
 	addAndMakeVisible(bypassLLMButton);
 	bypassLLMButton.setClickingTogglesState(true);
+	bypassLLMButton.setEnabled(!audioProcessor.getUseLocalModel());
 	bypassLLMButton.setToggleState(audioProcessor.getBypassLLM(), juce::dontSendNotification);
 	if (audioProcessor.getBypassLLM())
-	{
 		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-	}
 	else
-	{
 		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
-	}
 
 	bypassLLMButton.setTooltip("Disables prompt enhancement for faster, raw generation - Disabled by default");
 	configButton.setTooltip("Configure API settings and generation mode");
@@ -79,6 +72,10 @@ void ConfigComponent::setupUI()
 	addAndMakeVisible(configButton);
 	configButton.loadIcon(BinaryData::gear_svg, BinaryData::gear_svgSize);
 	configButton.setTooltip("Configure settings globally");
+
+	addAndMakeVisible(creditsButton);
+	creditsButton.loadIcon(BinaryData::info_svg, BinaryData::info_svgSize);
+	creditsButton.setTooltip("Credits & third-party licenses");
 
 	auto setupControlBtn = [this](IconButtonSimple &btn)
 	{
@@ -97,6 +94,7 @@ void ConfigComponent::setupUI()
 	setupControlBtn(configButton);
 	setupControlBtn(helpButton);
 	setupControlBtn(bypassLLMButton);
+	setupControlBtn(creditsButton);
 
 	addAndMakeVisible(scaleAndDurationPanel.get());
 
@@ -158,18 +156,35 @@ void ConfigComponent::addEventListeners()
 		                         : OnboardingVariant::VST;
 		editor.uiModalManager->showOnboarding(variant);
 	};
+
+	creditsButton.onClick = [this] { editor.uiModalManager->showCredits(); };
 }
 
-void ConfigComponent::paint(juce::Graphics & /*g*/)
+void ConfigComponent::updateUseLLM()
 {
+	bypassLLMButton.setEnabled(!audioProcessor.getUseLocalModel());
+}
+
+void ConfigComponent::paint(juce::Graphics &g)
+{
+	auto area = getLocalBounds().reduced(10, Obsidian::PADDING);
+
+	auto logoArea = area.removeFromBottom(14);
+
+	auto stabilityAiLogoArea = logoArea.removeFromLeft(area.getWidth() / 2);
+
+	g.drawImageWithin(stabilityAiLogoImage, (int)stabilityAiLogoArea.getX(), (int)stabilityAiLogoArea.getY(),
+	                  (int)stabilityAiLogoArea.getWidth(), (int)stabilityAiLogoArea.getHeight(),
+	                  juce::RectanglePlacement::xLeft);
+	g.drawImageWithin(juceLogoImage, (int)logoArea.getX(), (int)logoArea.getY(), (int)logoArea.getWidth(),
+	                  (int)logoArea.getHeight(), juce::RectanglePlacement::xRight);
 }
 
 void ConfigComponent::resized()
 {
 	auto area = getLocalBounds().reduced(Obsidian::PADDING);
 
-	buildLabel.setBounds(area.removeFromBottom((int)Obsidian::TEXT_XS));
-	versionLabel.setBounds(area.removeFromBottom((int)Obsidian::TEXT_XS));
+	poweredByLabel.setBounds(area.removeFromBottom(26));
 
 	auto configArea = area.removeFromTop(Obsidian::CONFIG_AREA_HEIGHT);
 
@@ -182,36 +197,34 @@ void ConfigComponent::resized()
 	btnBox.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
 	btnBox.alignItems = juce::FlexBox::AlignItems::center;
 
+	float minWidthAndHeight = juce::JUCEApplicationBase::isStandaloneApp() ? 24.f : 22.f;
+
 	if (!juce::JUCEApplicationBase::isStandaloneApp())
 	{
 		btnBox.items.add(juce::FlexItem(bypassSequencerButton)
-		                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
-		                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
+		                     .withMinWidth(minWidthAndHeight)
+		                     .withMinHeight(minWidthAndHeight)
 		                     .withFlex(1));
 	}
 
-	btnBox.items.add(juce::FlexItem(bypassLLMButton)
-	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
-	                     .withFlex(1));
-	btnBox.items.add(juce::FlexItem(configButton)
-	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
-	                     .withFlex(1));
-	btnBox.items.add(juce::FlexItem(helpButton)
-	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
-	                     .withFlex(1));
+	btnBox.items.add(
+	    juce::FlexItem(bypassLLMButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
+	btnBox.items.add(
+	    juce::FlexItem(configButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
+	btnBox.items.add(
+	    juce::FlexItem(helpButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
 	btnBox.items.add(juce::FlexItem(openMidiEditorButton)
-	                     .withMinWidth(Obsidian::MIN_SMALL_BTN_WIDTH)
-	                     .withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT)
+	                     .withMinWidth(minWidthAndHeight)
+	                     .withMinHeight(minWidthAndHeight)
 	                     .withFlex(1));
+	btnBox.items.add(
+	    juce::FlexItem(creditsButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
 
 	column.items.add(juce::FlexItem(*scaleAndDurationPanel).withMinHeight(Obsidian::SCALE_AND_DURATION_HEIGHT));
 	column.items.add(juce::FlexItem(configLabel)
 	                     .withMinHeight(26)
 	                     .withMargin(juce::FlexItem::Margin(Obsidian::GAP_4, 0.0f, 0.0f, 0.0f)));
-	column.items.add(juce::FlexItem(btnBox).withMinHeight(Obsidian::MIN_SMALL_BTN_HEIGHT));
+	column.items.add(juce::FlexItem(btnBox).withMinHeight(minWidthAndHeight));
 
 	column.performLayout(configArea);
 }

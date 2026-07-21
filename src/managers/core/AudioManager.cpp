@@ -1,5 +1,4 @@
 ﻿#include "AudioManager.h"
-#include "MiniBpm.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
@@ -57,24 +56,16 @@ void AudioManager::initDummySynth()
 void AudioManager::processIncomingAudio(bool hostIsPlaying)
 {
 	if (!audioProcessor.getHasPendingAudioData())
-	{
 		return;
-	}
 	if (audioProcessor.getPendingTrackId().isEmpty())
-	{
 		return;
-	}
 
 	TrackData *track = trackManager.getTrack(audioProcessor.getPendingTrackId());
 	if (!track)
-	{
 		return;
-	}
 	if (audioProcessor.getWaitingForMidiToLoad() && !audioProcessor.getCorrectMidiNoteReceived() && hostIsPlaying &&
 	    track->isPlaying.load())
-	{
 		return;
-	}
 	if (!audioProcessor.getCanLoad() && !audioProcessor.getAutoLoadEnabled())
 	{
 		audioProcessor.setHasUnloadedSample(true);
@@ -101,8 +92,8 @@ void AudioManager::processIncomingAudio(bool hostIsPlaying)
 	currentPage.stagingOriginalBpm = track->preprocessOriginalBpm.load();
 	track->nextHasOriginalVersion.store(track->preprocessHasOriginal.load());
 
-	juce::File permanentFile = getTrackPageAudioFile(audioProcessor.getPendingTrackId(), targetPageIndex);
-	targetPage.audioFilePath = permanentFile.getFullPathName();
+	targetPage.audioFilePath = track->stagingAudioFilePath;
+	targetPage.originalFilePath = track->stagingOriginalFilePath;
 
 	track->hasStagingData.store(true, std::memory_order_release);
 	track->swapRequested.store(true, std::memory_order_release);
@@ -193,6 +184,13 @@ void AudioManager::clearOutputBuffers(juce::AudioSampleBuffer &buffer)
 	}
 }
 
+float AudioManager::getBPM(double hostBpm, juce::AudioBuffer<float> &cleanedRawBuffer, const int cleanedNumSamples,
+                           const double sampleRate)
+{
+	double tempo = bpmDetector->detectTempo(hostBpm, cleanedRawBuffer.getReadPointer(0), cleanedNumSamples, sampleRate);
+	return (float)(tempo > 0.0 ? tempo : hostBpm);
+}
+
 AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::File &rawFile, float serverSnappedBpm,
                                                                  const juce::String &trackId)
 {
@@ -215,7 +213,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 		rawBuffer.copyFrom(1, 0, rawBuffer, 0, 0, numSamples);
 
 	juce::AudioBuffer<float> cleanedRawBuffer;
-	AudioData rawData = getAudioTrimmed(numSamples, numChannels, rawBuffer, 0.06f);
+	AudioData rawData = getAudioTrimmed(numSamples, numChannels, rawBuffer);
 
 	if (rawData.cleanedSize > 0)
 	{
@@ -224,9 +222,7 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 			cleanedRawBuffer.copyFrom(c, 0, rawBuffer, c, rawData.firstValidSample, rawData.cleanedSize);
 	}
 	else
-	{
 		cleanedRawBuffer.makeCopyOf(rawBuffer);
-	}
 
 	const int cleanedNumSamples = cleanedRawBuffer.getNumSamples();
 
@@ -234,18 +230,9 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	double tempo = 0.0;
 
 	if (serverSnappedBpm <= 0.0f)
-	{
-		breakfastquay::MiniBPM bpm(static_cast<float>(sampleRate));
-		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
-		bpm.setBeatsPerBar(4);
-		bpm.process(cleanedRawBuffer.getReadPointer(0), cleanedNumSamples);
-		tempo = bpm.estimateTempo();
-		bpm.reset();
-	}
+		tempo = getBPM(hostBpm, cleanedRawBuffer, cleanedNumSamples, sampleRate);
 	else
-	{
 		tempo = static_cast<double>(serverSnappedBpm);
-	}
 
 	int targetPageIndex = 0;
 	TrackData *track = trackManager.getTrack(trackId);
@@ -254,22 +241,24 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	if (audioProcessor.getIsLoadingState())
 		track = nullptr;
 
-	auto stretchedFile = getTrackPageAudioFile(trackId, targetPageIndex);
-	stretchedFile.getParentDirectory().createDirectory();
+	auto genFiles = createGenerationFiles(trackId, targetPageIndex);
 
 	if (tempo <= 0.0 || hostBpm <= 0.0 || std::abs(hostBpm - tempo) < 0.1)
 	{
-		saveBufferToFile(cleanedRawBuffer, stretchedFile, sampleRate);
+		saveBufferToFile(cleanedRawBuffer, genFiles.stretched, sampleRate);
+		registerGeneratedSample(trackId, genFiles.stretched, juce::File());
 
 		if (track && !audioProcessor.getIsLoadingState())
 		{
+			track->stagingAudioFilePath = genFiles.stretched.getFullPathName();
+			track->stagingOriginalFilePath.clear();
 			track->stagingBuffer.makeCopyOf(cleanedRawBuffer);
 			track->stagingNumSamples.store(cleanedRawBuffer.getNumSamples());
 			track->stagingSampleRate.store(sampleRate);
 			result.stagingFilled = true;
 		}
 
-		result.stretchedFile = stretchedFile;
+		result.stretchedFile = genFiles.stretched;
 		result.hasOriginalVersion = false;
 		result.originalBpm = static_cast<float>(hostBpm > 0 ? hostBpm : 126.0);
 		result.success = true;
@@ -277,42 +266,16 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 	}
 
 	double ratio = hostBpm / tempo;
-	ratio = juce::jlimit(0.25, 4.0, ratio);
+	juce::AudioBuffer<float> finalStretchedBuffer = stretchAndTrim(cleanedRawBuffer, ratio, sampleRate);
 
-	const int outputSamples = static_cast<int>(cleanedNumSamples / ratio);
-	juce::AudioBuffer<float> stretchedBuffer(2, outputSamples);
-
-	signalsmith::stretch::SignalsmithStretch<float> stretch;
-	stretch.presetDefault(2, static_cast<float>(sampleRate));
-
-	const float *const *inPtrs = rawBuffer.getArrayOfReadPointers();
-	float *const *outPtrs = stretchedBuffer.getArrayOfWritePointers();
-	stretch.process(inPtrs, cleanedNumSamples, outPtrs, outputSamples);
-
-	juce::AudioBuffer<float> finalStretchedBuffer;
-	AudioData stretchedData = getAudioTrimmed(outputSamples, numChannels, stretchedBuffer, 0.06f);
-
-	if (stretchedData.cleanedSize > 0)
-	{
-		finalStretchedBuffer.setSize(2, stretchedData.cleanedSize);
-		for (int c = 0; c < 2; ++c)
-			finalStretchedBuffer.copyFrom(c, 0, stretchedBuffer, c, stretchedData.firstValidSample,
-			                              stretchedData.cleanedSize);
-	}
-	else
-	{
-		finalStretchedBuffer.makeCopyOf(stretchedBuffer);
-	}
-
-	auto audioDir = stretchedFile.getParentDirectory();
-	char pageName = static_cast<char>('A' + targetPageIndex);
-	auto originalFile = audioDir.getChildFile(trackId + "_original_" + juce::String(pageName) + ".wav");
-
-	saveBufferToFile(cleanedRawBuffer, originalFile, sampleRate);
-	saveBufferToFile(finalStretchedBuffer, stretchedFile, sampleRate);
+	saveBufferToFile(cleanedRawBuffer, genFiles.original, sampleRate);
+	saveBufferToFile(finalStretchedBuffer, genFiles.stretched, sampleRate);
+	registerGeneratedSample(trackId, genFiles.stretched, genFiles.original);
 
 	if (track && !audioProcessor.getIsLoadingState())
 	{
+		track->stagingAudioFilePath = genFiles.stretched.getFullPathName();
+		track->stagingOriginalFilePath = genFiles.original.getFullPathName();
 		track->stagingBuffer.makeCopyOf(cleanedRawBuffer);
 		track->stagingNumSamples.store(cleanedRawBuffer.getNumSamples());
 		track->stagingSampleRate.store(sampleRate);
@@ -320,8 +283,8 @@ AudioManager::PreprocessResult AudioManager::preprocessAudioFile(const juce::Fil
 		result.stagingFilled = true;
 	}
 
-	result.stretchedFile = stretchedFile;
-	result.originalFile = originalFile;
+	result.stretchedFile = genFiles.stretched;
+	result.originalFile = genFiles.original;
 	result.hasOriginalVersion = true;
 	result.originalBpm = static_cast<float>(hostBpm);
 	result.success = true;
@@ -438,7 +401,7 @@ void AudioManager::updateWaveformDisplay(const juce::String &trackId)
 }
 
 AudioManager::AudioData AudioManager::getAudioTrimmed(int outputSamples, int numChannels,
-                                                      juce::AudioBuffer<float> &finalStretchedAudio, float threshold)
+                                                      juce::AudioBuffer<float> &finalStretchedAudio)
 {
 	int firstValidSample = 0;
 
@@ -451,7 +414,7 @@ AudioManager::AudioData AudioManager::getAudioTrimmed(int outputSamples, int num
 			if (sampleVal > maxVal)
 				maxVal = sampleVal;
 		}
-		if (maxVal > threshold)
+		if (maxVal > Obsidian::TRIM_THRESHOLD)
 		{
 			firstValidSample = i;
 			break;
@@ -474,17 +437,11 @@ void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
 
 	if (snappedBpm <= 0.0f)
 	{
-		breakfastquay::MiniBPM bpm(static_cast<float>(track->stagingSampleRate.load()));
-		bpm.setBPMRange(hostBpm - 20.0, hostBpm + 20.0);
-		bpm.setBeatsPerBar(4);
-
+		double sampleRate = track->stagingSampleRate.load();
 		int nsamples = track->stagingBuffer.getNumSamples();
-		const float *channelData = track->stagingBuffer.getReadPointer(0);
+		juce::AudioBuffer<float> cleanedRawBuffer = track->stagingBuffer;
 
-		bpm.process(channelData, nsamples);
-		tempo = bpm.estimateTempo();
-
-		bpm.reset();
+		tempo = getBPM(hostBpm, cleanedRawBuffer, nsamples, sampleRate);
 
 		double bpmDifference = std::abs(hostBpm - tempo);
 
@@ -521,38 +478,8 @@ void AudioManager::processAudioBPMAndSync(TrackData *track, float sampleBpm)
 
 	double ratio = hostBpm / tempo;
 
-	ratio = juce::jlimit(0.25, 4.0, ratio);
-
 	track->originalStagingBuffer.makeCopyOf(track->stagingBuffer);
-
-	int inputSamples = track->stagingBuffer.getNumSamples();
-	int outputSamples = static_cast<int>(inputSamples / ratio);
-	int numChannels = track->stagingBuffer.getNumChannels();
-
-	juce::AudioBuffer<float> finalStretchedAudio(numChannels, outputSamples);
-
-	signalsmith::stretch::SignalsmithStretch<float> stretch;
-	stretch.presetDefault(numChannels, static_cast<float>(track->stagingSampleRate.load()));
-
-	const float *const *inputPointers = track->stagingBuffer.getArrayOfReadPointers();
-	float *const *outputPointers = finalStretchedAudio.getArrayOfWritePointers();
-
-	stretch.process(inputPointers, inputSamples, outputPointers, outputSamples);
-
-	AudioData data = getAudioTrimmed(outputSamples, numChannels, finalStretchedAudio);
-
-	if (data.cleanedSize > 0)
-	{
-		juce::AudioBuffer<float> totalAudio(numChannels, data.cleanedSize);
-
-		for (int channel = 0; channel < numChannels; ++channel)
-		{
-			totalAudio.copyFrom(channel, 0, finalStretchedAudio, channel, data.firstValidSample, data.cleanedSize);
-		}
-		track->stagingBuffer.makeCopyOf(totalAudio);
-	}
-	else
-		track->stagingBuffer.makeCopyOf(finalStretchedAudio);
+	track->stagingBuffer = stretchAndTrim(track->stagingBuffer, ratio, track->stagingSampleRate.load());
 
 	track->stagingNumSamples.store(track->stagingBuffer.getNumSamples());
 	currentPage.stagingOriginalBpm = static_cast<float>(hostBpm);
@@ -575,7 +502,10 @@ void AudioManager::saveBufferToFile(const juce::AudioBuffer<float> &buffer, cons
 
 	juce::WavAudioFormat wavFormat;
 	if (outputFile.exists())
-		outputFile.deleteFile();
+	{
+		jassertfalse;
+		return;
+	}
 
 	juce::FileOutputStream *fileStream = new juce::FileOutputStream(outputFile);
 	if (!fileStream->openedOk())
@@ -597,108 +527,8 @@ void AudioManager::saveBufferToFile(const juce::AudioBuffer<float> &buffer, cons
 		writer.reset();
 		return;
 	}
+
 	writer.reset();
-
-	auto *bank = audioProcessor.getSampleBank();
-
-	if (bank && outputFile.getFileName().endsWith(".wav") && !audioProcessor.getIsLoadingFromBank())
-	{
-		juce::String filename = outputFile.getFileNameWithoutExtension();
-
-		if (filename.contains("_original"))
-			return;
-
-		juce::String trackId = filename;
-
-		for (char page = 'A'; page <= 'D'; ++page)
-		{
-			juce::String pageSuffix = "_" + juce::String::charToString(page);
-			if (trackId.endsWith(pageSuffix))
-			{
-				trackId = trackId.dropLastCharacters(2);
-				break;
-			}
-		}
-
-		for (int asciiCode = 65; asciiCode <= 68; ++asciiCode)
-		{
-			juce::String asciiSuffix = "_" + juce::String(asciiCode);
-			if (trackId.endsWith(asciiSuffix))
-			{
-				trackId = trackId.dropLastCharacters(asciiSuffix.length());
-				break;
-			}
-		}
-
-		if (trackId == audioProcessor.getCurrentBankLoadTrackId())
-			return;
-
-		juce::String prompt, key = "Unknown", modelName, oldSampleId;
-		float bpm = 126.0f;
-
-		{
-			const juce::ScopedLock sl(trackManager.getTracksLock());
-			TrackData *track = trackManager.getTrack(trackId);
-			if (!track)
-				return;
-			auto &currentPage = track->getCurrentPage();
-			prompt = currentPage.generationPrompt;
-			if (prompt.isEmpty())
-				prompt = currentPage.selectedPrompt;
-			bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : currentPage.originalBpm;
-			key = currentPage.generationKey.isEmpty() ? "Unknown" : currentPage.generationKey;
-			modelName = currentPage.selectedModel;
-			oldSampleId = track->currentSampleId;
-		}
-
-		if (prompt.isEmpty())
-			return;
-
-		if (!oldSampleId.isEmpty())
-			bank->markSampleAsUnused(oldSampleId, audioProcessor.getProjectId());
-
-		juce::String sampleId = bank->addSample(prompt, outputFile, bpm, key, modelName);
-		if (sampleId.isEmpty())
-			return;
-
-		bank->markSampleAsUsed(sampleId, audioProcessor.getProjectId());
-
-		{
-			const juce::ScopedLock sl(trackManager.getTracksLock());
-			TrackData *track = trackManager.getTrack(trackId);
-			if (!track)
-				return;
-			track->currentSampleId = sampleId;
-			track->getCurrentPage().generationPrompt = "";
-		}
-	}
-}
-
-void AudioManager::saveOriginalAndStretchedBuffers(const juce::AudioBuffer<float> &originalBuffer,
-                                                   const juce::AudioBuffer<float> &stretchedBuffer,
-                                                   const juce::String &trackId, double sampleRate)
-{
-	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
-
-	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
-	{
-		audioDir = audioDir.getChildFile(audioProcessor.getProjectId());
-	}
-	audioDir.createDirectory();
-
-	TrackData *track = trackManager.getTrack(trackId);
-
-	juce::File originalFile;
-	juce::File stretchedFile;
-
-	char pageName = static_cast<char>('A' + track->currentPageIndex.load());
-	originalFile = audioDir.getChildFile(trackId + "_original_" + juce::String(pageName) + ".wav");
-	stretchedFile = audioDir.getChildFile(trackId + "_" + juce::String(pageName) + ".wav");
-
-	saveBufferToFile(originalBuffer, originalFile, sampleRate);
-	saveBufferToFile(stretchedBuffer, stretchedFile, sampleRate);
 }
 
 void AudioManager::loadAudioFileForPageSwitch(const juce::String &trackId, int pageIndex, const juce::File &audioFile)
@@ -787,9 +617,8 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		reader->read(&track->stagingBuffer, 0, numSamples, 0, true, true);
 
 		if (numChannels == 1)
-		{
 			track->stagingBuffer.copyFrom(1, 0, track->stagingBuffer, 0, 0, numSamples);
-		}
+
 		auto &currentPage = track->getCurrentPage();
 
 		double dawSampleRate = audioProcessor.getSampleRate();
@@ -829,22 +658,21 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 		processAudioBPMAndSync(track, sampleBpm);
 
-		auto permanentFile = getTrackPageAudioFile(trackId, pageIndex);
-		permanentFile.getParentDirectory().createDirectory();
+		auto genFiles = createGenerationFiles(trackId, pageIndex);
 
 		if (track->nextHasOriginalVersion.load())
 		{
-			auto originalFile = getTrackPageAudioFile(trackId + "_original", pageIndex);
-			auto stretchedFile = getTrackPageAudioFile(trackId, pageIndex);
-			saveBufferToFile(track->originalStagingBuffer, originalFile, track->stagingSampleRate.load());
-			saveBufferToFile(track->stagingBuffer, stretchedFile, track->stagingSampleRate.load());
+			saveBufferToFile(track->originalStagingBuffer, genFiles.original, track->stagingSampleRate.load());
+			saveBufferToFile(track->stagingBuffer, genFiles.stretched, track->stagingSampleRate.load());
+			page.originalFilePath = genFiles.original.getFullPathName();
 		}
 		else
 		{
-			saveBufferToFile(track->stagingBuffer, permanentFile, track->stagingSampleRate.load());
+			saveBufferToFile(track->stagingBuffer, genFiles.stretched, track->stagingSampleRate.load());
+			page.originalFilePath.clear();
 		}
 
-		page.audioFilePath = permanentFile.getFullPathName();
+		page.audioFilePath = genFiles.stretched.getFullPathName();
 		page.numSamples = track->stagingNumSamples.load();
 		page.sampleRate = track->stagingSampleRate.load();
 		page.originalBpm = page.stagingOriginalBpm;
@@ -853,6 +681,9 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 		auto *bank = audioProcessor.getSampleBank();
 		auto *sampleEntry = bank->getSample(sampleId);
+		bank->addCacheFiles(sampleId, genFiles.stretched.getFullPathName(),
+		                    +track->nextHasOriginalVersion.load() ? genFiles.original.getFullPathName()
+		                                                          : juce::String());
 		if (sampleEntry)
 		{
 			page.prompt = sampleEntry->originalPrompt;
@@ -902,8 +733,9 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 juce::File AudioManager::getExportDirectory()
 {
-	auto documentsDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-	auto exportDir = documentsDir.getChildFile(Obsidian::EXPORTS_DIR);
+	auto documentsDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+	                        .getChildFile(Obsidian::OBSIDIAN_BASE_DIR());
+	auto exportDir = documentsDir.getChildFile(Obsidian::EXPORTS_DIR());
 
 	if (!exportDir.exists())
 		exportDir.createDirectory();
@@ -938,8 +770,8 @@ juce::File AudioManager::exportSampleForDragDrop(const juce::File &originalFile)
 juce::File AudioManager::getTrackPageAudioFile(const juce::String &trackId, int pageIndex)
 {
 	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
 	{
 		audioDir = audioDir.getChildFile(audioProcessor.getProjectId());
@@ -1146,5 +978,103 @@ void AudioManager::stopSamplePreview()
 			}
 		}
 		currentPreviewTrackId = "";
+	}
+}
+
+juce::AudioBuffer<float> AudioManager::stretchAndTrim(const juce::AudioBuffer<float> &inputBuffer, double ratio,
+                                                      double sampleRate)
+{
+	ratio = juce::jlimit(0.25, 4.0, ratio);
+
+	const int numChannels = inputBuffer.getNumChannels();
+	const int inputSamples = inputBuffer.getNumSamples();
+	const int outputSamples = static_cast<int>(inputSamples / ratio);
+
+	juce::AudioBuffer<float> stretchedBuffer(numChannels, outputSamples);
+
+	signalsmith::stretch::SignalsmithStretch<float> stretch;
+	stretch.presetDefault(numChannels, static_cast<float>(sampleRate));
+
+	const float *const *inPtrs = inputBuffer.getArrayOfReadPointers();
+	float *const *outPtrs = stretchedBuffer.getArrayOfWritePointers();
+	stretch.process(inPtrs, inputSamples, outPtrs, outputSamples);
+
+	AudioData data = getAudioTrimmed(outputSamples, numChannels, stretchedBuffer);
+
+	if (data.cleanedSize > 0)
+	{
+		juce::AudioBuffer<float> trimmed(numChannels, data.cleanedSize);
+		for (int c = 0; c < numChannels; ++c)
+			trimmed.copyFrom(c, 0, stretchedBuffer, c, data.firstValidSample, data.cleanedSize);
+		return trimmed;
+	}
+
+	return stretchedBuffer;
+}
+
+AudioManager::GenerationFiles AudioManager::createGenerationFiles(const juce::String &trackId, int pageIndex)
+{
+	auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+	                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
+	if (audioProcessor.getProjectId() != "legacy" && !audioProcessor.getProjectId().isEmpty())
+		audioDir = audioDir.getChildFile(audioProcessor.getProjectId());
+	audioDir.createDirectory();
+
+	const juce::String genId = juce::Uuid().toString();
+	const juce::String page = juce::String::charToString(static_cast<char>('A' + pageIndex));
+
+	GenerationFiles f;
+	f.stretched = audioDir.getChildFile(trackId + "_" + page + "_" + genId + ".wav");
+	f.original = audioDir.getChildFile(trackId + "_" + page + "_" + genId + "_original.wav");
+	return f;
+}
+
+void AudioManager::registerGeneratedSample(const juce::String &trackId, const juce::File &stretchedFile,
+                                           const juce::File &originalFile)
+{
+	auto *bank = audioProcessor.getSampleBank();
+	if (!bank || audioProcessor.getIsLoadingFromBank() || audioProcessor.getIsLoadingState())
+		return;
+	if (trackId == audioProcessor.getCurrentBankLoadTrackId())
+		return;
+
+	juce::String prompt, key = "Unknown", modelName, oldSampleId;
+	float bpm = 126.0f;
+	{
+		const juce::ScopedLock sl(trackManager.getTracksLock());
+		TrackData *track = trackManager.getTrack(trackId);
+		if (!track)
+			return;
+		auto &currentPage = track->getCurrentPage();
+		prompt = currentPage.generationPrompt;
+		if (prompt.isEmpty())
+			prompt = currentPage.selectedPrompt;
+		bpm = currentPage.generationBpm > 0 ? currentPage.generationBpm : currentPage.originalBpm;
+		key = currentPage.generationKey.isEmpty() ? "Unknown" : currentPage.generationKey;
+		modelName = currentPage.selectedModel;
+		oldSampleId = track->currentSampleId;
+	}
+	if (prompt.isEmpty())
+		return;
+
+	if (!oldSampleId.isEmpty())
+		bank->markSampleAsUnused(oldSampleId, audioProcessor.getProjectId());
+
+	juce::String sampleId = bank->addSample(prompt, stretchedFile, bpm, key, modelName);
+	if (sampleId.isEmpty())
+		return;
+
+	bank->addCacheFiles(sampleId, stretchedFile.getFullPathName(),
+	                    originalFile.existsAsFile() ? originalFile.getFullPathName() : juce::String());
+
+	bank->markSampleAsUsed(sampleId, audioProcessor.getProjectId());
+	{
+		const juce::ScopedLock sl(trackManager.getTracksLock());
+		if (TrackData *track = trackManager.getTrack(trackId))
+		{
+			track->currentSampleId = sampleId;
+			track->getCurrentPage().generationPrompt = "";
+		}
 	}
 }

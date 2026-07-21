@@ -264,7 +264,6 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 			item->setSelected(entry->id == selectedId);
 			item->onEditRequested = [this, entry]() { onPromptEditRequested(entry); };
 			item->onDeleteRequested = [this, entry]() { onPromptDeleteRequested(entry); };
-
 			items.push_back(std::move(item));
 		}
 		accordion->setItems(std::move(items));
@@ -414,7 +413,10 @@ void PromptBankPanel::addPromptDialog()
 
 	auto safeThis = juce::Component::SafePointer<PromptBankPanel>(this);
 
-	ObsidianAlertManager::showPromptEditor(this, "", Obsidian::STABLE_AUDIO_OPEN_V1, "", availCats,
+	juce::String modelName =
+	    audioProcessor.getUseLocalModel() ? Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM() : Obsidian::STABLE_AUDIO_OPEN_V1();
+
+	ObsidianAlertManager::showPromptEditor(this, "", modelName, "", availCats,
 	                                       [this, safeThis](const ObsidianAlertManager::PromptEditorResult &res)
 	                                       {
 		                                       if (!res.confirmed)
