@@ -8,7 +8,6 @@
 #include "Limiter.h"
 #include "MidiLearnManager.h"
 #include "MidiManager.h"
-#include "ObsidianEngine.h"
 #include "ParameterManager.h"
 #include "PromptBank.h"
 #include "SampleBank.h"
@@ -34,7 +33,6 @@ class StandaloneTransport;
 
 class DjIaVstProcessor : public juce::AudioProcessor,
                          public juce::AudioProcessorValueTreeState::Listener,
-                         public juce::Timer,
                          public juce::AsyncUpdater
 {
   public:
@@ -55,6 +53,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::ThreadPool threadPool{1};
 	std::atomic<bool> heavyInitDone{false};
 	std::atomic<bool> isShuttingDown{false};
+	std::atomic<bool> stateJustLoaded{false};
+
+	bool updateCheckDone = false;
 
 #if JucePlugin_Build_Standalone
 	bool getIsLinkActive() const
@@ -375,6 +376,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return isLoadingFromBank.load();
 	}
+	bool isLocalModelInitialized() const
+	{
+		return localModelInitialized;
+	}
 
 	bool canGenerateStandard = true;
 
@@ -386,7 +391,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return timeSignatureDenominator.load();
 	}
-	juce::StringArray getAvailablePromptsForModel(const juce::String &modelName = "") const;
+	std::vector<PromptInfo> getAvailablePromptsWithCategoryForModel(const juce::String &modelName) const;
 	const juce::StringArray &getCustomKeywords() const
 	{
 		return customKeywords;
@@ -405,7 +410,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::AudioFormatManager sharedFormatManager;
 	juce::ValueTree pendingMidiMappings;
 	std::atomic<bool> needsUIUpdate{false};
-	bool updateCheckDone = false;
 
 	void setGlobalKey(const juce::String &key)
 	{
@@ -471,10 +475,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		useLocalModel = v;
 	}
-	void setNeedsUIRefreshAfterLoad(bool v)
-	{
-		stateJustLoaded.store(v);
-	}
 	void setIsGenerating(bool v)
 	{
 		isGenerating.store(v);
@@ -486,6 +486,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void setIsLoadingState(bool v)
 	{
 		isLoadingState.store(v);
+	}
+	void setNeedsUIRefreshAfterLoad(bool v)
+	{
+		stateJustLoaded.store(v);
 	}
 	void setCreditsRemaining(int v)
 	{
@@ -611,15 +615,24 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		hasPendingNotification = v;
 	}
+	void setLocalModelInitialized(bool v)
+	{
+		localModelInitialized = v;
+	}
 
 	double getLastHostBpmForQuantization() const
 	{
 		return lastHostBpmForQuantization.load();
 	}
 
-	void addPlayingTrack(int note, const juce::String &trackId)
+	void addPlayingTrack(int note, TrackData *track)
 	{
-		playingTracks[note] = trackId;
+		playingTracks[note] = track;
+	}
+
+	void clearPlayingTracks()
+	{
+		playingTracks.clear();
 	}
 
 	void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -627,7 +640,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	void initTracks();
 	void cleanProcessor();
-	void startNotePlaybackForTrack(const juce::String &trackId, int noteNumber, double hostBpm = 126.0);
+	void startNotePlaybackForTrack(TrackData *track, int noteNumber, double hostBpm = 110);
 	void previewTrack(const juce::String &trackId);
 	void loadPendingSample();
 	void reloadTrackWithVersion(const juce::String &trackId, bool useOriginal);
@@ -693,7 +706,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void getStateInformation(juce::MemoryBlock &destData) override;
 	void setStateInformation(const void *data, int sizeInBytes) override;
 	void parameterChanged(const juce::String &parameterID, float newValue) override;
-	void timerCallback() override;
 	void playTrack(const juce::MidiMessage &message, double hostBpm);
 	void stopNotePlaybackForTrack(int noteNumber);
 
@@ -773,8 +785,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	Compressor compressor;
 
 	std::unique_ptr<SampleBank> sampleBank;
-	std::unique_ptr<ObsidianEngine> obsidianEngine;
 	std::unique_ptr<PromptBank> promptBank;
+
+	std::shared_ptr<std::function<void(int, TrackData *)>> parameterUpdateCallbackHolder;
 
 	juce::String panelStateJson;
 
@@ -820,11 +833,12 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<int> crossfadeMode{0};
 
 	bool hostBpmEnabled = true;
-	bool useLocalModel = false;
+	bool useLocalModel = true;
 	bool onboardingDone = false;
 	bool savedPanelVisible = true;
 	bool hasPendingNotification = false;
 	bool useCrossfader = true;
+	bool localModelInitialized = false;
 
 	juce::StringArray customKeywords;
 	juce::StringArray customPrompts;
@@ -849,15 +863,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::MidiBuffer feedbackMidiBuffer;
 	juce::CriticalSection feedbackMidiLock;
 
-	struct PendingRequest
-	{
-		int trackId;
-		ObsidianEngine::LoopRequest request;
-		juce::Time requestTime;
-	};
-	std::queue<PendingRequest> pendingRequests;
-	std::mutex requestsMutex;
-
 	static juce::AudioProcessor::BusesProperties createBusLayout();
 	void handleAsyncUpdate() override;
 	void checkIfUIUpdateNeeded(juce::MidiBuffer &midiMessages);
@@ -873,16 +878,14 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	static juce::File getGlobalConfigFile();
 
-	std::unordered_map<int, juce::String> playingTracks;
+	std::map<int, TrackData *> playingTracks;
 	std::atomic<int> currentNoteNumber{-1};
 	std::atomic<bool> isNotePlaying{false};
 	std::atomic<bool> canLoad{false};
-	std::atomic<bool> stateJustLoaded{false};
+
 	std::atomic<double> lastHostBpmForQuantization{120.0};
 	std::atomic<double> cachedHostBpm{126.0};
 	std::uint64_t sample_time = 0;
-
-	std::shared_ptr<std::function<void(int, TrackData *)>> parameterUpdateCallbackHolder;
 
 #if JucePlugin_Build_Standalone
 	struct EngineData

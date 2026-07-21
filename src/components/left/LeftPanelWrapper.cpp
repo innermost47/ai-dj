@@ -1,13 +1,21 @@
 #include "LeftPanelWrapper.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "SendsPanel.h"
 
 LeftPanelWrapper::LeftPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &editor) : editor(editor)
 {
 	sampleBank = std::make_unique<SampleBankPanel>(processor);
-	addAndMakeVisible(*sampleBank);
-
 	promptBank = std::make_unique<PromptBankPanel>(processor, editor);
+
+	setupUI();
+}
+
+LeftPanelWrapper::~LeftPanelWrapper() = default;
+
+void LeftPanelWrapper::setupUI()
+{
+	addAndMakeVisible(*sampleBank);
 	addAndMakeVisible(*promptBank);
 
 	auto setupTab = [this](juce::TextButton &btn, Tab tab)
@@ -44,8 +52,6 @@ LeftPanelWrapper::LeftPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor &e
 
 	setActiveTab(Tab::Prompt);
 }
-
-LeftPanelWrapper::~LeftPanelWrapper() = default;
 
 void LeftPanelWrapper::paint(juce::Graphics &g)
 {
@@ -95,9 +101,7 @@ void LeftPanelWrapper::collapseExpand(bool expanded)
 	sampleTabButton.setVisible(isExpanded);
 
 	if (isExpanded)
-	{
 		updateTabVisibility();
-	}
 	else
 	{
 		promptBank->setVisible(false);
@@ -105,14 +109,12 @@ void LeftPanelWrapper::collapseExpand(bool expanded)
 	}
 
 	if (isExpanded)
-	{
 		collapseButton.loadIcon(BinaryData::caretleft_svg, BinaryData::caretleft_svgSize);
-	}
 	else
 		collapseButton.loadIcon(BinaryData::caretright_svg, BinaryData::caretright_svgSize);
 
 	repaint();
-	editor.uiLayoutManager->resized();
+	editor.uiLayoutManager->performLayout();
 }
 
 void LeftPanelWrapper::resized()
@@ -133,26 +135,14 @@ void LeftPanelWrapper::resized()
 		collapseButton.setBounds(tabBar.removeFromLeft(collapseButtonWidth));
 	}
 	else
-	{
 		collapseButton.setBounds(tabBar.removeFromLeft(tabBar.getWidth()));
-	}
 
 	area.removeFromTop(4);
 
-	if (promptBank)
-	{
-		if (isExpanded)
-		{
-			promptBank->setBounds(area);
-		}
-	}
-	if (sampleBank)
-	{
-		if (isExpanded)
-		{
-			sampleBank->setBounds(area);
-		}
-	}
+	if (promptBank && isExpanded)
+		promptBank->setBounds(area);
+	if (sampleBank && isExpanded)
+		sampleBank->setBounds(area);
 }
 
 void LeftPanelWrapper::setActiveTab(Tab tab)
@@ -198,11 +188,9 @@ void LeftPanelWrapper::restoreUIState(const juce::var &state)
 	setActiveTab(static_cast<Tab>(tab));
 
 	if (promptBank)
-	{
 		promptBank->restoreUIState(
 		    o->getProperty("promptBankState"), [this]() { promptBank->refreshList(); }, PromptBankPanel::firstSort,
 		    PromptBankPanel::lastSort);
-	}
 	if (sampleBank)
 		sampleBank->restoreUIState(
 		    o->getProperty("sampleBankState"), [this]() { sampleBank->refreshSampleList(); },

@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "BitCrusher.h"
 #include "Chorus.h"
 #include "Compressor.h"
 #include "Console6Channel.h"
@@ -8,7 +9,10 @@
 #include "DjIaClient.h"
 #include "Equalizer.h"
 #include "Filter.h"
+#include "Flanger.h"
+#include "JumpSmoother.h"
 #include "Limiter.h"
+#include "Phaser.h"
 #include "ReverbSend.h"
 #include <JuceHeader.h>
 #include <memory>
@@ -36,6 +40,12 @@ struct SequencerData
 
 struct TrackPage
 {
+	struct TransientInfo
+	{
+		int position = 0;
+		float strength = 0.0f;
+	};
+
 	juce::AudioSampleBuffer audioBuffer;
 
 	juce::String audioFilePath;
@@ -47,6 +57,7 @@ struct TrackPage
 	juce::String canvasState;
 	juce::String selectedModel;
 	juce::String savedModelBeforeLocal;
+	juce::String originalFilePath;
 
 	juce::StringArray selectedKeywords;
 
@@ -61,6 +72,12 @@ struct TrackPage
 	std::atomic<float> pitchSemitones{0.0f};
 	std::atomic<float> gain{0.0f};
 
+	std::vector<int> transientPositions;
+
+	std::vector<TransientInfo> transients;
+
+	int transientsAnalyzedForNumSamples = -1;
+
 	float stagingOriginalBpm = 126.0f;
 	float bpm = 126.0f;
 	float originalBpm = 126.0f;
@@ -72,10 +89,10 @@ struct TrackPage
 	std::atomic<bool> isLoading{false};
 	std::atomic<bool> loopPointsLocked{false};
 
-	std::atomic<float> adsrAttack{0.0f};
-	std::atomic<float> adsrDecay{4.0f};
-	std::atomic<float> adsrSustain{1.0f};
-	std::atomic<float> adsrRelease{0.0f};
+	std::atomic<float> adsrAttack{Obsidian::ADSRDefaultValues::ATTACK_DEFAULT};
+	std::atomic<float> adsrDecay{Obsidian::ADSRDefaultValues::DECAY_DEFAULT};
+	std::atomic<float> adsrSustain{Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT};
+	std::atomic<float> adsrRelease{Obsidian::ADSRDefaultValues::RELEASE_DEFAULT};
 
 	TrackPage() : generationBpm(126.0f)
 	{
@@ -124,10 +141,10 @@ struct TrackPage
 		isLoaded = false;
 		isLoading = false;
 		loopPointsLocked = false;
-		adsrAttack.store(0.0f);
-		adsrDecay.store(4.0f);
-		adsrSustain.store(1.0f);
-		adsrRelease.store(0.0f);
+		adsrAttack.store(Obsidian::ADSRDefaultValues::ATTACK_DEFAULT);
+		adsrDecay.store(Obsidian::ADSRDefaultValues::DECAY_DEFAULT);
+		adsrSustain.store(Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT);
+		adsrRelease.store(Obsidian::ADSRDefaultValues::RELEASE_DEFAULT);
 		pitchSemitones.store(0.0);
 		gain.store(0.0);
 		savedModelBeforeLocal.clear();
@@ -172,14 +189,27 @@ struct TrackData
 	Limiter limiter;
 	Distortion distortion;
 	Chorus chorus;
+	Phaser phaser;
+	Flanger flanger;
+	BitCrusher bitCrusher;
+	JumpSmoother jumpSmoother;
+
+	std::atomic<bool> seekPending{false};
+	std::atomic<double> seekFromPosition{0.0};
 
 	juce::String trackId;
 	juce::String trackName;
 	juce::String style;
 	juce::String currentSampleId;
+	juce::String stagingAudioFilePath;
+	juce::String stagingOriginalFilePath;
+
 	std::atomic<float> delaySend{0.0f};
 	std::atomic<float> reverbSend{0.0f};
 
+	juce::SmoothedValue<float> playGate{0.0f};
+
+	std::atomic<bool> stopRequested{false};
 	std::atomic<bool> showWaveform{true};
 	std::atomic<bool> isLoadingFromBank{false};
 	std::atomic<bool> showSequencer{true};
@@ -190,6 +220,7 @@ struct TrackData
 	std::atomic<bool> isPrepared{false};
 
 	std::atomic<float> lastFeedbackDelaySend{-1.0f};
+	std::atomic<float> analogDriftCoeff{1.0f};
 	std::atomic<double> numSamplesAccPerSequence{0.0};
 
 	int slotIndex = -1;
@@ -253,6 +284,13 @@ struct TrackData
 	std::atomic<bool> previewEndPending{false};
 	std::atomic<bool> skipDiskReload{false};
 	std::atomic<bool> isInGeneratingProcess{false};
+	std::atomic<bool> reverseActive{false};
+	std::atomic<bool> reversePending{false};
+	std::atomic<bool> reverseStopPending{false};
+	std::atomic<bool> beatRepeatAnchorPending{false};
+	std::atomic<bool> transientScatterActive{false};
+	std::atomic<bool> transientScatterPending{false};
+	std::atomic<bool> transientScatterStopPending{false};
 
 	std::atomic<double> stagingSampleRate{Obsidian::SAMPLERATE};
 	std::atomic<double> readPosition{0.0};
@@ -268,12 +306,8 @@ struct TrackData
 	std::atomic<float> lastFeedbackPan{-999.0f};
 	std::atomic<float> lastFeedbackPitch{-999.0f};
 	std::atomic<float> lastFeedbackFine{-999.0f};
-	std::atomic<float> safetyFade{1.f};
-	std::atomic<int> brFadeInPending{0};
-	std::atomic<int> fadeInPending{0};
-	std::atomic<int> fadeOutPending{0};
 	std::atomic<int> stagingNumSamples{0};
-	std::atomic<int> randomRetriggerInterval{Obsidian::RNDM_RTRGR_INTRVL};
+	std::atomic<int> randomBeatRepeatInterval{Obsidian::RNDM_RTRGR_INTRVL};
 	std::atomic<int> pendingPageIndex{-1};
 	std::atomic<int> stagingTargetPageIndex{-1};
 
@@ -284,6 +318,12 @@ struct TrackData
 
 	std::atomic<int64_t> pendingBeatNumber{-1};
 	std::atomic<int64_t> pendingStopBeatNumber{-1};
+
+	std::atomic<int64_t> pendingReverseBeatNumber{-1};
+	std::atomic<int64_t> pendingReverseStopBeatNumber{-1};
+
+	std::atomic<int64_t> pendingTransientScatterBeatNumber{-1};
+	std::atomic<int64_t> pendingTransientScatterStopBeatNumber{-1};
 
 	std::function<void(bool)> onPlayStateChanged;
 	std::function<void(bool)> onArmedStateChanged;
@@ -349,6 +389,23 @@ struct TrackData
 	bool isDeckB() const;
 
 	void setCurrentPage(int pageIndex);
+
+	void seekTo(double newReadPosition)
+	{
+		if (!seekPending.exchange(true))
+			seekFromPosition.store(readPosition.load());
+		readPosition.store(newReadPosition);
+	}
+
+	void requestStop()
+	{
+		stopRequested.store(true);
+	}
+
+	bool ownsTheoreticalTimeline() const
+	{
+		return beatRepeatActive.load() || reverseActive.load() || transientScatterActive.load();
+	}
 
   private:
 	JUCE_DECLARE_WEAK_REFERENCEABLE(TrackData)

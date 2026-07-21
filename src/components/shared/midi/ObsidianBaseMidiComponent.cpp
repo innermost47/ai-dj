@@ -150,7 +150,10 @@ void ObsidianBaseMidiComponent::applyParamToBinding(Binding &b, float normalized
 		if (b.slider->isMouseButtonDown())
 			return;
 		auto range = apvts.getParameterRange(fullParamId(b.suffix));
-		b.slider->setValue(range.convertFrom0to1(normalizedValue), juce::dontSendNotification);
+		float newVal = range.convertFrom0to1(normalizedValue);
+		if (std::abs((float)b.slider->getValue() - newVal) < range.interval * .5f)
+			return;
+		b.slider->setValue(newVal, juce::dontSendNotification);
 	}
 	else if (b.button)
 	{

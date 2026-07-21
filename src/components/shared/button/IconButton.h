@@ -102,7 +102,7 @@ class IconButtonSimple : public juce::TextButton, public IconButtonBase
 	void paintButton(juce::Graphics &g, bool isMouseOver, bool isButtonDown) override;
 };
 
-class IconButtonRepeat : public juce::TextButton, public IconButtonBase, private juce::Timer
+class IconButtonRepeat : public juce::TextButton, public IconButtonBase
 {
   public:
 	IconButtonRepeat(const juce::String &name, const juce::String &label = {});
@@ -117,7 +117,11 @@ class IconButtonRepeat : public juce::TextButton, public IconButtonBase, private
   private:
 	void mouseDown(const juce::MouseEvent &e) override;
 	void mouseUp(const juce::MouseEvent &e) override;
-	void timerCallback() override;
+
+	void handleVBlank();
 
 	int repeatCount = 0;
+	uint32_t nextTriggerTime = 0;
+	uint32_t currentInterval = 120;
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
 };

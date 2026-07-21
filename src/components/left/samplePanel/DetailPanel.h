@@ -3,7 +3,7 @@
 #include "SampleBank.h"
 #include <JuceHeader.h>
 
-class DetailPanel : public ObsidianComponent, public juce::Timer
+class DetailPanel : public ObsidianComponent
 {
   public:
 	DetailPanel();
@@ -14,6 +14,7 @@ class DetailPanel : public ObsidianComponent, public juce::Timer
 	void resized() override;
 	void setIsPlaying(bool playing);
 	void updatePlaybackPosition(float pos);
+	void updateAnimation();
 
 	std::function<void(SampleBankEntry *)> onPlayRequested;
 	std::function<void()> onStopRequested;
@@ -42,10 +43,10 @@ class DetailPanel : public ObsidianComponent, public juce::Timer
 	float playbackPos = 0.0f;
 	double lastTimerCall = 0.0;
 
-	void timerCallback() override;
 	void generateThumbnail();
 	void drawWaveform(juce::Graphics &g);
 	void updatePlayButton();
+	void setupUI();
 
 	juce::String formatDuration(float s);
 	juce::Colour getCategoryColor(const juce::String &category);

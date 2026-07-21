@@ -229,9 +229,11 @@ juce_add_binary_data(ObsidianBinaryData
         src/assets/icons/power.svg
         src/assets/icons/power-fill.svg
         src/assets/icons/prohibit.svg
+        src/assets/icons/radioactive.svg
         src/assets/icons/redo.svg
         src/assets/icons/refresh.svg
         src/assets/icons/repeat.svg
+        src/assets/icons/rewind.svg
         src/assets/icons/right.svg
         src/assets/icons/robotfill.svg
         src/assets/icons/robotregular.svg
@@ -278,12 +280,15 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/components/onboarding/OnboardingStep.cpp
     src/components/onboarding/OnboardingFlow.cpp
     src/components/right/ConfigComponent.cpp
+    src/components/right/fx/BitCrusherComponent.cpp
     src/components/right/fx/ChorusComponent.cpp
     src/components/right/fx/CompressorComponent.cpp
     src/components/right/fx/DistortionComponent.cpp
     src/components/right/fx/EqualizerComponent.cpp
     src/components/right/fx/FilterComponent.cpp
+    src/components/right/fx/FlangerComponent.cpp
     src/components/right/fx/LimiterComponent.cpp
+    src/components/right/fx/PhaserComponent.cpp
     src/components/right/fx/SendsPanel.cpp
     src/components/right/fx/TrackEffectsPanel.cpp
     src/components/right/LCDScreen.cpp
@@ -307,15 +312,18 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/data/TrackData.cpp
     src/dsp/airwindows/Console6Bus.cpp
     src/dsp/airwindows/Console6Channel.cpp
+    src/dsp/BitCrusher.cpp
     src/dsp/Chorus.cpp
     src/dsp/Compressor.cpp
     src/dsp/DelaySend.cpp
     src/dsp/Distortion.cpp
     src/dsp/Equalizer.cpp
     src/dsp/Filter.cpp
+    src/dsp/Flanger.cpp
     src/dsp/Limiter.cpp
     src/dsp/MiniBpm.cpp
     src/dsp/MonoEQ.cpp
+    src/dsp/Phaser.cpp
     src/dsp/ReverbSend.cpp
     src/dsp/SimpleEQ.cpp
     src/engines/DjIaClient.cpp
@@ -323,6 +331,7 @@ target_sources(ObsidianNeuralVST PRIVATE
     src/engines/StableAudioEngine.cpp
     src/managers/core/AudioManager.cpp
     src/managers/core/GenerationManager.cpp
+    src/managers/core/MiniBpmDetector.cpp
     src/managers/core/ParameterManager.cpp
     src/managers/core/SequencerManager.cpp
     src/managers/core/StateManager.cpp

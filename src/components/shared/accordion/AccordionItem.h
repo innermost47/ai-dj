@@ -6,7 +6,6 @@ class AccordionItem : public virtual ObsidianComponent
   public:
 	AccordionItem() = default;
 	~AccordionItem() override = default;
-
 	virtual int getPreferredHeight(int width) const = 0;
 
   private:

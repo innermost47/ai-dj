@@ -19,10 +19,7 @@
 
 class SequencerComponent;
 
-class DjIaVstEditor : public juce::AudioProcessorEditor,
-                      public juce::Timer,
-                      public juce::DragAndDropContainer,
-                      public ModalHost
+class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::DragAndDropContainer, public ModalHost
 {
   public:
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
@@ -53,7 +50,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 
 	void paint(juce::Graphics &) override;
 	void resized() override;
-	void timerCallback() override;
+	void handleVBlank();
 	void updateUIFromProcessor();
 	void refreshMixerChannels();
 	void initUI();
@@ -86,7 +83,15 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 
 	void setupScreen();
 
+	float currentScaleFactor = 1.0f;
+
+	int skipFrames = 0;
+	double lastHostBpm = 0.0;
+
 	bool mixerVisible = false;
+	bool isFullscreen = false;
+	bool waitingForState = false;
+
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
 
@@ -95,14 +100,10 @@ class DjIaVstEditor : public juce::AudioProcessorEditor,
 	juce::String lastMidiNote;
 	juce::Label creditsLabel;
 
-	float currentScaleFactor = 1.f;
-
-	int skipFrames = 0;
-	double lastHostBpm = 0.0;
-
-	bool isFullscreen = false;
-
 	CustomLookAndFeel customLookAndFeel;
+
+  private:
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(DjIaVstEditor)
 };

@@ -2,6 +2,18 @@
 
 DetailPanel::DetailPanel()
 {
+	setupUI();
+}
+
+DetailPanel::~DetailPanel()
+{
+	destroyed.store(true);
+	validity->store(false);
+	removeAllChildren();
+}
+
+void DetailPanel::setupUI()
+{
 	addAndMakeVisible(nameLabel);
 	nameLabel.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 	nameLabel.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
@@ -51,14 +63,6 @@ DetailPanel::DetailPanel()
 	playButton.setTooltip("Preview sound on Output 9");
 	playButton.setVisible(false);
 	setVisible(false);
-}
-
-DetailPanel::~DetailPanel()
-{
-	destroyed.store(true);
-	validity->store(false);
-	stopTimer();
-	removeAllChildren();
 }
 
 void DetailPanel::setEntry(SampleBankEntry *e)
@@ -369,13 +373,9 @@ void DetailPanel::setIsPlaying(bool playing)
 	{
 		playbackPos = 0.0f;
 		lastTimerCall = juce::Time::getMillisecondCounterHiRes() / 1000.0;
-		startTimer(30);
 	}
 	else
-	{
-		stopTimer();
 		playbackPos = 0.0f;
-	}
 	repaint();
 }
 
@@ -385,16 +385,15 @@ void DetailPanel::updatePlaybackPosition(float pos)
 	repaint();
 }
 
-void DetailPanel::timerCallback()
+void DetailPanel::updateAnimation()
 {
 	if (!isPlaying || !entry)
-	{
-		stopTimer();
 		return;
-	}
+
 	double now = juce::Time::getMillisecondCounterHiRes() / 1000.0;
 	playbackPos += (float)(now - lastTimerCall);
 	lastTimerCall = now;
+
 	if (playbackPos >= entry->duration)
 	{
 		playbackPos = entry->duration;

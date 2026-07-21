@@ -24,9 +24,19 @@ inline constexpr int MIN_SMALL_BTN_HEIGHT = 24;
 inline constexpr int CORNER = 1;
 inline constexpr int SAMPLE_DETAIL_HEIGHT_VST = 122;
 inline constexpr int SAMPLE_DETAIL_HEIGHT_STANDALONE = 94;
-inline constexpr int SAMPLE_ROW_HEIGHT = 54;
+inline constexpr int SAMPLE_ROW_HEIGHT = 64;
 inline constexpr int MIXER_CHANNEL_KNOB = 32;
 inline constexpr int COMBO_BOX_BASE_HEIGHT = 20;
+
+inline constexpr int DISTORTION_HEIGHT = 82;
+inline constexpr int BITCRUSHER_HEIGHT = 70;
+inline constexpr int EQ_HEIGHT = 130;
+inline constexpr int FILTER_HEIGHT = 80;
+inline constexpr int CHORUS_HEIGHT = 70;
+inline constexpr int FLANGER_HEIGHT = 70;
+inline constexpr int PHASER_HEIGHT = 70;
+inline constexpr int COMPRESSOR_HEIGHT = 70;
+inline constexpr int LIMITER_HEIGHT = 70;
 
 inline constexpr int TRACK_BASE_HEIGHT = 80;
 inline constexpr int WAVEFORM_HEIGHT = 45;

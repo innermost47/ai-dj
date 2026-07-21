@@ -20,6 +20,15 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor 
 	sendsPanel = std::make_unique<SendsPanel>(processor);
 	configComponent = std::make_unique<ConfigComponent>(processor, editor);
 
+	trackEffects->onContentChanged = [this]() { resized(); };
+
+	setupUI();
+}
+
+RightPanelWrapper::~RightPanelWrapper() = default;
+
+void RightPanelWrapper::setupUI()
+{
 	scrollContent.addAndMakeVisible(*trackRecap);
 	scrollContent.addAndMakeVisible(*trackEffects);
 
@@ -33,8 +42,6 @@ RightPanelWrapper::RightPanelWrapper(DjIaVstProcessor &processor, DjIaVstEditor 
 
 	addAndMakeVisible(*sendsPanel);
 }
-
-RightPanelWrapper::~RightPanelWrapper() = default;
 
 void RightPanelWrapper::paint(juce::Graphics &g)
 {
@@ -65,12 +72,15 @@ void RightPanelWrapper::resized()
 	if (topComp != nullptr)
 		mainStack.items.add(FlexItem(*topComp).withFlex(0.4f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
 
-	mainStack.items.add(FlexItem(*lcdScreen).withFlex(0.2f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
+	if (lcdScreen != nullptr)
+		mainStack.items.add(FlexItem(*lcdScreen).withFlex(0.2f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
 
 	mainStack.items.add(
 	    FlexItem(contentViewport).withFlex(1.25f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_8, 0)));
 
-	mainStack.items.add(FlexItem(*sendsPanel).withFlex(0.7f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
+	if (sendsPanel != nullptr)
+		mainStack.items.add(
+		    FlexItem(*sendsPanel).withFlex(0.7f).withMargin(FlexItem::Margin(0, 0, Obsidian::GAP_4, 0)));
 
 	mainStack.items.add(FlexItem(bottomRow).withFlex(1.0f));
 
@@ -78,7 +88,7 @@ void RightPanelWrapper::resized()
 
 	const int viewportW = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
 	const int recapH = trackRecap->getPreferredHeight();
-	const int effectsH = 580;
+	const int effectsH = trackEffects->getPreferredHeight();
 
 	int y = 0;
 	trackEffects->setBounds(0, y, viewportW, effectsH);

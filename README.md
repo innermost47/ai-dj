@@ -48,12 +48,12 @@ Beta testers get **free access** to the Local Edition. If you want in:
 
 OBSIDIAN Neural is the same plugin, with two ways to generate audio:
 
-| Mode                       | How generation runs                                  | Internet            | Engines               |
-| -------------------------- | ---------------------------------------------------- | ------------------- | --------------------- |
-| **Local Edition** (new)    | On your own CPU, fully offline                       | Once, for setup     | Stable Audio 3 Medium |
-| **Cloud / Server**         | On a server (mine via subscription, or self-hosted)  | Required            | All 9 engines         |
+| Mode                    | How generation runs                                 | Internet        | Engines               |
+| ----------------------- | --------------------------------------------------- | --------------- | --------------------- |
+| **Local Edition** (new) | On your own CPU, fully offline                      | Once, for setup | Stable Audio 3 Medium |
+| **Cloud / Server**      | On a server (mine via subscription, or self-hosted) | Required        | All 9 engines         |
 
-- **Local Edition** — a one-time purchase. The model runs on your machine, no subscription, no credits. Best for live performers and anyone who wants total autonomy. *(Currently in beta — see above.)*
+- **Local Edition** — a one-time purchase. The model runs on your machine, no subscription, no credits. Best for live performers and anyone who wants total autonomy. _(Currently in beta — see above.)_
 - **Cloud / Server** — the free open-source plugin runs in server mode. Start free with 20 credits, then generation requires a subscription — or self-host the whole stack yourself.
 
 ---
@@ -63,6 +63,7 @@ OBSIDIAN Neural is the same plugin, with two ways to generate audio:
 Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ### Performance
+
 - **8-track sampler** with MIDI triggering (C3-B3)
 - **4 pages per track** (A/B/C/D) - Switch variations instantly
 - **8 sequences per page** - 256 total patterns for complex live sets
@@ -70,18 +71,24 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 - **Quantized page changes** - Seamless transitions locked to measure boundaries
 - **4 pair crossfaders with master bypass** - Blend each deck A/B pair independently with model-aware color morphing, or toggle the entire crossfader section off for direct routing
 - **Plug-and-play MIDI mapping** - Auto-configured for the [companion mobile controller](https://github.com/innermost47/obsidian-neural-controller), with bidirectional feedback (LED states, knob positions) on dedicated MIDI channels.
-  *To use: open the MIDI panel (piano icon, bottom-right) → Load Default Mapping.*
+  _To use: open the MIDI panel (piano icon, bottom-right) → Load Default Mapping._
 - **MIDI learn on every parameter** - Map any control to any hardware override, with persistent user mappings
 
 ### Sound design
+
 - **Per-page ADSR envelope** - Shape the dynamics of each variation independently, editable directly on the waveform
 - **Per-track gain control** - Adjust each sample's level (-12 / +12 dB) before mixing, with visual waveform feedback
+- **Per-track reverse** - Instantly flip any page's playback direction for reversed textures and risers
+- **Per-track transient scatter** - Randomize and reposition transients for glitchy, stuttering rhythmic variations
 - **Per-track multi-mode filter** - LP/HP/BP with 12 or 24 dB slopes, drive, cutoff and resonance for sculpting each voice
 - **Per-track 8-band graphic EQ + master EQ** - Independent frequency shaping on every voice and global bus, from 40 Hz to 15 kHz
 - **Per-track compressor + master compressor** - Full dynamic control on each voice and on the master bus, with threshold, ratio, attack, release and makeup gain
 - **Per-track limiter + master limiter** - Peak protection on every voice and on the master bus with adjustable release and ceiling
 - **Per-track distortion** - 6 character modes (Soft, Hard, Tube, Fold, Diode, Cubic) with pre/post gain and high-pass cutoff
+- **Per-track bitcrusher** - Bit depth and sample rate reduction for lo-fi, digital degradation
 - **Per-track chorus** - Modulation effect with rate, depth, delay, feedback and dry/wet control for added stereo width
+- **Per-track phaser** - Sweeping notch modulation with rate, depth, feedback and stages for movement and width
+- **Per-track flanger** - Classic jet-swoosh modulation with rate, depth, feedback and delay control
 - **Tempo-synced delay send** - 8 time divisions (1/16 to 2 bars), Stereo / Ping-Pong / Mono modes, per-track send level
 - **Reverb send** - Per-track reverb with size, damping, width and mix controls
 - **Airwindows Console6 master bus** - Analog-modeled saturation for cohesive mix glue
@@ -99,7 +106,7 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 In **server mode**, OBSIDIAN Neural offers **9 specialized AI engines** - assign a different one to each track for its strengths:
 
 1. **stable-audio-open-1.0** - Versatile foundation, drums and full-mix textures (80–160 BPM)
-2. **Stable Audio 3 Medium** - Next-gen flexible full tracks, isolated stems, FX (80–160 BPM) *(also the local engine)*
+2. **Stable Audio 3 Medium** - Next-gen flexible full tracks, isolated stems, FX (80–160 BPM) _(also the local engine)_
 3. **Foundation-1** - Tag-based melodic and harmonic phrasing (100–150 BPM)
 4. **Audialab EDM Elements** - High-energy EDM leads, supersaws, plucks (100–150 BPM)
 5. **RC Infinite Pianos** - Grand and electric piano performances (100–150 BPM)

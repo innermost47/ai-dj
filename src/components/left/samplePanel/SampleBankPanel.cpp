@@ -12,6 +12,8 @@ SampleBankPanel::SampleBankPanel(DjIaVstProcessor &processor) : BasePanel(proces
 {
 	setupUI();
 
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
+
 	if (auto *bank = audioProcessor.getSampleBank())
 	{
 		juce::Component::SafePointer<SampleBankPanel> safeThis(this);
@@ -30,8 +32,8 @@ SampleBankPanel::SampleBankPanel(DjIaVstProcessor &processor) : BasePanel(proces
 
 SampleBankPanel::~SampleBankPanel()
 {
-	stopTimer();
 	stopPreview();
+	vBlankAttachment.reset();
 	if (auto *bank = audioProcessor.getSampleBank())
 		bank->onBankChanged = nullptr;
 }
@@ -410,8 +412,8 @@ void SampleBankPanel::playPreview(SampleBankEntry *entry)
 		return;
 
 	currentPreviewEntry = entry;
+	previewStartTime = juce::Time::getMillisecondCounter();
 	detailPanel.setIsPlaying(true);
-	startTimer(100);
 }
 
 void SampleBankPanel::stopPreview()
@@ -419,16 +421,19 @@ void SampleBankPanel::stopPreview()
 	audioProcessor.getAudioManager().stopSamplePreview();
 	currentPreviewEntry = nullptr;
 	detailPanel.setIsPlaying(false);
-	stopTimer();
 }
 
-void SampleBankPanel::timerCallback()
+void SampleBankPanel::handleVBlank()
 {
-	if (currentPreviewEntry != nullptr && !audioProcessor.getAudioManager().isSamplePreviewing())
-		stopPreview();
+	if (currentPreviewEntry != nullptr)
+	{
+		auto elapsed = juce::Time::getMillisecondCounter() - previewStartTime;
 
-	if (currentPreviewEntry == nullptr)
-		stopTimer();
+		if (elapsed > 250 && !audioProcessor.getAudioManager().isSamplePreviewing())
+			stopPreview();
+	}
+
+	detailPanel.updateAnimation();
 }
 
 void SampleBankPanel::paint(juce::Graphics &g)

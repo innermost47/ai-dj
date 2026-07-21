@@ -5,7 +5,6 @@ SampleBankItem::SampleBankItem(SampleBankEntry *entry, DjIaVstProcessor &process
     : sampleEntry(entry), audioProcessor(processor)
 {
 	setSize(400, Obsidian::SAMPLE_ROW_HEIGHT);
-
 	dragPayloadProvider = [this]() -> juce::String
 	{
 		if (sampleEntry == nullptr)
@@ -51,26 +50,28 @@ void SampleBankItem::paint(juce::Graphics &g)
 	}
 
 	{
-		auto nameArea = bounds.removeFromTop(20).withTrimmedLeft(12).withTrimmedRight(12);
+		const int leftPad = 12, rightPad = 12;
+		const float maxWidth = (float)(bounds.getWidth() - leftPad - rightPad);
 
 		juce::Font font(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
-		juce::String prompt = sampleEntry->originalPrompt;
-		const float maxWidth = (float)nameArea.getWidth();
+		const float lineHeight = font.getHeight();
 
-		if (juce::GlyphArrangement::getStringWidth(font, prompt) > maxWidth)
-		{
-			while (prompt.isNotEmpty())
-			{
-				if (juce::GlyphArrangement::getStringWidth(font, prompt + "...") <= maxWidth)
-					break;
-				prompt = prompt.dropLastCharacters(1);
-			}
-			prompt += "...";
-		}
+		auto lines = truncateToLines(font, sampleEntry->originalPrompt, maxWidth, 2);
+
+		auto nameArea = bounds.removeFromTop(juce::roundToInt(lines.size() * lineHeight) + 4)
+		                    .withTrimmedLeft(leftPad)
+		                    .withTrimmedRight(rightPad);
 
 		g.setColour(ColourPalette::textPrimary);
 		g.setFont(font);
-		g.drawText(prompt, nameArea, juce::Justification::centredLeft, false);
+
+		float y = (float)nameArea.getY();
+		for (const auto &line : lines)
+		{
+			g.drawText(line, juce::Rectangle<float>((float)nameArea.getX(), y, maxWidth, lineHeight),
+			           juce::Justification::topLeft, false);
+			y += lineHeight;
+		}
 	}
 
 	auto modelArea = bounds.removeFromTop(18).withTrimmedLeft(12).withTrimmedRight(12);
@@ -127,11 +128,6 @@ void SampleBankItem::paint(juce::Graphics &g)
 		g.setFont(juce::FontOptions(Obsidian::TEXT_SMALL));
 		g.drawText(sampleEntry->description, descArea, juce::Justification::centredLeft, true);
 	}
-}
-
-int SampleBankItem::getPreferredHeight(int /*width*/) const
-{
-	return Obsidian::SAMPLE_ROW_HEIGHT;
 }
 
 void SampleBankItem::mouseDrag(const juce::MouseEvent &event)

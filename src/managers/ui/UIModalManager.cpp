@@ -113,6 +113,14 @@ void UIModalManager::openMidiMappingEditor()
 
 void UIModalManager::clearAll()
 {
+	auto &animator = juce::Desktop::getInstance().getAnimator();
+	for (auto &overlay : activeModals)
+	{
+		overlay->closing = true;
+		animator.cancelAnimation(overlay.get(), false);
+		if (auto *p = overlay->getParentComponent())
+			p->removeChildComponent(overlay.get());
+	}
 	activeModals.clear();
 }
 

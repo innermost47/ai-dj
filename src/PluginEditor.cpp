@@ -12,14 +12,13 @@
 
 DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), audioProcessor(p)
 {
-
 	setSize(Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
 	setResizable(true, true);
 	setResizeLimits(Obsidian::MIN_PLUGIN_WIDTH, Obsidian::MIN_PLUGIN_HEIGHT, Obsidian::MAX_PLUGIN_WIDTH,
 	                Obsidian::MAX_PLUGIN_HEIGHT);
+	getConstrainer()->setFixedAspectRatio(Obsidian::ASPECT_RATIO);
 
 	juce::LookAndFeel::setDefaultLookAndFeel(&CustomLookAndFeel::getInstance());
-
 	ObsidianAlertManager::initialize();
 	setWantsKeyboardFocus(true);
 	setMouseClickGrabsKeyboardFocus(false);
@@ -49,9 +48,9 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 		                            });
 	}
 	else
-	{
-		startTimer(50);
-	}
+		waitingForState = true;
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 
 	juce::WeakReference<DjIaVstEditor> weakThis(this);
 
@@ -85,14 +84,28 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 				    sequencer->updateFromTrackData();
 		    });
 	};
+	juce::Timer::callAfterDelay(4000,
+	                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+	                            {
+		                            if (safeThis == nullptr)
+			                            return;
+		                            if (!safeThis->audioProcessor.updateCheckDone)
+		                            {
+			                            safeThis->audioProcessor.updateCheckDone = true;
+			                            safeThis->uiModalManager->checkForUpdates();
+		                            }
+	                            });
 }
 
 DjIaVstEditor::~DjIaVstEditor()
 {
 	isBeingDestroyed.store(true);
-	stopTimer();
-	auto state = uiLayoutManager->getLeftPanelWrapper()->saveUIState();
-	audioProcessor.setPanelStateJson(juce::JSON::toString(state));
+	vBlankAttachment.reset();
+	if (uiLayoutManager && uiLayoutManager->getLeftPanelWrapper())
+	{
+		auto state = uiLayoutManager->getLeftPanelWrapper()->saveUIState();
+		audioProcessor.setPanelStateJson(juce::JSON::toString(state));
+	}
 	audioProcessor.onMasterOutput = nullptr;
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
@@ -131,7 +144,6 @@ void DjIaVstEditor::parentHierarchyChanged()
 	{
 		window->setTitleBarButtonsRequired(juce::DocumentWindow::allButtons, false);
 
-		isFullscreen = false;
 		if (!isFullscreen && juce::JUCEApplication::isStandaloneApp())
 		{
 			window->setFullScreen(true);
@@ -191,15 +203,14 @@ void DjIaVstEditor::initUI()
 	uiTrackManager->refreshTrackComponents();
 	uiTrackManager->refreshUIForMode();
 	juce::WeakReference<DjIaVstEditor> weakThis(this);
-	if (audioProcessor.getServerUrl().isEmpty())
-	{
-		juce::Timer::callAfterDelay(500,
-		                            [weakThis]()
-		                            {
-			                            if (weakThis != nullptr)
-				                            weakThis->uiModalManager->showFirstTimeSetup();
-		                            });
-	}
+	juce::Timer::callAfterDelay(500,
+	                            [weakThis]()
+	                            {
+		                            if (weakThis == nullptr)
+			                            return;
+
+		                            weakThis->uiModalManager->showOnboardingTour();
+	                            });
 	isInitialized.store(true);
 
 	audioProcessor.setMidiIndicatorCallback(
@@ -220,31 +231,41 @@ void DjIaVstEditor::initUI()
 	};
 }
 
-void DjIaVstEditor::timerCallback()
+void DjIaVstEditor::handleVBlank()
 {
-	if (!isInitialized.load())
+	if (audioProcessor.stateJustLoaded.exchange(false))
+		if (isInitialized.load())
+			updateUIFromProcessor();
+
+	if (audioProcessor.needsUIUpdate.exchange(false))
+		if (audioProcessor.onUIUpdateNeeded)
+			audioProcessor.onUIUpdateNeeded();
+
+	if (waitingForState)
 	{
-		if (audioProcessor.isStateReady())
-		{
-			stopTimer();
-			initUI();
-			juce::Timer::callAfterDelay(300,
-			                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
-			                            {
-				                            if (safeThis == nullptr || safeThis->isBeingDestroyed.load())
-					                            return;
-				                            safeThis->finalizeInit();
-			                            });
+		if (!audioProcessor.isStateReady())
 			return;
-		}
+		waitingForState = false;
+		initUI();
+		juce::Timer::callAfterDelay(300,
+		                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
+		                            {
+			                            if (safeThis == nullptr || safeThis->isBeingDestroyed.load())
+				                            return;
+			                            safeThis->finalizeInit();
+		                            });
+		return;
 	}
+
+	if (!isInitialized.load())
+		return;
 
 	bool anyTrackPlaying = false;
 	for (auto &trackComp : uiTrackManager->getTrackComponents())
 	{
 		if (trackComp->isShowing())
 		{
-			TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
+			TrackData *track = trackComp->getTrack();
 			if (track && track->isPlaying.load())
 			{
 				trackComp->updateFromTrackData();
@@ -254,52 +275,54 @@ void DjIaVstEditor::timerCallback()
 	}
 	if (!anyTrackPlaying)
 	{
-		skipFrames = 0;
 		skipFrames++;
 		if (skipFrames < 10)
 			return;
 		skipFrames = 0;
 	}
 
-	lastHostBpm = 0.0;
 	double currentHostBpm = audioProcessor.getHostBpm();
 	if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
 	{
 		lastHostBpm = currentHostBpm;
 		for (auto &trackComp : uiTrackManager->getTrackComponents())
 		{
-			TrackData *track = audioProcessor.getTrack(trackComp->getTrackId());
+			TrackData *track = trackComp->getTrack();
 			if (track)
 				trackComp->updateWaveformWithTimeStretch();
 		}
 	}
 }
 
+static int maxWidthForScreen()
+{
+	int maxW = Obsidian::MAX_PLUGIN_WIDTH;
+	if (auto *display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
+	{
+		auto area = display->userArea;
+		float s = juce::jmin(area.getWidth() / (float)Obsidian::BASE_PLUGIN_WIDTH,
+		                     area.getHeight() / (float)Obsidian::BASE_PLUGIN_HEIGHT);
+		maxW = juce::jlimit(Obsidian::MIN_PLUGIN_WIDTH, Obsidian::MAX_PLUGIN_WIDTH,
+		                    (int)(Obsidian::BASE_PLUGIN_WIDTH * s));
+	}
+	return maxW;
+}
+
 void DjIaVstEditor::setupScreen()
 {
-
 	if (juce::JUCEApplicationBase::isStandaloneApp())
 	{
-		auto *display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay();
-		if (display != nullptr)
-		{
-			auto screenBounds = display->userArea;
-			float scaleW = screenBounds.getWidth() / (float)Obsidian::BASE_PLUGIN_WIDTH;
-			float scaleH = screenBounds.getHeight() / (float)Obsidian::BASE_PLUGIN_HEIGHT;
-			currentScaleFactor = juce::jmin(scaleW, scaleH);
-			juce::Desktop::getInstance().setGlobalScaleFactor(currentScaleFactor);
-		}
-		setSize(Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+		const int w = maxWidthForScreen();
+		setSize(w, Obsidian::heightForWidth(w));
 	}
 	else
 	{
-		int savedW = audioProcessor.getSavedWindowWidth();
-		int savedH = audioProcessor.getSavedWindowHeight();
-		if (savedW > 0 && savedH > 0 && savedW >= Obsidian::MIN_PLUGIN_WIDTH && savedW <= Obsidian::MAX_PLUGIN_WIDTH &&
-		    savedH >= Obsidian::MIN_PLUGIN_HEIGHT && savedH <= Obsidian::MAX_PLUGIN_HEIGHT)
-			setSize(savedW, savedH);
-		else
-			setSize(Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+		const int screenMaxW = juce::jmax(Obsidian::MIN_PLUGIN_WIDTH, (int)(maxWidthForScreen() * 0.92f));
+		int w = audioProcessor.getSavedWindowWidth();
+		if (w < Obsidian::MIN_PLUGIN_WIDTH || w > Obsidian::MAX_PLUGIN_WIDTH)
+			w = Obsidian::BASE_PLUGIN_WIDTH;
+		w = juce::jmin(w, screenMaxW);
+		setSize(w, Obsidian::heightForWidth(w));
 	}
 }
 
@@ -315,9 +338,6 @@ void DjIaVstEditor::setupUI()
 
 	creditsLabel.setText("Loading...", juce::dontSendNotification);
 
-	addAndMakeVisible(lcdScreen.get());
-
-	addAndMakeVisible(masterWaveformDisplay.get());
 	uiLayoutManager->getRightPanelWrapper()->setMasterWaveform(masterWaveformDisplay.get());
 	uiLayoutManager->getRightPanelWrapper()->setLCDScreen(lcdScreen.get());
 	audioProcessor.onMasterOutput = [this](const float *l, const float *r, int n, double ppq)
@@ -328,8 +348,6 @@ void DjIaVstEditor::setupUI()
 			masterWaveformDisplay->setPositionInBeats(ppq);
 		}
 	};
-
-	setSize(audioProcessor.getSavedWindowWidth(), audioProcessor.getSavedWindowHeight());
 
 	uiTrackManager->refreshTrackComponents();
 
@@ -409,7 +427,6 @@ bool DjIaVstEditor::keyMatches(const juce::KeyPress &pressed, const juce::KeyPre
 void DjIaVstEditor::visibilityChanged()
 {
 	if (isVisible())
-	{
 		juce::Timer::callAfterDelay(50,
 		                            [safeThis = juce::Component::SafePointer<DjIaVstEditor>(this)]()
 		                            {
@@ -417,13 +434,17 @@ void DjIaVstEditor::visibilityChanged()
 				                            if (safeThis->uiLayoutManager)
 					                            safeThis->uiTrackManager->refreshTrackComponents();
 		                            });
-	}
 }
 
 void DjIaVstEditor::resized()
 {
-	if (uiLayoutManager)
-		uiLayoutManager->resized();
+	if (!uiLayoutManager)
+		return;
+	const float scale = getWidth() / (float)Obsidian::BASE_PLUGIN_WIDTH;
+	auto &root = uiLayoutManager->getContentRoot();
+	root.setTransform(juce::AffineTransform::scale(scale));
+	root.setBounds(0, 0, Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+	audioProcessor.setWindowSize(getWidth(), getHeight());
 }
 
 void *DjIaVstEditor::getSequencerForTrack(const juce::String &trackId)
@@ -445,7 +466,5 @@ void *DjIaVstEditor::getSequencerForTrack(const juce::String &trackId)
 void DjIaVstEditor::refreshMixerChannels()
 {
 	if (mixerPanel)
-	{
 		mixerPanel->refreshAllChannels();
-	}
 }

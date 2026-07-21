@@ -149,6 +149,61 @@ class ParameterManager
 		return safeLoadIndexed(slotChorusMixParams, slot);
 	}
 
+	float getPhaserRate(int slot) const
+	{
+		return safeLoadIndexed(slotPhaserRateParams, slot);
+	}
+	float getPhaserDepth(int slot) const
+	{
+		return safeLoadIndexed(slotPhaserDepthParams, slot);
+	}
+	float getPhaserCentre(int slot) const
+	{
+		return safeLoadIndexed(slotPhaserCentreParams, slot);
+	}
+	float getPhaserFeedback(int slot) const
+	{
+		return safeLoadIndexed(slotPhaserFeedbackParams, slot);
+	}
+	float getPhaserMix(int slot) const
+	{
+		return safeLoadIndexed(slotPhaserMixParams, slot);
+	}
+
+	float getFlangerRate(int slot) const
+	{
+		return safeLoadIndexed(slotFlangerRateParams, slot);
+	}
+	float getFlangerDepth(int slot) const
+	{
+		return safeLoadIndexed(slotFlangerDepthParams, slot);
+	}
+	float getFlangerCentre(int slot) const
+	{
+		return safeLoadIndexed(slotFlangerCentreParams, slot);
+	}
+	float getFlangerFeedback(int slot) const
+	{
+		return safeLoadIndexed(slotFlangerFeedbackParams, slot);
+	}
+	float getFlangerMix(int slot) const
+	{
+		return safeLoadIndexed(slotFlangerMixParams, slot);
+	}
+
+	float getBitCrusherBitDepth(int slot) const
+	{
+		return safeLoadIndexed(slotBitCrusherBitDepthParams, slot);
+	}
+	float getBitCrusherSampleRateReduction(int slot) const
+	{
+		return safeLoadIndexed(slotBitCrusherSampleRateReductionParams, slot);
+	}
+	float getBitCrusherMix(int slot) const
+	{
+		return safeLoadIndexed(slotBitCrusherMixParams, slot);
+	}
+
 	bool getDistortionBypassed(int slot) const
 	{
 		return safeLoad(slotDistortionBypassedParams[slot]) > 0.5f;
@@ -172,6 +227,26 @@ class ParameterManager
 	bool getChorusBypassed(int slot) const
 	{
 		return safeLoad(slotChorusBypassedParams[slot]) > 0.5f;
+	}
+	bool getPhaserBypassed(int slot) const
+	{
+		return safeLoad(slotPhaserBypassedParams[slot]) > 0.5f;
+	}
+	bool getFlangerBypassed(int slot) const
+	{
+		return safeLoad(slotFlangerBypassedParams[slot]) > 0.5f;
+	}
+	bool getBitCrusherBypassed(int slot) const
+	{
+		return safeLoad(slotBitCrusherBypassedParams[slot]) > 0.5f;
+	}
+	bool getReverseActive(int slot) const
+	{
+		return safeLoad(slotReverseActiveParams[slot]) > 0.5f;
+	}
+	bool getTransientScatterActive(int slot) const
+	{
+		return safeLoad(slotTransientScatterActiveParams[slot]) > 0.5f;
 	}
 
 	bool getMute(int slot) const
@@ -255,13 +330,13 @@ class ParameterManager
 		return safeLoad(reverbMixParam);
 	}
 
-	float getRandomRetrigger(int slot) const
+	float getBeatRepeatActive(int slot) const
 	{
-		return safeLoad(slotRandomRetriggerParams[slot]);
+		return safeLoad(slotBeatRepeatActiveParams[slot]);
 	}
-	float getRetriggerInterval(int slot) const
+	float getBeatRepeatInterval(int slot) const
 	{
-		return safeLoad(slotRetriggerIntervalParams[slot]);
+		return safeLoad(slotBeatRepeatIntervalParams[slot]);
 	}
 
 	int getCrossfaderCurveMode() const
@@ -354,14 +429,16 @@ class ParameterManager
 	std::atomic<float> *slotGenerateParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotPitchParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotFineParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotRandomRetriggerParams[Obsidian::MAX_TRACKS] = {};
-	std::atomic<float> *slotRetriggerIntervalParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotBeatRepeatActiveParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotBeatRepeatIntervalParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotAdsrAttackParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotAdsrDecayParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotAdsrSustainParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotAdsrReleaseParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotDelaySendParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotReverbSendParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotReverseActiveParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotTransientScatterActiveParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *slotCutoffParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotResonanceParams[Obsidian::MAX_TRACKS] = {};
@@ -403,6 +480,25 @@ class ParameterManager
 	std::atomic<float> *slotChorusFeedbackParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotChorusMixParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotChorusBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotPhaserRateParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPhaserDepthParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPhaserCentreParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPhaserFeedbackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPhaserMixParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotPhaserBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotFlangerRateParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFlangerDepthParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFlangerCentreParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFlangerFeedbackParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFlangerMixParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotFlangerBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotBitCrusherBitDepthParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotBitCrusherSampleRateReductionParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotBitCrusherMixParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotBitCrusherBypassedParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
@@ -469,7 +565,7 @@ class ParameterManager
 		                                                "ADSRDecay",
 		                                                "ADSRSustain",
 		                                                "ADSRRelease",
-		                                                "RetriggerInterval",
+		                                                "BeatRepeatInterval",
 		                                                "Gain",
 		                                                "Cutoff",
 		                                                "Resonance",
@@ -497,7 +593,20 @@ class ParameterManager
 		                                                "ChorusDepth",
 		                                                "ChorusCentre",
 		                                                "ChorusFeedback",
-		                                                "ChorusMix"};
+		                                                "ChorusMix",
+		                                                "PhaserRate",
+		                                                "PhaserDepth",
+		                                                "PhaserCentre",
+		                                                "PhaserFeedback",
+		                                                "PhaserMix",
+		                                                "FlangerRate",
+		                                                "FlangerDepth",
+		                                                "FlangerCentre",
+		                                                "FlangerFeedback",
+		                                                "FlangerMix",
+		                                                "BitCrusherBitDepth",
+		                                                "BitCrusherRate",
+		                                                "BitCrusherMix"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
@@ -529,7 +638,7 @@ class ParameterManager
 		                                                "Play",
 		                                                "Stop",
 		                                                "Generate",
-		                                                "RandomRetrigger",
+		                                                "BeatRepeatActive",
 		                                                "PageA",
 		                                                "PageB",
 		                                                "PageC",
@@ -541,7 +650,12 @@ class ParameterManager
 		                                                "CompressorBypassed",
 		                                                "LimiterBypassed",
 		                                                "EQBypassed",
-		                                                "ChorusBypassed"};
+		                                                "ChorusBypassed",
+		                                                "PhaserBypassed",
+		                                                "FlangerBypassed",
+		                                                "BitCrusherBypassed",
+		                                                "ReverseActive",
+		                                                "TransientScatterActive"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{

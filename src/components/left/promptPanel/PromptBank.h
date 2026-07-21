@@ -25,6 +25,12 @@ struct PromptCategoryInfo
 	bool isBuiltIn = false;
 };
 
+struct PromptInfo
+{
+	juce::String text;
+	juce::String category;
+};
+
 class PromptBank
 {
   public:

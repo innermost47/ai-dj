@@ -70,10 +70,10 @@ class WaveformDisplay : public ObsidianComponent,
 	juce::Colour cachedModelColour;
 	float cachedStretchRatioForColour = 1.0f;
 
-	float adsrAttack = 0.0f;
-	float adsrDecay = 4.0f;
-	float adsrSustain = 1.0f;
-	float adsrRelease = 0.0f;
+	float adsrAttack = Obsidian::ADSRDefaultValues::ATTACK_DEFAULT;
+	float adsrDecay = Obsidian::ADSRDefaultValues::DECAY_DEFAULT;
+	float adsrSustain = Obsidian::ADSRDefaultValues::SUSTAIN_DEFAULT;
+	float adsrRelease = Obsidian::ADSRDefaultValues::RELEASE_DEFAULT;
 
 	enum class AdsrHandle
 	{

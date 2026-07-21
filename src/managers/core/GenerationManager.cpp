@@ -1,6 +1,7 @@
 ﻿#include "GenerationManager.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "StableAudioEngine.h"
 #include "TrackData.h"
 
 GenerationManager::GenerationManager(DjIaVstProcessor &processor) : audioProcessor(processor)
@@ -132,6 +133,10 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 
 void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request, const juce::String &trackId)
 {
+	if (TrackData *t = audioProcessor.getTrack(trackId))
+		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
+		                                                 MidiMapping::feedbackActive);
+
 	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
 	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR);
 	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR);
@@ -149,9 +154,6 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 	StableAudioEngine::GenerationParams params(request.prompt, 6.0f);
 	params.sampleRate = static_cast<int>(audioProcessor.getHostSampleRate());
 	params.numThreads = 4;
-	if (TrackData *t = audioProcessor.getTrack(trackId))
-		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
-		                                                 MidiMapping::feedbackActive);
 
 	auto result = localEngine.generateSample(params);
 
@@ -164,8 +166,11 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 		return;
 	}
 
-	juce::File tempFile = createTempAudioFile(result.audioData, result.actualDuration);
-	if (!tempFile.exists() || tempFile.getSize() == 0)
+	juce::File tempFile = juce::File::createTempFile(".wav");
+	juce::FileOutputStream stream(tempFile);
+	if (stream.openedOk())
+		stream.write(result.audioData.data(), result.audioData.size());
+	else
 	{
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
@@ -173,23 +178,35 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 		notifyGenerationComplete(trackId, "ERROR: Failed to create audio file");
 		return;
 	}
+	stream.flush();
+
+	auto preprocessResult = audioProcessor.getAudioManager().preprocessAudioFile(tempFile, -1.0f, trackId);
 
 	{
 		const juce::ScopedLock lock(apiLock);
 		audioProcessor.setPendingTrackId(trackId);
-		audioProcessor.setPendingAudioFile(tempFile);
+		audioProcessor.setPendingAudioFile(preprocessResult.success ? preprocessResult.stretchedFile : tempFile);
+		audioProcessor.setPendingDetectedBpm(request.bpm);
+		audioProcessor.setPendingSnappedBpm(-1.0f);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
 		audioProcessor.setTrackIdWaitingForLoad(trackId);
 		audioProcessor.setCorrectMidiNoteReceived(false);
 	}
 
-	if (TrackData *track = audioProcessor.getTrack(trackId))
-	{
-		auto &currentPage = track->getCurrentPage();
-		currentPage.prompt = request.prompt;
-		currentPage.bpm = request.bpm;
-	}
+	if (!audioProcessor.getIsLoadingState())
+		if (TrackData *track = audioProcessor.getTrack(trackId))
+		{
+			track->preprocessHasOriginal.store(preprocessResult.hasOriginalVersion);
+			track->preprocessOriginalBpm.store(preprocessResult.originalBpm);
+			track->skipBpmSync.store(true);
+			track->skipDiskReload.store(preprocessResult.stagingFilled);
+			track->hasSamplePending.store(true);
+
+			auto &currentPage = track->getCurrentPage();
+			currentPage.prompt = request.prompt;
+			currentPage.bpm = request.bpm;
+		}
 
 	audioProcessor.setIsGenerating(false);
 	audioProcessor.setGeneratingTrackId("");
@@ -517,46 +534,4 @@ void GenerationManager::clearPendingAudio()
 	audioProcessor.setPendingAudioFile(juce::File());
 	audioProcessor.clearPendingTrackId();
 	audioProcessor.setHasPendingAudioData(false);
-}
-
-juce::File GenerationManager::createTempAudioFile(const std::vector<float> &audioData, float /*duration*/)
-{
-	try
-	{
-		juce::File tempFile = juce::File::createTempFile(".wav");
-		int numSamples = static_cast<int>(audioData.size());
-		juce::AudioBuffer<float> buffer(1, numSamples);
-		if (audioData.size() > 0)
-		{
-			buffer.copyFrom(0, 0, audioData.data(), numSamples);
-		}
-		juce::WavAudioFormat wavFormat;
-		juce::FileOutputStream *outputStream = new juce::FileOutputStream(tempFile);
-		if (!outputStream->openedOk())
-		{
-			delete outputStream;
-			return juce::File{};
-		}
-
-		std::unique_ptr<juce::AudioFormatWriter> writer(
-		    wavFormat.createWriterFor(outputStream, audioProcessor.getHostSampleRate(), 1, 16, {}, 0));
-
-		if (!writer)
-		{
-			return juce::File{};
-		}
-
-		if (!writer->writeFromAudioSampleBuffer(buffer, 0, buffer.getNumSamples()))
-		{
-			return juce::File{};
-		}
-
-		writer.reset();
-
-		return tempFile;
-	}
-	catch (const std::exception & /*e*/)
-	{
-		return juce::File{};
-	}
 }

@@ -9,11 +9,13 @@ MixerChannel::MixerChannel(const juce::String &trackId, DjIaVstProcessor &proces
 	setupUI();
 	setTrackData(trackData);
 	updateFromTrackData();
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 MixerChannel::~MixerChannel()
 {
 	markForDestruction();
+	vBlankAttachment.reset();
 	cleanup();
 }
 
@@ -35,8 +37,6 @@ void MixerChannel::cleanup()
 	stopButton.onClick = nullptr;
 	muteButton.onClick = nullptr;
 	soloButton.onClick = nullptr;
-
-	stopTimer();
 
 	if (auto *t = getTrack())
 	{
@@ -85,7 +85,8 @@ void MixerChannel::setTrackData(TrackData *trackData)
 					    if (weakThis != nullptr)
 					    {
 						    weakThis->isBlinking = true;
-						    weakThis->startTimer(300);
+						    weakThis->blinkTicking = true;
+						    weakThis->blinkCounter = 1;
 					    }
 				    });
 			}
@@ -122,7 +123,8 @@ void MixerChannel::setTrackData(TrackData *trackData)
 						    else
 						    {
 							    weakThis->isBlinking = true;
-							    weakThis->startTimer(300);
+							    weakThis->blinkTicking = true;
+							    weakThis->blinkCounter = 1;
 						    }
 					    }
 				    });
@@ -179,30 +181,49 @@ void MixerChannel::stopTrackImmediatly()
 	}
 }
 
-void MixerChannel::timerCallback()
+void MixerChannel::handleVBlank()
 {
-	bool shouldContinueTimer = false;
-
 	auto *t = getTrack();
 	if (!t)
-	{
-		stopTimer();
 		return;
+
+	const float l = t->audioLevelLeft.load();
+	const float r = t->audioLevelRight.load();
+	const int ql = (int)(l * 60.0f);
+	const int qr = (int)(r * 60.0f);
+	if (ql != lastQuantizedL || qr != lastQuantizedR)
+	{
+		lastQuantizedL = ql;
+		lastQuantizedR = qr;
+		vuMeter.updateFromRawLevels(l, r);
+		vuMeter.repaint();
 	}
+
+	if (!blinkTicking)
+		return;
+
+	bool currentGlobalBlink = (juce::Time::getMillisecondCounter() / Obsidian::BLINKING_DURATION_TIME) % 2 == 0;
+	bool stillBlinking = false;
 
 	if (isGenerating)
 	{
-		blinkState = !blinkState;
-		repaint();
-		shouldContinueTimer = true;
+		if (blinkState != currentGlobalBlink)
+		{
+			blinkState = currentGlobalBlink;
+			repaint();
+		}
+		stillBlinking = true;
 	}
 
-	if (isBlinking && t && t->isArmedToStop)
+	if (isBlinking && t->isArmedToStop)
 	{
-		stopBlinkState = !stopBlinkState;
-		stopButton.setColour(juce::TextButton::buttonColourId,
-		                     stopBlinkState ? ColourPalette::buttonDangerLight : ColourPalette::buttonDangerDark);
-		shouldContinueTimer = true;
+		if (stopBlinkState != currentGlobalBlink)
+		{
+			stopBlinkState = currentGlobalBlink;
+			stopButton.setColour(juce::TextButton::buttonColourId,
+			                     stopBlinkState ? ColourPalette::buttonDangerLight : ColourPalette::buttonDangerDark);
+		}
+		stillBlinking = true;
 	}
 	else if (isBlinking)
 	{
@@ -210,10 +231,7 @@ void MixerChannel::timerCallback()
 		updateButtonColors();
 	}
 
-	if (!shouldContinueTimer)
-	{
-		stopTimer();
-	}
+	blinkTicking = stillBlinking;
 }
 
 void MixerChannel::updateVUMeters()
@@ -599,7 +617,8 @@ void MixerChannel::applyPlayState(bool shouldArm)
 		if (t->isArmedToStop.load())
 			return;
 		isBlinking = true;
-		startTimer(300);
+		blinkTicking = true;
+		blinkCounter = 1;
 	}
 	else if (emptySeq)
 	{
@@ -659,23 +678,14 @@ void MixerChannel::startGeneratingAnimation()
 {
 	isGenerating = true;
 	blinkState = false;
-
-	if (!isTimerRunning())
-	{
-		startTimer(200);
-	}
+	blinkTicking = true;
+	blinkCounter = 1;
 }
 
 void MixerChannel::stopGeneratingAnimation()
 {
 	isGenerating = false;
 	blinkState = false;
-
-	if (!isBlinking)
-	{
-		stopTimer();
-	}
-
 	repaint();
 }
 

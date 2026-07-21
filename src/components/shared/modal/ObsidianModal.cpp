@@ -144,6 +144,7 @@ ObsidianModalOverlay::~ObsidianModalOverlay()
 	animator.cancelAnimation(this, false);
 	if (modalWindow != nullptr)
 		animator.cancelAnimation(modalWindow.get(), false);
+	modalWindow.reset();
 }
 
 void ObsidianModalOverlay::startFadeIn()
@@ -192,9 +193,11 @@ void ObsidianModalOverlay::close()
 		return;
 	closing = true;
 
-	juce::WeakReference<juce::Component> safeThis(this);
-	juce::Desktop::getInstance().getAnimator().fadeOut(this, 150);
+	auto &animator = juce::Desktop::getInstance().getAnimator();
+	animator.cancelAnimation(this, false);
+	animator.fadeOut(this, 150);
 
+	juce::WeakReference<juce::Component> safeThis(this);
 	juce::MessageManager::callAsync(
 	    [safeThis]()
 	    {
@@ -204,5 +207,10 @@ void ObsidianModalOverlay::close()
 		    auto *self = static_cast<ObsidianModalOverlay *>(safeThis.get());
 		    if (auto *host = self->findParentComponentOfClass<ModalHost>())
 			    host->removeModal(self);
+		    else
+		    {
+			    if (auto *p = self->getParentComponent())
+				    p->removeChildComponent(self);
+		    }
 	    });
 }

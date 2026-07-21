@@ -8,6 +8,17 @@ class LeftPanelWrapper;
 class RightPanelWrapper;
 class MixerPanel;
 
+class ContentRoot : public ObsidianComponent
+{
+  public:
+	std::function<void()> onResized;
+	void resized() override
+	{
+		if (onResized)
+			onResized();
+	}
+};
+
 class TracksContainer : public ObsidianComponent
 {
   public:
@@ -65,7 +76,12 @@ class UILayoutManager
 	explicit UILayoutManager(DjIaVstProcessor &processor, DjIaVstEditor &editor, MixerPanel &mixerPanel);
 	~UILayoutManager() = default;
 
-	void resized();
+	void performLayout();
+
+	ContentRoot &getContentRoot()
+	{
+		return contentRoot;
+	}
 
 	TracksContainer *getTracksContainer()
 	{
@@ -96,6 +112,8 @@ class UILayoutManager
 	DjIaVstEditor &editor;
 	DjIaVstProcessor &audioProcessor;
 	MixerPanel &mixerPanel;
+	ContentRoot contentRoot;
+
 	std::unique_ptr<TracksContainer> tracksContainer;
 	std::unique_ptr<RightPanelWrapper> rightPanelWrapper;
 	std::unique_ptr<LeftPanelWrapper> leftPanelWrapper;
