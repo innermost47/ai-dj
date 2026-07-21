@@ -170,3 +170,8 @@ void UIModalManager::checkForUpdates()
 		    }
 	    });
 }
+
+void UIModalManager::showCredits()
+{
+	ObsidianAlertManager::showCredits(&editor);
+}

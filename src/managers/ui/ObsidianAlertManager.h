@@ -105,4 +105,6 @@ class ObsidianAlertManager
 
 	static void showUpdateAvailable(juce::Component *parent, const juce::String &latestTag,
 	                                const juce::String &currentBuild);
+
+	static void showCredits(juce::Component *parent);
 };
