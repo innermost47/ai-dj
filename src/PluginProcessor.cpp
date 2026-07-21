@@ -319,8 +319,8 @@ void DjIaVstProcessor::initTracks()
 			juce::String modelName = serverModels[i % serverModels.size()];
 
 			juce::String effectiveModel = modelName;
-			if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_V1_TFLITE)
-				effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1;
+			if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_LOCAL())
+				effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1();
 
 			for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 			{
@@ -361,8 +361,8 @@ std::vector<PromptInfo> DjIaVstProcessor::getAvailablePromptsWithCategoryForMode
 		return result;
 
 	juce::String effectiveModel = modelName;
-	if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_V1_TFLITE)
-		effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1;
+	if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_LOCAL())
+		effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1();
 
 	auto allPrompts = const_cast<PromptBank *>(promptBank.get())->getAllPrompts();
 	for (auto *p : allPrompts)
@@ -418,8 +418,8 @@ void DjIaVstProcessor::attachPageChangeCallback(TrackData *track)
 juce::File DjIaVstProcessor::getGlobalConfigFile()
 {
 	return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	    .getChildFile(Obsidian::GLOBAL_CONFIG_FILE);
+	    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	    .getChildFile(Obsidian::GLOBAL_CONFIG_FILE());
 }
 
 float DjIaVstProcessor::getGlobalBpm() const
@@ -888,8 +888,8 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 	{
 		char pageName = static_cast<char>('A' + track->currentPageIndex.load());
 		auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 		if (projectId != "legacy" && !projectId.isEmpty())
 		{
 			audioDir = audioDir.getChildFile(projectId);
@@ -923,8 +923,8 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 	{
 		int asciiCode = 'A' + track->currentPageIndex.load();
 		auto audioDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 		if (projectId != "legacy" && !projectId.isEmpty())
 		{
 			audioDir = audioDir.getChildFile(projectId);
@@ -1007,7 +1007,7 @@ void DjIaVstProcessor::addCustomPrompt(const juce::String &prompt)
 		if (p->text == prompt)
 			return;
 
-	promptBank->addPrompt(prompt, Obsidian::STABLE_AUDIO_OPEN_V1, "");
+	promptBank->addPrompt(prompt, Obsidian::STABLE_AUDIO_OPEN_V1(), "");
 }
 
 const juce::StringArray DjIaVstProcessor::getCustomPrompts() const

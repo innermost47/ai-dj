@@ -1,10 +1,10 @@
 ﻿#include "GenerationManager.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
-#include "StableAudioEngine.h"
 #include "TrackData.h"
 
-GenerationManager::GenerationManager(DjIaVstProcessor &processor) : audioProcessor(processor)
+GenerationManager::GenerationManager(DjIaVstProcessor &processor)
+    : audioProcessor(processor), localEngine(createLocalGenerationEngine(processor))
 {
 }
 
@@ -20,9 +20,7 @@ void GenerationManager::generateLoop(const DjIaClient::LoopRequest &request, con
 	try
 	{
 		if (audioProcessor.getUseLocalModel())
-		{
 			generateLoopLocal(request, targetTrackId);
-		}
 		else
 		{
 			DjIaClient::LoopRequest apiRequest = request;
@@ -137,32 +135,17 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
 		                                                 MidiMapping::feedbackActive);
 
-	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR);
-	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR);
-
-	StableAudioEngine localEngine;
-	if (!localEngine.initialize(stableAudioDir.getFullPathName()))
-	{
-		audioProcessor.setIsGenerating(false);
-		audioProcessor.setGeneratingTrackId("");
-		reEnableCanvasGenerate();
-		notifyGenerationComplete(trackId, "ERROR: Local models not found. Please check setup instructions.");
-		return;
-	}
-
-	StableAudioEngine::GenerationParams params(request.prompt, 6.0f);
-	params.sampleRate = static_cast<int>(audioProcessor.getHostSampleRate());
-	params.numThreads = 4;
-
-	auto result = localEngine.generateSample(params);
+	auto result = localEngine->generate(request, audioProcessor.getHostSampleRate());
 
 	if (!result.success || result.audioData.empty())
 	{
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
 		reEnableCanvasGenerate();
-		notifyGenerationComplete(trackId, "ERROR: Local generation failed - " + result.errorMessage);
+		juce::String msg = "ERROR: Local generation failed";
+		if (!result.errorMessage.isEmpty())
+			msg += " - " + result.errorMessage;
+		notifyGenerationComplete(trackId, msg);
 		return;
 	}
 
@@ -175,7 +158,7 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 		audioProcessor.setIsGenerating(false);
 		audioProcessor.setGeneratingTrackId("");
 		reEnableCanvasGenerate();
-		notifyGenerationComplete(trackId, "ERROR: Failed to create audio file");
+		notifyGenerationComplete(trackId, "ERROR: Cannot create temp file");
 		return;
 	}
 	stream.flush();
@@ -212,8 +195,9 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 	audioProcessor.setGeneratingTrackId("");
 	reEnableCanvasGenerate();
 
+	float displayDuration = result.actualDuration > 0.0f ? result.actualDuration : request.generationDuration;
 	juce::String successMessage =
-	    juce::String::formatted("Loop generated locally! (%.1fs) Press Play to listen.", result.actualDuration);
+	    juce::String::formatted("Loop generated locally! (%.1fs) Press Play to listen.", displayDuration);
 
 	notifyGenerationComplete(trackId, successMessage);
 }
@@ -279,7 +263,7 @@ void GenerationManager::generateSampleWithImage(const juce::String &trackId, con
 			                                     : static_cast<float>(audioProcessor.getGlobalDuration());
 
 			    if (request.model.isEmpty())
-				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1;
+				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1();
 
 			    if (request.bpm <= 0)
 				    request.bpm = 127.0f;
@@ -464,7 +448,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 			    }
 
 			    if (request.model.isEmpty())
-				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1;
+				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1();
 
 			    juce::String promptSource = !request.prompt.isEmpty()
 			                                    ? "track prompt: " + request.prompt.substring(0, 20) + "..."

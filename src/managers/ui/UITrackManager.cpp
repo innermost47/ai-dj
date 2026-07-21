@@ -266,8 +266,8 @@ void UITrackManager::refreshUIForMode()
 void UITrackManager::checkLocalModelsAndNotify()
 {
 	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR);
-	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR);
+	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR());
+	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR());
 
 	StableAudioEngine tempEngine;
 	bool modelsPresent = tempEngine.initialize(stableAudioDir.getFullPathName());

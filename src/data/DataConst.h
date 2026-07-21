@@ -102,29 +102,117 @@ inline constexpr bool PHASER_BYPASSED = true;
 inline constexpr bool FLANGER_BYPASSED = true;
 inline constexpr bool BITCRUSHER_BYPASSED = true;
 
-inline static const std::string STABLE_AUDIO_OPEN_V1 = "stable-audio-open-1.0";
-inline static const std::string STABLE_AUDIO_OPEN_V3_MEDIUM = "stable-audio-3-medium";
-inline static const std::string FOUNDATION_1 = "foundation-1";
-inline static const std::string AUDIOLAB_EDM = "audialab-edm-elements";
-inline static const std::string INFINITE_PIANO = "rc-infinite-pianos";
-inline static const std::string RC_VOCAL = "rc-vocal-textures";
-inline static const std::string SAO_INSTRUMENTAL = "sao-instrumental";
-inline static const std::string STABLEBEAT = "stablebeat";
-inline static const std::string GLUTEN_V1 = "gluten-v1";
-inline static const std::string STABLE_AUDIO_OPEN_V1_TFLITE = "stable-audio-open-small-tflite";
+inline const std::string &STABLE_AUDIO_OPEN_V1()
+{
+	static const std::string v = "stable-audio-open-1.0";
+	return v;
+}
+inline const std::string &STABLE_AUDIO_OPEN_V3_MEDIUM()
+{
+	static const std::string v = "stable-audio-3-medium";
+	return v;
+}
+inline const std::string &FOUNDATION_1()
+{
+	static const std::string v = "foundation-1";
+	return v;
+}
+inline const std::string &AUDIOLAB_EDM()
+{
+	static const std::string v = "audialab-edm-elements";
+	return v;
+}
+inline const std::string &INFINITE_PIANO()
+{
+	static const std::string v = "rc-infinite-pianos";
+	return v;
+}
+inline const std::string &RC_VOCAL()
+{
+	static const std::string v = "rc-vocal-textures";
+	return v;
+}
+inline const std::string &SAO_INSTRUMENTAL()
+{
+	static const std::string v = "sao-instrumental";
+	return v;
+}
+inline const std::string &STABLEBEAT()
+{
+	static const std::string v = "stablebeat";
+	return v;
+}
+inline const std::string &GLUTEN_V1()
+{
+	static const std::string v = "gluten-v1";
+	return v;
+}
+inline const std::string &STABLE_AUDIO_OPEN_LOCAL()
+{
+	static const std::string v = "stable-audio-open-small-tflite";
+	return v;
+}
 
-inline static const std::string OBSIDIAN_BASE_DIR = "OBSIDIAN-Neural";
-inline static const std::string EXPORTS_DIR = "OBSIDIAN_Exports";
-inline static const std::string SAMPLE_BANK_DIR = "SampleBank";
-inline static const std::string SESSIONS_DIR = "Sessions";
-inline static const std::string STABLE_AUDIO_DIR = "stable-audio";
-inline static const std::string CATEGORIES_FILE = "categories.json";
-inline static const std::string GLOBAL_CONFIG_FILE = "global_config.json";
-inline static const std::string PROMPTS_FILE = "prompts.json";
-inline static const std::string AUDIO_CACHE_DIR = "AudioCache";
-inline static const std::string FORKS_FILE = "session.forks";
-inline static const std::string MAGIC = "OBSIDIAN";
-inline static const std::string LINEAGE_FILE = "session.lineage";
+inline const std::string &OBSIDIAN_BASE_DIR()
+{
+	static const std::string v = "OBSIDIAN-Neural";
+	return v;
+}
+inline const std::string &EXPORTS_DIR()
+{
+	static const std::string v = "OBSIDIAN_Exports";
+	return v;
+}
+inline const std::string &SAMPLE_BANK_DIR()
+{
+	static const std::string v = "SampleBank";
+	return v;
+}
+inline const std::string &SESSIONS_DIR()
+{
+	static const std::string v = "Sessions";
+	return v;
+}
+inline const std::string &STABLE_AUDIO_DIR()
+{
+	static const std::string v = "stable-audio";
+	return v;
+}
+inline const std::string &CATEGORIES_FILE()
+{
+	static const std::string v = "categories.json";
+	return v;
+}
+inline const std::string &GLOBAL_CONFIG_FILE()
+{
+	static const std::string v = "global_config.json";
+	return v;
+}
+inline const std::string &PROMPTS_FILE()
+{
+	static const std::string v = "prompts.json";
+	return v;
+}
+inline const std::string &AUDIO_CACHE_DIR()
+{
+	static const std::string v = "AudioCache";
+	return v;
+}
+inline const std::string &FORKS_FILE()
+{
+	static const std::string v = "session.forks";
+	return v;
+}
+inline const std::string &MAGIC()
+{
+	static const std::string v = "OBSIDIAN";
+	return v;
+}
+inline const std::string &LINEAGE_FILE()
+{
+	static const std::string v = "session.lineage";
+	return v;
+}
 
 struct ADSRDefaultValues
 {

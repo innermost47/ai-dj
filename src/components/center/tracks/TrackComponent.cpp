@@ -1224,7 +1224,8 @@ void TrackComponent::setupUI()
 		if (!t)
 			return;
 		auto selectedModel = modelSelector.getText();
-		populatePromptPresets(t->getCurrentPage().selectedModel);
+		t->getCurrentPage().selectedModel = selectedModel;
+		populatePromptPresets(selectedModel);
 		updateModelUI();
 		if (onModelChanged)
 			onModelChanged(trackId);

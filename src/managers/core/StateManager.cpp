@@ -697,7 +697,7 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 
 		if (diskToken.isNotEmpty() && diskToken != stateToken)
 		{
-			auto redirectFile = sidecar.getSiblingFile(Obsidian::FORKS_FILE);
+			auto redirectFile = sidecar.getSiblingFile(Obsidian::FORKS_FILE());
 			juce::String previousForkId;
 			if (redirectFile.existsAsFile())
 			{
@@ -913,8 +913,8 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 juce::File StateManager::getDefaultSessionsFolder()
 {
 	auto folder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	                  .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	                  .getChildFile(Obsidian::SESSIONS_DIR);
+	                  .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	                  .getChildFile(Obsidian::SESSIONS_DIR());
 
 	if (!folder.exists())
 		folder.createDirectory();
@@ -937,7 +937,7 @@ bool StateManager::saveToFile(const juce::File &file)
 	auto xmlString = xml->toString();
 
 	juce::MemoryOutputStream stream;
-	std::string magicStr = Obsidian::MAGIC;
+	std::string magicStr = Obsidian::MAGIC();
 	stream.write(magicStr.data(), magicStr.length());
 	std::fill(magicStr.begin(), magicStr.end(), 0);
 	stream.writeInt(1);
@@ -960,7 +960,7 @@ bool StateManager::loadFromFile(const juce::File &file)
 
 	char magic[9] = {};
 	stream.read(magic, 8);
-	if (juce::String(magic).toStdString() != Obsidian::MAGIC)
+	if (juce::String(magic).toStdString() != Obsidian::MAGIC())
 		return false;
 
 	[[maybe_unused]] int version = stream.readInt();
@@ -985,10 +985,10 @@ bool StateManager::loadFromFile(const juce::File &file)
 juce::File StateManager::getLineageSidecarFile(const juce::String &projectId) const
 {
 	auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-	               .getChildFile(Obsidian::OBSIDIAN_BASE_DIR)
-	               .getChildFile(Obsidian::AUDIO_CACHE_DIR);
+	               .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
+	               .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 	if (projectId != "legacy" && projectId.isNotEmpty())
 		dir = dir.getChildFile(projectId);
 	dir.createDirectory();
-	return dir.getChildFile(Obsidian::LINEAGE_FILE);
+	return dir.getChildFile(Obsidian::LINEAGE_FILE());
 }

@@ -6,20 +6,20 @@
 namespace AiModelDefinitions
 {
 
-static const juce::String LOCAL_MODEL_NAME = Obsidian::STABLE_AUDIO_OPEN_V1_TFLITE;
+static const juce::String LOCAL_MODEL_NAME = Obsidian::STABLE_AUDIO_OPEN_LOCAL();
 
 inline const juce::StringArray &getAvailableModels()
 {
-	static const juce::StringArray models = {Obsidian::STABLE_AUDIO_OPEN_V1,
-	                                         Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM,
-	                                         Obsidian::FOUNDATION_1,
-	                                         Obsidian::AUDIOLAB_EDM,
-	                                         Obsidian::INFINITE_PIANO,
-	                                         Obsidian::RC_VOCAL,
-	                                         Obsidian::SAO_INSTRUMENTAL,
-	                                         Obsidian::STABLEBEAT,
-	                                         Obsidian::GLUTEN_V1,
-	                                         Obsidian::STABLE_AUDIO_OPEN_V1_TFLITE};
+	static const juce::StringArray models = {Obsidian::STABLE_AUDIO_OPEN_V1(),
+	                                         Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM(),
+	                                         Obsidian::FOUNDATION_1(),
+	                                         Obsidian::AUDIOLAB_EDM(),
+	                                         Obsidian::INFINITE_PIANO(),
+	                                         Obsidian::RC_VOCAL(),
+	                                         Obsidian::SAO_INSTRUMENTAL(),
+	                                         Obsidian::STABLEBEAT(),
+	                                         Obsidian::GLUTEN_V1(),
+	                                         Obsidian::STABLE_AUDIO_OPEN_LOCAL()};
 	return models;
 }
 
