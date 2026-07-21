@@ -8,7 +8,9 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-project(OBSIDIAN-Neural VERSION 2.5.4)
+set(PROJECT_VENDOR "InnerMost47")
+
+project(OBSIDIAN-Neural VERSION 2.6.0)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(LINK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -162,13 +164,13 @@ configure_file(
 )
 
 juce_add_plugin(ObsidianNeuralVST
-    VERSION "2.5.4"
+    VERSION ${PROJECT_VERSION}
     PLUGIN_MANUFACTURER_CODE "OBSI"
     PLUGIN_CODE "Obsi"
-    COMPANY_NAME "InnerMost47"
+    COMPANY_NAME ${PROJECT_VENDOR}
     BUNDLE_ID "com.innermost47.obsidian-neural-vst" 
     FORMATS VST3 AU Standalone
-    PRODUCT_NAME "OBSIDIAN-Neural"
+    PRODUCT_NAME ${PROJECT_NAME}
     ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/src/assets/logo.png" 
     IS_SYNTH TRUE
     WANTS_MIDI_INPUT TRUE
