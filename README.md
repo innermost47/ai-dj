@@ -28,13 +28,13 @@
 
 ---
 
-## 🆕 Coming soon: Local Edition (CPU, 100% offline)
+## 🆕 Local Edition (CPU, 100% offline)
 
 A new **Local Edition** is on the way: **Stable Audio 3 Medium running entirely on your own CPU** — no GPU, no cloud, no internet required after a one-time setup. Pay once, play offline forever. The AI generates loops directly on your machine, and nothing ever leaves your computer.
 
 It can also switch to server mode for the full 9-engine lineup (subscription or self-hosted).
 
-**🧪 I'm recruiting 20 beta testers — limited slots.**
+**🧪 Limited slots.**
 Beta testers get **free access** to the Local Edition. If you want in:
 
 → **[Become a beta tester](https://obsidian-neural.com/local.php)**
