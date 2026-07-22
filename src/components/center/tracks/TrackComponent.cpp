@@ -105,6 +105,12 @@ void TrackComponent::BorderOverlay::paint(juce::Graphics &g)
 
 	g.setColour(borderColour);
 	g.drawRoundedRectangle(bounds.reduced(1.0f), Obsidian::CORNER, borderWidth);
+
+	if (flashAmount > 0.01f)
+	{
+		g.setColour(accentColour.withAlpha(flashAmount * 0.6f));
+		g.drawRoundedRectangle(bounds.reduced(1.0f), Obsidian::CORNER, 2.5f + flashAmount * 2.5f);
+	}
 }
 
 TrackComponent::TrackComponent(const juce::String &trackId, DjIaVstProcessor &processor)
@@ -1117,17 +1123,14 @@ void TrackComponent::handleVBlank()
 {
 	if (!blinkTicking)
 		return;
-
 	auto *t = getTrack();
 	if (!t)
 	{
 		blinkTicking = false;
 		return;
 	}
-
 	bool currentGlobalBlink = (juce::Time::getMillisecondCounter() / Obsidian::BLINKING_DURATION_TIME) % 2 == 0;
 	bool stateChanged = false;
-
 	if (isGenerating)
 	{
 		if (blinkState != currentGlobalBlink)
@@ -1137,7 +1140,6 @@ void TrackComponent::handleVBlank()
 			stateChanged = true;
 		}
 	}
-
 	if (t->pageChangePending.load())
 	{
 		if (pageBlinkState != currentGlobalBlink)
@@ -1148,8 +1150,17 @@ void TrackComponent::handleVBlank()
 		}
 	}
 
-	if (stateChanged)
-		blinkTicking = isGenerating || t->pageChangePending.load();
+	bool flashActive = false;
+	if (borderOverlay.flashAmount > 0.01f)
+	{
+		borderOverlay.flashAmount *= 0.82f;
+		if (borderOverlay.flashAmount <= 0.01f)
+			borderOverlay.flashAmount = 0.0f;
+		borderOverlay.repaint();
+		flashActive = borderOverlay.flashAmount > 0.0f;
+	}
+
+	blinkTicking = isGenerating || t->pageChangePending.load() || flashActive;
 }
 
 void TrackComponent::refreshWaveformDisplay()
@@ -1764,6 +1775,9 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 		onSampleDropped(trackId);
 	if (onStatusMessage)
 		onStatusMessage("Sample loaded from bank!");
+
+	borderOverlay.triggerFlash();
+	blinkTicking = true;
 }
 
 void TrackComponent::setPreviewPlaying(bool playing)
@@ -1896,6 +1910,9 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 
 	if (onStatusMessage)
 		onStatusMessage("Prompt loaded from bank!");
+
+	borderOverlay.triggerFlash();
+	blinkTicking = true;
 }
 
 void TrackComponent::wireParameters()

@@ -102,6 +102,26 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 		void setVisualState(bool generating, bool samplePending, bool selected, bool dragOver, bool blink,
 		                    juce::Colour modelColour);
 		void paint(juce::Graphics &g) override;
+		void triggerFlash()
+		{
+			flashAmount = 1.0f;
+		}
+
+		bool tickFlash()
+		{
+			if (flashAmount <= 0.01f)
+				return false;
+
+			flashAmount *= 0.82f;
+
+			if (flashAmount <= 0.01f)
+				flashAmount = 0.0f;
+
+			repaint();
+			return flashAmount > 0.0f;
+		}
+
+		float flashAmount = 0.0f;
 
 	  private:
 		bool isGenerating = false;
@@ -109,6 +129,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 		bool isSelected = false;
 		bool isDragOver = false;
 		bool blinkState = false;
+
 		std::unique_ptr<juce::Drawable> blockedIcon;
 		juce::Colour accentColour{ColourPalette::buttonPrimary};
 	};
