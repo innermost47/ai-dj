@@ -48,13 +48,7 @@ void TrackRecapPanel::paint(juce::Graphics &g)
 	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
 	g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::LIST_PANEL_CORNER_SIZE, 1.0f);
 
-	auto titleArea = getLocalBounds().reduced(8, 4).removeFromTop(18);
-	g.setColour(ColourPalette::textAccent);
-	g.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_INFO));
-	g.drawText("TRACKS", titleArea, juce::Justification::centredLeft, false);
-
 	auto cardsArea = getLocalBounds().reduced(6, 4);
-	cardsArea.removeFromTop(22);
 
 	auto trackIds = audioProcessor.getAllTrackIds();
 
@@ -166,7 +160,7 @@ void TrackRecapPanel::paintTrackCard(juce::Graphics &g, juce::Rectangle<int> bou
 		           false);
 
 		pageLine.removeFromLeft(4);
-		juce::String promptText = track->pages[p].selectedPrompt;
+		juce::String promptText = makePromptDisplayLabel(track->pages[p].selectedPrompt);
 		if (promptText.isEmpty())
 			promptText = "(empty)";
 
@@ -184,7 +178,7 @@ int TrackRecapPanel::getPreferredHeight() const
 	if (numTracks == 0)
 		numTracks = 8;
 
-	return 22 + (numTracks * CARD_HEIGHT) + ((numTracks - 1) * CARD_SPACING) + 12;
+	return (numTracks * CARD_HEIGHT) + ((numTracks - 1) * CARD_SPACING) + 12;
 }
 
 void TrackRecapPanel::resized()

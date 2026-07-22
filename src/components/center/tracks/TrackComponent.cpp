@@ -175,7 +175,7 @@ void TrackComponent::onParameterChangedUI(const juce::String &paramSuffix, float
 			if (track)
 			{
 				auto &currentPage = track->getCurrentPage();
-				currentPage.setSelectedPrompt(promptPresetSelector.getText());
+				currentPage.setSelectedPrompt(getSelectedPromptValue());
 				currentPage.generationBpm = audioProcessor.getGlobalBpm();
 				currentPage.generationKey = audioProcessor.getGlobalKey();
 				currentPage.generationDuration = audioProcessor.getGlobalDuration();
@@ -1475,7 +1475,7 @@ void TrackComponent::populatePromptPresets(const juce::String &modelName, const 
 		promptPresetSelector.addSectionHeading(pair.first);
 		for (const auto &info : pair.second)
 		{
-			promptPresetSelector.addItem(info.text, itemId++);
+			promptPresetSelector.addItem(makePromptDisplayLabel(info.text), itemId++);
 			promptPresets.add(info.text);
 		}
 	}
@@ -1486,9 +1486,9 @@ void TrackComponent::populatePromptPresets(const juce::String &modelName, const 
 		targetPrompt = currentSelection;
 
 	bool found = false;
-	for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+	for (int i = 0; i < promptPresets.size(); ++i)
 	{
-		if (promptPresetSelector.getItemText(i) == targetPrompt)
+		if (promptPresets[i] == targetPrompt)
 		{
 			promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
 			found = true;
@@ -1498,19 +1498,27 @@ void TrackComponent::populatePromptPresets(const juce::String &modelName, const 
 
 	if (!found && targetPrompt.isNotEmpty())
 	{
-		promptPresetSelector.addItem(targetPrompt, itemId++);
+		promptPresetSelector.addItem(makePromptDisplayLabel(targetPrompt), itemId++);
 		promptPresets.add(targetPrompt);
-		promptPresetSelector.setSelectedId(itemId - 1, juce::dontSendNotification);
+		promptPresetSelector.setSelectedItemIndex(promptPresets.size() - 1, juce::dontSendNotification);
 		found = true;
 	}
 
 	if (!found && promptPresets.size() > 0)
 		promptPresetSelector.setSelectedItemIndex(0, juce::dontSendNotification);
 
-	t->getCurrentPage().setSelectedPrompt(promptPresetSelector.getText());
+	t->getCurrentPage().setSelectedPrompt(getSelectedPromptValue());
 
 	if (forceSelectedPrompt.isEmpty())
 		onTrackPresetSelected();
+}
+
+juce::String TrackComponent::getSelectedPromptValue() const
+{
+	int sel = promptPresetSelector.getSelectedItemIndex();
+	if (sel >= 0 && sel < promptPresets.size())
+		return promptPresets[sel];
+	return promptPresetSelector.getText();
 }
 
 void TrackComponent::statusCallback(const juce::String &message)
@@ -1562,15 +1570,15 @@ void TrackComponent::onTrackPresetSelected()
 	auto *t = getTrack();
 	if (!t)
 		return;
-	juce::String newPrompt = promptPresetSelector.getText();
+	juce::String newPrompt = getSelectedPromptValue();
 
 	auto &currentPage = t->getCurrentPage();
 	currentPage.setSelectedPrompt(newPrompt);
 
+	promptPresetSelector.setTooltip(newPrompt);
+
 	if (onTrackPromptChanged)
-	{
 		onTrackPromptChanged(trackId, newPrompt);
-	}
 }
 
 void TrackComponent::updateTrackInfo()
@@ -1614,9 +1622,9 @@ void TrackComponent::updatePromptSelection(const juce::String &promptText)
 
 	t->getCurrentPage().setSelectedPrompt(promptText);
 
-	for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+	for (int i = 0; i < promptPresets.size(); ++i)
 	{
-		if (promptPresetSelector.getItemText(i) == promptText)
+		if (promptPresets[i] == promptText)
 		{
 			promptPresetSelector.setSelectedItemIndex(i, juce::sendNotification);
 			break;
@@ -1697,9 +1705,9 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 				else
 				{
 					bool found = false;
-					for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+					for (int i = 0; i < promptPresets.size(); ++i)
 					{
-						if (promptPresetSelector.getItemText(i) == sampleEntry->originalPrompt)
+						if (promptPresets[i] == sampleEntry->originalPrompt)
 						{
 							promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
 							found = true;
@@ -1708,10 +1716,10 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 					}
 					if (!found)
 					{
-						const int newId = promptPresetSelector.getNumItems() + 1;
-						promptPresetSelector.addItem(sampleEntry->originalPrompt, newId);
+						promptPresetSelector.addItem(makePromptDisplayLabel(sampleEntry->originalPrompt),
+						                             promptPresets.size() + 1);
 						promptPresets.add(sampleEntry->originalPrompt);
-						promptPresetSelector.setSelectedId(newId, juce::dontSendNotification);
+						promptPresetSelector.setSelectedItemIndex(promptPresets.size() - 1, juce::dontSendNotification);
 					}
 					t->getCurrentPage().setSelectedPrompt(sampleEntry->originalPrompt);
 					if (onTrackPromptChanged)
@@ -1862,9 +1870,9 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 	if (entry->text.isNotEmpty())
 	{
 		bool found = false;
-		for (int i = 0; i < promptPresetSelector.getNumItems(); ++i)
+		for (int i = 0; i < promptPresets.size(); ++i)
 		{
-			if (promptPresetSelector.getItemText(i) == entry->text)
+			if (promptPresets[i] == entry->text)
 			{
 				promptPresetSelector.setSelectedItemIndex(i, juce::dontSendNotification);
 				found = true;
@@ -1874,10 +1882,9 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 
 		if (!found)
 		{
-			const int newId = promptPresetSelector.getNumItems() + 1;
-			promptPresetSelector.addItem(entry->text, newId);
+			promptPresetSelector.addItem(makePromptDisplayLabel(entry->text), promptPresets.size() + 1);
 			promptPresets.add(entry->text);
-			promptPresetSelector.setSelectedId(newId, juce::dontSendNotification);
+			promptPresetSelector.setSelectedItemIndex(promptPresets.size() - 1, juce::dontSendNotification);
 		}
 
 		t->getCurrentPage().setSelectedPrompt(entry->text);

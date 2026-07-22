@@ -69,6 +69,15 @@ void ObsidianStandaloneApp::checkInit()
 
 void ObsidianStandaloneApp::shutdown()
 {
+	if (mainWindow)
+	{
+		if (auto *holder = mainWindow->getPluginHolder())
+		{
+			holder->deviceManager.removeAudioCallback(&holder->player);
+			holder->deviceManager.closeAudioDevice();
+		}
+	}
+
 	mainWindow = nullptr;
 	instance = nullptr;
 }

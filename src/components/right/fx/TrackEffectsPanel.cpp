@@ -36,18 +36,11 @@ void TrackEffectsPanel::paint(juce::Graphics &g)
 	g.fillRoundedRectangle(bounds, Obsidian::LIST_PANEL_CORNER_SIZE);
 	g.setColour(ColourPalette::sliderTrack.withAlpha(0.3f));
 	g.drawRoundedRectangle(bounds.reduced(0.5f), Obsidian::LIST_PANEL_CORNER_SIZE, 1.0f);
-
-	auto titleArea = getLocalBounds().reduced(8, 4).removeFromTop(18);
-	g.setColour(ColourPalette::textAccent);
-	g.setFont(juce::FontOptions(Obsidian::michroma()).withHeight(Obsidian::TEXT_INFO));
-	g.drawText("EFFECTS", titleArea, juce::Justification::centredLeft, false);
 }
 
 void TrackEffectsPanel::resized()
 {
 	auto area = getLocalBounds().reduced(4, 2);
-
-	area.removeFromTop(24);
 
 	juce::FlexBox selectors;
 	selectors.flexDirection = juce::FlexBox::Direction::row;
@@ -288,7 +281,6 @@ int TrackEffectsPanel::getPreferredHeight() const
 {
 	int height = 4;
 
-	height += 24;
 	height += 26;
 	height += Obsidian::GAP;
 

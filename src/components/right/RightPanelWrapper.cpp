@@ -32,20 +32,40 @@ void RightPanelWrapper::setupUI()
 	scrollContent.addAndMakeVisible(*trackRecap);
 	scrollContent.addAndMakeVisible(*trackEffects);
 
-	addAndMakeVisible(*masterChannel);
-	addAndMakeVisible(*configComponent);
+	setupTabButton(fxTabButton, [this]() { setActiveTab(0); });
+	setupTabButton(infoTabButton, [this]() { setActiveTab(1); });
+
+	fxTabButton.loadIcon(BinaryData::sliders_svg, BinaryData::sliders_svgSize);
+	infoTabButton.loadIcon(BinaryData::info_svg, BinaryData::info_svgSize);
+
+	fxTabButton.setCompactMode(true);
+	infoTabButton.setCompactMode(true);
 
 	contentViewport.setViewedComponent(&scrollContent, false);
 	contentViewport.setScrollBarsShown(true, false);
 	contentViewport.setColour(juce::ListBox::backgroundColourId, juce::Colours::transparentBlack);
 	addAndMakeVisible(contentViewport);
 
+	addAndMakeVisible(*masterChannel);
+	addAndMakeVisible(*configComponent);
 	addAndMakeVisible(*sendsPanel);
+
+	setActiveTab(0);
 }
 
 void RightPanelWrapper::paint(juce::Graphics &g)
 {
 	paintBaseBackgroundWithLeftBorder(g);
+}
+
+void RightPanelWrapper::setActiveTab(int tab)
+{
+	activeTab = tab;
+	fxTabButton.setToggleState(tab == 0, juce::dontSendNotification);
+	infoTabButton.setToggleState(tab == 1, juce::dontSendNotification);
+	trackEffects->setVisible(tab == 0);
+	trackRecap->setVisible(tab == 1);
+	resized();
 }
 
 void RightPanelWrapper::resized()
@@ -86,16 +106,32 @@ void RightPanelWrapper::resized()
 
 	mainStack.performLayout(getLocalBounds().reduced(Obsidian::PADDING));
 
+	{
+		auto vpBounds = contentViewport.getBounds();
+		auto tabBar = vpBounds.removeFromTop(Obsidian::TAB_BAR_HEIGHT);
+		const int tabW = (tabBar.getWidth() - Obsidian::SPACER_MD) / 2;
+		fxTabButton.setBounds(tabBar.removeFromLeft(tabW));
+		tabBar.removeFromLeft(Obsidian::SPACER_MD);
+		infoTabButton.setBounds(tabBar.removeFromLeft(tabW));
+		vpBounds.removeFromTop(4);
+		contentViewport.setBounds(vpBounds);
+	}
+
 	const int viewportW = contentViewport.getWidth() - contentViewport.getScrollBarThickness();
-	const int recapH = trackRecap->getPreferredHeight();
-	const int effectsH = trackEffects->getPreferredHeight();
 
 	int y = 0;
-	trackEffects->setBounds(0, y, viewportW, effectsH);
-	y += effectsH + Obsidian::GAP_4;
-
-	trackRecap->setBounds(0, y, viewportW, recapH);
-	y += recapH;
+	if (activeTab == 0)
+	{
+		const int effectsH = trackEffects->getPreferredHeight();
+		trackEffects->setBounds(0, y, viewportW, effectsH);
+		y += effectsH;
+	}
+	else
+	{
+		const int recapH = trackRecap->getPreferredHeight();
+		trackRecap->setBounds(0, y, viewportW, recapH);
+		y += recapH;
+	}
 
 	scrollContent.setSize(viewportW, y);
 }
@@ -151,4 +187,23 @@ void RightPanelWrapper::setLCDScreen(LCDScreen *lcd)
 	if (lcdScreen)
 		addAndMakeVisible(*lcdScreen);
 	resized();
+}
+
+juce::var RightPanelWrapper::saveUIState() const
+{
+	juce::DynamicObject::Ptr o = new juce::DynamicObject();
+	o->setProperty("activeTab", activeTab);
+	return juce::var(o.get());
+}
+
+void RightPanelWrapper::restoreUIState(const juce::var &state)
+{
+	if (!state.isObject())
+		return;
+	auto *o = state.getDynamicObject();
+	if (!o)
+		return;
+
+	if (o->hasProperty("activeTab"))
+		setActiveTab((int)o->getProperty("activeTab"));
 }

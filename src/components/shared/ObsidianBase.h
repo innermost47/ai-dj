@@ -16,14 +16,12 @@ class ObsidianComponent : public juce::Component
 	std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override;
 
 	void paintBaseRoundedBackground(juce::Graphics &g, juce::Colour colour);
-
 	void paintBaseRoundedBackgroundMidWithAlpha06(juce::Graphics &g);
-
 	void paintBaseLocalBackground(juce::Graphics &g, juce::Rectangle<int> bounds);
-
 	void paintBaseBackgroundWithLeftBorder(juce::Graphics &g);
-
 	void paintBaseBackgroundWithRightBorder(juce::Graphics &g);
-
 	void drawCircleWithEllipse(juce::Graphics &g, juce::Rectangle<int> area, juce::Colour colour);
+	void setupTabButton(IconButtonSimple &btn, std::function<void()> callback);
+
+	juce::String makePromptDisplayLabel(const juce::String &fullPrompt);
 };

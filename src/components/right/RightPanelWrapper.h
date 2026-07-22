@@ -27,6 +27,9 @@ class RightPanelWrapper : public ObsidianComponent
 	void setStandaloneTransport(StandaloneTransport *transport);
 	void calculateMasterLevel();
 	void updateComponents();
+	void restoreUIState(const juce::var &state);
+
+	juce::var saveUIState() const;
 
 	StandaloneTransportComponent *getStandaloneTransportComponent()
 	{
@@ -59,6 +62,9 @@ class RightPanelWrapper : public ObsidianComponent
 	std::unique_ptr<SendsPanel> sendsPanel;
 	std::unique_ptr<ConfigComponent> configComponent;
 
+	IconButtonSimple fxTabButton{"fx"};
+	IconButtonSimple infoTabButton{"info"};
+
 	MasterWaveformDisplay *masterWaveform = nullptr;
 
 	std::unique_ptr<StandaloneTransportComponent> standaloneTransport;
@@ -70,10 +76,15 @@ class RightPanelWrapper : public ObsidianComponent
 	float masterVolume = 0.8f;
 	float masterPan = 0.0f;
 
+	int activeTab = 0;
+
 	juce::Component scrollContent;
+	juce::Component tabRowContainer;
+
 	juce::Viewport contentViewport;
 
 	void setupUI();
+	void setActiveTab(int tab);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RightPanelWrapper)
 };

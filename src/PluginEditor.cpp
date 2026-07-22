@@ -101,10 +101,17 @@ DjIaVstEditor::~DjIaVstEditor()
 {
 	isBeingDestroyed.store(true);
 	vBlankAttachment.reset();
-	if (uiLayoutManager && uiLayoutManager->getLeftPanelWrapper())
+	if (uiLayoutManager)
 	{
-		auto state = uiLayoutManager->getLeftPanelWrapper()->saveUIState();
-		audioProcessor.setPanelStateJson(juce::JSON::toString(state));
+		juce::DynamicObject::Ptr root = new juce::DynamicObject();
+
+		if (uiLayoutManager->getLeftPanelWrapper())
+			root->setProperty("leftPanel", uiLayoutManager->getLeftPanelWrapper()->saveUIState());
+
+		if (uiLayoutManager->getRightPanelWrapper())
+			root->setProperty("rightPanel", uiLayoutManager->getRightPanelWrapper()->saveUIState());
+
+		audioProcessor.setPanelStateJson(juce::JSON::toString(juce::var(root.get())));
 	}
 	audioProcessor.onMasterOutput = nullptr;
 	audioProcessor.setMidiIndicatorCallback(nullptr);
@@ -355,7 +362,17 @@ void DjIaVstEditor::setupUI()
 	if (json.isNotEmpty())
 	{
 		auto state = juce::JSON::parse(json);
-		uiLayoutManager->getLeftPanelWrapper()->restoreUIState(state);
+
+		if (auto *o = state.getDynamicObject())
+		{
+			if (o->hasProperty("leftPanel"))
+				uiLayoutManager->getLeftPanelWrapper()->restoreUIState(o->getProperty("leftPanel"));
+			else
+				uiLayoutManager->getLeftPanelWrapper()->restoreUIState(state);
+
+			if (o->hasProperty("rightPanel"))
+				uiLayoutManager->getRightPanelWrapper()->restoreUIState(o->getProperty("rightPanel"));
+		}
 	}
 
 	addEventListeners();

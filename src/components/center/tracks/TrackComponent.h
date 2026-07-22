@@ -225,6 +225,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 	float calculateEffectiveBpm();
 
 	juce::String getIntervalName(int value);
+	juce::String getSelectedPromptValue() const;
 
   protected:
 	juce::String getParameterPrefix() const override

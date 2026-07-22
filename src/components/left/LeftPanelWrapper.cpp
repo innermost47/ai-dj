@@ -18,20 +18,8 @@ void LeftPanelWrapper::setupUI()
 	addAndMakeVisible(*sampleBank);
 	addAndMakeVisible(*promptBank);
 
-	auto setupTab = [this](juce::TextButton &btn, Tab tab)
-	{
-		btn.setClickingTogglesState(true);
-		btn.setRadioGroupId(0xCAFE);
-		btn.setColour(juce::TextButton::buttonColourId, ColourPalette::backgroundDeep);
-		btn.setColour(juce::TextButton::buttonOnColourId, ColourPalette::lightGrey.withAlpha(0.3f));
-		btn.setColour(juce::TextButton::textColourOffId, ColourPalette::textSecondary);
-		btn.setColour(juce::TextButton::textColourOnId, ColourPalette::textPrimary);
-		btn.onClick = [this, tab]() { setActiveTab(tab); };
-		addAndMakeVisible(btn);
-	};
-
-	setupTab(promptTabButton, Tab::Prompt);
-	setupTab(sampleTabButton, Tab::Sample);
+	setupTabButton(promptTabButton, [this]() { setActiveTab(Tab::Prompt); });
+	setupTabButton(sampleTabButton, [this]() { setActiveTab(Tab::Sample); });
 
 	promptTabButton.loadIcon(BinaryData::chattext_svg, BinaryData::chattext_svgSize);
 	sampleTabButton.loadIcon(BinaryData::fileaudio_svg, BinaryData::fileaudio_svgSize);
