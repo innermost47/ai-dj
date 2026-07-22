@@ -166,10 +166,11 @@ class KeywordsContainerComponent : public ObsidianComponent
 		}
 	}
 };
+
 class PromptEditorContent : public ObsidianComponent
 {
   public:
-	juce::Label categoryLbl, promptLbl, examplesLbl, keywordsLbl, descLbl;
+	juce::Label categoryLbl, promptLbl, examplesLbl, keywordsLbl, descLbl, displayHintLbl;
 	juce::ComboBox categoryCombo;
 	EscapableTextEditor promptEditor;
 	juce::Viewport examplesViewport, keywordsViewport;
@@ -191,6 +192,15 @@ class PromptEditorContent : public ObsidianComponent
 		categoryLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 		categoryLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 		addAndMakeVisible(categoryLbl);
+
+		displayHintLbl.setText(
+		    "Note: structural tags like \"TrackType:\" or \"Format:\" are hidden in the track's prompt selector "
+		    "for readability. Your full prompt is saved and used exactly as written here.",
+		    juce::dontSendNotification);
+		displayHintLbl.setColour(juce::Label::textColourId, ColourPalette::textSecondary);
+		displayHintLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::italic));
+		displayHintLbl.setJustificationType(juce::Justification::topLeft);
+		addAndMakeVisible(displayHintLbl);
 
 		categoryCombo.addItem("Uncategorized", 1);
 		int catId = 2;
@@ -266,7 +276,7 @@ class PromptEditorContent : public ObsidianComponent
 		currentModel = newModel;
 		for (auto &c : modelCards)
 			c->setSelected(c->getModelName() == newModel);
-		rebuildModelContent();
+		resized();
 	}
 
 	void rebuildModelContent()
@@ -425,19 +435,14 @@ class PromptEditorContent : public ObsidianComponent
 	void resized() override
 	{
 		auto area = getLocalBounds().reduced(16);
-
 		const int cardH = 30;
 		const int cardSpacing = 6;
 		const int numCols = 4;
-
 		int totalCards = (int)modelCards.size();
 		int numRows = (totalCards + numCols - 1) / numCols;
-
 		int totalTabsHeight = numRows * cardH + (numRows - 1) * cardSpacing;
-
 		auto tabsArea = area.removeFromTop(totalTabsHeight);
 		int cardW = (tabsArea.getWidth() - (numCols - 1) * cardSpacing) / numCols;
-
 		for (int i = 0; i < totalCards; ++i)
 		{
 			int row = i / numCols;
@@ -446,37 +451,41 @@ class PromptEditorContent : public ObsidianComponent
 			int y = tabsArea.getY() + row * (cardH + cardSpacing);
 			modelCards[i]->setBounds(x, y, cardW, cardH);
 		}
-
 		area.removeFromTop(8);
-
 		descLbl.setBounds(area.removeFromTop(18));
 		area.removeFromTop(12);
-
 		const int colSpacing = 16;
 		int colW = (area.getWidth() - colSpacing) / 2;
-
 		auto leftCol = area.removeFromLeft(colW);
 		area.removeFromLeft(colSpacing);
 		auto rightCol = area;
-
 		categoryLbl.setBounds(leftCol.removeFromTop(16));
 		leftCol.removeFromTop(Obsidian::GAP_4);
 		categoryCombo.setBounds(leftCol.removeFromTop(28));
 		leftCol.removeFromTop(12);
-
 		promptLbl.setBounds(leftCol.removeFromTop(16));
 		leftCol.removeFromTop(Obsidian::GAP_4);
 		promptEditor.setBounds(leftCol.removeFromTop(140));
-		leftCol.removeFromTop(12);
+
+		const std::string model = currentModel.toStdString();
+		const bool hasHiddenTags = model == Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM() ||
+		                           model == Obsidian::STABLEBEAT() || model == Obsidian::GLUTEN_V1();
+
+		displayHintLbl.setVisible(hasHiddenTags);
+		if (hasHiddenTags)
+		{
+			leftCol.removeFromTop(6);
+			displayHintLbl.setBounds(leftCol.removeFromTop(48));
+		}
+		else
+			leftCol.removeFromTop(12);
 
 		examplesLbl.setBounds(leftCol.removeFromTop(16));
 		leftCol.removeFromTop(Obsidian::GAP_4);
 		examplesViewport.setBounds(leftCol);
-
 		keywordsLbl.setBounds(rightCol.removeFromTop(16));
 		rightCol.removeFromTop(Obsidian::GAP_4);
 		keywordsViewport.setBounds(rightCol);
-
 		rebuildModelContent();
 	}
 };
@@ -980,6 +989,7 @@ void ObsidianAlertManager::showCredits(juce::Component *parent)
 
 	static const std::vector<EarlyAdopterEntry> earlyAdopters = {
 	    {"Brian Bullock", "https://rethinkstudios.tv"},
+	    {"Yevgeni \"Jeff\" Birkhoff", "https://www.jbf.productions"},
 	    {"Moteka", "https://linktr.ee/motekamusic"},
 	    {"Steven Wagenheim", "https://soundcloud.com/steven-wagenheim"},
 	};
