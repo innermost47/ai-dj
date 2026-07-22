@@ -1119,7 +1119,8 @@ void ObsidianAlertManager::showCredits(juce::Component *parent)
 			authorLink.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 			container.addAndMakeVisible(authorLink);
 
-			adoptersHeader.setText("Thanks to Obsidian Neural Early Adopters", juce::dontSendNotification);
+			adoptersHeader.setText("Thanks to Obsidian Neural Early Adopters & Contributors",
+			                       juce::dontSendNotification);
 			adoptersHeader.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 			adoptersHeader.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 			adoptersHeader.setJustificationType(juce::Justification::centredLeft);
