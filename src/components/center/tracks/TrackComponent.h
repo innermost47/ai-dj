@@ -61,6 +61,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 	void syncBorderOverlay();
 	void populatePromptPresets(const juce::String &modelName, const juce::String &forceSelectedPrompt = {});
 	void mouseDown(const juce::MouseEvent &) override;
+	void syncModelSelector();
 	void startPagePendingBlink()
 	{
 		blinkTicking = true;

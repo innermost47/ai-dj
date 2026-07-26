@@ -257,6 +257,7 @@ void UITrackManager::refreshUIForMode()
 		else
 			tc->modelSelector.setSelectedId(1, juce::dontSendNotification);
 
+		tc->syncModelSelector();
 		if (editor.mixerPanel)
 			editor.mixerPanel->updateModelUI(tc->getTrackId());
 	}
