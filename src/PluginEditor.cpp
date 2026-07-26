@@ -176,6 +176,8 @@ void DjIaVstEditor::finalizeInit()
 		return;
 	}
 
+	setupScreen();
+	canPersistSize.store(true);
 	uiTrackManager->refreshTracks();
 	creditsLabel.setText("Local Edition", juce::dontSendNotification);
 	if (uiLayoutManager->getLeftPanelWrapper()->getPromptBankPanel())
@@ -461,7 +463,8 @@ void DjIaVstEditor::resized()
 	auto &root = uiLayoutManager->getContentRoot();
 	root.setTransform(juce::AffineTransform::scale(scale));
 	root.setBounds(0, 0, Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
-	audioProcessor.setWindowSize(getWidth(), getHeight());
+	if (canPersistSize.load())
+		audioProcessor.setWindowSize(getWidth(), getHeight());
 }
 
 void *DjIaVstEditor::getSequencerForTrack(const juce::String &trackId)

@@ -94,6 +94,7 @@ class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::DragAndDro
 
 	std::atomic<bool> isInitialized{false};
 	std::atomic<bool> isRefreshingTracks{false};
+	std::atomic<bool> canPersistSize{false};
 
 	juce::Typeface::Ptr customFont;
 	juce::Label midiIndicator;
