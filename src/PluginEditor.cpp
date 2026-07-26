@@ -269,6 +269,9 @@ void DjIaVstEditor::handleVBlank()
 	if (!isInitialized.load())
 		return;
 
+	if (uiModalManager && uiModalManager->hasActiveModals())
+		return;
+
 	bool anyTrackPlaying = false;
 	for (auto &trackComp : uiTrackManager->getTrackComponents())
 	{

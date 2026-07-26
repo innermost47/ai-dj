@@ -24,6 +24,11 @@ class UIModalManager
 	void advanceOnboardingTo(int stepIndex);
 	void showCredits();
 
+	bool hasActiveModals() const noexcept
+	{
+		return !activeModals.empty();
+	}
+
   private:
 	DjIaVstEditor &editor;
 	std::vector<std::unique_ptr<ObsidianModalOverlay>> activeModals;
