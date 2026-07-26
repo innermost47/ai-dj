@@ -23,6 +23,7 @@ class UIModalManager
 	void showOnboarding(OnboardingVariant variant);
 	void advanceOnboardingTo(int stepIndex);
 	void showCredits();
+	void applyScale(float scale);
 
 	bool hasActiveModals() const noexcept
 	{
