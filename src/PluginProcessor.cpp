@@ -546,6 +546,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	}
 #if JucePlugin_Build_Standalone
 	if (juce::JUCEApplicationBase::isStandaloneApp())
+	{
 		if (link && link->isEnabled())
 		{
 			calculateOutputTime(sr, buffer.getNumSamples());
@@ -564,8 +565,11 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 				standaloneTransport->setPpqPosition(linkBeat);
 			}
 		}
-		else
+		else if (standaloneTransport)
+		{
 			standaloneTransport->advance(buffer.getNumSamples(), sr);
+		}
+	}
 #endif
 
 	sequencerManager.internalSampleCounter += buffer.getNumSamples();
