@@ -154,6 +154,7 @@ void TrackComponent::setTrackData(TrackData *trackData)
 	if (t && t->slotIndex != -1)
 		wireParameters();
 	refreshWaveformDisplay();
+	syncModelSelector();
 	updateFromTrackData();
 	setSelected(t->isSelected.load());
 }
@@ -270,10 +271,12 @@ void TrackComponent::updatePlaybackPosition(double timeInSeconds)
 juce::Colour TrackComponent::getCurrentModelColour() const
 {
 	auto *t = getTrack();
-	juce::String currentModel = modelSelector.getText();
-	auto &currentPage = t->getCurrentPage();
-	if (currentModel.isEmpty() && t)
-		currentModel = currentPage.selectedModel;
+	if (!t)
+		return AiModelDefinitions::getColourForModel({});
+
+	juce::String currentModel = t->getCurrentPage().selectedModel;
+	if (currentModel.isEmpty())
+		currentModel = modelSelector.getText();
 	if (currentModel.isEmpty())
 	{
 		const bool isLocalMode = audioProcessor.getUseLocalModel();
@@ -299,27 +302,6 @@ void TrackComponent::updateFromTrackData()
 	auto *t = getTrack();
 	if (!t)
 		return;
-
-	juce::String modelToSet = t->getCurrentPage().selectedModel;
-	const bool isLocalMode = audioProcessor.getUseLocalModel();
-	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
-
-	if (modelToSet.isEmpty() || !modelsForMode.contains(modelToSet))
-	{
-		if (!isLocalMode && !t->getCurrentPage().savedModelBeforeLocal.isEmpty() &&
-		    modelsForMode.contains(t->getCurrentPage().savedModelBeforeLocal))
-			modelToSet = t->getCurrentPage().savedModelBeforeLocal;
-		else
-			modelToSet = modelsForMode[0];
-		t->getCurrentPage().selectedModel = modelToSet;
-	}
-
-	modelSelector.setText(modelToSet, juce::dontSendNotification);
-	if (modelSet != modelToSet)
-	{
-		modelSet = modelToSet;
-		updateModelUI();
-	}
 
 	for (int i = 0; i < Obsidian::MAX_PAGES; ++i)
 		pageButtons[i].setVisible(true);
@@ -647,7 +629,9 @@ void TrackComponent::resized()
 
 		addAndMakeVisible(*waveformDisplay);
 
-		if (currentPage.numSamples > 0)
+		if (currentPage.isLoaded.load() && !currentPage.isLoading.load() && currentPage.numSamples > 0 &&
+		    currentPage.audioBuffer.getNumSamples() >= currentPage.numSamples &&
+		    currentPage.audioBuffer.getNumChannels() > 0)
 		{
 			waveformDisplay->setAudioData(currentPage.audioBuffer, currentPage.sampleRate);
 			waveformDisplay->setLoopPoints(currentPage.loopStart, currentPage.loopEnd);
@@ -889,6 +873,7 @@ void TrackComponent::performPageChange(int pageIndex)
 	t->pageChangePending.store(false);
 	t->pendingPageIndex.store(-1);
 
+	syncModelSelector();
 	updateFromTrackData();
 
 	populatePromptPresets(newPage.selectedModel, newPage.selectedPrompt);
@@ -1236,6 +1221,7 @@ void TrackComponent::setupUI()
 			return;
 		auto selectedModel = modelSelector.getText();
 		t->getCurrentPage().selectedModel = selectedModel;
+		modelSet = selectedModel;
 		populatePromptPresets(selectedModel);
 		updateModelUI();
 		if (onModelChanged)
@@ -1913,6 +1899,38 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 
 	borderOverlay.triggerFlash();
 	blinkTicking = true;
+}
+
+void TrackComponent::syncModelSelector()
+{
+	auto *t = getTrack();
+	if (!t)
+		return;
+
+	juce::String modelToSet = t->getCurrentPage().selectedModel;
+	const bool isLocalMode = audioProcessor.getUseLocalModel();
+	auto modelsForMode = AiModelDefinitions::getModelsForMode(isLocalMode);
+	if (modelsForMode.isEmpty())
+		return;
+
+	if (modelToSet.isEmpty() || !modelsForMode.contains(modelToSet))
+	{
+		if (!isLocalMode && !t->getCurrentPage().savedModelBeforeLocal.isEmpty() &&
+		    modelsForMode.contains(t->getCurrentPage().savedModelBeforeLocal))
+			modelToSet = t->getCurrentPage().savedModelBeforeLocal;
+		else
+			modelToSet = modelsForMode[0];
+		t->getCurrentPage().selectedModel = modelToSet;
+	}
+
+	if (modelSelector.getText() != modelToSet)
+		modelSelector.setText(modelToSet, juce::dontSendNotification);
+
+	if (modelSet != modelToSet)
+	{
+		modelSet = modelToSet;
+		updateModelUI();
+	}
 }
 
 void TrackComponent::wireParameters()
