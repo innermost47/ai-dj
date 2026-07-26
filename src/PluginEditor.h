@@ -103,6 +103,11 @@ class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::DragAndDro
 
 	CustomLookAndFeel customLookAndFeel;
 
+	float getUIScale() const noexcept
+	{
+		return getWidth() / (float)Obsidian::BASE_PLUGIN_WIDTH;
+	}
+
   private:
 	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
 

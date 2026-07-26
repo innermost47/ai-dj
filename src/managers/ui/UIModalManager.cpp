@@ -6,6 +6,12 @@
 #include "PluginProcessor.h"
 #include "config/version.h"
 
+static void applyScaleTo(ObsidianModalOverlay *o, float scale)
+{
+	o->setTransform(scale != 1.0f ? juce::AffineTransform::scale(scale) : juce::AffineTransform());
+	o->setBounds(0, 0, Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+}
+
 UIModalManager::UIModalManager(DjIaVstEditor &editor) : editor(editor)
 {
 }
@@ -14,7 +20,7 @@ void UIModalManager::addModal(std::unique_ptr<ObsidianModalOverlay> overlay)
 {
 	auto *raw = overlay.get();
 	editor.addAndMakeVisible(raw);
-	raw->setBounds(editor.getLocalBounds());
+	applyScaleTo(raw, editor.getUIScale());
 	raw->toFront(false);
 	activeModals.push_back(std::move(overlay));
 	raw->startFadeIn();
@@ -174,4 +180,11 @@ void UIModalManager::checkForUpdates()
 void UIModalManager::showCredits()
 {
 	ObsidianAlertManager::showCredits(&editor);
+}
+
+void UIModalManager::applyScale(float scale)
+{
+	for (auto &o : activeModals)
+		if (o != nullptr)
+			applyScaleTo(o.get(), scale);
 }

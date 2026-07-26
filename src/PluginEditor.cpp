@@ -463,6 +463,8 @@ void DjIaVstEditor::resized()
 	auto &root = uiLayoutManager->getContentRoot();
 	root.setTransform(juce::AffineTransform::scale(scale));
 	root.setBounds(0, 0, Obsidian::BASE_PLUGIN_WIDTH, Obsidian::BASE_PLUGIN_HEIGHT);
+	if (uiModalManager)
+		uiModalManager->applyScale(scale);
 	if (canPersistSize.load())
 		audioProcessor.setWindowSize(getWidth(), getHeight());
 }
