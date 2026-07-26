@@ -173,18 +173,38 @@ void ObsidianModalOverlay::resized()
 
 void ObsidianModalOverlay::mouseDown(const juce::MouseEvent &e)
 {
-	if (modalWindow != nullptr && !modalWindow->getBounds().contains(e.getPosition()))
-	{
-		juce::WeakReference<juce::Component> safeModal(modalWindow.get());
-		auto &animator = juce::Desktop::getInstance().getAnimator();
-		auto target = modalWindow->getBounds();
+	if (modalWindow == nullptr || modalWindow->getBounds().contains(e.getPosition()))
+		return;
+	if (shaking)
+		return;
 
-		animator.animateComponent(modalWindow.get(), target.translated(6, 0), 1.0f, 50, false, 1.0, 0.0);
-		if (safeModal != nullptr)
-			animator.animateComponent(safeModal, target.translated(-6, 0), 1.0f, 50, false, 1.0, 0.0);
-		if (safeModal != nullptr)
-			animator.animateComponent(safeModal, target, 1.0f, 50, false, 1.0, 0.0);
-	}
+	shaking = true;
+	const auto target = modalWindow->getBounds();
+	juce::Component::SafePointer<ObsidianModalOverlay> safeThis(this);
+	juce::Component::SafePointer<juce::Component> safeModal(modalWindow.get());
+	auto &animator = juce::Desktop::getInstance().getAnimator();
+
+	animator.animateComponent(safeModal, target.translated(6, 0), 1.0f, 50, false, 1.0, 0.0);
+
+	juce::Timer::callAfterDelay(
+	    55,
+	    [safeThis, safeModal, target]()
+	    {
+		    if (safeModal == nullptr)
+			    return;
+		    juce::Desktop::getInstance().getAnimator().animateComponent(safeModal, target.translated(-6, 0), 1.0f, 50,
+		                                                                false, 1.0, 0.0);
+
+		    juce::Timer::callAfterDelay(55,
+		                                [safeThis, safeModal, target]()
+		                                {
+			                                if (safeModal != nullptr)
+				                                juce::Desktop::getInstance().getAnimator().animateComponent(
+				                                    safeModal, target, 1.0f, 60, false, 1.0, 0.0);
+			                                if (safeThis != nullptr)
+				                                safeThis->shaking = false;
+		                                });
+	    });
 }
 
 void ObsidianModalOverlay::close()

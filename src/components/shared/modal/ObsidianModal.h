@@ -56,6 +56,7 @@ class ObsidianModalOverlay : public ObsidianComponent
 	void close();
 
 	bool closing = false;
+	bool shaking = false;
 
 	std::unique_ptr<ObsidianModalWindow> modalWindow;
 
