@@ -247,8 +247,8 @@ void DjIaVstEditor::handleVBlank()
 			updateUIFromProcessor();
 
 	if (audioProcessor.needsUIUpdate.exchange(false))
-		if (audioProcessor.onUIUpdateNeeded)
-			audioProcessor.onUIUpdateNeeded();
+		if (isInitialized.load())
+			uiTrackManager->updateUIComponents();
 
 	if (waitingForState)
 	{
@@ -293,7 +293,7 @@ void DjIaVstEditor::handleVBlank()
 		skipFrames = 0;
 	}
 
-	double currentHostBpm = audioProcessor.getHostBpm();
+	double currentHostBpm = audioProcessor.getCachedHostBpm();
 	if (std::abs(currentHostBpm - lastHostBpm) > 0.1)
 	{
 		lastHostBpm = currentHostBpm;
