@@ -277,6 +277,11 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	float getGlobalCrossfaderValue() const;
 	float getPairCrossfaderValue(int pairIndex) const;
 	double getHostBpm() const;
+	double getCachedHostBpm() const noexcept
+	{
+		const double b = cachedHostBpm.load();
+		return b > 0.0 ? b : 110.0;
+	}
 	double getLastBpm() const
 	{
 		return lastBpm;
