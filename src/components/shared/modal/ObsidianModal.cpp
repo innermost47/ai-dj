@@ -135,7 +135,6 @@ ObsidianModalOverlay::ObsidianModalOverlay(std::unique_ptr<ObsidianModalWindow> 
 {
 	addAndMakeVisible(modalWindow.get());
 	setInterceptsMouseClicks(true, true);
-	setAlpha(0.0f);
 }
 
 ObsidianModalOverlay::~ObsidianModalOverlay()
@@ -149,7 +148,6 @@ ObsidianModalOverlay::~ObsidianModalOverlay()
 
 void ObsidianModalOverlay::startFadeIn()
 {
-	juce::Desktop::getInstance().getAnimator().fadeIn(this, 180);
 }
 
 void ObsidianModalOverlay::paint(juce::Graphics &g)
@@ -213,24 +211,17 @@ void ObsidianModalOverlay::close()
 		return;
 	closing = true;
 
-	auto &animator = juce::Desktop::getInstance().getAnimator();
-	animator.cancelAnimation(this, false);
-	animator.fadeOut(this, 150);
-
-	juce::WeakReference<juce::Component> safeThis(this);
+	juce::Component::SafePointer<ObsidianModalOverlay> safeThis(this);
 	juce::MessageManager::callAsync(
 	    [safeThis]()
 	    {
-		    if (safeThis == nullptr)
+		    auto *self = safeThis.getComponent();
+		    if (self == nullptr)
 			    return;
 
-		    auto *self = static_cast<ObsidianModalOverlay *>(safeThis.get());
 		    if (auto *host = self->findParentComponentOfClass<ModalHost>())
 			    host->removeModal(self);
-		    else
-		    {
-			    if (auto *p = self->getParentComponent())
-				    p->removeChildComponent(self);
-		    }
+		    else if (auto *p = self->getParentComponent())
+			    p->removeChildComponent(self);
 	    });
 }
