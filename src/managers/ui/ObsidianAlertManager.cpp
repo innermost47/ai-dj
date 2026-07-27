@@ -989,6 +989,8 @@ void ObsidianAlertManager::showCredits(juce::Component *parent)
 
 	static const std::vector<EarlyAdopterEntry> earlyAdopters = {
 	    {"Brian Bullock", "https://rethinkstudios.tv"},
+	    {"David Sablon", "https://www.linkedin.com/in/davidsablon/"},
+	    {"Marc Wensauer", "https://ansolas.de/"},
 	    {"Moteka", "https://linktr.ee/motekamusic"},
 	    {"Steven Wagenheim", "https://soundcloud.com/steven-wagenheim"},
 	    {"Yevgeni \"Jeff\" Birkhoff", "https://www.jbf.productions"},
