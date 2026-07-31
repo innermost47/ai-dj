@@ -50,8 +50,8 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
 		                                                 MidiMapping::feedbackActive);
 
-	auto response = audioProcessor.getApiClient().generateLoop(
-	    request, audioProcessor.getHostSampleRate(), audioProcessor.getRequestTimeout(), audioProcessor.getBypassLLM());
+	auto response = audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(),
+	                                                           audioProcessor.getRequestTimeout());
 
 	try
 	{
@@ -306,8 +306,7 @@ void GenerationManager::generateSampleWithImage(const juce::String &trackId, con
 void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId,
                                               int timeoutMS)
 {
-	auto response =
-	    audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(), timeoutMS, false);
+	auto response = audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(), timeoutMS);
 
 	try
 	{

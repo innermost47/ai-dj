@@ -57,7 +57,7 @@ class DjIaClient
 	juce::String getApiKey() const;
 	void setBaseUrl(const juce::String &newBaseUrl);
 	CreditsInfo checkCredits(int timeoutMS = 10000);
-	LoopResponse generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS, bool bypassLLM);
+	LoopResponse generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS);
 	void cancelPendingRequests();
 
   private:

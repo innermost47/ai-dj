@@ -966,11 +966,6 @@ void DjIaVstProcessor::setAutoLoadEnabled(bool enabled)
 	autoLoadEnabled.store(enabled);
 }
 
-void DjIaVstProcessor::setBypassLLM(bool bypassed)
-{
-	bypassLLM.store(bypassed);
-}
-
 void DjIaVstProcessor::setApiKey(const juce::String &key)
 {
 	apiKey = key;

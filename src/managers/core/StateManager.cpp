@@ -576,7 +576,6 @@ void StateManager::getStateInformation(juce::MemoryBlock &destData)
 	state.setProperty("lastKeyIndex", audioProcessor.getLastKeyIndex(), nullptr);
 	state.setProperty("isGenerating", false, nullptr);
 	state.setProperty("autoLoadEnabled", audioProcessor.getAutoLoadEnabled(), nullptr);
-	state.setProperty("bypassLLM", audioProcessor.getBypassLLM(), nullptr);
 	state.setProperty("generatingTrackId", audioProcessor.getGeneratingTrackId(), nullptr);
 	state.setProperty("bypassSequencer", audioProcessor.getBypassSequencer(), nullptr);
 	state.setProperty("crossfaderValue", audioProcessor.getCrossfaderValue(), nullptr);
@@ -732,7 +731,6 @@ void StateManager::setStateInformation(const void *data, int sizeInBytes)
 	audioProcessor.setLastKeyIndex(state.getProperty("lastKeyIndex", 1));
 	audioProcessor.setGeneratingTrackId(state.getProperty("generatingTrackId", "").toString());
 	audioProcessor.setAutoLoadEnabled(state.getProperty("autoLoadEnabled", true));
-	audioProcessor.setBypassLLM(state.getProperty("bypassLLM", false));
 	audioProcessor.setWindowSize(state.getProperty("windowWidth", 1620), state.getProperty("windowHeight", 840));
 	audioProcessor.setPanelVisible(state.getProperty("bankVisible", true));
 	audioProcessor.setUseLocalModel(state.getProperty("useLocalModel", false));

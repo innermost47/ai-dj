@@ -17,7 +17,6 @@ class ConfigComponent : public ObsidianComponent
 	void setupUI();
 	void addEventListeners();
 	void updateFromProcessor();
-	void updateUseLLM();
 
   private:
 	DjIaVstProcessor &audioProcessor;
@@ -29,7 +28,6 @@ class ConfigComponent : public ObsidianComponent
 	IconButtonSimple configButton{"Config", ""};
 	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
 	IconButtonSimple helpButton{"Help", ""};
-	IconButtonSimple bypassLLMButton{"BypassLLM", ""};
 	IconButtonSimple creditsButton{"BypassLLM", ""};
 
 	juce::Image logoImage;

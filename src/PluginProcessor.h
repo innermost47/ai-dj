@@ -333,10 +333,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return autoLoadEnabled.load();
 	}
-	bool getBypassLLM() const
-	{
-		return bypassLLM.load();
-	}
 	bool getAreTracksPrepared() const
 	{
 		return areTracksPrepared;
@@ -507,7 +503,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	void setApiKey(const juce::String &key);
 	void setServerUrl(const juce::String &url);
 	void setAutoLoadEnabled(bool enabled);
-	void setBypassLLM(bool bypassed);
 	void setCrossfaderCurveMode(int mode);
 	void setBypassSequencer(bool bypass)
 	{
@@ -857,7 +852,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> waitingForMidiToLoad{false};
 	std::atomic<bool> correctMidiNoteReceived{false};
 	std::atomic<bool> stateLoaded{false};
-	std::atomic<bool> bypassLLM{true};
 	std::atomic<bool> isGenerating{false};
 	std::atomic<bool> isLoadingFromBank{false};
 	std::atomic<float> pendingDetectedBpm{-1.0f};

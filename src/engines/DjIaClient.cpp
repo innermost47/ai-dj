@@ -137,23 +137,18 @@ DjIaClient::CreditsInfo DjIaClient::checkCredits(int timeoutMS)
 	return result;
 }
 
-DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS,
-                                                  bool bypassLLM)
+DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, double sampleRate, int requestTimeoutMS)
 {
 	try
 	{
 		juce::var jsonRequest(new juce::DynamicObject());
 		float bpm = request.bpm;
 		if (bpm < 0.0f)
-		{
 			bpm = 110.0f;
-		}
 		jsonRequest.getDynamicObject()->setProperty("prompt", request.prompt);
 		jsonRequest.getDynamicObject()->setProperty("bpm", bpm);
-		jsonRequest.getDynamicObject()->setProperty("sync_on_server", false);
 		jsonRequest.getDynamicObject()->setProperty("key", request.key);
 		jsonRequest.getDynamicObject()->setProperty("model", request.model);
-		jsonRequest.getDynamicObject()->setProperty("bypass_llm", bypassLLM);
 		jsonRequest.getDynamicObject()->setProperty("sample_rate", sampleRate);
 		jsonRequest.getDynamicObject()->setProperty("generation_duration", request.generationDuration);
 		if (request.useImage && !request.imageBase64.isEmpty())
@@ -166,9 +161,7 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, do
 		{
 			juce::Array<juce::var> keywordsArray;
 			for (const auto &keyword : request.keywords)
-			{
 				keywordsArray.add(juce::var(keyword));
-			}
 			jsonRequest.getDynamicObject()->setProperty("keywords", juce::var(keywordsArray));
 		}
 
@@ -185,19 +178,13 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, do
 
 		juce::String headerString = "Content-Type: application/json\n";
 		if (currentApiKey.isNotEmpty())
-		{
 			headerString += "X-API-Key: " + currentApiKey + "\n";
-		}
 
 		if (currentBaseUrl.isEmpty())
-		{
 			throw std::runtime_error("Server URL not configured. Please set server URL in settings.");
-		}
 
 		if (!currentBaseUrl.startsWithIgnoreCase("http"))
-		{
 			throw std::runtime_error("Invalid server URL format. Must start with http:// or https://");
-		}
 
 		int statusCode = 0;
 		juce::StringPairArray responseHeaders;
@@ -210,58 +197,39 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, do
 
 		auto response = url.createInputStream(options);
 		if (!response)
-		{
 			throw std::runtime_error(("Cannot connect to server at " + currentBaseUrl +
 			                          ". Please check: Server is running, URL is correct, Network connection")
 			                             .toStdString());
-		}
 
 		if (statusCode == 403)
-		{
 			throw std::runtime_error(
 			    "Authentication failed: Invalid or expired API key. Please check your credentials.");
-		}
 		else if (statusCode == 401)
-		{
 			throw std::runtime_error("Authentication failed: API key required or invalid.");
-		}
 		else if (statusCode == 422)
-		{
-
 			throw std::runtime_error(
 			    "Invalid request: The server could not process your request. Please check your prompt and parameters.");
-		}
 		else if (statusCode == 500)
-		{
 			throw std::runtime_error(
 			    "Server error: The audio generation service is temporarily unavailable. Please try again later.");
-		}
 		else if (statusCode == 503)
-		{
 			throw std::runtime_error(
 			    "Service unavailable: All GPU providers are currently busy. Please try again in a few moments.");
-		}
 		else if (statusCode != 200)
-		{
 			throw std::runtime_error("HTTP Error " + std::to_string(statusCode) + ": Request failed.");
-		}
 
 		if (response->isExhausted())
-		{
 			throw std::runtime_error("Server returned empty response. Server may be overloaded or misconfigured.");
-		}
 
 		LoopResponse result;
 		result.audioData = juce::File::createTempFile(".wav");
 		juce::FileOutputStream stream(result.audioData);
+
 		if (stream.openedOk())
-		{
 			stream.writeFromInputStream(*response, response->getTotalLength());
-		}
 		else
-		{
 			throw std::runtime_error("Cannot create temporary file for audio data.");
-		}
+
 		result.duration = request.generationDuration;
 		result.bpm = bpm;
 		result.key = request.key;
@@ -281,16 +249,9 @@ DjIaClient::LoopResponse DjIaClient::generateLoop(const LoopRequest &request, do
 			}
 		}
 
-		auto detectedBpmStr = responseHeaders["X-Detected-BPM"];
-		if (detectedBpmStr.isNotEmpty())
-		{
-			result.detectedBpm = detectedBpmStr.getFloatValue();
-		}
 		auto snappedBpmStr = responseHeaders["X-Snapped-BPM"];
 		if (snappedBpmStr.isNotEmpty())
-		{
 			result.snappedBpm = snappedBpmStr.getFloatValue();
-		}
 
 		return result;
 	}

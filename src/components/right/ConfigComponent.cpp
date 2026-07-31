@@ -49,18 +49,6 @@ void ConfigComponent::setupUI()
 		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
 	bypassSequencerButton.setTooltip("Global bypass - direct MIDI playback for composition mode");
 
-	addAndMakeVisible(bypassLLMButton);
-	bypassLLMButton.setClickingTogglesState(true);
-	bypassLLMButton.setEnabled(!audioProcessor.getUseLocalModel());
-	bypassLLMButton.setToggleState(audioProcessor.getBypassLLM(), juce::dontSendNotification);
-	if (audioProcessor.getBypassLLM())
-		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-	else
-		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
-
-	bypassLLMButton.setTooltip("Disables prompt enhancement for faster, raw generation - Disabled by default");
-	configButton.setTooltip("Configure API settings and generation mode");
-
 	addAndMakeVisible(openMidiEditorButton);
 	openMidiEditorButton.loadIcon(BinaryData::piano_svg, BinaryData::piano_svgSize);
 	openMidiEditorButton.setTooltip("Open MIDI mappings editor");
@@ -93,7 +81,6 @@ void ConfigComponent::setupUI()
 	setupControlBtn(openMidiEditorButton);
 	setupControlBtn(configButton);
 	setupControlBtn(helpButton);
-	setupControlBtn(bypassLLMButton);
 	setupControlBtn(creditsButton);
 
 	addAndMakeVisible(scaleAndDurationPanel.get());
@@ -126,27 +113,6 @@ void ConfigComponent::addEventListeners()
 		}
 	};
 
-	bypassLLMButton.onClick = [this]()
-	{
-		bool isBypassed = bypassLLMButton.getToggleState();
-		audioProcessor.setBypassLLM(isBypassed);
-
-		if (isBypassed)
-		{
-			bypassLLMButton.setButtonText("Direct Mode");
-			bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-			editor.statusLabel.setText("Direct Mode: LLM Bypassed", juce::dontSendNotification);
-			editor.uiStatusManager->updateLCD();
-		}
-		else
-		{
-			bypassLLMButton.setButtonText("Enhanced Mode");
-			bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
-			editor.statusLabel.setText("AI-optimized prompt activated", juce::dontSendNotification);
-			editor.uiStatusManager->updateLCD();
-		}
-	};
-
 	openMidiEditorButton.onClick = [this] { editor.uiModalManager->openMidiMappingEditor(); };
 
 	helpButton.onClick = [this]()
@@ -158,11 +124,6 @@ void ConfigComponent::addEventListeners()
 	};
 
 	creditsButton.onClick = [this] { editor.uiModalManager->showCredits(); };
-}
-
-void ConfigComponent::updateUseLLM()
-{
-	bypassLLMButton.setEnabled(!audioProcessor.getUseLocalModel());
 }
 
 void ConfigComponent::paint(juce::Graphics &g)
@@ -208,8 +169,6 @@ void ConfigComponent::resized()
 	}
 
 	btnBox.items.add(
-	    juce::FlexItem(bypassLLMButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
-	btnBox.items.add(
 	    juce::FlexItem(configButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
 	btnBox.items.add(
 	    juce::FlexItem(helpButton).withMinWidth(minWidthAndHeight).withMinHeight(minWidthAndHeight).withFlex(1));
@@ -243,20 +202,6 @@ void ConfigComponent::updateFromProcessor()
 	{
 		bypassSequencerButton.setButtonText("Sequencer Mode");
 		bypassSequencerButton.loadIcon(BinaryData::cpu_svg, BinaryData::cpu_svgSize);
-	}
-
-	bool bypassLLMOn = audioProcessor.getBypassLLM();
-	bypassLLMButton.setToggleState(bypassLLMOn, juce::dontSendNotification);
-
-	if (bypassLLMOn)
-	{
-		bypassLLMButton.setButtonText("Direct Mode");
-		bypassLLMButton.loadIcon(BinaryData::robotregular_svg, BinaryData::robotregular_svgSize);
-	}
-	else
-	{
-		bypassLLMButton.setButtonText("Enhanced Mode");
-		bypassLLMButton.loadIcon(BinaryData::robotfill_svg, BinaryData::robotfill_svgSize);
 	}
 
 	scaleAndDurationPanel->update();
