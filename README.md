@@ -98,7 +98,6 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 - **Prompt bank with editor** - Build, organize and reuse your prompts with model-aware keywords (genres, elements, moods, negatives)
 - **Drag-and-drop prompts** - Drop a prompt on a track to assign both prompt and AI model in one gesture
 - **Sample bank with drag-and-drop** - Every generation is automatically saved and can be reused across tracks and projects
-- **LLM bypass mode** - Skip prompt enhancement for faster generation when you already know what you want
 - **Non-blocking generation** - No pre-recorded samples, renders in background
 
 ### Multi-model engine
