@@ -798,6 +798,7 @@ void SampleBankPanel::showEditPromptDialog(SampleBankEntry *entry)
 	juce::String sampleId = entry->id;
 
 	ObsidianAlertManager::showPromptEditor(this, entry->originalPrompt, entry->modelName, entry->category, availCats,
+	                                       audioProcessor.getUseLocalModel(),
 	                                       [this, sampleId](const ObsidianAlertManager::PromptEditorResult &res)
 	                                       {
 		                                       if (!res.confirmed)

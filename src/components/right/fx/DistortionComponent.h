@@ -66,5 +66,8 @@ class DistortionComponent : public ObsidianBaseMidiComponent
 
 	std::vector<std::unique_ptr<MidiLearnableLedRadioButton>> distortionTypeButtons;
 
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+	void handleVBlank();
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DistortionComponent)
 };

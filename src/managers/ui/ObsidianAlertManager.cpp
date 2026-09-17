@@ -9,6 +9,16 @@ struct GroupLabelInfo
 	juce::Rectangle<int> bounds;
 };
 
+static int measureTextHeight(const juce::String &text, int width, const juce::Font &f)
+{
+	juce::AttributedString a;
+	a.append(text, f);
+	a.setWordWrap(juce::AttributedString::byWord);
+	juce::TextLayout l;
+	l.createLayout(a, (float)width);
+	return (int)std::ceil(l.getHeight());
+}
+
 class ModelCard : public ObsidianComponent
 {
   public:
@@ -179,15 +189,20 @@ class PromptEditorContent : public ObsidianComponent
 
 	std::vector<std::unique_ptr<ModelCard>> modelCards;
 	juce::String currentModel;
+	bool localOnly;
 	std::vector<std::unique_ptr<ExampleCard>> exampleCards;
 	std::vector<std::unique_ptr<juce::TextButton>> keywordButtons;
 
 	std::vector<GroupLabelInfo> groupLabels;
 
 	PromptEditorContent(const juce::String &text, const juce::String &model, const juce::String &category,
-	                    const juce::StringArray &categories)
-	    : currentModel(model)
+	                    const juce::StringArray &categories, bool useLocalModel)
+	    : currentModel(model), localOnly(useLocalModel)
 	{
+		if (currentModel.isEmpty())
+			currentModel = Obsidian::STABLE_AUDIO_OPEN_V1();
+		if (currentModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_LOCAL())
+			currentModel = Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM();
 		categoryLbl.setText("Category:", juce::dontSendNotification);
 		categoryLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
 		categoryLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
@@ -203,9 +218,12 @@ class PromptEditorContent : public ObsidianComponent
 		addAndMakeVisible(displayHintLbl);
 
 		categoryCombo.addItem("Uncategorized", 1);
+		juce::StringArray sortedCategories = categories;
+		sortedCategories.sort(true);
+
 		int catId = 2;
 		int selectedId = 1;
-		for (const auto &c : categories)
+		for (const auto &c : sortedCategories)
 		{
 			categoryCombo.addItem(c, catId);
 			if (c == category)
@@ -221,15 +239,26 @@ class PromptEditorContent : public ObsidianComponent
 		const auto &models = PromptModelDefinitions::getAllModels();
 		for (const auto &m : models)
 		{
-			juce::Colour modelCol = AiModelDefinitions::getColourForModel(m.modelName);
-			auto card = std::make_unique<ModelCard>(m.modelName, modelCol);
-			card->setSelected(m.modelName == currentModel);
+			if (localOnly &&
+			    AiModelDefinitions::normalize(m.modelName).toStdString() != Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM())
+				continue;
 
+			const juce::String shown = AiModelDefinitions::toDisplayName(m.modelName, localOnly);
+			juce::Colour modelCol = AiModelDefinitions::getColourForModel(shown);
+			auto card = std::make_unique<ModelCard>(shown, modelCol);
+
+			card->setSelected(m.modelName == currentModel);
 			juce::String modelNameCopy = m.modelName;
 			card->onClick = [this, modelNameCopy]() { switchModel(modelNameCopy); };
-
 			addAndMakeVisible(*card);
 			modelCards.push_back(std::move(card));
+		}
+
+		if (modelCards.size() == 1)
+		{
+			modelCards[0]->setSelected(false);
+			modelCards[0]->onClick = nullptr;
+			modelCards[0]->setInterceptsMouseClicks(false, false);
 		}
 
 		descLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
@@ -452,7 +481,16 @@ class PromptEditorContent : public ObsidianComponent
 			modelCards[i]->setBounds(x, y, cardW, cardH);
 		}
 		area.removeFromTop(8);
-		descLbl.setBounds(area.removeFromTop(18));
+
+		const auto *info = PromptModelDefinitions::getModel(currentModel);
+		const juce::String desc = info ? info->description : juce::String();
+		descLbl.setText(desc, juce::dontSendNotification);
+		descLbl.setJustificationType(juce::Justification::topLeft);
+
+		juce::Font descFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::italic));
+		int descH = juce::jlimit(18, 80, measureTextHeight(desc, area.getWidth(), descFont) + 4);
+		descLbl.setBounds(area.removeFromTop(descH));
+
 		area.removeFromTop(12);
 		const int colSpacing = 16;
 		int colW = (area.getWidth() - colSpacing) / 2;
@@ -469,7 +507,8 @@ class PromptEditorContent : public ObsidianComponent
 
 		const std::string model = currentModel.toStdString();
 		const bool hasHiddenTags = model == Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM() ||
-		                           model == Obsidian::STABLEBEAT() || model == Obsidian::GLUTEN_V1();
+		                           model == Obsidian::STABLE_AUDIO_OPEN_LOCAL() || model == Obsidian::STABLEBEAT() ||
+		                           model == Obsidian::GLUTEN_V1();
 
 		displayHintLbl.setVisible(hasHiddenTags);
 		if (hasHiddenTags)
@@ -744,7 +783,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
                                             bool currentUseLocal, int currentTimeoutMs, bool isFirstTime,
                                             std::function<void(const ConfigDialogResult &)> callback)
 {
-	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 300);
+	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 420);
 
 	class ConfigContent : public ObsidianComponent
 	{
@@ -753,8 +792,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 		EscapableTextEditor urlEditor, keyEditor;
 		juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
 
-		ConfigContent(bool /*useLocal*/, const juce::String &url, const juce::String & /*key */, int timeout,
-		              bool firstTime)
+		ConfigContent(bool useLocal, const juce::String &url, int timeout, bool firstTime)
 		{
 			auto styleEditor = [](EscapableTextEditor &te, const juce::String &text)
 			{
@@ -780,6 +818,14 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 				lbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
 				addAndMakeVisible(lbl);
 			};
+
+			styleLabel(modeLbl, "Generation Mode:");
+			modeCombo.addItem("Server/API", 1);
+			modeCombo.addItem("Local Model", 2);
+			modeCombo.setSelectedId(useLocal ? 2 : 1);
+			styleCombo(modeCombo);
+			addAndMakeVisible(modeCombo);
+			modeCombo.onChange = [this]() { updateVisibility(); };
 
 			styleLabel(urlLbl, "Server URL:");
 			styleEditor(urlEditor, url.isEmpty() ? "http://localhost:8000" : url);
@@ -807,6 +853,25 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			timeoutCombo.setSelectedId(selectedIndex);
 			styleCombo(timeoutCombo);
 			addAndMakeVisible(timeoutCombo);
+
+			updateVisibility();
+		}
+
+		bool isLocalMode() const
+		{
+			return modeCombo.getSelectedId() == 2;
+		}
+
+		void updateVisibility()
+		{
+			bool local = isLocalMode();
+			urlLbl.setVisible(!local);
+			urlEditor.setVisible(!local);
+			keyLbl.setVisible(!local);
+			keyEditor.setVisible(!local);
+			timeoutLbl.setVisible(!local);
+			timeoutCombo.setVisible(!local);
+			resized();
 		}
 
 		void resized() override
@@ -815,21 +880,28 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			int rowH = 30;
 			int spacing = 15;
 
-			urlLbl.setBounds(bounds.removeFromTop(20));
-			urlEditor.setBounds(bounds.removeFromTop(rowH));
+			modeLbl.setBounds(bounds.removeFromTop(20));
+			modeCombo.setBounds(bounds.removeFromTop(rowH));
 			bounds.removeFromTop(spacing);
 
-			keyLbl.setBounds(bounds.removeFromTop(20));
-			keyEditor.setBounds(bounds.removeFromTop(rowH));
-			bounds.removeFromTop(spacing);
+			if (!isLocalMode())
+			{
+				urlLbl.setBounds(bounds.removeFromTop(20));
+				urlEditor.setBounds(bounds.removeFromTop(rowH));
+				bounds.removeFromTop(spacing);
 
-			timeoutLbl.setBounds(bounds.removeFromTop(20));
-			timeoutCombo.setBounds(bounds.removeFromTop(rowH));
+				keyLbl.setBounds(bounds.removeFromTop(20));
+				keyEditor.setBounds(bounds.removeFromTop(rowH));
+				bounds.removeFromTop(spacing);
+
+				timeoutLbl.setBounds(bounds.removeFromTop(20));
+				timeoutCombo.setBounds(bounds.removeFromTop(rowH));
+			}
 		}
 	};
 
-	auto formContent =
-	    std::make_unique<ConfigContent>(currentUseLocal, serverUrl, apiKey, currentTimeoutMs, isFirstTime);
+	juce::ignoreUnused(apiKey);
+	auto formContent = std::make_unique<ConfigContent>(currentUseLocal, serverUrl, currentTimeoutMs, isFirstTime);
 	auto *formPtr = formContent.get();
 	modal->setContent(std::move(formContent));
 
@@ -850,10 +922,9 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 	                                {
 		                                ConfigDialogResult res;
 		                                res.confirmed = true;
-		                                res.useLocalModel = false;
+		                                res.useLocalModel = formPtr->isLocalMode();
 		                                res.serverUrl = formPtr->urlEditor.getText();
 		                                res.apiKey = formPtr->keyEditor.getText();
-
 		                                int tid = formPtr->timeoutCombo.getSelectedId();
 		                                if (tid == 1)
 			                                res.timeoutMs = 60000;
@@ -863,7 +934,6 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			                                res.timeoutMs = 600000;
 		                                else
 			                                res.timeoutMs = 300000;
-
 		                                callback(res);
 		                                overlay->close();
 	                                });
@@ -896,46 +966,93 @@ void ObsidianAlertManager::showCategoryEditor(juce::Component *parent, const juc
 	                                });
 }
 
-void ObsidianAlertManager::showUpdateAvailable(juce::Component *parent, const juce::String &latestTag,
-                                               const juce::String &currentBuild)
+void ObsidianAlertManager::showUpdateAvailable(juce::Component *parent, const juce::String &currentBuild,
+                                               const juce::String &latestBuild, const juce::String &releaseUrl,
+                                               std::function<void(bool)> onClose)
 {
-	auto modal = std::make_unique<ObsidianModalWindow>("Update Available!", 520, 280);
-	juce::String message = "A new version of OBSIDIAN Neural is available: " + latestTag +
-	                       "\n\n"
-	                       "Your current build: v" +
-	                       currentBuild +
-	                       "\n\n"
-	                       "Download the latest version at:\ngithub.com/innermost47/ai-dj/releases/latest";
+	class UpdateContent : public ObsidianComponent
+	{
+	  public:
+		juce::Label messageLbl;
+		juce::ToggleButton dontShowToggle;
 
-	modal->setContent(std::make_unique<TextContent>(message));
+		UpdateContent(const juce::String &message, const juce::String &latestBuild)
+		{
+			messageLbl.setText(message, juce::dontSendNotification);
+			messageLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			messageLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
+			messageLbl.setJustificationType(juce::Justification::topLeft);
+			addAndMakeVisible(messageLbl);
+
+			dontShowToggle.setButtonText("Don't remind me about build " + latestBuild + " again");
+			dontShowToggle.setColour(juce::ToggleButton::textColourId, ColourPalette::textSecondary);
+			dontShowToggle.setColour(juce::ToggleButton::tickColourId, ColourPalette::buttonPrimary);
+			dontShowToggle.setColour(juce::ToggleButton::tickDisabledColourId, ColourPalette::backgroundLight);
+			addAndMakeVisible(dontShowToggle);
+		}
+
+		bool dontShowAgain() const noexcept
+		{
+			return dontShowToggle.getToggleState();
+		}
+
+		void resized() override
+		{
+			auto area = getLocalBounds().reduced(12);
+			dontShowToggle.setBounds(area.removeFromBottom(28));
+			area.removeFromBottom(8);
+			messageLbl.setBounds(area);
+		}
+	};
+
+	auto modal = std::make_unique<ObsidianModalWindow>("Update Available!", 520, 320);
+
+	juce::String message = "A new version of OBSIDIAN Neural is available!\n\n"
+	                       "Installed version: " +
+	                       currentBuild +
+	                       "\n"
+	                       "Available version: " +
+	                       latestBuild +
+	                       "\n\n"
+	                       "Download it from the GitHub releases page.";
+
+	auto content = std::make_unique<UpdateContent>(message, latestBuild);
+	auto *contentPtr = content.get();
+	modal->setContent(std::move(content));
 
 	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
 	if (overlay == nullptr)
 		return;
 
 	overlay->modalWindow->addButton("Later", crossSvg, ColourPalette::buttonInactive,
-	                                [overlay]() { overlay->close(); });
+	                                [overlay, contentPtr, onClose]()
+	                                {
+		                                if (onClose)
+			                                onClose(contentPtr->dontShowAgain());
+		                                overlay->close();
+	                                });
 
-	overlay->modalWindow->addButton(
-	    "Download Now", downloadSvg, ColourPalette::buttonPrimary,
-	    [overlay]()
-	    {
-		    juce::URL("https://github.com/innermost47/ai-dj/releases/latest").launchInDefaultBrowser();
-		    overlay->close();
-	    });
+	overlay->modalWindow->addButton("Open GitHub", downloadSvg, ColourPalette::buttonPrimary,
+	                                [overlay, onClose, releaseUrl]()
+	                                {
+		                                if (onClose)
+			                                onClose(false);
+		                                juce::URL(releaseUrl).launchInDefaultBrowser();
+		                                overlay->close();
+	                                });
 }
 
 void ObsidianAlertManager::showPromptEditor(juce::Component *parent, const juce::String &initialText,
                                             const juce::String &initialModel, const juce::String &initialCategory,
-                                            const juce::StringArray &availableCategories,
+                                            const juce::StringArray &availableCategories, bool useLocalModel,
                                             std::function<void(const PromptEditorResult &)> callback)
 {
 
 	juce::String title = initialText.isEmpty() ? "Create Prompt" : "Edit Prompt";
 	auto modal = std::make_unique<ObsidianModalWindow>(title, 1100, 860);
 
-	auto content =
-	    std::make_unique<PromptEditorContent>(initialText, initialModel, initialCategory, availableCategories);
+	auto content = std::make_unique<PromptEditorContent>(initialText, initialModel, initialCategory,
+	                                                     availableCategories, useLocalModel);
 	auto *contentPtr = content.get();
 	modal->setContent(std::move(content));
 
@@ -971,6 +1088,126 @@ void ObsidianAlertManager::showPromptEditor(juce::Component *parent, const juce:
 	                                });
 }
 
+void ObsidianAlertManager::showLicenseAgreement(juce::Component *parent, const std::vector<LicenseEntry> &licenses,
+                                                std::function<void(bool accepted)> callback)
+{
+	auto modal = std::make_unique<ObsidianModalWindow>("License Agreements", 560, 480);
+
+	auto content = std::make_unique<LicenseAgreementContent>(licenses);
+	auto *contentPtr = content.get();
+	modal->setContent(std::move(content));
+
+	modal->addButton("Decline", crossSvg, ColourPalette::buttonInactive, nullptr);
+
+	modal->addButton("Accept & Continue", checkSvg, ColourPalette::backgroundLight, nullptr);
+
+	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr)
+		return;
+
+	auto *declineBtn = overlay->modalWindow->buttons[0];
+	declineBtn->onClick = [overlay, callback]()
+	{
+		if (callback)
+			callback(false);
+		overlay->close();
+	};
+
+	auto *acceptBtn = overlay->modalWindow->buttons[1];
+	acceptBtn->setEnabled(false);
+	acceptBtn->onClick = [overlay, contentPtr, callback]()
+	{
+		if (!contentPtr->allAccepted())
+			return;
+		if (callback)
+			callback(true);
+		overlay->close();
+	};
+
+	juce::Component::SafePointer<ObsidianSvgButton> safeAccept(acceptBtn);
+	contentPtr->onAcceptanceChanged = [safeAccept](bool allOk)
+	{
+		if (safeAccept != nullptr)
+		{
+			safeAccept->setEnabled(allOk);
+			safeAccept->setColour(juce::TextButton::buttonColourId,
+			                      allOk ? ColourPalette::slate : ColourPalette::backgroundLight);
+			safeAccept->repaint();
+		}
+	};
+}
+
+void ObsidianAlertManager::showAssetDownloader(juce::Component *parent, const juce::File &destinationDir,
+                                               std::function<void(bool success)> onComplete)
+{
+	auto modal = std::make_unique<ObsidianModalWindow>("Downloading Assets", 560, 400);
+	auto content = std::make_unique<AssetDownloadContent>(destinationDir);
+	auto *contentPtr = content.get();
+	modal->setContent(std::move(content));
+	modal->addButton("Cancel", crossSvg, ColourPalette::buttonInactive, nullptr);
+	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr)
+		return;
+
+	auto downloader = std::make_shared<AssetDownloadManager>();
+	auto *cancelBtn = overlay->modalWindow->buttons[0];
+	cancelBtn->onClick = [overlay, downloader, onComplete]()
+	{
+		downloader->cancel();
+		if (onComplete)
+			onComplete(false);
+		overlay->close();
+	};
+
+	juce::Component::SafePointer<AssetDownloadContent> safeContent(contentPtr);
+	juce::Component::SafePointer<ObsidianModalOverlay> safeOverlay(overlay);
+	juce::Component::SafePointer<ObsidianSvgButton> safeCancel(cancelBtn);
+
+	downloader->startFromManifest(
+	    destinationDir,
+	    [safeContent](const AssetDownloadProgress &p)
+	    {
+		    if (safeContent != nullptr)
+			    safeContent->updateProgress(p);
+	    },
+	    [safeContent, safeOverlay, safeCancel, onComplete, parent](bool success, const juce::String &errorMessage)
+	    {
+		    if (safeContent != nullptr)
+			    safeContent->setComplete(success, errorMessage);
+
+		    if (success)
+		    {
+			    if (safeCancel != nullptr)
+				    safeCancel->setEnabled(false);
+
+			    juce::Timer::callAfterDelay(1500,
+			                                [safeOverlay, onComplete, parent]()
+			                                {
+				                                if (safeOverlay != nullptr)
+					                                safeOverlay->close();
+
+				                                juce::Timer::callAfterDelay(
+				                                    200,
+				                                    [onComplete, parent]()
+				                                    {
+					                                    ObsidianAlertManager::showInfo(
+					                                        parent, "Models Ready",
+					                                        "All models have been downloaded "
+					                                        "successfully.\nThey will be loaded "
+					                                        "automatically on your first "
+					                                        "generation.",
+					                                        "OK",
+					                                        [onComplete]()
+					                                        {
+						                                        if (onComplete)
+							                                        onComplete(true);
+					                                        });
+				                                    });
+			                                });
+		    }
+	    });
+}
+
 void ObsidianAlertManager::showCredits(juce::Component *parent)
 {
 	struct CreditEntry
@@ -998,15 +1235,24 @@ void ObsidianAlertManager::showCredits(juce::Component *parent)
 
 	static const std::vector<CreditEntry> entries = {
 	    {"JUCE", "Copyright (c) Raw Material Software Limited.", "JUCE License", "https://juce.com"},
-	    {"MiniBPM", "Copyright (c) 2007-2025 Particular Programs Ltd (Chris Cannam / Breakfast Quay).",
-	     "GNU General Public License", "https://breakfastquay.com/minibpm/"},
+	    {"ONNX Runtime", "Copyright (c) Microsoft Corporation.", "MIT License",
+	     "https://github.com/microsoft/onnxruntime"},
+	    {"BeatDetektor", "Copyright (c) 2009 Charles J. Cliffe.", "MIT License", "http://opensource.org/licenses/MIT"},
 	    {"Airwindows (Console6)", "Copyright (c) Chris Johnson (Airwindows).", "MIT License",
 	     "https://www.airwindows.com/"},
 	    {"nlohmann/json", "Copyright (c) 2013-2025 Niels Lohmann.", "MIT License", "https://github.com/nlohmann/json"},
 	    {"Signalsmith Stretch", "Copyright (c) Signalsmith Audio Ltd.", "MIT License",
 	     "https://github.com/Signalsmith-Audio/signalsmith-stretch"},
+	    {"tokenizers-cpp", "Copyright (c) MLC AI / Apache TVM contributors.", "Apache License 2.0",
+	     "https://github.com/mlc-ai/tokenizers-cpp"},
+	    {"libsamplerate", "Copyright (c) 2012-2021, Erik de Castro Lopo.", "BSD 2-Clause License",
+	     "https://github.com/libsndfile/libsamplerate"},
+	    {"dr_wav (dr_libs)", "Copyright (c) David Reid.", "Public Domain / MIT-0",
+	     "https://github.com/mackron/dr_libs"},
 	    {"Ableton Link", "Copyright (c) Ableton AG, Berlin.", "Commercial License (Ableton AG)",
 	     "https://github.com/Ableton/link"},
+	    {"Monocypher", "Copyright (c) 2017-2023 Loup Vaillant, Michael Savage, Fabio Scotoni.",
+	     "Public Domain (CC0) / BSD 2-Clause", "https://monocypher.org/"},
 	};
 
 	class CreditsContent : public ObsidianComponent
@@ -1201,4 +1447,81 @@ void ObsidianAlertManager::showCredits(juce::Component *parent)
 
 	overlay->modalWindow->addButton("Close", crossSvg, ColourPalette::buttonInactive,
 	                                [overlay]() { overlay->close(); });
+}
+
+void ObsidianAlertManager::showTextInput(juce::Component *parent, const juce::String &title, const juce::String &label,
+                                         const juce::String &initialValue, const juce::String &confirmText,
+                                         std::function<void(bool confirmed, const juce::String &text)> callback)
+{
+	class TextInputContent : public ObsidianComponent
+	{
+	  public:
+		juce::Label fieldLbl;
+		EscapableTextEditor textEditor;
+
+		TextInputContent(const juce::String &labelText, const juce::String &initialText)
+		{
+			fieldLbl.setText(labelText, juce::dontSendNotification);
+			fieldLbl.setColour(juce::Label::textColourId, ColourPalette::textPrimary);
+			fieldLbl.setFont(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::bold));
+			addAndMakeVisible(fieldLbl);
+
+			textEditor.setText(initialText);
+			textEditor.setColour(EscapableTextEditor::backgroundColourId, ColourPalette::backgroundDark);
+			textEditor.setColour(EscapableTextEditor::textColourId, ColourPalette::textPrimary);
+			textEditor.setColour(EscapableTextEditor::outlineColourId, ColourPalette::backgroundLight);
+			textEditor.applyFontToAllText(juce::FontOptions(Obsidian::TEXT_REGULAR, juce::Font::plain));
+			addAndMakeVisible(textEditor);
+		}
+
+		void resized() override
+		{
+			auto area = getLocalBounds().reduced(12);
+			fieldLbl.setBounds(area.removeFromTop(18));
+			area.removeFromTop(4);
+			textEditor.setBounds(area.removeFromTop(30));
+		}
+	};
+
+	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 220);
+	auto content = std::make_unique<TextInputContent>(label, initialValue);
+	auto *contentPtr = content.get();
+	modal->setContent(std::move(content));
+
+	auto *overlay = createAndAttachOverlay(parent, std::move(modal));
+	if (overlay == nullptr)
+		return;
+
+	overlay->modalWindow->addButton("Cancel", crossSvg, ColourPalette::buttonInactive,
+	                                [overlay, callback]()
+	                                {
+		                                if (callback)
+			                                callback(false, "");
+		                                overlay->close();
+	                                });
+
+	overlay->modalWindow->addButton(confirmText, checkSvg, ColourPalette::slate,
+	                                [overlay, contentPtr, parent, title, callback]()
+	                                {
+		                                juce::String text = contentPtr->textEditor.getText().trim();
+		                                if (text.isEmpty())
+		                                {
+			                                showError(parent, title, "Please enter a name.");
+			                                return;
+		                                }
+		                                if (callback)
+			                                callback(true, text);
+		                                overlay->close();
+	                                });
+
+	juce::Component::SafePointer<TextInputContent> safeContent(contentPtr);
+	juce::Timer::callAfterDelay(150,
+	                            [safeContent]()
+	                            {
+		                            if (safeContent != nullptr)
+		                            {
+			                            safeContent->textEditor.grabKeyboardFocus();
+			                            safeContent->textEditor.selectAll();
+		                            }
+	                            });
 }

@@ -6,6 +6,7 @@
 #pragma warning(push)
 #pragma warning(disable : 4250)
 #endif
+
 class PromptBankItem : public ObsidianListItem
 {
   public:
@@ -16,6 +17,13 @@ class PromptBankItem : public ObsidianListItem
 	{
 		categoryColourResolver = std::move(resolver);
 	}
+
+	void setLocalMode(bool isLocal)
+	{
+		localMode = isLocal;
+		repaint();
+	}
+
 	PromptBankEntry *getEntry() const
 	{
 		return entry;
@@ -29,7 +37,9 @@ class PromptBankItem : public ObsidianListItem
 
   private:
 	PromptBankEntry *entry{nullptr};
+	bool localMode{false};
 	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PromptBankItem)
 };
 #if JUCE_MSVC

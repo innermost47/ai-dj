@@ -1,4 +1,5 @@
 #pragma once
+#include "ObsidianAlertManager.h"
 #include "ObsidianModal.h"
 #include "OnboardingFlow.h"
 #include "OnboardingStepData.h"
@@ -22,6 +23,7 @@ class UIModalManager
 	void clearAll();
 	void showOnboarding(OnboardingVariant variant);
 	void advanceOnboardingTo(int stepIndex);
+	void showModelDownloader(std::function<void()> onComplete = nullptr);
 	void showCredits();
 	void applyScale(float scale);
 
@@ -34,4 +36,8 @@ class UIModalManager
 	DjIaVstEditor &editor;
 	std::vector<std::unique_ptr<ObsidianModalOverlay>> activeModals;
 	std::unique_ptr<OnboardingFlow> onboardingFlow;
+
+	void handleUpdateCheckResponse(const juce::String &jsonResponse);
+
+	static constexpr juce::int64 updateCheckIntervalMs = 24 * 60 * 60 * 1000LL;
 };

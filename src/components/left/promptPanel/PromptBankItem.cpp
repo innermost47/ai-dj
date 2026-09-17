@@ -69,13 +69,14 @@ void PromptBankItem::paint(juce::Graphics &g)
 	}
 
 	auto metaArea = bounds.withTrimmedLeft(12).withTrimmedRight(rightPad).removeFromBottom(20);
-	juce::Colour modelColour = AiModelDefinitions::getColourForModel(entry->modelName);
-	drawCircleWithEllipse(g, metaArea, modelColour);
 
+	const juce::String shownModel = AiModelDefinitions::toDisplayName(entry->modelName, localMode);
+	juce::Colour modelColour = AiModelDefinitions::getColourForModel(shownModel);
+	drawCircleWithEllipse(g, metaArea, modelColour);
 	metaArea.removeFromLeft(14);
 
 	juce::StringArray parts;
-	parts.add(entry->modelName.isNotEmpty() ? entry->modelName : "unknown model");
+	parts.add(shownModel.isNotEmpty() ? shownModel : "unknown model");
 	if (entry->usageCount > 0)
 		parts.add(juce::String(entry->usageCount) + " uses");
 	auto now = juce::Time::getCurrentTime();

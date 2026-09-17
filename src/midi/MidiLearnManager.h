@@ -71,6 +71,13 @@ class MidiLearnManager : public juce::Timer
 	DjIaVstEditor *currentEditor = nullptr;
 	MidiLearnableBase *currentLearningComponent = nullptr;
 	void showStatus(const MidiMapping &mapping, const juce::String &text, bool isWarning = false);
+	bool handleNoteMapping(const MidiMapping &mapping, const juce::MidiMessage &message, float &value,
+	                       juce::String &statusMessage, bool &isWarning);
+	bool handleControllerMapping(const MidiMapping &mapping, const juce::MidiMessage &message, float &value,
+	                             juce::String &statusMessage);
+	void applyMapping(const MidiMapping &mapping, float value, juce::String statusMessage, bool isWarning);
+	int getSlotNumberFromParam(const juce::String &parameterName);
+	bool isTrackSequenceParam(const juce::String &parameterName);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiLearnManager)
 };

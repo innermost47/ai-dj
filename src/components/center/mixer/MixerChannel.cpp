@@ -199,6 +199,10 @@ void MixerChannel::handleVBlank()
 		vuMeter.repaint();
 	}
 
+	syncModulationRing(panKnob, "Pan");
+	syncModulationRing(sendDelayKnob, "DelaySend");
+	syncModulationRing(sendReverbKnob, "ReverbSend");
+
 	if (!blinkTicking)
 		return;
 

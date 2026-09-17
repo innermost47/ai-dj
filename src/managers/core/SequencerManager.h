@@ -1,4 +1,5 @@
 #pragma once
+#include "GlitchSequencerEngine.h"
 #include "TrackManager.h"
 #include <JuceHeader.h>
 #include <atomic>
@@ -52,18 +53,24 @@ class SequencerManager
 	void checkTransientScatterWithSampleCounter();
 	double getEffectiveWindowLength(TrackData *track, const TrackPage &page, bool applyPlaybackRatio = true) const;
 
+	void acquireTheoreticalPosition(TrackData *track) const;
+	void releaseTheoreticalPosition(TrackData *track) const;
+
+	GlitchSequencerEngine &getGlitchSequencerEngine()
+	{
+		return glitchSequencerEngine;
+	}
+
   private:
 	DjIaVstProcessor &audioProcessor;
 	TrackManager &trackManager;
+	GlitchSequencerEngine glitchSequencerEngine;
 
 	juce::MidiBuffer sequencerMidiBuffer;
 	juce::CriticalSection sequencerMidiLock;
 
 	std::atomic<bool> bypassSequencer{false};
 	std::atomic<bool> wasPlaying{false};
-
-	void acquireTheoreticalPosition(TrackData *track) const;
-	void releaseTheoreticalPosition(TrackData *track) const;
 
 	int64_t getCurrentHalfBeatNumber(double hostBpm) const;
 

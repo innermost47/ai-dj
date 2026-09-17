@@ -33,7 +33,6 @@ DjIaVstEditor::DjIaVstEditor(DjIaVstProcessor &p) : AudioProcessorEditor(&p), au
 	uiMidiManager = std::make_unique<UIMidiManager>(*this);
 	mixerPanel = std::make_unique<MixerPanel>(audioProcessor, *this);
 	lcdScreen = std::make_unique<LCDScreen>();
-	masterWaveformDisplay = std::make_unique<MasterWaveformDisplay>();
 
 	audioProcessor.setGenerationListener(uiGenerationManager.get());
 	if (audioProcessor.isStateReady())
@@ -113,7 +112,6 @@ DjIaVstEditor::~DjIaVstEditor()
 
 		audioProcessor.setPanelStateJson(juce::JSON::toString(juce::var(root.get())));
 	}
-	audioProcessor.onMasterOutput = nullptr;
 	audioProcessor.setMidiIndicatorCallback(nullptr);
 	audioProcessor.onUIUpdateNeeded = nullptr;
 	audioProcessor.setGenerationListener(nullptr);
@@ -127,7 +125,6 @@ DjIaVstEditor::~DjIaVstEditor()
 	uiMidiManager = nullptr;
 	mixerPanel = nullptr;
 	lcdScreen = nullptr;
-	masterWaveformDisplay = nullptr;
 
 	setLookAndFeel(nullptr);
 
@@ -218,8 +215,14 @@ void DjIaVstEditor::initUI()
 		                            if (weakThis == nullptr)
 			                            return;
 
-		                            weakThis->uiModalManager->showOnboardingTour();
+		                            weakThis->uiModalManager->showModelDownloader(
+		                                [weakThis]()
+		                                {
+			                                if (weakThis != nullptr)
+				                                weakThis->uiModalManager->showOnboardingTour();
+		                                });
 	                            });
+
 	isInitialized.store(true);
 
 	audioProcessor.setMidiIndicatorCallback(
@@ -350,16 +353,7 @@ void DjIaVstEditor::setupUI()
 
 	creditsLabel.setText("Loading...", juce::dontSendNotification);
 
-	uiLayoutManager->getRightPanelWrapper()->setMasterWaveform(masterWaveformDisplay.get());
 	uiLayoutManager->getRightPanelWrapper()->setLCDScreen(lcdScreen.get());
-	audioProcessor.onMasterOutput = [this](const float *l, const float *r, int n, double ppq)
-	{
-		if (masterWaveformDisplay)
-		{
-			masterWaveformDisplay->pushSamples(l, r, n);
-			masterWaveformDisplay->setPositionInBeats(ppq);
-		}
-	};
 
 	uiTrackManager->refreshTrackComponents();
 
@@ -432,8 +426,10 @@ void DjIaVstEditor::updateUIFromProcessor()
 {
 	if (!isInitialized.load() || !uiLayoutManager)
 		return;
+
 	uiLayoutManager->getRightPanelWrapper()->getConfigComponent()->updateFromProcessor();
 	uiTrackManager->refreshTrackComponents();
+	uiLayoutManager->getRightPanelWrapper()->refreshAfterStateLoad();
 }
 
 void DjIaVstEditor::paint(juce::Graphics &g)
@@ -492,4 +488,13 @@ void DjIaVstEditor::refreshMixerChannels()
 {
 	if (mixerPanel)
 		mixerPanel->refreshAllChannels();
+}
+
+GlitchSequencerPanel *DjIaVstEditor::getGlitchSequencerPanel()
+{
+	if (isBeingDestroyed.load() || !uiLayoutManager)
+		return nullptr;
+	if (auto *right = uiLayoutManager->getRightPanelWrapper())
+		return right->getGlitchSequencerPanel();
+	return nullptr;
 }

@@ -6,6 +6,7 @@
 #include "EqualizerComponent.h"
 #include "FilterComponent.h"
 #include "FlangerComponent.h"
+#include "GateComponent.h"
 #include "LimiterComponent.h"
 #include "PhaserComponent.h"
 #include "PluginEditor.h"
@@ -22,7 +23,6 @@ TrackEffectsPanel::~TrackEffectsPanel() = default;
 void TrackEffectsPanel::refresh()
 {
 	removeAllChildren();
-	trackSelectors.clear();
 	resetComponents();
 	setupUI();
 	resized();
@@ -42,18 +42,11 @@ void TrackEffectsPanel::resized()
 {
 	auto area = getLocalBounds().reduced(4, 2);
 
-	juce::FlexBox selectors;
-	selectors.flexDirection = juce::FlexBox::Direction::row;
-	selectors.justifyContent = juce::FlexBox::JustifyContent::center;
-	selectors.alignContent = juce::FlexBox::AlignContent::center;
-
-	for (int i = 0; i < (int)trackSelectors.size(); ++i)
-		selectors.items.add(juce::FlexItem(*trackSelectors[i]).withFlex(1.f).withMargin(juce::FlexItem::Margin(1.f)));
-
-	selectors.performLayout(area.removeFromTop(26));
-
-	area.removeFromTop(Obsidian::GAP);
-
+	if (gateComponent)
+	{
+		gateComponent->setBounds(area.removeFromTop(Obsidian::GATE_HEIGHT));
+		area.removeFromTop(Obsidian::GAP_4);
+	}
 	if (distortionComponent)
 	{
 		distortionComponent->setBounds(area.removeFromTop(Obsidian::DISTORTION_HEIGHT));
@@ -101,7 +94,7 @@ void TrackEffectsPanel::resized()
 	}
 }
 
-void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
+void TrackEffectsPanel::updateModelUI()
 {
 	if (distortionComponent)
 		distortionComponent->updateModelUI();
@@ -121,95 +114,47 @@ void TrackEffectsPanel::updateModelUI(const juce::String &trackId)
 		flangerComponent->updateModelUI();
 	if (bitCrusherComponent)
 		bitCrusherComponent->updateModelUI();
-
-	for (auto &selector : trackSelectors)
-	{
-		if (selector->getName() == "trackFXSelector" + trackId)
-		{
-			auto *track = audioProcessor.getTrack(trackId);
-			if (!track)
-				continue;
-			auto &currentPage = track->getCurrentPage();
-			auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
-			bool darkText = modelColour.getBrightness() > 0.6f;
-			auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
-			selector->setColour(juce::TextButton::buttonColourId, modelColour.withAlpha(Obsidian::ALPHA_02));
-			selector->setColour(juce::TextButton::buttonOnColourId, modelColour);
-		}
-	}
+	if (gateComponent)
+		gateComponent->updateModelUI();
 }
 
 void TrackEffectsPanel::setupUI()
 {
-	int index = 1;
 	auto trackIds = audioProcessor.getAllTrackIds();
 	for (const auto &trackId : trackIds)
 	{
 		auto *track = audioProcessor.getTrack(trackId);
-		if (!track)
-			continue;
-		auto &currentPage = track->getCurrentPage();
-		auto modelColour = AiModelDefinitions::getColourForModel(currentPage.selectedModel);
-		bool darkText = modelColour.getBrightness() > 0.6f;
-		auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
-
-		juce::String label = "T" + juce::String(index);
-		auto btn = std::make_unique<IconButtonSimple>(label, "");
-		btn->setRadioGroupId(Obsidian::RadioGroupIDs::TrackFXSelector);
-
-		btn->setLabelText(label);
-		btn->setName("trackFXSelector" + trackId);
-		btn->setShowBackground(true);
-		btn->setClickingTogglesState(true);
-		btn->setColour(juce::TextButton::buttonColourId, modelColour.withAlpha(Obsidian::ALPHA_02));
-		btn->setColour(juce::TextButton::buttonOnColourId, modelColour);
-		btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-		btn->setColour(juce::TextButton::textColourOnId, textColour);
-
-		auto *raw = btn.get();
-
-		btn->onClick = [this, trackId, raw]()
-		{
-			if (raw->getToggleState())
-				editor.uiTrackManager->updateSelectedTrack(trackId);
-		};
-
-		addAndMakeVisible(*btn);
-		trackSelectors.push_back(std::move(btn));
-
-		if (track->isSelected.load())
+		if (track && track->isSelected.load())
 		{
 			resetComponents();
 			addComponents(trackId);
+			return;
 		}
-
-		index++;
 	}
-	juce::String label = "M";
-	auto btn = std::make_unique<IconButtonSimple>(label, "");
-	bool darkText = ColourPalette::playArmed.getBrightness() > 0.6f;
-	auto textColour = darkText ? juce::Colours::black : juce::Colours::white;
-	btn->setRadioGroupId(Obsidian::RadioGroupIDs::TrackFXSelector);
-	btn->setToggleState(false, juce::dontSendNotification);
-	btn->setLabelText(label);
-	btn->setShowBackground(true);
-	btn->setClickingTogglesState(true);
-	btn->setColour(juce::TextButton::buttonColourId, ColourPalette::playArmed.withAlpha(Obsidian::ALPHA_02));
-	btn->setColour(juce::TextButton::buttonOnColourId, ColourPalette::playArmed);
-	btn->setColour(juce::TextButton::textColourOffId, ColourPalette::textPrimary);
-	btn->setColour(juce::TextButton::textColourOnId, textColour);
-	auto *raw = btn.get();
-	btn->onClick = [this, raw]()
-	{
-		if (raw->getToggleState())
-		{
-			resetComponents();
-			addComponents();
-		}
-	};
 
-	addAndMakeVisible(*btn);
-	trackSelectors.push_back(std::move(btn));
+	if (!trackIds.empty())
+	{
+		resetComponents();
+		addComponents(trackIds[0]);
+	}
+}
+
+void TrackEffectsPanel::showTrack(const juce::String &trackId)
+{
+	if (trackId == activeTrackId && !isMasterView)
+		return;
+
+	resetComponents();
+	addComponents(trackId);
+}
+
+void TrackEffectsPanel::showMaster()
+{
+	if (isMasterView)
+		return;
+
+	resetComponents();
+	addComponents();
 }
 
 void TrackEffectsPanel::addComponents(const juce::String &trackId)
@@ -217,6 +162,8 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 	if (auto *currentTrack = audioProcessor.getTrack(trackId))
 	{
 		isMasterView = false;
+		activeTrackId = trackId;
+
 		distortionComponent = std::make_unique<DistortionComponent>(audioProcessor, currentTrack);
 		addAndMakeVisible(*distortionComponent);
 		filterComponent = std::make_unique<FilterComponent>(audioProcessor, currentTrack);
@@ -235,13 +182,9 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 		addAndMakeVisible(*flangerComponent);
 		bitCrusherComponent = std::make_unique<BitCrusherComponent>(audioProcessor, currentTrack);
 		addAndMakeVisible(*bitCrusherComponent);
-		for (auto &selector : trackSelectors)
-		{
-			if (selector->getName() == "trackFXSelector" + trackId)
-				selector->setToggleState(true, juce::dontSendNotification);
-			else
-				selector->setToggleState(false, juce::dontSendNotification);
-		}
+		gateComponent = std::make_unique<GateComponent>(audioProcessor, currentTrack);
+		addAndMakeVisible(*gateComponent);
+
 		resized();
 
 		if (onContentChanged)
@@ -252,12 +195,15 @@ void TrackEffectsPanel::addComponents(const juce::String &trackId)
 void TrackEffectsPanel::addComponents()
 {
 	isMasterView = true;
+	activeTrackId = "";
+
 	equalizerComponent = std::make_unique<EqualizerComponent>(audioProcessor, nullptr, true);
 	addAndMakeVisible(*equalizerComponent);
 	compressorComponent = std::make_unique<CompressorComponent>(audioProcessor, nullptr, true);
 	addAndMakeVisible(*compressorComponent);
 	limiterComponent = std::make_unique<LimiterComponent>(audioProcessor, nullptr, true);
 	addAndMakeVisible(*limiterComponent);
+
 	resized();
 
 	if (onContentChanged)
@@ -275,60 +221,33 @@ void TrackEffectsPanel::resetComponents()
 	phaserComponent = nullptr;
 	flangerComponent = nullptr;
 	bitCrusherComponent = nullptr;
+	gateComponent = nullptr;
 }
 
 int TrackEffectsPanel::getPreferredHeight() const
 {
 	int height = 4;
 
-	height += 26;
-	height += Obsidian::GAP;
-
 	if (distortionComponent)
-	{
-		height += Obsidian::DISTORTION_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::DISTORTION_HEIGHT + Obsidian::GAP_4;
 	if (bitCrusherComponent)
-	{
-		height += Obsidian::BITCRUSHER_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::BITCRUSHER_HEIGHT + Obsidian::GAP_4;
 	if (equalizerComponent)
-	{
-		height += Obsidian::EQ_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::EQ_HEIGHT + Obsidian::GAP_4;
 	if (filterComponent)
-	{
-		height += Obsidian::FILTER_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::FILTER_HEIGHT + Obsidian::GAP_4;
 	if (chorusComponent)
-	{
-		height += Obsidian::CHORUS_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::CHORUS_HEIGHT + Obsidian::GAP_4;
 	if (flangerComponent)
-	{
-		height += Obsidian::FLANGER_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::FLANGER_HEIGHT + Obsidian::GAP_4;
 	if (phaserComponent)
-	{
-		height += Obsidian::PHASER_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::PHASER_HEIGHT + Obsidian::GAP_4;
 	if (compressorComponent)
-	{
-		height += Obsidian::COMPRESSOR_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::COMPRESSOR_HEIGHT + Obsidian::GAP_4;
 	if (limiterComponent)
-	{
-		height += Obsidian::LIMITER_HEIGHT;
-		height += Obsidian::GAP_4;
-	}
+		height += Obsidian::LIMITER_HEIGHT + Obsidian::GAP_4;
+	if (gateComponent)
+		height += Obsidian::GATE_HEIGHT + Obsidian::GAP_4;
 
 	return height;
 }

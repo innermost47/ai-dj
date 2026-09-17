@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
-
 #define PLUGIN_VERSION "@PROJECT_VERSION@"
 #define BUILD_NUMBER "@BUILD_NUMBER@"
+#define BUILD_TIMESTAMP "@BUILD_TIMESTAMP@"
 
 namespace Version
 {

@@ -8,6 +8,20 @@ namespace AiModelDefinitions
 
 static const juce::String LOCAL_MODEL_NAME = Obsidian::STABLE_AUDIO_OPEN_LOCAL();
 
+inline juce::String normalize(const juce::String &modelName)
+{
+	return modelName.toStdString() == Obsidian::STABLE_AUDIO_OPEN_LOCAL()
+	           ? juce::String(Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM())
+	           : modelName;
+}
+
+inline juce::String toDisplayName(const juce::String &modelName, bool isLocalMode)
+{
+	if (isLocalMode && normalize(modelName).toStdString() == Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM())
+		return LOCAL_MODEL_NAME;
+	return modelName;
+}
+
 inline const juce::StringArray &getAvailableModels()
 {
 	static const juce::StringArray models = {Obsidian::STABLE_AUDIO_OPEN_V1(),
@@ -40,7 +54,9 @@ inline juce::Colour getColourForModel(const juce::String &modelName)
 {
 	if (modelName.isEmpty())
 		return ColourPalette::modelStableAudio;
+
 	auto &models = getAvailableModels();
+
 	if (modelName == models[0])
 		return ColourPalette::modelStableAudio;
 	if (modelName == models[1])
@@ -61,6 +77,12 @@ inline juce::Colour getColourForModel(const juce::String &modelName)
 		return ColourPalette::modelGluten;
 	if (modelName == models[9])
 		return ColourPalette::modelStableAudioTflite;
+
 	return ColourPalette::modelFoundation;
+}
+
+inline juce::Colour getDisplayColourForModel(const juce::String &modelName, bool isLocalMode)
+{
+	return getColourForModel(toDisplayName(modelName, isLocalMode));
 }
 } // namespace AiModelDefinitions

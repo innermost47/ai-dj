@@ -1,10 +1,10 @@
 ﻿#include "UITrackManager.h"
 #include "AiModelDefinitions.h"
+#include "ModulationPanel.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
 #include "SequencerComponent.h"
-#include "StableAudioEngine.h"
 #include "TrackEffectsPanel.h"
 
 UITrackManager::UITrackManager(DjIaVstEditor &editor) : editor(editor)
@@ -81,10 +81,6 @@ void UITrackManager::refreshTrackComponents()
 		auto trackComp = std::make_unique<TrackComponent>(trackId, editor.audioProcessor);
 		trackComp->setTrackData(trackData);
 
-		trackComp->onGenerateWithImage =
-		    [this](const juce::String &trackId, const juce::String &image, const juce::StringArray &keywords)
-		{ editor.audioProcessor.getGenerationManager().generateSampleWithImage(trackId, image, keywords); };
-
 		trackComp->onTrackRenamed = [this](const juce::String &id, const juce::String &newName)
 		{
 			if (editor.mixerPanel)
@@ -98,7 +94,11 @@ void UITrackManager::refreshTrackComponents()
 			if (editor.mixerPanel)
 				editor.mixerPanel->updateModelUI(id);
 			if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
-				editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(id);
+				editor.uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI();
+			if (editor.uiLayoutManager->getRightPanelWrapper()->getModulationPanel())
+				editor.uiLayoutManager->getRightPanelWrapper()->getModulationPanel()->updateModelUI();
+			if (editor.uiLayoutManager->getRightPanelWrapper()->getTrackSelectorBar())
+				editor.uiLayoutManager->getRightPanelWrapper()->getTrackSelectorBar()->updateModelColour(id);
 		};
 
 		trackComp->onSampleDropped = [this](const juce::String &id)
@@ -182,8 +182,8 @@ void UITrackManager::updateSelectedTrack(const juce::String &trackId)
 		    }
 		    if (e->mixerPanel)
 			    e->mixerPanel->trackSelected(trackId);
-		    if (e->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
-			    e->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->addComponents(trackId);
+		    if (auto *right = e->uiLayoutManager->getRightPanelWrapper())
+			    right->selectTrack(trackId);
 	    });
 }
 
@@ -246,9 +246,10 @@ void UITrackManager::refreshUIForMode()
 			}
 		}
 
-		tc->modelSelector.clear();
+		tc->modelSelector.clear(juce::dontSendNotification);
 		for (int i = 0; i < modelsForMode.size(); ++i)
 			tc->modelSelector.addItem(modelsForMode[i], i + 1);
+		tc->modelSelector.setEnabled(modelsForMode.size() > 1);
 
 		juce::String currentModel = track->getCurrentPage().selectedModel;
 		int idx = modelsForMode.indexOf(currentModel);
@@ -269,10 +270,14 @@ void UITrackManager::checkLocalModelsAndNotify()
 	auto appDataDir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
 	                      .getChildFile(Obsidian::OBSIDIAN_BASE_DIR());
 	auto stableAudioDir = appDataDir.getChildFile(Obsidian::STABLE_AUDIO_DIR());
-
-	StableAudioEngine tempEngine;
-	bool modelsPresent = tempEngine.initialize(stableAudioDir.getFullPathName());
-
+	juce::StringArray requiredFiles{Obsidian::FP32_DIT_ONNX(),    Obsidian::FP32_DIT_ONNX_DATA(),
+	                                Obsidian::DEC_DYNAMIC_BF16(), Obsidian::ENC_DYNAMIC_BF16(),
+	                                Obsidian::ENCODER(),          Obsidian::TOKENIZER()};
+	juce::StringArray missing;
+	for (const auto &rel : requiredFiles)
+		if (!stableAudioDir.getChildFile(rel).existsAsFile())
+			missing.add(rel);
+	bool modelsPresent = missing.isEmpty();
 	if (modelsPresent)
 	{
 		editor.statusLabel.setText("Local models found! Configuration saved.", juce::dontSendNotification);
@@ -283,14 +288,14 @@ void UITrackManager::checkLocalModelsAndNotify()
 	{
 		ObsidianAlertManager::showConfirm(
 		    &editor, "Local Models Required",
-		    "Local models not found!\n\nExpected location: " + stableAudioDir.getFullPathName(),
-		    "Open GitHub Instructions", "OK",
+		    "Local models not found!\n\nDownload them from Hugging Face and place them in:\n" +
+		        stableAudioDir.getFullPathName() + "\n\nMissing: " + missing.joinIntoString(", "),
+		    "Open Hugging Face", "OK",
 		    [](bool confirmed)
 		    {
 			    if (confirmed)
-				    juce::URL("https://github.com/innermost47/ai-dj/blob/main/README.md").launchInDefaultBrowser();
+				    juce::URL(Obsidian::MODELS_DOWNLOAD_URL()).launchInDefaultBrowser();
 		    });
-
 		editor.statusLabel.setText("Local mode selected - Models setup required", juce::dontSendNotification);
 		editor.uiStatusManager->updateLCD();
 		editor.statusLabel.setColour(juce::Label::textColourId, ColourPalette::textDanger);

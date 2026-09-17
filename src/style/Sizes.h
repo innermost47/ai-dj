@@ -28,6 +28,7 @@ inline constexpr int SAMPLE_ROW_HEIGHT = 64;
 inline constexpr int MIXER_CHANNEL_KNOB = 32;
 inline constexpr int COMBO_BOX_BASE_HEIGHT = 20;
 
+inline constexpr int GATE_HEIGHT = 70;
 inline constexpr int DISTORTION_HEIGHT = 82;
 inline constexpr int BITCRUSHER_HEIGHT = 70;
 inline constexpr int EQ_HEIGHT = 130;

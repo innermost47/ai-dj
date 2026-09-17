@@ -1,4 +1,5 @@
 ﻿#include "TrackManager.h"
+#include "ModulationTypes.h"
 #include "PluginProcessor.h"
 #include "TrackData.h"
 
@@ -14,6 +15,9 @@ void TrackManager::prepareTrack(TrackData &track)
 	{
 		track.delaySendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
 		track.reverbSendProcessor.prepare(currentSampleRate, currentMaxBlockSize);
+
+		track.gate.prepare(currentSampleRate, currentMaxBlockSize);
+		track.gate.setBypassed(Obsidian::GATE_BYPASSED);
 
 		track.filter.setMode(juce::dsp::LadderFilterMode::HPF12);
 		track.filter.setSamplingRate(currentSampleRate);
@@ -84,6 +88,14 @@ void TrackManager::prepareTrack(TrackData &track)
 		track.bitCrusher.prepare(spec);
 		track.compressor.prepare(spec);
 		track.limiter.prepare(spec);
+
+		for (int m = 0; m < kNumModSlots; ++m)
+		{
+			track.modulators[m].setTarget(kDefaultModTargets[m]);
+			track.modulators[m].setDepth(0.35f);
+		}
+
+		GlitchSequencerEngine::syncUserMaskFromDsp(track);
 	}
 }
 
@@ -672,6 +684,11 @@ void TrackManager::renderSingleTrack(TrackData &track, juce::AudioBuffer<float> 
 			(*safeCallback)(slot, &track);
 	}
 
+	audioProcessor.getSequencerManager().getGlitchSequencerEngine().processBlock(
+	    track, audioProcessor.getHostPpqPosition(), audioProcessor.getHostBpm(), sampleRate, numSamples);
+
+	audioProcessor.getModulationEngine().processBlock(track, audioProcessor.getHostPpqPosition());
+
 	auto handleEndOfPreview = [this, &track]()
 	{
 		if (track.isPreviewMode.load() && !track.previewEndPending.exchange(true))
@@ -906,6 +923,12 @@ void TrackManager::prepareOutput(float adsrGain, float oldAdsrGain, const float 
 void TrackManager::handleOutput(juce::AudioSampleBuffer &individualOutput, juce::AudioSampleBuffer &mixOutput,
                                 TrackData &track, double &currentPosition, float volume) const
 {
+
+	if (!track.gate.isBypassed())
+		track.gate.processBlock(individualOutput, audioProcessor.getHostBpm(), audioProcessor.getHostPpqPosition(),
+		                        audioProcessor.getTimeSignatureNumerator(),
+		                        audioProcessor.getTimeSignatureDenominator());
+
 	auto block = juce::dsp::AudioBlock<float>(individualOutput);
 	auto blockToUse = block.getSubBlock(0, individualOutput.getNumSamples());
 	auto contextToUse = juce::dsp::ProcessContextReplacing<float>(blockToUse);

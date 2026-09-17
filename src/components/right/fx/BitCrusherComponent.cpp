@@ -7,11 +7,24 @@ BitCrusherComponent::BitCrusherComponent(DjIaVstProcessor &processor, TrackData 
 	setTrackData(trackData);
 	setupUI();
 	wireParameters();
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 BitCrusherComponent::~BitCrusherComponent()
 {
 	markForDestruction();
+}
+
+void BitCrusherComponent::handleVBlank()
+{
+	syncModulationRing(bitDepthKnob, "BitCrusherBitDepth");
+	syncModulationRing(sampleRateReductionKnob, "BitCrusherRate");
+
+	syncGlitchLock(GlitchEffectType::BitCrusher, &mixKnob, &bypassBitCrusherButton);
+
+	if (syncGlitchLedState(GlitchEffectType::BitCrusher))
+		repaint();
 }
 
 void BitCrusherComponent::paint(juce::Graphics &g)
@@ -20,7 +33,7 @@ void BitCrusherComponent::paint(juce::Graphics &g)
 	if (!t)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
-
+	paintGlitchLed(g, GlitchEffectType::BitCrusher);
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
 	bypassBitCrusherButton.setBounds(bypassArea);

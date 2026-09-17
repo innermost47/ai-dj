@@ -171,220 +171,227 @@ bool MidiLearnManager::processMidiForLearning(const juce::MidiMessage &message)
 	return true;
 }
 
+int MidiLearnManager::getSlotNumberFromParam(const juce::String &parameterName)
+{
+	if (!parameterName.startsWith("slot"))
+		return -1;
+	return parameterName.substring(4, 5).getIntValue();
+}
+
+bool MidiLearnManager::isTrackSequenceParam(const juce::String &parameterName)
+{
+	return parameterName.contains("slot") && parameterName.contains("Seq") && !parameterName.contains("Glitch");
+}
+
+bool MidiLearnManager::handleNoteMapping(const MidiMapping &mapping, const juce::MidiMessage &message, float &value,
+                                         juce::String &statusMessage, bool &isWarning)
+{
+	if (!message.isNoteOnOrOff())
+		return false;
+
+	int noteNumber = message.getNoteNumber();
+	if (noteNumber >= 60 && noteNumber <= 67)
+		return false;
+
+	if (noteNumber != mapping.midiNumber)
+		return false;
+
+	bool isBool = isBooleanParameter(mapping.parameterName);
+	statusMessage = "Note " + juce::String(mapping.midiNumber) + " >> " + mapping.parameterName;
+
+	if (!message.isNoteOn())
+	{
+		if (isBool)
+			mustCheckForMidiEvent.store(true);
+		return false;
+	}
+
+	if (!isBool)
+	{
+		value = message.getVelocity() / 127.0f;
+		statusMessage += " (vel: " + juce::String(message.getVelocity()) + ")";
+		return true;
+	}
+
+	auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
+	if (!param)
+		return false;
+
+	if (mapping.parameterName.contains("Generate"))
+	{
+		value = 1.0f;
+		statusMessage += " (trigger)";
+		if (mapping.processor->getIsGenerating())
+		{
+			statusMessage += " - Generation already in progress, please wait";
+			isWarning = true;
+		}
+	}
+	else
+	{
+		value = (param->getValue() > 0.5f) ? 0.0f : 1.0f;
+		statusMessage += " (toggle: " + juce::String(value > 0.5f ? "ON" : "OFF") + ")";
+	}
+
+	return true;
+}
+
+bool MidiLearnManager::handleControllerMapping(const MidiMapping &mapping, const juce::MidiMessage &message,
+                                               float &value, juce::String &statusMessage)
+{
+	if (!message.isController() || message.getControllerNumber() != mapping.midiNumber)
+		return false;
+
+	int ccVal = message.getControllerValue();
+	value = ccVal / 127.0f;
+	statusMessage =
+	    "CC" + juce::String(mapping.midiNumber) + " >> " + mapping.parameterName + " (" + juce::String(ccVal) + ")";
+
+	if (mapping.parameterName.endsWith("Page"))
+	{
+		int slotNum = getSlotNumberFromParam(mapping.parameterName);
+		if (slotNum < 1 || slotNum > Obsidian::MAX_TRACKS)
+			return false;
+
+		juce::String suffix = (ccVal >= 96) ? "D" : (ccVal >= 64) ? "C" : (ccVal >= 32) ? "B" : "A";
+		juce::String realParam = "slot" + juce::String(slotNum) + "Page" + suffix;
+
+		if (auto *p = mapping.processor->getParameterTreeState().getParameter(realParam))
+		{
+			p->setValueNotifyingHost(1.0f);
+			showStatus(mapping, "Slot " + juce::String(slotNum) + " -> Page " + suffix, false);
+		}
+		return false;
+	}
+
+	if (isTrackSequenceParam(mapping.parameterName) && mapping.parameterName.endsWith("Seq"))
+	{
+		int seqIdx = juce::jlimit(1, 8, (ccVal / 16) + 1);
+
+		if (auto *p = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName))
+		{
+			p->setValueNotifyingHost((seqIdx - 1) / 7.0f);
+			showStatus(mapping, "Slot Seq -> " + juce::String(seqIdx), false);
+		}
+		return false;
+	}
+
+	return true;
+}
+
+void MidiLearnManager::applyMapping(const MidiMapping &mapping, float value, juce::String statusMessage, bool isWarning)
+{
+	if (mapping.parameterName.startsWith("promptSelector_slot"))
+	{
+		if (mapping.uiCallback && mapping.processor->getActiveEditor())
+		{
+			mapping.uiCallback(value);
+			showStatus(mapping, statusMessage);
+		}
+		return;
+	}
+
+	if (mapping.parameterName == "nextTrack" || mapping.parameterName == "prevTrack")
+	{
+		showStatus(mapping, statusMessage);
+		return;
+	}
+
+	if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Page"))
+	{
+		int slotNumber = getSlotNumberFromParam(mapping.parameterName);
+		int pageIndex = -1;
+
+		if (mapping.parameterName.contains("PageA"))
+			pageIndex = 0;
+		else if (mapping.parameterName.contains("PageB"))
+			pageIndex = 1;
+		else if (mapping.parameterName.contains("PageC"))
+			pageIndex = 2;
+		else if (mapping.parameterName.contains("PageD"))
+			pageIndex = 3;
+
+		if (slotNumber < 1 || slotNumber > Obsidian::MAX_TRACKS || pageIndex < 0)
+			return;
+
+		if (auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName))
+		{
+			param->setValueNotifyingHost(1.0f);
+			statusMessage += " (Page " + juce::String((char)('A' + pageIndex)) + " triggered)";
+			showStatus(mapping, statusMessage);
+		}
+		return;
+	}
+
+	if (isTrackSequenceParam(mapping.parameterName))
+	{
+		if (auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName))
+		{
+			param->setValueNotifyingHost(1.0f);
+			statusMessage +=
+			    " (Sequence " + mapping.parameterName.fromLastOccurrenceOf("Seq", false, false) + " selected)";
+			showStatus(mapping, statusMessage);
+		}
+		return;
+	}
+
+	auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
+	if (!param)
+		return;
+
+	if (mapping.parameterName.startsWith("slot"))
+	{
+		TrackData *track = mapping.processor->getTrackFromParamId(mapping.parameterName);
+		if (!track || track->slotIndex < 0 || track->slotIndex >= Obsidian::MAX_TRACKS)
+			return;
+
+		if (mapping.parameterName.contains("Play"))
+		{
+			if (track->getCurrentPage().numSamples <= 0)
+				return;
+			changedPlaySlotIndex.store(track->slotIndex);
+		}
+		else if (mapping.parameterName.contains("Generate"))
+		{
+			if (mapping.processor->getIsGenerating())
+				return;
+			changedGenerateSlotIndex.store(track->slotIndex);
+		}
+	}
+
+	mustCheckForMidiEvent.store(true);
+	param->setValueNotifyingHost(value);
+	showStatus(mapping, statusMessage, isWarning);
+}
+
 void MidiLearnManager::processMidiMappings(const juce::MidiMessage &message)
 {
 	int midiChannel = message.getChannel() - 1;
-	bool isWarning = false;
+
 	for (auto &mapping : mappings)
 	{
-		bool matches = false;
+		if (!mapping.processor || mapping.midiChannel != midiChannel)
+			continue;
+
 		float value = 0.0f;
 		juce::String statusMessage = "";
+		bool isWarning = false;
+		bool matches = false;
 
-		if (mapping.midiType == 0 && message.isNoteOnOrOff() && mapping.midiChannel == midiChannel)
-		{
-			int noteNumber = message.getNoteNumber();
-			bool isInSampleRange = (noteNumber >= 60 && noteNumber <= 67);
-
-			if (isInSampleRange)
-			{
-				continue;
-			}
-			if (message.getNoteNumber() == mapping.midiNumber)
-			{
-				matches = true;
-				statusMessage = "Note " + juce::String(mapping.midiNumber) + " >> " + mapping.parameterName;
-
-				if (message.isNoteOn() && isBooleanParameter(mapping.parameterName))
-				{
-					auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
-					if (param)
-					{
-						if (mapping.parameterName.contains("Generate"))
-						{
-							value = 1.0f;
-							statusMessage += " (trigger)";
-							if (mapping.processor->getIsGenerating())
-							{
-								statusMessage += " (trigger) - Generation already in progress, please wait";
-								isWarning = true;
-							}
-						}
-						else
-						{
-							float currentValue = param->getValue();
-							value = (currentValue > 0.5f) ? 0.0f : 1.0f;
-							statusMessage += " (toggle: " + juce::String(value > 0.5f ? "ON" : "OFF") + ")";
-						}
-					}
-				}
-				else if (message.isNoteOn())
-				{
-					value = message.getVelocity() / 127.0f;
-					statusMessage += " (vel: " + juce::String(message.getVelocity()) + ")";
-				}
-				else
-				{
-					if (isBooleanParameter(mapping.parameterName))
-						mustCheckForMidiEvent.store(true);
-					continue;
-				}
-			}
-		}
-		else if (mapping.midiType == 1 && message.isController() && mapping.midiChannel == midiChannel)
-		{
-			if (message.getControllerNumber() == mapping.midiNumber)
-			{
-				matches = true;
-				value = message.getControllerValue() / 127.0f;
-				statusMessage = "CC" + juce::String(mapping.midiNumber) + " >> " + mapping.parameterName + " (" +
-				                juce::String(message.getControllerValue()) + ")";
-				int ccVal = message.getControllerValue();
-				if (mapping.parameterName.endsWith("Page") && matches)
-				{
-					int slotNum = mapping.parameterName.substring(4, 5).getIntValue();
-
-					juce::String suffix = (ccVal >= 96) ? "D" : (ccVal >= 64) ? "C" : (ccVal >= 32) ? "B" : "A";
-					juce::String realParam = "slot" + juce::String(slotNum) + "Page" + suffix;
-
-					if (auto *p = mapping.processor->getParameterTreeState().getParameter(realParam))
-					{
-						p->setValueNotifyingHost(1.0f);
-						showStatus(mapping, "Slot " + juce::String(slotNum) + " -> Page " + suffix, false);
-					}
-					continue;
-				}
-				if (mapping.parameterName.endsWith("Seq"))
-				{
-					int seqIdx = (ccVal / 16) + 1;
-					if (seqIdx > 8)
-						seqIdx = 8;
-					juce::String targetParam = mapping.parameterName;
-
-					if (auto *p = mapping.processor->getParameterTreeState().getParameter(targetParam))
-					{
-						float normalizedValue = (static_cast<float>(seqIdx) - 1.0f) / 7.0f;
-
-						p->setValueNotifyingHost(normalizedValue);
-						statusMessage = "Slot Seq -> " + juce::String(seqIdx);
-						showStatus(mapping, statusMessage, false);
-					}
-					continue;
-				}
-			}
-		}
-		else if (mapping.midiType == 2 && message.isPitchWheel() && mapping.midiChannel == midiChannel)
+		if (mapping.midiType == 0)
+			matches = handleNoteMapping(mapping, message, value, statusMessage, isWarning);
+		else if (mapping.midiType == 1)
+			matches = handleControllerMapping(mapping, message, value, statusMessage);
+		else if (mapping.midiType == 2 && message.isPitchWheel())
 		{
 			matches = true;
-			value = (message.getPitchWheelValue() + 8192) / 16383.0f;
+			value = juce::jlimit(0.0f, 1.0f, message.getPitchWheelValue() / 16383.0f);
 			statusMessage =
 			    "Pitch Wheel >> " + mapping.parameterName + " (" + juce::String(message.getPitchWheelValue()) + ")";
 		}
 
-		if (matches && mapping.processor)
-		{
-			if (mapping.parameterName.startsWith("promptSelector_slot"))
-			{
-				if (mapping.uiCallback && mapping.processor->getActiveEditor())
-				{
-					mapping.uiCallback(value);
-					showStatus(mapping, statusMessage);
-				}
-				continue;
-			}
-			if (mapping.parameterName == "nextTrack" || mapping.parameterName == "prevTrack")
-			{
-				if (message.isNoteOn() && isBooleanParameter(mapping.parameterName))
-				{
-					showStatus(mapping, statusMessage);
-				}
-				continue;
-			}
-
-			if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Page"))
-			{
-				if (message.isNoteOn())
-				{
-					juce::String slotStr = mapping.parameterName.substring(4, 5);
-					int slotNumber = slotStr.getIntValue();
-
-					int pageIndex = -1;
-					if (mapping.parameterName.contains("PageA"))
-						pageIndex = 0;
-					else if (mapping.parameterName.contains("PageB"))
-						pageIndex = 1;
-					else if (mapping.parameterName.contains("PageC"))
-						pageIndex = 2;
-					else if (mapping.parameterName.contains("PageD"))
-						pageIndex = 3;
-
-					if (slotNumber >= 1 && slotNumber <= Obsidian::MAX_TRACKS && pageIndex >= 0)
-					{
-						auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
-						if (param)
-						{
-							param->setValueNotifyingHost(1.0f);
-
-							statusMessage += " (Page " + juce::String((char)('A' + pageIndex)) + " triggered)";
-
-							showStatus(mapping, statusMessage);
-						}
-					}
-				}
-
-				continue;
-			}
-			if (mapping.parameterName.contains("slot") && mapping.parameterName.contains("Seq"))
-			{
-				if (message.isNoteOn())
-				{
-					auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
-					if (param)
-					{
-						param->setValueNotifyingHost(1.0f);
-
-						juce::String slotStr = mapping.parameterName.substring(4, 5);
-						juce::String seqStr = mapping.parameterName.fromLastOccurrenceOf("Seq", false, false);
-
-						statusMessage += " (Sequence " + seqStr + " selected)";
-
-						showStatus(mapping, statusMessage);
-					}
-				}
-				continue;
-			}
-			auto *param = mapping.processor->getParameterTreeState().getParameter(mapping.parameterName);
-			if (param)
-			{
-				if (mapping.parameterName.contains("slot"))
-				{
-					juce::String slotStr = mapping.parameterName.substring(4, 5);
-					int slotNumber = slotStr.getIntValue();
-					if (slotNumber > 1 && slotNumber > Obsidian::MAX_TRACKS)
-						return;
-					std::vector<juce::String> trackIds = mapping.processor->getTrackManager().getAllTrackIds();
-					juce::String trackId = trackIds[slotNumber - 1];
-					TrackData *track = mapping.processor->getTrack(trackId);
-
-					if (mapping.parameterName.contains("Play"))
-					{
-						if (track->getCurrentPage().numSamples > 0)
-							changedPlaySlotIndex.store(slotNumber - 1);
-						else
-							return;
-					}
-					if (mapping.parameterName.contains("Generate"))
-					{
-						if (mapping.processor->getIsGenerating())
-							return;
-						changedGenerateSlotIndex.store(slotNumber - 1);
-					}
-				}
-				mustCheckForMidiEvent.store(true);
-				param->setValueNotifyingHost(value);
-				showStatus(mapping, statusMessage, isWarning);
-			}
-		}
+		if (matches)
+			applyMapping(mapping, value, statusMessage, isWarning);
 	}
 }
 
@@ -407,8 +414,11 @@ bool MidiLearnManager::isBooleanParameter(const juce::String &parameterName)
 {
 	return parameterName.contains("Play") || parameterName.contains("Stop") || parameterName.contains("Mute") ||
 	       parameterName.contains("Solo") || parameterName.contains("Generate") ||
-	       parameterName.contains("BeatRepeatActive") || parameterName == "nextTrack" || parameterName == "prevTrack" ||
-	       parameterName == "generate";
+	       parameterName.contains("BeatRepeatActive") || parameterName.contains("ReverseActive") ||
+	       parameterName.contains("TransientScatterActive") || parameterName.contains("GlitchSeq") ||
+	       parameterName.contains("GlitchChain") || parameterName.contains("Bypassed") ||
+	       parameterName.contains("Page") || parameterName == "nextTrack" || parameterName == "prevTrack" ||
+	       parameterName == "generate" || parameterName == "play" || parameterName == "useCrossfader";
 }
 
 void MidiLearnManager::registerUICallback(const juce::String &parameterName, std::function<void(float)> callback)

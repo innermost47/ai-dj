@@ -1,7 +1,10 @@
 #pragma once
+#include "AssetDownloadContent.h"
+#include "AssetDownloadManager.h"
 #include "CategoryPanel.h"
 #include "ColourPalette.h"
 #include "ColourPicker.h"
+#include "LicenseAgreementContent.h"
 #include "ObsidianModal.h"
 #include <JuceHeader.h>
 
@@ -52,9 +55,9 @@ class ObsidianAlertManager
 	{
 	}
 	static void showMidiMappingEditor(juce::Component *parent, class MidiLearnManager *manager);
-	static DrawingCanvas *showDrawingCanvas(juce::Component *parent, DjIaVstProcessor &processor,
-	                                        std::function<void(const juce::String &)> onGenerate,
-	                                        std::function<void(DrawingCanvas *)> onClose = nullptr);
+	static void showTextInput(juce::Component *parent, const juce::String &title, const juce::String &label,
+	                          const juce::String &initialValue, const juce::String &confirmText,
+	                          std::function<void(bool confirmed, const juce::String &text)> callback);
 
 	static void showAddCategoryDialog(juce::Component *parent,
 	                                  std::function<void(const juce::String &name, juce::Colour colour)> onAdd);
@@ -62,6 +65,12 @@ class ObsidianAlertManager
 	static void showEditCategoryDialog(juce::Component *parent, const juce::String &currentName,
 	                                   juce::Colour currentColour,
 	                                   std::function<void(const juce::String &newName, juce::Colour newColour)> onSave);
+
+	static void showLicenseAgreement(juce::Component *parent, const std::vector<LicenseEntry> &licenses,
+	                                 std::function<void(bool accepted)> callback);
+
+	static void showAssetDownloader(juce::Component *parent, const juce::File &destinationDir,
+	                                std::function<void(bool success)> onComplete);
 
 	struct ConfigDialogResult
 	{
@@ -82,7 +91,7 @@ class ObsidianAlertManager
 
 	static void showPromptEditor(juce::Component *parent, const juce::String &initialText,
 	                             const juce::String &initialModel, const juce::String &initialCategory,
-	                             const juce::StringArray &availableCategories,
+	                             const juce::StringArray &availableCategories, bool useLocalModel,
 	                             std::function<void(const PromptEditorResult &)> callback);
 
 	static void showInfo(juce::Component *parent, const juce::String &title, const juce::String &message,
@@ -103,8 +112,9 @@ class ObsidianAlertManager
 	                               const std::vector<juce::String> &availableCategories,
 	                               std::function<void(const juce::String &)> onSave);
 
-	static void showUpdateAvailable(juce::Component *parent, const juce::String &latestTag,
-	                                const juce::String &currentBuild);
+	static void showUpdateAvailable(juce::Component *parent, const juce::String &currentBuild,
+	                                const juce::String &latestBuild, const juce::String &releaseUrl,
+	                                std::function<void(bool)> onClose);
 
 	static void showCredits(juce::Component *parent);
 };

@@ -135,7 +135,6 @@ TrackComponent::~TrackComponent()
 
 	sequencer.reset();
 	waveformDisplay.reset();
-	drawingCanvas.reset();
 
 	if (auto *t = getTrack())
 		t->onPlayStateChanged = nullptr;
@@ -295,6 +294,11 @@ void TrackComponent::syncBorderOverlay()
 
 	borderOverlay.setVisualState(isGenerating, track->hasSamplePending.load(), isSelected, isDragOver, blinkState,
 	                             overlayColour);
+}
+
+void TrackComponent::syncPromptTooltip()
+{
+	promptPresetSelector.setTooltip(getSelectedPromptValue());
 }
 
 void TrackComponent::updateFromTrackData()
@@ -677,67 +681,6 @@ void TrackComponent::resized()
 
 	borderOverlay.setBounds(fullBounds);
 	borderOverlay.toFront(false);
-}
-
-void TrackComponent::openDrawingCanvas()
-{
-	auto *t = getTrack();
-	if (!t)
-		return;
-	if (canvasModalOpen)
-		return;
-	canvasModalOpen = true;
-
-	auto *canvas = ObsidianAlertManager::showDrawingCanvas(
-	    this, audioProcessor, [this](const juce::String &) {},
-	    [this, t](DrawingCanvas *canvas)
-	    {
-		    if (canvas)
-		    {
-			    auto canvasState = canvas->getState();
-			    juce::String stateXml = canvasState.toXml();
-			    auto &currentPage = t->getCurrentPage();
-			    currentPage.canvasState = stateXml;
-			    currentPage.canvasData = canvasState.imageBase64;
-			    currentPage.selectedKeywords = canvasState.selectedKeywords;
-		    }
-		    canvasModalOpen = false;
-	    });
-
-	if (canvas == nullptr)
-		return;
-	drawingCanvasPtr = canvas;
-
-	const auto &currentPage = t->getCurrentPage();
-	if (!currentPage.canvasState.isEmpty())
-	{
-		auto state = DrawingCanvas::CanvasState::fromXml(currentPage.canvasState);
-		canvas->setState(state);
-	}
-	else if (!currentPage.canvasData.isEmpty())
-		canvas->loadFromBase64(currentPage.canvasData);
-
-	canvas->setGenerating(canvasIsGenerating);
-
-	canvas->onGenerate = [this, canvas](const juce::String &base64Image)
-	{
-		auto *t = getTrack();
-		if (!t)
-			return;
-
-		auto canvasState = canvas->getState();
-		juce::String stateXml = canvasState.toXml();
-		auto &currentPage = t->getCurrentPage();
-		currentPage.canvasState = stateXml;
-		currentPage.canvasData = base64Image;
-		currentPage.selectedKeywords = canvasState.selectedKeywords;
-
-		if (onGenerateWithImage)
-		{
-			auto keywords = canvas->getState().selectedKeywords;
-			onGenerateWithImage(trackId, base64Image, keywords);
-		}
-	};
 }
 
 void TrackComponent::layoutPagesButtons(juce::Rectangle<int> area)
@@ -1228,6 +1171,8 @@ void TrackComponent::setupUI()
 			onModelChanged(trackId);
 	};
 
+	modelSelector.setEnabled(modelsForMode.size() > 1);
+
 	setupIconButtons();
 
 	addAndMakeVisible(intervalKnob);
@@ -1505,7 +1450,7 @@ void TrackComponent::populatePromptPresets(const juce::String &modelName, const 
 		promptPresetSelector.setSelectedItemIndex(0, juce::dontSendNotification);
 
 	t->getCurrentPage().setSelectedPrompt(getSelectedPromptValue());
-
+	syncPromptTooltip();
 	if (forceSelectedPrompt.isEmpty())
 		onTrackPresetSelected();
 }
@@ -1572,7 +1517,7 @@ void TrackComponent::onTrackPresetSelected()
 	auto &currentPage = t->getCurrentPage();
 	currentPage.setSelectedPrompt(newPrompt);
 
-	promptPresetSelector.setTooltip(newPrompt);
+	syncPromptTooltip();
 
 	if (onTrackPromptChanged)
 		onTrackPromptChanged(trackId, newPrompt);
@@ -1719,6 +1664,7 @@ void TrackComponent::itemDropped(const SourceDetails &dragSourceDetails)
 						promptPresetSelector.setSelectedItemIndex(promptPresets.size() - 1, juce::dontSendNotification);
 					}
 					t->getCurrentPage().setSelectedPrompt(sampleEntry->originalPrompt);
+					syncPromptTooltip();
 					if (onTrackPromptChanged)
 						onTrackPromptChanged(trackId, sampleEntry->originalPrompt);
 				}
@@ -1860,8 +1806,13 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 		{
 			if (modelSelector.getItemText(i) == entry->modelName)
 			{
-				modelSelector.setSelectedItemIndex(i, juce::sendNotification);
+				modelSelector.setSelectedItemIndex(i, juce::dontSendNotification);
 				t->getCurrentPage().selectedModel = entry->modelName;
+				modelSet = entry->modelName;
+				populatePromptPresets(entry->modelName, entry->text);
+				updateModelUI();
+				if (onModelChanged)
+					onModelChanged(trackId);
 				break;
 			}
 		}
@@ -1888,6 +1839,7 @@ void TrackComponent::applyPromptFromBank(const juce::String &promptId)
 		}
 
 		t->getCurrentPage().setSelectedPrompt(entry->text);
+		syncPromptTooltip();
 		if (onTrackPromptChanged)
 			onTrackPromptChanged(trackId, entry->text);
 	}

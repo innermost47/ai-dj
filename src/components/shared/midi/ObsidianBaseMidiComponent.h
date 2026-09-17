@@ -1,5 +1,7 @@
 #pragma once
+#include "GlitchSequencerEngine.h"
 #include "MidiLearnableComponents.h"
+#include "ModulationEngine.h"
 #include "ObsidianBase.h"
 #include "TrackData.h"
 #include <JuceHeader.h>
@@ -69,6 +71,106 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 
 	DjIaVstProcessor &audioProcessor;
 
+	void syncModulationRing(juce::Slider &slider, const juce::String &paramSuffix)
+	{
+		auto *t = getTrack();
+		if (!t)
+			return;
+
+		int targetIndex = 0;
+		for (int i = 1; i < getNumModTargets(); ++i)
+		{
+			if (getModTargets()[i].paramSuffix == nullptr)
+				continue;
+			if (paramSuffix == getModTargets()[i].paramSuffix)
+			{
+				targetIndex = i;
+				break;
+			}
+		}
+
+		const bool isModulated = targetIndex > 0 && ModulationEngine::isTargetModulated(*t, targetIndex);
+		const float amount = isModulated ? ModulationEngine::getModulationForTarget(*t, targetIndex) : 0.0f;
+
+		auto &props = slider.getProperties();
+		const bool wasActive = (bool)props[CustomLookAndFeel::getModActivePropertyId()];
+		const float wasAmount = (float)props[CustomLookAndFeel::getModAmountPropertyId()];
+
+		if (wasActive == isModulated && std::abs(wasAmount - amount) < 0.001f)
+			return;
+
+		props.set(CustomLookAndFeel::getModActivePropertyId(), isModulated);
+		props.set(CustomLookAndFeel::getModAmountPropertyId(), amount);
+		slider.repaint();
+	}
+
+	bool isFxOwnedByGlitch(GlitchEffectType fx) const
+	{
+		auto *t = getTrack();
+		if (!t)
+			return false;
+		return (t->glitchReservedMask.load() & GlitchSequencerEngine::effectBit(fx)) != 0;
+	}
+
+	bool isGlitchDrivingFx(GlitchEffectType fx) const
+	{
+		auto *t = getTrack();
+		if (!t)
+			return false;
+
+		const int bit = GlitchSequencerEngine::effectBit(fx);
+		return (t->glitchFxEnabledMask.load() & t->glitchOwnedMask.load() & bit) != 0;
+	}
+
+	void paintGlitchLed(juce::Graphics &g, GlitchEffectType fx)
+	{
+		const bool owned = isFxOwnedByGlitch(fx);
+		if (!owned)
+			return;
+
+		auto led = getLocalBounds().reduced(6).removeFromTop(14).removeFromRight(10);
+		const bool driving = isGlitchDrivingFx(fx);
+
+		g.setColour(driving ? ColourPalette::buttonSuccess : ColourPalette::buttonSuccess.withAlpha(0.2f));
+		g.fillEllipse(led.withSizeKeepingCentre(7, 7).toFloat());
+	}
+
+	void syncGlitchLock(GlitchEffectType fx, juce::Component *mixKnob, juce::Component *bypassButton)
+	{
+		const bool locked = isFxOwnedByGlitch(fx);
+
+		if (glitchLockApplied == locked && glitchLockInitialised)
+			return;
+
+		glitchLockApplied = locked;
+		glitchLockInitialised = true;
+
+		if (mixKnob != nullptr)
+		{
+			mixKnob->setEnabled(!locked);
+			mixKnob->setAlpha(locked ? 0.4f : 1.0f);
+		}
+
+		if (bypassButton != nullptr)
+		{
+			bypassButton->setEnabled(!locked);
+			bypassButton->setAlpha(locked ? 0.4f : 1.0f);
+		}
+	}
+
+	bool syncGlitchLedState(GlitchEffectType fx)
+	{
+		const bool driving = isGlitchDrivingFx(fx);
+		const bool owned = isFxOwnedByGlitch(fx);
+
+		if (driving == lastGlitchDriving && owned == lastGlitchOwned)
+			return false;
+
+		lastGlitchDriving = driving;
+		lastGlitchOwned = owned;
+		return true;
+	}
+
   private:
 	struct Binding
 	{
@@ -77,6 +179,11 @@ class ObsidianBaseMidiComponent : public ObsidianComponent, public juce::AudioPr
 		juce::Button *button = nullptr;
 		bool momentary = false;
 	};
+
+	bool lastGlitchDriving = false;
+	bool lastGlitchOwned = false;
+	bool glitchLockApplied = false;
+	bool glitchLockInitialised = false;
 
 	std::vector<juce::String> listenedParams;
 	std::vector<std::unique_ptr<Binding>> bindings;

@@ -62,5 +62,8 @@ class PhaserComponent : public ObsidianBaseMidiComponent
 
 	IconButton bypassPhaserButton{"BypassPhaser", ""};
 
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+	void handleVBlank();
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PhaserComponent)
 };

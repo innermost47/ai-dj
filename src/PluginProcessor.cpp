@@ -15,7 +15,7 @@ DjIaVstProcessor::DjIaVstProcessor()
     : AudioProcessor(createBusLayout()), apiClient("", "http://localhost:8000"), parameterManager(*this),
       trackManager(*this), stateManager(*this), generationManager(*this), sequencerManager(*this, trackManager),
       audioManager(*this, trackManager, generationManager), midiManager(*this, midiLearnManager),
-      sampleBank(std::make_unique<SampleBank>()), autoLoadEnabled(true)
+      sampleBank(std::make_unique<SampleBank>()), autoLoadEnabled(true), modulationEngine(*this)
 {
 	midiLearnManager.setProcessor(this);
 	parameterManager.resolveParameters(this);
@@ -230,6 +230,8 @@ void DjIaVstProcessor::loadGlobalConfig()
 			useLocalModel = object->getProperty("useLocalModel").toString() == "true";
 			localModelsPath = object->getProperty("localModelsPath").toString();
 			panelStateJson = object->getProperty("panelStateJson").toString();
+			lastUpdateCheckTime = object->getProperty("lastUpdateCheckTime").toString().getLargeIntValue();
+			lastDismissedUpdateBuild = object->getProperty("lastDismissedUpdateBuild").toString().getIntValue();
 
 			if (!object->hasProperty("useLocalModel"))
 				useLocalModel = false;
@@ -258,6 +260,33 @@ void DjIaVstProcessor::loadGlobalConfig()
 					customKeywords.add(keyword);
 				}
 			}
+
+			auto glitchVar = object->getProperty("glitchPresets");
+			if (glitchVar.isArray())
+			{
+				userGlitchPresets.clear();
+				auto *presetsArray = glitchVar.getArray();
+
+				for (int i = 0; i < presetsArray->size(); ++i)
+				{
+					auto *presetObj = presetsArray->getUnchecked(i).getDynamicObject();
+					if (!presetObj)
+						continue;
+
+					UserGlitchPreset preset;
+					preset.name = presetObj->getProperty("name").toString();
+					if (preset.name.isEmpty())
+						continue;
+
+					auto seqVar = presetObj->getProperty("sequences");
+					if (auto *seqArray = seqVar.getArray())
+						for (int s = 0; s < juce::jmin(8, seqArray->size()); ++s)
+							preset.sequences[s] = seqArray->getUnchecked(s).toString();
+
+					userGlitchPresets.push_back(preset);
+				}
+			}
+
 			setApiKey(apiKey);
 			setServerUrl(serverUrl);
 		}
@@ -279,6 +308,8 @@ void DjIaVstProcessor::saveGlobalConfig()
 	config->setProperty("localModelsPath", localModelsPath);
 	config->setProperty("onboardingDone", onboardingDone ? "true" : "false");
 	config->setProperty("panelStateJson", panelStateJson);
+	config->setProperty("lastUpdateCheckTime", juce::String(lastUpdateCheckTime));
+	config->setProperty("lastDismissedUpdateBuild", lastDismissedUpdateBuild);
 
 	juce::StringArray sortedPrompts = customPrompts;
 	sortedPrompts.sort(true);
@@ -292,8 +323,84 @@ void DjIaVstProcessor::saveGlobalConfig()
 		keywordsArray.add(juce::var(keyword));
 	config->setProperty("customKeywords", juce::var(keywordsArray));
 
+	juce::Array<juce::var> glitchPresetsArray;
+	for (const auto &preset : userGlitchPresets)
+	{
+		juce::DynamicObject::Ptr presetObj = new juce::DynamicObject();
+		presetObj->setProperty("name", preset.name);
+
+		juce::Array<juce::var> seqArray;
+		for (int s = 0; s < 8; ++s)
+			seqArray.add(juce::var(preset.sequences[s]));
+
+		presetObj->setProperty("sequences", juce::var(seqArray));
+		glitchPresetsArray.add(juce::var(presetObj.get()));
+	}
+	config->setProperty("glitchPresets", juce::var(glitchPresetsArray));
+
 	juce::String jsonString = juce::JSON::toString(juce::var(config.get()));
 	configFile.replaceWithText(jsonString);
+}
+
+const DjIaVstProcessor::UserGlitchPreset *DjIaVstProcessor::getUserGlitchPreset(const juce::String &name) const
+{
+	for (const auto &preset : userGlitchPresets)
+		if (preset.name == name)
+			return &preset;
+	return nullptr;
+}
+
+bool DjIaVstProcessor::addUserGlitchPreset(const juce::String &name, const TrackData &track)
+{
+	if (name.isEmpty())
+		return false;
+
+	for (int i = 0; i < getNumFactoryGlitchPresets(); ++i)
+		if (name.compareIgnoreCase(getFactoryGlitchPresets()[i].name) == 0)
+			return false;
+
+	UserGlitchPreset preset;
+	preset.name = name;
+
+	for (int s = 0; s < 8; ++s)
+	{
+		const auto &seq = track.glitchSequences[s];
+		const int n = seq.getNumSteps();
+
+		juce::String pattern;
+		for (int i = 0; i < n; ++i)
+			pattern += juce::String::charToString(charFromGlitchEffect(seq.getStep(i)));
+
+		preset.sequences[s] = pattern;
+	}
+
+	for (auto &existing : userGlitchPresets)
+	{
+		if (existing.name == name)
+		{
+			existing = preset;
+			saveGlobalConfig();
+			return true;
+		}
+	}
+
+	userGlitchPresets.push_back(preset);
+	saveGlobalConfig();
+	return true;
+}
+
+bool DjIaVstProcessor::deleteUserGlitchPreset(const juce::String &name)
+{
+	for (auto it = userGlitchPresets.begin(); it != userGlitchPresets.end(); ++it)
+	{
+		if (it->name == name)
+		{
+			userGlitchPresets.erase(it);
+			saveGlobalConfig();
+			return true;
+		}
+	}
+	return false;
 }
 
 void DjIaVstProcessor::initTracks()
@@ -318,9 +425,7 @@ void DjIaVstProcessor::initTracks()
 			auto serverModels = AiModelDefinitions::getModelsForMode(useLocalModel);
 			juce::String modelName = serverModels[i % serverModels.size()];
 
-			juce::String effectiveModel = modelName;
-			if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_LOCAL())
-				effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1();
+			juce::String effectiveModel = AiModelDefinitions::normalize(modelName);
 
 			for (int p = 0; p < Obsidian::MAX_PAGES; ++p)
 			{
@@ -360,9 +465,7 @@ std::vector<PromptInfo> DjIaVstProcessor::getAvailablePromptsWithCategoryForMode
 	if (!promptBank)
 		return result;
 
-	juce::String effectiveModel = modelName;
-	if (effectiveModel.toStdString() == Obsidian::STABLE_AUDIO_OPEN_LOCAL())
-		effectiveModel = Obsidian::STABLE_AUDIO_OPEN_V1();
+	juce::String effectiveModel = AiModelDefinitions::normalize(modelName);
 
 	auto allPrompts = const_cast<PromptBank *>(promptBank.get())->getAllPrompts();
 	for (auto *p : allPrompts)
@@ -441,16 +544,10 @@ DjIaClient::LoopRequest DjIaVstProcessor::createGlobalLoopRequest() const
 bool DjIaVstProcessor::isBusesLayoutSupported(const BusesLayout &layouts) const
 {
 	if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-	{
 		return false;
-	}
 	for (int i = 1; i < layouts.outputBuses.size(); ++i)
-	{
 		if (!layouts.outputBuses[i].isDisabled() && layouts.outputBuses[i] != juce::AudioChannelSet::stereo())
-		{
 			return false;
-		}
-	}
 	return true;
 }
 
@@ -460,13 +557,9 @@ ableton::Link::SessionState DjIaVstProcessor::processSessionState(const EngineDa
 	auto sessionState = link->captureAudioSessionState();
 
 	if (engine_data.request_start)
-	{
 		sessionState.setIsPlaying(true, output_time);
-	}
 	if (engine_data.request_stop)
-	{
 		sessionState.setIsPlaying(false, output_time);
-	}
 
 	if (!isLinkPlaying.load() && sessionState.isPlaying())
 	{
@@ -474,14 +567,10 @@ ableton::Link::SessionState DjIaVstProcessor::processSessionState(const EngineDa
 		isLinkPlaying.store(true);
 	}
 	else if (isLinkPlaying.load() && !sessionState.isPlaying())
-	{
 		isLinkPlaying.store(false);
-	}
 
 	if (engine_data.requested_bpm > 0)
-	{
 		sessionState.setTempo(engine_data.requested_bpm, output_time);
-	}
 
 	link->commitAudioSessionState(sessionState);
 	return sessionState;
@@ -566,9 +655,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 			}
 		}
 		else if (standaloneTransport)
-		{
 			standaloneTransport->advance(buffer.getNumSamples(), sr);
-		}
 	}
 #endif
 
@@ -584,6 +671,7 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 		getDawInformations(currentPlayHead, hostIsPlaying, hostBpm, hostPpqPosition);
 
 	lastHostBpmForQuantization.store(hostBpm);
+	lastHostPpqPosition.store(hostPpqPosition);
 	if (hasPendingAudioData.load())
 		audioManager.processIncomingAudio(hostIsPlaying);
 	audioManager.checkAndSwapStagingBuffers();
@@ -645,21 +733,6 @@ void DjIaVstProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::Midi
 	audioManager.renderPreviewToOutput(previewBus, mainOutput, buffer.getNumSamples(), sr,
 	                                   previewBusIsEffectivelyEnabled);
 
-	if (onMasterOutput)
-	{
-		double ppq = 0.0;
-		if (auto *ph = getPlayHead())
-		{
-			if (auto info = ph->getPosition())
-			{
-				if (auto p = info->getPpqPosition())
-					ppq = *p;
-			}
-		}
-		onMasterOutput(buffer.getReadPointer(0), buffer.getNumChannels() > 1 ? buffer.getReadPointer(1) : nullptr,
-		               buffer.getNumSamples(), ppq);
-	}
-
 	audioManager.computeAndSetPeakLevels(buffer);
 	checkIfUIUpdateNeeded(midiMessages);
 	sample_time += buffer.getNumSamples();
@@ -712,9 +785,7 @@ void DjIaVstProcessor::getDawInformations(juce::AudioPlayHead *currentPlayHead, 
 		return;
 	double localSampleRate = getSampleRate();
 	if (localSampleRate > 0.0)
-	{
 		hostSampleRate = localSampleRate;
-	}
 
 	if (auto positionInfo = currentPlayHead->getPosition())
 	{
@@ -729,18 +800,12 @@ void DjIaVstProcessor::getDawInformations(juce::AudioPlayHead *currentPlayHead, 
 			cachedHostBpm.store(newBpm);
 
 			if (std::abs(newBpm - oldBpm) > 0.1)
-			{
 				if (onHostBpmChanged)
-				{
 					onHostBpmChanged(newBpm);
-				}
-			}
 		}
 
 		if (auto ppq = positionInfo->getPpqPosition())
-		{
 			hostPpqPosition = *ppq;
-		}
 		if (auto timeSig = positionInfo->getTimeSignature())
 		{
 			timeSignatureNumerator.store(timeSig->numerator);
@@ -868,12 +933,8 @@ void DjIaVstProcessor::handleAsyncUpdate()
 	    [this]()
 	    {
 		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(getActiveEditor()))
-		    {
 			    if (generationListener)
-			    {
 				    generationListener->onGenerationComplete(lastGeneratedTrackId, pendingMessage);
-			    }
-		    }
 	    });
 }
 
@@ -895,9 +956,7 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
 		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 		if (projectId != "legacy" && !projectId.isEmpty())
-		{
 			audioDir = audioDir.getChildFile(projectId);
-		}
 		fileToLoad = audioDir.getChildFile(trackId + "_original_" + juce::String(pageName) + ".wav");
 		juce::MessageManager::callAsync(
 		    [this]()
@@ -930,17 +989,11 @@ void DjIaVstProcessor::reloadTrackWithVersion(const juce::String &trackId, bool 
 		                    .getChildFile(Obsidian::OBSIDIAN_BASE_DIR())
 		                    .getChildFile(Obsidian::AUDIO_CACHE_DIR());
 		if (projectId != "legacy" && !projectId.isEmpty())
-		{
 			audioDir = audioDir.getChildFile(projectId);
-		}
 		if (useOriginal)
-		{
 			fileToLoad = audioDir.getChildFile(trackId + "_" + juce::String(asciiCode) + "_original.wav");
-		}
 		else
-		{
 			fileToLoad = audioDir.getChildFile(trackId + "_" + juce::String(asciiCode) + ".wav");
-		}
 
 		if (!fileToLoad.existsAsFile())
 			return;
@@ -988,9 +1041,7 @@ double DjIaVstProcessor::getHostBpm() const
 			{
 				double bpm = *positionInfo->getBpm();
 				if (bpm > 0.0)
-				{
 					return bpm;
-				}
 			}
 		}
 	}

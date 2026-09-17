@@ -7,11 +7,26 @@ ChorusComponent::ChorusComponent(DjIaVstProcessor &processor, TrackData *trackDa
 	setTrackData(trackData);
 	setupUI();
 	wireParameters();
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 ChorusComponent::~ChorusComponent()
 {
 	markForDestruction();
+}
+
+void ChorusComponent::handleVBlank()
+{
+	syncModulationRing(rateKnob, "ChorusRate");
+	syncModulationRing(depthKnob, "ChorusDepth");
+	syncModulationRing(centreKnob, "ChorusCentre");
+	syncModulationRing(feedbackKnob, "ChorusFeedback");
+
+	syncGlitchLock(GlitchEffectType::Chorus, &mixKnob, &bypassChorusButton);
+
+	if (syncGlitchLedState(GlitchEffectType::Chorus))
+		repaint();
 }
 
 void ChorusComponent::paint(juce::Graphics &g)
@@ -20,7 +35,7 @@ void ChorusComponent::paint(juce::Graphics &g)
 	if (!t)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
-
+	paintGlitchLed(g, GlitchEffectType::Chorus);
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
 	bypassChorusButton.setBounds(bypassArea);

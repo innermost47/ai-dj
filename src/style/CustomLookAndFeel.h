@@ -96,6 +96,9 @@ class CustomLookAndFeel : public juce::LookAndFeel_V4
 		return false;
 	}
 
+	static const juce::Identifier &getModAmountPropertyId();
+	static const juce::Identifier &getModActivePropertyId();
+
   private:
 	void drawGraduationTicks(juce::Graphics &g, juce::Rectangle<float> trackRect, int numTicks, bool isVertical,
 	                         bool small = false);

@@ -21,6 +21,7 @@ CustomLookAndFeel::CustomLookAndFeel()
 	setColour(juce::TextEditor::shadowColourId, juce::Colours::transparentBlack);
 	setColour(juce::ScrollBar::thumbColourId, ColourPalette::muteActive);
 	setColour(juce::ScrollBar::backgroundColourId, ColourPalette::backgroundDeep);
+	setColour(juce::ScrollBar::backgroundColourId, ColourPalette::backgroundDeep);
 	setColour(juce::ComboBox::backgroundColourId, ColourPalette::backgroundDark);
 	setColour(juce::PopupMenu::backgroundColourId, ColourPalette::backgroundDark);
 	setColour(juce::PopupMenu::textColourId, ColourPalette::textPrimary);
@@ -599,6 +600,45 @@ void CustomLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y, int wi
 	g.setColour(accentColour);
 	g.strokePath(valueArc, juce::PathStrokeType(lineW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
+	const auto &props = slider.getProperties();
+	if ((bool)props[getModActivePropertyId()])
+	{
+		const float modAmount = juce::jlimit(-1.0f, 1.0f, (float)props[getModAmountPropertyId()]);
+		const float modPos = juce::jlimit(0.0f, 1.0f, sliderPosProportional + modAmount);
+		const float modAngle = rotaryStartAngle + modPos * (rotaryEndAngle - rotaryStartAngle);
+
+		const float modRingRadius = arcRadius + lineW * 1.45f;
+		const float modRingW = lineW * 0.45f;
+
+		juce::Path modTrack;
+		modTrack.addCentredArc(bounds.getCentreX(), bounds.getCentreY(), modRingRadius, modRingRadius, 0.0f,
+		                       rotaryStartAngle, rotaryEndAngle, true);
+
+		g.setColour(ColourPalette::lightGrey.withAlpha(0.18f));
+		g.strokePath(modTrack,
+		             juce::PathStrokeType(modRingW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+		if (std::abs(modAngle - toAngle) > 0.001f)
+		{
+			juce::Path modArc;
+			modArc.addCentredArc(bounds.getCentreX(), bounds.getCentreY(), modRingRadius, modRingRadius, 0.0f,
+			                     juce::jmin(toAngle, modAngle), juce::jmax(toAngle, modAngle), true);
+
+			g.setColour(ColourPalette::lightGrey.withAlpha(0.75f));
+			g.strokePath(modArc,
+			             juce::PathStrokeType(modRingW, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+		}
+
+		juce::Path modDot;
+		const float dotSize = modRingW * 1.6f;
+		modDot.addEllipse(-dotSize * 0.5f, -modRingRadius - dotSize * 0.5f, dotSize, dotSize);
+		modDot.applyTransform(
+		    juce::AffineTransform::rotation(modAngle).translated(bounds.getCentreX(), bounds.getCentreY()));
+
+		g.setColour(ColourPalette::lightGrey);
+		g.fillPath(modDot);
+	}
+
 	juce::Path pointer;
 	auto pointerLength = radius * 0.6f;
 	auto pointerThickness = lineW * 1.5f;
@@ -793,4 +833,16 @@ juce::CaretComponent *CustomLookAndFeel::createCaretComponent(juce::Component *k
 	auto *caret = new juce::CaretComponent(keyFocusOwner);
 	caret->setColour(juce::CaretComponent::caretColourId, ColourPalette::lightGrey);
 	return caret;
+}
+
+const juce::Identifier &CustomLookAndFeel::getModAmountPropertyId()
+{
+	static const juce::Identifier id("modAmount");
+	return id;
+}
+
+const juce::Identifier &CustomLookAndFeel::getModActivePropertyId()
+{
+	static const juce::Identifier id("modActive");
+	return id;
 }

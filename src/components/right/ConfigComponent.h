@@ -28,7 +28,7 @@ class ConfigComponent : public ObsidianComponent
 	IconButtonSimple configButton{"Config", ""};
 	IconButtonSimple openMidiEditorButton{"MidiEditor", ""};
 	IconButtonSimple helpButton{"Help", ""};
-	IconButtonSimple creditsButton{"BypassLLM", ""};
+	IconButtonSimple creditsButton{"CreditsBtn", ""};
 
 	juce::Image logoImage;
 	juce::Image stabilityAiLogoImage;

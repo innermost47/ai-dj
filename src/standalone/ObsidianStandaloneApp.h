@@ -855,7 +855,7 @@ class StandaloneFilterWindow : public DocumentWindow, private Button::Listener
 			    editor->updateUIFromProcessor();
 			    editor->uiPresetManager->notifyTracksPromptUpdate();
 			    editor->uiLayoutManager->getRightPanelWrapper()->getSendsPanel()->syncParams();
-			    editor->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->refresh();
+			    editor->uiLayoutManager->getRightPanelWrapper()->refreshAfterStateLoad();
 			    if (editor->mixerPanel &&
 			        editor->uiLayoutManager->getRightPanelWrapper()->getStandaloneTransportComponent())
 				    editor->uiLayoutManager->getRightPanelWrapper()

@@ -36,9 +36,12 @@ class SampleBankItem : public ObsidianListItem
 
   private:
 	void buildSampleContextMenu(const juce::MouseEvent &event);
+
 	SampleBankEntry *sampleEntry{nullptr};
 	DjIaVstProcessor &audioProcessor;
+
 	std::function<juce::Colour(const juce::String &)> categoryColourResolver;
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SampleBankItem)
 };
 #if JUCE_MSVC
