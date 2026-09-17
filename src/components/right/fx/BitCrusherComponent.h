@@ -51,5 +51,9 @@ class BitCrusherComponent : public ObsidianBaseMidiComponent
 	juce::Label componentLabel;
 
 	IconButton bypassBitCrusherButton{"BypassBitCrusher", ""};
+
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+	void handleVBlank();
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BitCrusherComponent)
 };

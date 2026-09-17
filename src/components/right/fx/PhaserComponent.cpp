@@ -7,11 +7,26 @@ PhaserComponent::PhaserComponent(DjIaVstProcessor &processor, TrackData *trackDa
 	setTrackData(trackData);
 	setupUI();
 	wireParameters();
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 PhaserComponent::~PhaserComponent()
 {
 	markForDestruction();
+}
+
+void PhaserComponent::handleVBlank()
+{
+	syncModulationRing(rateKnob, "PhaserRate");
+	syncModulationRing(depthKnob, "PhaserDepth");
+	syncModulationRing(centreKnob, "PhaserCentre");
+	syncModulationRing(feedbackKnob, "PhaserFeedback");
+
+	syncGlitchLock(GlitchEffectType::Phaser, &mixKnob, &bypassPhaserButton);
+
+	if (syncGlitchLedState(GlitchEffectType::Phaser))
+		repaint();
 }
 
 void PhaserComponent::paint(juce::Graphics &g)
@@ -20,7 +35,7 @@ void PhaserComponent::paint(juce::Graphics &g)
 	if (!t)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
-
+	paintGlitchLed(g, GlitchEffectType::Phaser);
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
 	bypassPhaserButton.setBounds(bypassArea);

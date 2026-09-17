@@ -46,6 +46,8 @@ class ChorusComponent : public ObsidianBaseMidiComponent
 	void onParameterChangedUI(const juce::String &paramSuffix, float normalizedValue) override;
 
   private:
+	bool lastGlitchDriving = false;
+
 	MidiLearnableSlider rateKnob;
 	MidiLearnableSlider depthKnob;
 	MidiLearnableSlider centreKnob;
@@ -61,6 +63,9 @@ class ChorusComponent : public ObsidianBaseMidiComponent
 	juce::Label componentLabel;
 
 	IconButton bypassChorusButton{"BypassChorus", ""};
+
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+	void handleVBlank();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ChorusComponent)
 };

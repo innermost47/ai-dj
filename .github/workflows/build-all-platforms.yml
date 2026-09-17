@@ -1,4 +1,4 @@
-name: Build VST3 & AU - All Platforms
+name: Build & Package Installers - All Platforms
 
 on:
   push:
@@ -27,33 +27,30 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure CMake
-        working-directory: .
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
+        run: |
+          $ts = (Get-Date -AsUTC).ToString("yyyy-MM-ddTHH:mm:ss")
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }} -DGITHUB_BUILD_TIMESTAMP="$ts"
 
       - name: Build
-        working-directory: .
         run: cmake --build build --config Release
 
-      - name: Archive Windows builds
-        shell: pwsh
+      - name: Install NSIS
         run: |
-          Compress-Archive -Path build/ObsidianNeuralVST_artefacts/Release/VST3/* `
-            -DestinationPath OBSIDIAN-Neural-Windows-VST3.zip
-          Compress-Archive -Path build/ObsidianNeuralVST_artefacts/Release/Standalone/* `
-            -DestinationPath OBSIDIAN-Neural-Windows-Standalone.zip
+          choco install nsis -y
+          echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
 
-      - name: Upload Windows archives
+      - name: Package installer (NSIS)
+        run: cpack --config build/CPackConfig.cmake -G NSIS -C Release
+
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ObsidianNeural-Windows-Archives
-          path: |
-            OBSIDIAN-Neural-Windows-VST3.zip
-            OBSIDIAN-Neural-Windows-Standalone.zip
+          name: ObsidianNeural-Windows-Installer
+          path: "OBSIDIAN-Neural-*.exe"
 
-  build-macos-universal:
-    name: Build macOS Universal (VST3 + AU)
+  build-macos:
+    name: Build macOS (arm64 - VST3 + AU + Standalone)
     runs-on: macos-latest
-
     steps:
       - uses: actions/checkout@v5.0.0
         with:
@@ -62,27 +59,74 @@ jobs:
       - name: Install dependencies
         run: brew install cmake ninja
 
+      - name: Create entitlements file
+        run: |
+          cat > /tmp/obsidian_entitlements.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>com.apple.security.cs.disable-library-validation</key>
+              <true/>
+              <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+              <true/>
+              <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Import Code Signing Certificates
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_INSTALLER_CERTIFICATE: ${{ secrets.MACOS_INSTALLER_CERTIFICATE }}
+          MACOS_INSTALLER_CERTIFICATE_PWD: ${{ secrets.MACOS_INSTALLER_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN="build.keychain"
+
+          echo "$MACOS_CERTIFICATE" | base64 --decode > app_certificate.p12
+          echo "$MACOS_INSTALLER_CERTIFICATE" | base64 --decode > installer_certificate.p12
+
+          echo "=== Création du trousseau dédié build.keychain ==="
+          security delete-keychain "$KEYCHAIN" 2>/dev/null || true
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings "$KEYCHAIN"
+
+          security import app_certificate.p12 -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PWD" -A -T /usr/bin/codesign
+          security import installer_certificate.p12 -k "$KEYCHAIN" -P "$MACOS_INSTALLER_CERTIFICATE_PWD" -A -T /usr/bin/productbuild -T /usr/bin/productsign
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+          rm app_certificate.p12 installer_certificate.p12
+
       - name: Configure CMake
-        working-directory: .
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15" \
-            -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_OSX_ARCHITECTURES="arm64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
+            -DGITHUB_BUILD_NUMBER=${{ github.run_number }} \
+            -DGITHUB_BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
 
       - name: Build
-        working-directory: .
         run: cmake --build build --config Release
 
       - name: Verify build
         run: |
-          echo "=== VST3 Build ==="
+          echo "=== VST3 ==="
           lipo -info build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural
-
-          echo ""
-          echo "=== AU Build ==="
+          echo "=== AU ==="
           lipo -info build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/OBSIDIAN-Neural
+          echo "=== Standalone ==="
+          lipo -info build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/OBSIDIAN-Neural
 
       - name: Fix macOS permissions
         run: |
@@ -90,141 +134,140 @@ jobs:
           chmod +x build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/*
           chmod +x build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/*
 
-      - name: Import Code Signing Certificate
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
-          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
-        run: |
-          echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
-          security create-keychain -p actions build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p actions build.keychain
-          security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
-          rm certificate.p12
+      - name: CPack staging (productbuild components)
+        run: cpack --config build/CPackConfig.cmake -G productbuild -C Release -D CPACK_SET_DESTDIR=ON
 
-      - name: Sign VST3 & AU
+      - name: Sign components (inside-out)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MACOS_SIGNING_NAME: ${{ secrets.MACOS_SIGNING_NAME }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Sign VST3
-          codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
-            --timestamp --options runtime --deep \
-            build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+          KEYCHAIN="build.keychain"
+          ENTITLEMENTS="/tmp/obsidian_entitlements.plist"
+          CODE_SIGN_ID="Developer ID Application: $MACOS_SIGNING_NAME ($APPLE_TEAM_ID)"
 
-          # Sign AU
-          codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
-            --timestamp --options runtime --deep \
-            build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
+          STAGING=$(find _CPack_Packages/Darwin/productbuild -maxdepth 1 -type d -name "OBSIDIAN-Neural-*-Darwin" | head -n 1)
+          echo "=== Dossier Staging configuré : $STAGING ==="
 
-          # Sign Standalone
-          codesign --force --sign "Developer ID Application: anthony charretier ($APPLE_TEAM_ID)" \
-             --timestamp --options runtime --deep \
-             build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
+          sign_runtime() {
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+            codesign --force --sign "$CODE_SIGN_ID" --keychain "$KEYCHAIN" \
+              --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$1"
+          }
+
+          echo "=== Signature des composants (Code Signing) ==="
+
+          echo "-> Signature des dylibs ONNX (imbriqués)..."
+          find "$STAGING" -name "libonnxruntime*.dylib" | while read -r dylib; do
+            echo "   dylib : $dylib"
+            sign_runtime "$dylib"
+          done
+
+          echo "-> Signature des VST3..."
+          find "$STAGING" -name "OBSIDIAN-Neural.vst3" | while read -r vst3; do
+            echo "   vst3 : $vst3"
+            sign_runtime "$vst3"
+          done
+
+          echo "-> Signature des Audio Units..."
+          find "$STAGING" -name "OBSIDIAN-Neural.component" | while read -r au; do
+            echo "   au : $au"
+            sign_runtime "$au"
+          done
+
+          echo "-> Signature des applications Standalone..."
+          find "$STAGING" -name "OBSIDIAN-Neural.app" | while read -r app; do
+            echo "   app : $app"
+            sign_runtime "$app"
+          done
+
+          echo "=== Fin de la signature granulaire ==="
 
       - name: Verify signatures
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          echo "=== VST3 Signature ==="
-          codesign --verify --verbose build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
+          STAGING=$(find _CPack_Packages/Darwin/productbuild -maxdepth 1 -type d -name "OBSIDIAN-Neural-*-Darwin" | head -n 1)
+          codesign --verify --deep --strict --verbose=2 \
+            "$STAGING/vst3/usr/local/Library/Audio/Plug-Ins/VST3/OBSIDIAN-Neural.vst3"
+          APP_STAGED="$STAGING/standalone/usr/local/Applications/OBSIDIAN-Neural.app"
+          codesign --verify --deep --strict --verbose=2 "$APP_STAGED"
+          echo "-> rpath et dépendance ONNX du binaire standalone :"
+          otool -L "$APP_STAGED/Contents/MacOS/OBSIDIAN-Neural" | grep onnx || true
+          otool -l "$APP_STAGED/Contents/MacOS/OBSIDIAN-Neural" | grep -A2 LC_RPATH || true
+          ls -l "$APP_STAGED/Contents/Frameworks/" || true
 
-          echo ""
-          echo "=== AU Signature ==="
-          codesign --verify --verbose build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
-
-          echo ""
-          echo "=== Standalone Signature ==="
-          codesign --verify --verbose build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
-
-      - name: Create ZIPs for notarization
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          # VST3
-          ditto -c -k --keepParent \
-            build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3 \
-            OBSIDIAN-Neural-VST3.zip
-
-          # AU
-          ditto -c -k --keepParent \
-            build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component \
-            OBSIDIAN-Neural-AU.zip
-
-          # Standalone
-          ditto -c -k --keepParent \
-            build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app \
-            OBSIDIAN-Neural-Standalone.zip
-
-      - name: Notarize VST3
+      - name: Build & sign final pkg
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MACOS_SIGNING_NAME: ${{ secrets.MACOS_SIGNING_NAME }}
         run: |
-          xcrun notarytool submit OBSIDIAN-Neural-VST3.zip \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait
+          STAGING=$(find _CPack_Packages/Darwin/productbuild -maxdepth 1 -type d -name "OBSIDIAN-Neural-*-Darwin" | head -n 1)
+          VERSION=$(echo "$STAGING" | sed -E 's/.*OBSIDIAN-Neural-(.*)-Darwin/\1/')
+          INSTALLER_SIGN_ID="Developer ID Installer: $MACOS_SIGNING_NAME ($APPLE_TEAM_ID)"
 
-      - name: Notarize AU
+          mkdir -p installer /tmp/obsidian_pkgs
+          rm -f /tmp/obsidian_pkgs/*.pkg installer/*.pkg
+
+          pkgbuild --root "$STAGING/vst3/usr/local/Library/Audio/Plug-Ins/VST3/OBSIDIAN-Neural.vst3" \
+            --identifier "com.innermost47.obsidian-neural.vst3" \
+            --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/VST3/OBSIDIAN-Neural.vst3" \
+            /tmp/obsidian_pkgs/vst3.pkg
+
+          pkgbuild --root "$STAGING/au/usr/local/Library/Audio/Plug-Ins/Components/OBSIDIAN-Neural.component" \
+            --identifier "com.innermost47.obsidian-neural.au" \
+            --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/Components/OBSIDIAN-Neural.component" \
+            /tmp/obsidian_pkgs/au.pkg
+
+          pkgbuild --root "$STAGING/standalone/usr/local/Applications/OBSIDIAN-Neural.app" \
+            --identifier "com.innermost47.obsidian-neural.standalone" \
+            --version "$VERSION" --install-location "/Applications/OBSIDIAN-Neural.app" \
+            /tmp/obsidian_pkgs/standalone.pkg
+
+          productbuild \
+            --package /tmp/obsidian_pkgs/vst3.pkg \
+            --package /tmp/obsidian_pkgs/au.pkg \
+            --package /tmp/obsidian_pkgs/standalone.pkg \
+            --sign "$INSTALLER_SIGN_ID" --timestamp \
+            "installer/OBSIDIAN-Neural-${VERSION}-Darwin.pkg"
+
+          echo "=== Payload check ==="
+          ls -lh installer/*.pkg
+          pkgutil --payload-files installer/*.pkg | head
+
+      - name: Notarize & staple
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         run: |
-          xcrun notarytool submit OBSIDIAN-Neural-AU.zip \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
+          echo "$NOTARY_KEY" | base64 --decode > notary_key.p8
+          PKG=$(ls installer/*.pkg | head -n 1)
+          xcrun notarytool submit "$PKG" \
+            --key notary_key.p8 \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" \
             --wait
+          xcrun stapler staple "$PKG"
+          xcrun stapler validate "$PKG"
+          rm notary_key.p8
 
-      - name: Notarize Standalone
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          xcrun notarytool submit OBSIDIAN-Neural-Standalone.zip \
-            --apple-id "$APPLE_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
-            --team-id "$APPLE_TEAM_ID" \
-            --wait
-
-      - name: Staple VST3 & AU
+      - name: Verify installer signature
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3
-          xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component
-          xcrun stapler staple build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app
+          PKG=$(ls installer/*.pkg | head -n 1)
+          pkgutil --check-signature "$PKG"
+          spctl --assess --type install --verbose=2 "$PKG"
 
-      - name: Re-zip after stapling
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          rm -f OBSIDIAN-Neural-VST3.zip OBSIDIAN-Neural-AU.zip OBSIDIAN-Neural-Standalone.zip
-          ditto -c -k --keepParent \
-            build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3 \
-            OBSIDIAN-Neural-macOS-VST3.zip
-          ditto -c -k --keepParent \
-            build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component \
-            OBSIDIAN-Neural-macOS-AU.zip
-          ditto -c -k --keepParent \
-            build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app \
-            OBSIDIAN-Neural-macOS-Standalone.zip
-
-      - name: Upload macOS archives
+      - name: Upload macOS installer
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ObsidianNeural-macOS-Archives
-          path: |
-            OBSIDIAN-Neural-macOS-VST3.zip
-            OBSIDIAN-Neural-macOS-AU.zip
-            OBSIDIAN-Neural-macOS-Standalone.zip
+          name: ObsidianNeural-macOS-Installer
+          path: installer/*.pkg
 
   build-linux:
     runs-on: ubuntu-latest
@@ -242,113 +285,44 @@ jobs:
             libgtk-3-dev libwebkit2gtk-4.1-dev libcurl4-openssl-dev
 
       - name: Configure CMake
-        working-directory: .
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGITHUB_BUILD_NUMBER=${{ github.run_number }}
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DGITHUB_BUILD_NUMBER=${{ github.run_number }} -DGITHUB_BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
 
       - name: Build
-        working-directory: .
         run: cmake --build build --config Release
 
-      - name: Archive Linux builds
-        run: |
-          tar -czf OBSIDIAN-Neural-Linux-VST3.tar.gz \
-            -C build/ObsidianNeuralVST_artefacts/Release/VST3 .
-          tar -czf OBSIDIAN-Neural-Linux-Standalone.tar.gz \
-            -C build/ObsidianNeuralVST_artefacts/Release/Standalone .
+      - name: Package installer (TGZ)
+        run: cpack --config build/CPackConfig.cmake -G TGZ -C Release
 
-      - name: Upload Linux archives
+      - name: Upload Linux package
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ObsidianNeural-Linux-Archives
-          path: |
-            OBSIDIAN-Neural-Linux-VST3.tar.gz
-            OBSIDIAN-Neural-Linux-Standalone.tar.gz
+          name: ObsidianNeural-Linux-Package
+          path: "OBSIDIAN-Neural-*.tar.gz"
 
   create-release:
-    needs: [build-windows, build-macos-universal, build-linux]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        needs: [build-windows, build-macos, build-linux]
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        steps:
+            - uses: actions/checkout@v5.0.0
 
-    steps:
-      - uses: actions/checkout@v5.0.0
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4.3.0
+              with:
+                merge-multiple: true
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4.3.0
-        with:
-          merge-multiple: true
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                tag_name: v${{ github.run_number }}
+                name: "OBSIDIAN-Neural Local v${{ github.run_number }}"
+                body: |
+                  OBSIDIAN-Neural Local — build v${{ github.run_number }}
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ github.run_number }}
-          name: "OBSIDIAN-Neural v${{ github.run_number }}"
-          body: |
-            # 🎵 OBSIDIAN-Neural Release v${{ github.run_number }}
-
-            Real-time AI music generation for your DAW - or Standalone.
-
-            ## 📥 Installation
-
-            All builds use the Cloud API. Get your API key at [obsidian-neural.com](https://obsidian-neural.com).
-
-            ### **Windows**
-
-            **Plugin (VST3)**
-            1. Download `OBSIDIAN-Neural-Windows-VST3.zip`
-            2. Extract to `C:\Program Files\Common Files\VST3\`
-            3. Load in your DAW
-
-            **Standalone**
-            1. Download `OBSIDIAN-Neural-Windows-Standalone.zip`
-            2. Extract anywhere and run `OBSIDIAN-Neural.exe`
-
-            ### **macOS** (10.15 Catalina → 15.0 Sequoia)
-
-            **VST3 (Ableton, Bitwig, FL Studio, Reaper)**
-            1. Download `OBSIDIAN-Neural-macOS-VST3.zip`
-            2. Extract and double-click `OBSIDIAN-Neural.vst3`, or copy to `~/Library/Audio/Plug-Ins/VST3/`
-
-            **AU (Logic Pro, GarageBand)**
-            1. Download `OBSIDIAN-Neural-macOS-AU.zip`
-            2. Extract and double-click `OBSIDIAN-Neural.component`, or copy to `~/Library/Audio/Plug-Ins/Components/`
-
-            💡 Logic Pro users: use the AU version for best compatibility.
-
-            **Standalone**
-            1. Download `OBSIDIAN-Neural-macOS-Standalone.zip`
-            2. Extract and drag `OBSIDIAN-Neural.app` to your Applications folder
-
-            ### **Linux**
-
-            **Plugin (VST3)**
-            1. Download `OBSIDIAN-Neural-Linux-VST3.tar.gz`
-            2. Extract to `~/.vst3/`
-            3. Load in your DAW
-
-            **Standalone**
-            1. Download `OBSIDIAN-Neural-Linux-Standalone.tar.gz`
-            2. Extract anywhere and run the binary
-
-            ---
-
-            ## 📚 Resources
-
-            - 🌐 [obsidian-neural.com](https://obsidian-neural.com) - Get your API key
-            - 🎓 [Video Tutorial](https://www.youtube.com/watch?v=l4KMC5adxVA)
-            - 💬 [Discussions](https://github.com/innermost47/ai-dj/discussions)
-            - 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
-
-            ---
-
-            ⭐ Star the repo if you find OBSIDIAN-Neural useful!
-
-          files: |
-            OBSIDIAN-Neural-macOS-VST3.zip
-            OBSIDIAN-Neural-macOS-AU.zip
-            OBSIDIAN-Neural-macOS-Standalone.zip
-            OBSIDIAN-Neural-Linux-VST3.tar.gz
-            OBSIDIAN-Neural-Linux-Standalone.tar.gz
-            OBSIDIAN-Neural-Windows-VST3.zip
-            OBSIDIAN-Neural-Windows-Standalone.zip
+                Installers: Windows (.exe), macOS arm64 (.pkg), Linux (.tar.gz).
+                files: |
+                  *.exe
+                  *.pkg
+                  *.tar.gz

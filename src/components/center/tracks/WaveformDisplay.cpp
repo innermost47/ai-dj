@@ -88,7 +88,7 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float> &newAudioBuffe
 {
 	jassert(juce::MessageManager::getInstance()->isThisTheMessageThread());
 
-	if (newAudioBuffer.getNumChannels() == 0 || newAudioBuffer.getNumSamples() == 0)
+	auto resetToEmpty = [this, newSampleRate]()
 	{
 		audioBuffer.setSize(0, 0);
 		sampleRate = newSampleRate;
@@ -96,34 +96,40 @@ void WaveformDisplay::setAudioData(const juce::AudioBuffer<float> &newAudioBuffe
 		thumbnailRight.clear();
 		invalidateAllCaches();
 		repaint();
+	};
+
+	const int numChannels = newAudioBuffer.getNumChannels();
+	const int numSamples = newAudioBuffer.getNumSamples();
+
+	if (numChannels <= 0 || numSamples <= 0)
+	{
+		resetToEmpty();
 		return;
 	}
 
 	try
 	{
-		audioBuffer.setSize(newAudioBuffer.getNumChannels(), newAudioBuffer.getNumSamples(), false, true, true);
+		audioBuffer.setSize(numChannels, numSamples, false, true, true);
 
-		for (int channel = 0; channel < newAudioBuffer.getNumChannels(); ++channel)
+		if (audioBuffer.getNumChannels() < numChannels || audioBuffer.getNumSamples() < numSamples)
 		{
-			audioBuffer.copyFrom(channel, 0, newAudioBuffer, channel, 0, newAudioBuffer.getNumSamples());
+			resetToEmpty();
+			return;
 		}
+
+		for (int channel = 0; channel < numChannels; ++channel)
+			audioBuffer.copyFrom(channel, 0, newAudioBuffer, channel, 0, numSamples);
 
 		sampleRate = newSampleRate;
 		zoomFactor = 1.0;
 		viewStartTime = 0.0;
-
 		generateThumbnail();
 		invalidateAllCaches();
 		repaint();
 	}
 	catch (const std::exception &)
 	{
-		audioBuffer.setSize(0, 0);
-		sampleRate = newSampleRate;
-		thumbnailLeft.clear();
-		thumbnailRight.clear();
-		invalidateAllCaches();
-		repaint();
+		resetToEmpty();
 	}
 }
 

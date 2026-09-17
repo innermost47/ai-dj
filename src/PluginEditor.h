@@ -1,8 +1,8 @@
 #pragma once
 #include "CustomLookAndFeel.h"
+#include "GlitchSequencerPanel.h"
 #include "IconButton.h"
 #include "LCDScreen.h"
-#include "MasterWaveformDisplay.h"
 #include "MidiLearnableComponents.h"
 #include "MixerPanel.h"
 #include "ObsidianModal.h"
@@ -40,13 +40,14 @@ class DjIaVstEditor : public juce::AudioProcessorEditor, public juce::DragAndDro
 	std::unique_ptr<UIPresetManager> uiPresetManager;
 	std::unique_ptr<UIMidiManager> uiMidiManager;
 	std::unique_ptr<LCDScreen> lcdScreen;
-	std::unique_ptr<MasterWaveformDisplay> masterWaveformDisplay;
 
 	juce::Viewport mainViewport;
 
 	juce::Label statusLabel;
 
 	std::atomic<bool> isBeingDestroyed{false};
+
+	GlitchSequencerPanel *getGlitchSequencerPanel();
 
 	void paint(juce::Graphics &) override;
 	void resized() override;

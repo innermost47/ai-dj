@@ -248,7 +248,20 @@ class ParameterManager
 	{
 		return safeLoad(slotTransientScatterActiveParams[slot]) > 0.5f;
 	}
-
+	bool getGateBypassed(int slot) const
+	{
+		return safeLoad(slotGateBypassedParams[slot]) > 0.5f;
+	}
+	bool getGlitchSeqActive(int slot, int seqIdx) const
+	{
+		if (seqIdx < 0 || seqIdx >= 8)
+			return false;
+		return safeLoad(slotGlitchSeqActiveParams[slot][seqIdx]) > 0.5f;
+	}
+	bool getGlitchChainActive(int slot) const
+	{
+		return safeLoad(slotGlitchChainActiveParams[slot]) > 0.5f;
+	}
 	bool getMute(int slot) const
 	{
 		return safeLoad(slotMuteParams[slot]) > 0.5f;
@@ -281,6 +294,18 @@ class ParameterManager
 	float getMasterLow() const
 	{
 		return safeLoad(masterLowParam);
+	}
+	float getGateRate(int slot) const
+	{
+		return safeLoadIndexed(slotGateRateParams, slot);
+	}
+	float getGateDuration(int slot) const
+	{
+		return safeLoadIndexed(slotGateDurationParams, slot);
+	}
+	float getGateDepth(int slot) const
+	{
+		return safeLoadIndexed(slotGateDepthParams, slot);
 	}
 	bool getGenerate() const
 	{
@@ -495,10 +520,19 @@ class ParameterManager
 	std::atomic<float> *slotFlangerMixParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotFlangerBypassedParams[Obsidian::MAX_TRACKS] = {};
 
+	std::atomic<float> *slotGateBypassedParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotGateRateParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotGateDurationParams[Obsidian::MAX_TRACKS] = {};
+	std::atomic<float> *slotGateDepthParams[Obsidian::MAX_TRACKS] = {};
+
 	std::atomic<float> *slotBitCrusherBitDepthParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotBitCrusherSampleRateReductionParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotBitCrusherMixParams[Obsidian::MAX_TRACKS] = {};
 	std::atomic<float> *slotBitCrusherBypassedParams[Obsidian::MAX_TRACKS] = {};
+
+	std::atomic<float> *slotGlitchSeqActiveParams[Obsidian::MAX_TRACKS][8] = {};
+
+	std::atomic<float> *slotGlitchChainActiveParams[Obsidian::MAX_TRACKS] = {};
 
 	std::atomic<float> *globalCrossfaderParam = nullptr;
 	std::atomic<float> *pairCrossfaderParams[Obsidian::MAX_CROSSFADER_PAIR] = {};
@@ -606,13 +640,30 @@ class ParameterManager
 		                                                "FlangerMix",
 		                                                "BitCrusherBitDepth",
 		                                                "BitCrusherRate",
-		                                                "BitCrusherMix"};
+		                                                "BitCrusherMix",
+		                                                "GateRate",
+		                                                "GateDuration",
+		                                                "GateDepth"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
 			const juce::String prefix = "slot" + juce::String(slot);
 			for (const auto &param : perSlotParams)
 				ids.add(prefix + param);
+		}
+
+		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
+		{
+			const juce::String prefix = "slot" + juce::String(slot);
+			for (int m = 1; m <= kNumModSlots; ++m)
+			{
+				const juce::String modId = prefix + "Mod" + juce::String(m);
+				ids.add(modId + "Target");
+				ids.add(modId + "Shape");
+				ids.add(modId + "Rate");
+				ids.add(modId + "Depth");
+				ids.add(modId + "Phase");
+			}
 		}
 
 		return ids;
@@ -655,13 +706,34 @@ class ParameterManager
 		                                                "FlangerBypassed",
 		                                                "BitCrusherBypassed",
 		                                                "ReverseActive",
-		                                                "TransientScatterActive"};
+		                                                "TransientScatterActive",
+		                                                "GateBypassed",
+		                                                "GlitchSeq1Active",
+		                                                "GlitchSeq2Active",
+		                                                "GlitchSeq3Active",
+		                                                "GlitchSeq4Active",
+		                                                "GlitchSeq5Active",
+		                                                "GlitchSeq6Active",
+		                                                "GlitchSeq7Active",
+		                                                "GlitchSeq8Active",
+		                                                "GlitchChainActive"};
 
 		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
 		{
 			const juce::String prefix = "slot" + juce::String(slot);
 			for (const auto &param : perSlotParams)
 				ids.add(prefix + param);
+		}
+
+		for (int slot = 1; slot <= Obsidian::MAX_TRACKS; ++slot)
+		{
+			const juce::String prefix = "slot" + juce::String(slot);
+			for (int m = 1; m <= kNumModSlots; ++m)
+			{
+				const juce::String modId = prefix + "Mod" + juce::String(m);
+				ids.add(modId + "Active");
+				ids.add(modId + "Bipolar");
+			}
 		}
 
 		return ids;
@@ -675,12 +747,17 @@ class ParameterManager
 	}
 
   private:
+	bool isApplyingGlitchSeq = false;
+	bool isApplyingModTarget = false;
+
 	template <size_t N> static float safeLoadIndexed(std::atomic<float> *const (&arr)[N], int index)
 	{
 		if (index < 0 || index >= (int)N)
 			return 0.0f;
 		return safeLoad(arr[index]);
 	}
+	bool isModulatedTarget(TrackData *track, const juce::String &paramSuffix);
+	bool isFxOwnedByGlitch(TrackData *track, GlitchEffectType type);
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ParameterManager)
 };

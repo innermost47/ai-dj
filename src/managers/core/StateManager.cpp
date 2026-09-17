@@ -115,6 +115,56 @@ juce::ValueTree StateManager::saveState() const
 		    trackState.setProperty("isSelected", track->isSelected.load(), nullptr);
 		    trackState.setProperty("transientScatterActive", track->transientScatterActive.load(), nullptr);
 
+		    trackState.setProperty("gateRate", static_cast<int>(track->gate.getRate()), nullptr);
+		    trackState.setProperty("gateDuration", track->gate.getDuration(), nullptr);
+		    trackState.setProperty("gateDepth", track->gate.getDepth(), nullptr);
+		    trackState.setProperty("gateBypassed", track->gate.isBypassed(), nullptr);
+
+		    trackState.setProperty("glitchSequencerActive", track->glitchSequencerActive.load(), nullptr);
+		    trackState.setProperty("currentGlitchSequenceIndex", track->currentGlitchSequenceIndex.load(), nullptr);
+
+		    trackState.setProperty("currentGlitchPresetName", track->currentGlitchPresetName, nullptr);
+
+		    for (int seqIdx = 0; seqIdx < 8; ++seqIdx)
+		    {
+			    juce::ValueTree glitchState("GlitchSequence");
+			    const auto &gseq = track->glitchSequences[seqIdx];
+
+			    glitchState.setProperty("index", seqIdx, nullptr);
+			    glitchState.setProperty("numSteps", gseq.getNumSteps(), nullptr);
+			    glitchState.setProperty("stepLengthIn16ths", gseq.getStepLength(), nullptr);
+
+			    juce::String stepsStr;
+			    for (int s = 0; s < GlitchSequence::MAX_STEPS; ++s)
+			    {
+				    if (s > 0)
+					    stepsStr += ",";
+				    stepsStr += juce::String(static_cast<int>(gseq.getStep(s)));
+			    }
+			    glitchState.setProperty("steps", stepsStr, nullptr);
+
+			    trackState.appendChild(glitchState, nullptr);
+		    }
+
+		    {
+			    juce::ValueTree metaState("GlitchMetaSequence");
+			    const auto &meta = track->glitchMetaSequence;
+
+			    metaState.setProperty("numSteps", meta.getNumSteps(), nullptr);
+			    metaState.setProperty("bypassed", meta.isBypassed(), nullptr);
+
+			    juce::String metaStepsStr;
+			    for (int s = 0; s < GlitchMetaSequence::MAX_STEPS; ++s)
+			    {
+				    if (s > 0)
+					    metaStepsStr += ",";
+				    metaStepsStr += juce::String(meta.getStep(s));
+			    }
+			    metaState.setProperty("steps", metaStepsStr, nullptr);
+
+			    trackState.appendChild(metaState, nullptr);
+		    }
+
 		    for (int pageIndex = 0; pageIndex < Obsidian::MAX_PAGES; ++pageIndex)
 		    {
 			    auto pageState = juce::ValueTree("Page");
@@ -234,6 +284,64 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->currentPageIndex.store(trackState.getProperty("currentPageIndex", 0));
 		track->isSelected.store(trackState.getProperty("isSelected", track->slotIndex == 0));
 		track->transientScatterActive.store(trackState.getProperty("transientScatterActive", false));
+		track->currentGlitchSequenceIndex.store(trackState.getProperty("currentGlitchSequenceIndex", 0));
+		track->currentGlitchPresetName = trackState.getProperty("currentGlitchPresetName", "").toString();
+		track->glitchSequencerActive.store(false);
+		track->lastTriggeredGlitchStep.store(-1);
+		track->modulatedTargetsMask.store(0);
+
+		for (auto &mod : track->modulators)
+			mod.reset();
+
+		for (int childIndex = 0; childIndex < trackState.getNumChildren(); ++childIndex)
+		{
+			auto child = trackState.getChild(childIndex);
+			if (!child.hasType("GlitchSequence"))
+				continue;
+
+			int seqIdx = child.getProperty("index", -1);
+			if (seqIdx < 0 || seqIdx >= 8)
+				continue;
+
+			auto &gseq = track->glitchSequences[seqIdx];
+			gseq.setStepLength((int)child.getProperty("stepLengthIn16ths", 1));
+
+			gseq.clearAllSteps();
+			juce::StringArray tokens;
+			tokens.addTokens(child.getProperty("steps", "").toString(), ",", "");
+			const int maxType = static_cast<int>(GlitchEffectType::Count) - 1;
+			for (int s = 0; s < juce::jmin(tokens.size(), GlitchSequence::MAX_STEPS); ++s)
+				gseq.setStep(s, static_cast<GlitchEffectType>(juce::jlimit(0, maxType, tokens[s].getIntValue())));
+
+			gseq.setNumSteps((int)child.getProperty("numSteps", 16));
+		}
+
+		{
+			auto metaState = trackState.getChildWithName("GlitchMetaSequence");
+			auto &meta = track->glitchMetaSequence;
+
+			for (int s = 0; s < GlitchMetaSequence::MAX_STEPS; ++s)
+				meta.setStep(s, 0);
+
+			if (metaState.isValid())
+			{
+				juce::StringArray metaTokens;
+				metaTokens.addTokens(metaState.getProperty("steps", "").toString(), ",", "");
+				for (int s = 0; s < juce::jmin(metaTokens.size(), GlitchMetaSequence::MAX_STEPS); ++s)
+					meta.setStep(s, juce::jlimit(0, 8, metaTokens[s].getIntValue()));
+
+				meta.setBypassed(metaState.getProperty("bypassed", true));
+				meta.setNumSteps((int)metaState.getProperty("numSteps", 8));
+			}
+			else
+			{
+				meta.setBypassed(true);
+				meta.setNumSteps(8);
+			}
+
+			track->metaCurrentStep.store(-1);
+			track->glitchCycleStartPpq.store(-1.0);
+		}
 
 		track->distortion.reset();
 		track->bitCrusher.reset();
@@ -246,6 +354,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->flanger.reset();
 		track->delaySendProcessor.reset();
 		track->reverbSendProcessor.reset();
+		track->gate.reset();
 
 		juce::dsp::ProcessSpec spec = juce::dsp::ProcessSpec();
 		spec.maximumBlockSize = static_cast<juce::uint32>(audioProcessor.getBlockSize());
@@ -261,6 +370,7 @@ void StateManager::loadState(const juce::ValueTree &state)
 		track->chorus.prepare(spec);
 		track->phaser.prepare(spec);
 		track->flanger.prepare(spec);
+		track->gate.prepare(audioProcessor.getSampleRate(), audioProcessor.getBlockSize());
 
 		int modeAsInt = trackState.getProperty("filterMode");
 		auto mode = static_cast<juce::dsp::LadderFilterMode>(modeAsInt);
@@ -339,6 +449,14 @@ void StateManager::loadState(const juce::ValueTree &state)
 		                                  static_cast<juce::uint32>(audioProcessor.getBlockSize()));
 		track->reverbSendProcessor.prepare(audioProcessor.getSampleRate(),
 		                                   static_cast<juce::uint32>(audioProcessor.getBlockSize()));
+
+		track->gate.setRate(static_cast<GateRateDivision>((int)trackState.getProperty("gateRate", 0)));
+		track->gate.setDuration(trackState.getProperty("gateDuration", Obsidian::GATE_DURATION));
+		track->gate.setDepth(trackState.getProperty("gateDepth", Obsidian::GATE_DEPTH));
+		track->gate.setBypassed(trackState.getProperty("gateBypassed", Obsidian::GATE_BYPASSED));
+		track->gate.setSmoothingMs(Obsidian::GATE_ATTACK, Obsidian::GATE_RELEASE);
+
+		GlitchSequencerEngine::syncUserMaskFromDsp(*track);
 
 		track->isPrepared.store(true);
 

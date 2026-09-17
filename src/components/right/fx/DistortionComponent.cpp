@@ -7,11 +7,24 @@ DistortionComponent::DistortionComponent(DjIaVstProcessor &processor, TrackData 
 	setTrackData(trackData);
 	setupUI();
 	wireParameters();
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 DistortionComponent::~DistortionComponent()
 {
 	markForDestruction();
+}
+
+void DistortionComponent::handleVBlank()
+{
+	syncModulationRing(preGainKnob, "DistortionPreGain");
+	syncModulationRing(cutKnob, "DistortionCut");
+
+	syncGlitchLock(GlitchEffectType::Distortion, nullptr, &bypassDistortionButton);
+
+	if (syncGlitchLedState(GlitchEffectType::Distortion))
+		repaint();
 }
 
 void DistortionComponent::paint(juce::Graphics &g)
@@ -20,7 +33,7 @@ void DistortionComponent::paint(juce::Graphics &g)
 	if (!t)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
-
+	paintGlitchLed(g, GlitchEffectType::Distortion);
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
 	bypassDistortionButton.setBounds(bypassArea);

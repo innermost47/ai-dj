@@ -208,8 +208,5 @@ void UIGenerationManager::generateFromTrackComponent(const juce::String &trackId
 void UIGenerationManager::setAllGenerateButtonsEnabled(bool enabled)
 {
 	for (auto &trackComp : editor.uiTrackManager->getTrackComponents())
-	{
 		trackComp->setGenerateButtonEnabled(enabled);
-		trackComp->setCanvasGenerating(!enabled);
-	}
 }

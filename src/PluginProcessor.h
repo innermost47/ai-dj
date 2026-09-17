@@ -5,9 +5,11 @@
 #include "DjIaClient.h"
 #include "Equalizer.h"
 #include "GenerationManager.h"
+#include "GlitchPresets.h"
 #include "Limiter.h"
 #include "MidiLearnManager.h"
 #include "MidiManager.h"
+#include "ModulationEngine.h"
 #include "ParameterManager.h"
 #include "PromptBank.h"
 #include "SampleBank.h"
@@ -47,7 +49,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 
 	std::function<void()> onUIUpdateNeeded;
 	std::function<void(double)> onHostBpmChanged;
-	std::function<void(const float *l, const float *r, int n, double ppq)> onMasterOutput;
 	std::function<void(const juce::String &)> midiIndicatorCallback;
 
 	juce::ThreadPool threadPool{1};
@@ -56,6 +57,22 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> stateJustLoaded{false};
 
 	bool updateCheckDone = false;
+
+	struct UserGlitchPreset
+	{
+		juce::String name;
+		juce::String sequences[8];
+	};
+
+	const std::vector<UserGlitchPreset> &getUserGlitchPresets() const
+	{
+		return userGlitchPresets;
+	}
+
+	bool addUserGlitchPreset(const juce::String &name, const TrackData &track);
+	bool deleteUserGlitchPreset(const juce::String &name);
+
+	const UserGlitchPreset *getUserGlitchPreset(const juce::String &name) const;
 
 #if JucePlugin_Build_Standalone
 	bool getIsLinkActive() const
@@ -89,6 +106,11 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	}
 
 	TrackData *getTrackFromParamId(const juce::String &parameterID);
+
+	ModulationEngine &getModulationEngine()
+	{
+		return modulationEngine;
+	}
 
 	TrackManager &getTrackManager()
 	{
@@ -266,16 +288,17 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	}
 
 	float getGlobalBpm() const;
-	float getPendingDetectedBpm() const
-	{
-		return pendingDetectedBpm.load();
-	}
 	float getPendingSnappedBpm() const
 	{
 		return pendingSnappedBpm.load();
 	}
 	float getGlobalCrossfaderValue() const;
 	float getPairCrossfaderValue(int pairIndex) const;
+
+	double getHostPpqPosition() const
+	{
+		return lastHostPpqPosition.load();
+	}
 	double getHostBpm() const;
 	double getCachedHostBpm() const noexcept
 	{
@@ -405,6 +428,29 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	const juce::StringArray &getBooleanParamIds() const
 	{
 		return parameterManager.getBooleanParamIds();
+	}
+
+	int getLastDismissedUpdateBuild() const
+	{
+		return lastDismissedUpdateBuild;
+	}
+	void setLastDismissedUpdateBuild(int build)
+	{
+		lastDismissedUpdateBuild = build;
+	}
+
+	juce::int64 getLastUpdateCheckTime() const
+	{
+		return lastUpdateCheckTime;
+	}
+	void setLastUpdateCheckTime(juce::int64 t)
+	{
+		lastUpdateCheckTime = t;
+	}
+
+	juce::ThreadPool &getThreadPool()
+	{
+		return threadPool;
 	}
 
 	juce::AudioProcessorEditor *createEditor() override;
@@ -595,10 +641,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		pendingTrackId.clear();
 	}
-	void setPendingDetectedBpm(float v)
-	{
-		pendingDetectedBpm.store(v);
-	}
 	void setPendingSnappedBpm(float v)
 	{
 		pendingSnappedBpm.store(v);
@@ -783,6 +825,7 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	Equalizer equalizer;
 	Limiter limiter;
 	Compressor compressor;
+	ModulationEngine modulationEngine;
 
 	std::unique_ptr<SampleBank> sampleBank;
 	std::unique_ptr<PromptBank> promptBank;
@@ -820,6 +863,9 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	int requestTimeoutMS = 360000;
 	int savedWindowWidth = 1620;
 	int savedWindowHeight = 840;
+	int lastDismissedUpdateBuild = 0;
+
+	juce::int64 lastUpdateCheckTime = 0;
 
 	bool areTracksPrepared = false;
 
@@ -854,7 +900,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> stateLoaded{false};
 	std::atomic<bool> isGenerating{false};
 	std::atomic<bool> isLoadingFromBank{false};
-	std::atomic<float> pendingDetectedBpm{-1.0f};
 	std::atomic<float> pendingSnappedBpm{-1.0f};
 
 	juce::File pendingAudioFile;
@@ -883,8 +928,11 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	std::atomic<bool> canLoad{false};
 
 	std::atomic<double> lastHostBpmForQuantization{120.0};
+	std::atomic<double> lastHostPpqPosition{0.0};
 	std::atomic<double> cachedHostBpm{126.0};
 	std::uint64_t sample_time = 0;
+
+	std::vector<UserGlitchPreset> userGlitchPresets;
 
 #if JucePlugin_Build_Standalone
 	struct EngineData

@@ -8,6 +8,7 @@
 SequencerManager::SequencerManager(DjIaVstProcessor &processor, TrackManager &trackManager)
     : audioProcessor(processor), trackManager(trackManager)
 {
+	glitchSequencerEngine.setSequencerManager(this);
 }
 
 void SequencerManager::handlePageChange(const juce::String &parameterID)

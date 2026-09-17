@@ -92,127 +92,10 @@ inline constexpr float EQ_HI_FRQ = 8000.f;
 inline constexpr float EQ_AIR_FRQ = 15000.f;
 inline constexpr float EQ_BASE_RESONANCE = 0.707f;
 
-inline constexpr bool COMPRESSOR_BYPASSED = false;
-inline constexpr bool LIMITER_BYPASSED = false;
-inline constexpr bool EQ_BYPASSED = false;
-inline constexpr bool FILTER_BYPASSED = true;
-inline constexpr bool DISTORTION_BYPASSED = true;
-inline constexpr bool CHORUS_BYPASSED = true;
-inline constexpr bool PHASER_BYPASSED = true;
-inline constexpr bool FLANGER_BYPASSED = true;
-inline constexpr bool BITCRUSHER_BYPASSED = true;
-
-inline const std::string &STABLE_AUDIO_OPEN_V1()
-{
-	static const std::string v = "stable-audio-open-1.0";
-	return v;
-}
-inline const std::string &STABLE_AUDIO_OPEN_V3_MEDIUM()
-{
-	static const std::string v = "stable-audio-3-medium";
-	return v;
-}
-inline const std::string &FOUNDATION_1()
-{
-	static const std::string v = "foundation-1";
-	return v;
-}
-inline const std::string &AUDIOLAB_EDM()
-{
-	static const std::string v = "audialab-edm-elements";
-	return v;
-}
-inline const std::string &INFINITE_PIANO()
-{
-	static const std::string v = "rc-infinite-pianos";
-	return v;
-}
-inline const std::string &RC_VOCAL()
-{
-	static const std::string v = "rc-vocal-textures";
-	return v;
-}
-inline const std::string &SAO_INSTRUMENTAL()
-{
-	static const std::string v = "sao-instrumental";
-	return v;
-}
-inline const std::string &STABLEBEAT()
-{
-	static const std::string v = "stablebeat";
-	return v;
-}
-inline const std::string &GLUTEN_V1()
-{
-	static const std::string v = "gluten-v1";
-	return v;
-}
-inline const std::string &STABLE_AUDIO_OPEN_LOCAL()
-{
-	static const std::string v = "stable-audio-open-small-tflite";
-	return v;
-}
-
-inline const std::string &OBSIDIAN_BASE_DIR()
-{
-	static const std::string v = "OBSIDIAN-Neural";
-	return v;
-}
-inline const std::string &EXPORTS_DIR()
-{
-	static const std::string v = "OBSIDIAN_Exports";
-	return v;
-}
-inline const std::string &SAMPLE_BANK_DIR()
-{
-	static const std::string v = "SampleBank";
-	return v;
-}
-inline const std::string &SESSIONS_DIR()
-{
-	static const std::string v = "Sessions";
-	return v;
-}
-inline const std::string &STABLE_AUDIO_DIR()
-{
-	static const std::string v = "stable-audio";
-	return v;
-}
-inline const std::string &CATEGORIES_FILE()
-{
-	static const std::string v = "categories.json";
-	return v;
-}
-inline const std::string &GLOBAL_CONFIG_FILE()
-{
-	static const std::string v = "global_config.json";
-	return v;
-}
-inline const std::string &PROMPTS_FILE()
-{
-	static const std::string v = "prompts.json";
-	return v;
-}
-inline const std::string &AUDIO_CACHE_DIR()
-{
-	static const std::string v = "AudioCache";
-	return v;
-}
-inline const std::string &FORKS_FILE()
-{
-	static const std::string v = "session.forks";
-	return v;
-}
-inline const std::string &MAGIC()
-{
-	static const std::string v = "OBSIDIAN";
-	return v;
-}
-inline const std::string &LINEAGE_FILE()
-{
-	static const std::string v = "session.lineage";
-	return v;
-}
+inline constexpr float GATE_DURATION = .2f;
+inline constexpr float GATE_DEPTH = 0.f;
+inline constexpr float GATE_ATTACK = 2.f;
+inline constexpr float GATE_RELEASE = 8.f;
 
 struct ADSRDefaultValues
 {
@@ -233,13 +116,201 @@ struct ADSRDefaultValues
 	static constexpr float RELEASE_MAX = 4.f;
 };
 
+inline constexpr bool COMPRESSOR_BYPASSED = false;
+inline constexpr bool LIMITER_BYPASSED = false;
+inline constexpr bool EQ_BYPASSED = false;
+inline constexpr bool FILTER_BYPASSED = true;
+inline constexpr bool DISTORTION_BYPASSED = true;
+inline constexpr bool CHORUS_BYPASSED = true;
+inline constexpr bool PHASER_BYPASSED = true;
+inline constexpr bool FLANGER_BYPASSED = true;
+inline constexpr bool BITCRUSHER_BYPASSED = true;
+inline constexpr bool GATE_BYPASSED = true;
+inline constexpr bool TAPE_STOP_BYPASSED = true;
+
+inline std::string FP32_DIT_ONNX_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/dit.onnx";
+}
+
+inline std::string FP32_DIT_ONNX_DATA_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/dit.onnx.data";
+}
+
+inline std::string DEC_DYNAMIC_BF16_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/dec_dynamic_bf16.onnx";
+}
+
+inline std::string ENC_DYNAMIC_BF16_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/enc_dynamic_bf16.onnx";
+}
+
+inline std::string ENCODER_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/encoder.onnx";
+}
+
+inline std::string TOKENIZER_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/tokenizer.json";
+}
+
+inline std::string MODELS_DOWNLOAD_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx";
+}
+
+inline std::string MODEL_MANIFEST_URL()
+{
+	return "https://huggingface.co/innermost47/stable-audio-open-3-medium-onnx/resolve/main/manifest.json";
+}
+
+inline std::string GITHUB_LATEST_RELEASE_API_URL()
+{
+	return "https://api.github.com/repos/innermost47/ai-dj/releases/latest";
+}
+
+inline std::string UPDATE_URL_HEADERS()
+{
+	return "User-Agent: OBSIDIAN-Neural-Plugin";
+}
+
+inline std::string FP32_DIT_ONNX()
+{
+	return "dit.onnx";
+}
+inline std::string FP32_DIT_ONNX_DATA()
+{
+	return "dit.onnx.data";
+}
+inline std::string DEC_DYNAMIC_BF16()
+{
+	return "dec_dynamic_bf16.onnx";
+}
+inline std::string ENC_DYNAMIC_BF16()
+{
+	return "enc_dynamic_bf16.onnx";
+}
+inline std::string ENCODER()
+{
+	return "encoder.onnx";
+}
+inline std::string TOKENIZER()
+{
+	return "tokenizer.json";
+}
+
+inline std::string STABLE_AUDIO_OPEN_V1()
+{
+	return "stable-audio-open-1.0";
+}
+inline std::string STABLE_AUDIO_OPEN_V3_MEDIUM()
+{
+	return "stable-audio-3-medium";
+}
+inline std::string FOUNDATION_1()
+{
+	return "foundation-1";
+}
+inline std::string AUDIOLAB_EDM()
+{
+	return "audialab-edm-elements";
+}
+inline std::string INFINITE_PIANO()
+{
+	return "rc-infinite-pianos";
+}
+inline std::string RC_VOCAL()
+{
+	return "rc-vocal-textures";
+}
+inline std::string SAO_INSTRUMENTAL()
+{
+	return "sao-instrumental";
+}
+inline std::string STABLEBEAT()
+{
+	return "stablebeat";
+}
+inline std::string GLUTEN_V1()
+{
+	return "gluten-v1";
+}
+inline std::string STABLE_AUDIO_OPEN_LOCAL()
+{
+	return "stable-audio-3-medium-onnx";
+}
+
+inline std::string OBSIDIAN_BASE_DIR()
+{
+	return "OBSIDIAN-Neural";
+}
+inline std::string EXPORTS_DIR()
+{
+	return "OBSIDIAN_Exports";
+}
+inline std::string SAMPLE_BANK_DIR()
+{
+	return "SampleBank";
+}
+inline std::string SESSIONS_DIR()
+{
+	return "Sessions";
+}
+inline std::string STABLE_AUDIO_DIR()
+{
+	return "stable-audio";
+}
+inline std::string MAGIC()
+{
+	return "OBSIDIAN";
+}
+inline std::string CATEGORIES_FILE()
+{
+	return "categories.json";
+}
+inline std::string GLOBAL_CONFIG_FILE()
+{
+	return "global_config.json";
+}
+inline std::string PROMPTS_FILE()
+{
+	return "prompts.json";
+}
+inline std::string ONNX_LOG_FILE()
+{
+	return "obsidian_onnx.log";
+}
+inline std::string AUDIO_CACHE_DIR()
+{
+	return "AudioCache";
+}
+inline std::string LINEAGE_FILE()
+{
+	return "session.lineage";
+}
+inline std::string FORKS_FILE()
+{
+	return "session.forks";
+}
+inline std::string LOG_DIR()
+{
+	return "logs";
+}
+
 enum RadioGroupIDs
 {
 	FilterTypeGroup = 1,
 	DelayDivisionGroup = 2,
 	DelayModeGroup = 3,
 	TrackFXSelector = 4,
-	DistortionType = 5
+	DistortionType = 5,
+	GlitchSeqSelector = 6,
+	ModShapeGroup = 7,
+	ModRateGroup = 8,
 };
 
 enum eqBands
@@ -286,16 +357,6 @@ enum chorusChain
 	chorus = 0,
 };
 
-enum distortionType
-{
-	soft = 0,
-	hard = 1,
-	tube = 2,
-	fold = 3,
-	diode = 4,
-	cubic = 5
-};
-
 enum phaserChain
 {
 	phaser = 0,
@@ -304,6 +365,16 @@ enum phaserChain
 enum flangerChain
 {
 	flanger = 0,
+};
+
+enum distortionType
+{
+	soft = 0,
+	hard = 1,
+	tube = 2,
+	fold = 3,
+	diode = 4,
+	cubic = 5
 };
 
 } // namespace Obsidian

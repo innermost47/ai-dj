@@ -1,18 +1,20 @@
 #pragma once
 #include "ObsidianBase.h"
+#include "TrackSelectorBar.h"
 #include <JuceHeader.h>
 
 class DjIaVstProcessor;
 class StandaloneTransportComponent;
-class MasterWaveformDisplay;
 class StandaloneTransport;
 class MasterChannel;
 class LCDScreen;
 class TrackEffectsPanel;
+class ModulationPanel;
 class ConfigComponent;
 class SendsPanel;
 class TrackRecapPanel;
 class DjIaVstEditor;
+class GlitchSequencerPanel;
 
 class RightPanelWrapper : public ObsidianComponent
 {
@@ -22,12 +24,13 @@ class RightPanelWrapper : public ObsidianComponent
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void setMasterWaveform(MasterWaveformDisplay *wf);
 	void setLCDScreen(LCDScreen *lcd);
 	void setStandaloneTransport(StandaloneTransport *transport);
 	void calculateMasterLevel();
 	void updateComponents();
 	void restoreUIState(const juce::var &state);
+	void refreshAfterStateLoad();
+	void selectTrack(const juce::String &trackId);
 
 	juce::var saveUIState() const;
 
@@ -52,6 +55,18 @@ class RightPanelWrapper : public ObsidianComponent
 	{
 		return configComponent.get();
 	}
+	GlitchSequencerPanel *getGlitchSequencerPanel()
+	{
+		return glitchSequencerPanel.get();
+	}
+	TrackSelectorBar *getTrackSelectorBar()
+	{
+		return trackSelectorBar.get();
+	}
+	ModulationPanel *getModulationPanel()
+	{
+		return modulationPanel.get();
+	}
 
   private:
 	DjIaVstProcessor &audioProcessor;
@@ -61,11 +76,18 @@ class RightPanelWrapper : public ObsidianComponent
 	std::unique_ptr<TrackEffectsPanel> trackEffects;
 	std::unique_ptr<SendsPanel> sendsPanel;
 	std::unique_ptr<ConfigComponent> configComponent;
+	std::unique_ptr<GlitchSequencerPanel> glitchSequencerPanel;
+	std::unique_ptr<TrackSelectorBar> trackSelectorBar;
+	std::unique_ptr<ModulationPanel> modulationPanel;
+
+	std::map<juce::String, int> scrollPositions;
 
 	IconButtonSimple fxTabButton{"fx"};
 	IconButtonSimple infoTabButton{"info"};
+	IconButtonSimple modTabButton{"ModTab", ""};
+	IconButtonSimple glitchTabButton{"glitch"};
 
-	MasterWaveformDisplay *masterWaveform = nullptr;
+	juce::String selectedTrackId;
 
 	std::unique_ptr<StandaloneTransportComponent> standaloneTransport;
 
@@ -78,13 +100,20 @@ class RightPanelWrapper : public ObsidianComponent
 
 	int activeTab = 0;
 
+	bool isRestoringState = false;
+
 	juce::Component scrollContent;
 	juce::Component tabRowContainer;
 
 	juce::Viewport contentViewport;
 
+	juce::String scrollKey(int tab, const juce::String &trackId) const;
+
+	void stashScrollPosition();
+	void restoreScrollPosition();
 	void setupUI();
 	void setActiveTab(int tab);
+	void layoutScrollContent();
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RightPanelWrapper)
 };

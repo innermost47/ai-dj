@@ -62,5 +62,8 @@ class FlangerComponent : public ObsidianBaseMidiComponent
 
 	IconButton bypassFlangerButton{"BypassFlanger", ""};
 
+	std::unique_ptr<juce::VBlankAttachment> vBlankAttachment;
+	void handleVBlank();
+
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FlangerComponent)
 };

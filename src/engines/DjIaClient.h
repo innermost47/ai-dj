@@ -27,7 +27,6 @@ class DjIaClient
 		juce::File audioData;
 		float duration;
 		float bpm;
-		float detectedBpm;
 		float snappedBpm = -1.0f;
 		juce::String key;
 		juce::String errorMessage = "";
@@ -36,7 +35,7 @@ class DjIaClient
 		int totalCredits = -1;
 		int usedCredits = -1;
 
-		LoopResponse() : duration(0.0f), bpm(120.0f), detectedBpm(-1.0f)
+		LoopResponse() : duration(0.0f), bpm(120.0f)
 		{
 		}
 	};

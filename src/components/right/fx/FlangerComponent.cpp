@@ -7,11 +7,26 @@ FlangerComponent::FlangerComponent(DjIaVstProcessor &processor, TrackData *track
 	setTrackData(trackData);
 	setupUI();
 	wireParameters();
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 FlangerComponent::~FlangerComponent()
 {
 	markForDestruction();
+}
+
+void FlangerComponent::handleVBlank()
+{
+	syncModulationRing(rateKnob, "FlangerRate");
+	syncModulationRing(depthKnob, "FlangerDepth");
+	syncModulationRing(centreKnob, "FlangerCentre");
+	syncModulationRing(feedbackKnob, "FlangerFeedback");
+
+	syncGlitchLock(GlitchEffectType::Flanger, &mixKnob, &bypassFlangerButton);
+
+	if (syncGlitchLedState(GlitchEffectType::Flanger))
+		repaint();
 }
 
 void FlangerComponent::paint(juce::Graphics &g)
@@ -20,7 +35,7 @@ void FlangerComponent::paint(juce::Graphics &g)
 	if (!t)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
-
+	paintGlitchLed(g, GlitchEffectType::Flanger);
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
 	bypassFlangerButton.setBounds(bypassArea);

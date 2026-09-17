@@ -15,9 +15,6 @@ class GenerationManager
 	void generateLoopAPI(const DjIaClient::LoopRequest &request, const juce::String &trackId);
 	void generateLoopLocal(const DjIaClient::LoopRequest &request, const juce::String &trackId);
 	void notifyGenerationComplete(const juce::String &trackId, const juce::String &message);
-	void generateSampleWithImage(const juce::String &trackId, const juce::String &base64Image,
-	                             const juce::StringArray &keywords);
-	void generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId, int timeoutMS);
 	void reEnableCanvasGenerate();
 	void generateLoopFromMidi(const juce::String &trackId);
 	void handleGenerate();

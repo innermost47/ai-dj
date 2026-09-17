@@ -10,8 +10,11 @@
 #include "Equalizer.h"
 #include "Filter.h"
 #include "Flanger.h"
+#include "Gate.h"
+#include "GlitchTypes.h"
 #include "JumpSmoother.h"
 #include "Limiter.h"
+#include "ModulationTypes.h"
 #include "Phaser.h"
 #include "ReverbSend.h"
 #include <JuceHeader.h>
@@ -193,6 +196,27 @@ struct TrackData
 	Flanger flanger;
 	BitCrusher bitCrusher;
 	JumpSmoother jumpSmoother;
+	Gate gate;
+	FxBypassSnapshot fxSnapshotBeforeGlitch;
+	GlitchMetaSequence glitchMetaSequence;
+
+	std::array<Modulator, kNumModSlots> modulators;
+	std::atomic<int> modulatedTargetsMask{0};
+	std::atomic<int> glitchReservedMask{0};
+
+	juce::String currentGlitchPresetName;
+
+	float mixSnapshotBeforeGlitch[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+	std::atomic<int> glitchForcedMixMask{0};
+
+	std::array<GlitchSequence, 8> glitchSequences;
+	std::atomic<int> currentGlitchSequenceIndex{0};
+	std::atomic<bool> glitchSequencerActive{false};
+	std::atomic<int> lastTriggeredGlitchStep{-1};
+	std::atomic<bool> metaStepSilent{false};
+
+	juce::Random glitchRandom;
 
 	std::atomic<bool> seekPending{false};
 	std::atomic<double> seekFromPosition{0.0};
@@ -310,6 +334,12 @@ struct TrackData
 	std::atomic<int> randomBeatRepeatInterval{Obsidian::RNDM_RTRGR_INTRVL};
 	std::atomic<int> pendingPageIndex{-1};
 	std::atomic<int> stagingTargetPageIndex{-1};
+	std::atomic<int> userFxEnabledMask{0};
+	std::atomic<int> glitchFxEnabledMask{0};
+	std::atomic<int> glitchOwnedMask{0};
+	std::atomic<int> metaCurrentStep{-1};
+
+	std::atomic<double> glitchCycleStartPpq{-1.0};
 
 	std::atomic<float> volume{0.8f};
 	std::atomic<float> pan{0.0f};

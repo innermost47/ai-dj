@@ -150,6 +150,17 @@ void PromptBankPanel::applyFilterAndSort()
 
 	auto all = bank->getAllPrompts();
 
+	if (audioProcessor.getUseLocalModel())
+	{
+		all.erase(std::remove_if(all.begin(), all.end(),
+		                         [](PromptBankEntry *e)
+		                         {
+			                         return AiModelDefinitions::normalize(e->modelName).toStdString() !=
+			                                Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM();
+		                         }),
+		          all.end());
+	}
+
 	if (currentSearch.isNotEmpty())
 	{
 		auto needle = currentSearch.toLowerCase();
@@ -259,6 +270,7 @@ void PromptBankPanel::rebuildAccordions(bool autoExpandOnSort)
 		{
 			auto item = std::make_unique<PromptBankItem>(entry);
 			item->setCategoryColourResolver([this](const juce::String &n) { return resolveCategoryColour(n); });
+			item->setLocalMode(audioProcessor.getUseLocalModel());
 			item->onItemClicked = [this, entry]() { onPromptClicked(entry); };
 			item->onItemDoubleClicked = [this, entry]() { onPromptEditRequested(entry); };
 			item->setSelected(entry->id == selectedId);
@@ -414,9 +426,9 @@ void PromptBankPanel::addPromptDialog()
 	auto safeThis = juce::Component::SafePointer<PromptBankPanel>(this);
 
 	juce::String modelName =
-	    audioProcessor.getUseLocalModel() ? Obsidian::STABLE_AUDIO_OPEN_V3_MEDIUM() : Obsidian::STABLE_AUDIO_OPEN_V1();
+	    audioProcessor.getUseLocalModel() ? Obsidian::STABLE_AUDIO_OPEN_LOCAL() : Obsidian::STABLE_AUDIO_OPEN_V1();
 
-	ObsidianAlertManager::showPromptEditor(this, "", modelName, "", availCats,
+	ObsidianAlertManager::showPromptEditor(this, "", modelName, "", availCats, audioProcessor.getUseLocalModel(),
 	                                       [this, safeThis](const ObsidianAlertManager::PromptEditorResult &res)
 	                                       {
 		                                       if (!res.confirmed)
@@ -448,7 +460,7 @@ void PromptBankPanel::onPromptEditRequested(PromptBankEntry *entry)
 	auto safeThis = juce::Component::SafePointer<PromptBankPanel>(this);
 
 	ObsidianAlertManager::showPromptEditor(
-	    this, entry->text, entry->modelName, entry->category, availCats,
+	    this, entry->text, entry->modelName, entry->category, availCats, audioProcessor.getUseLocalModel(),
 	    [this, entryId, safeThis, entry](const ObsidianAlertManager::PromptEditorResult &res)
 	    {
 		    if (!res.confirmed)

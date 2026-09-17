@@ -2,6 +2,7 @@
 #include "AiModelDefinitions.h"
 #include "BinaryData.h"
 #include "ColourPalette.h"
+#include "CustomLookAndFeel.h"
 #include "DataConst.h"
 #include "EscapableTextEditor.h"
 #include "Fonts.h"

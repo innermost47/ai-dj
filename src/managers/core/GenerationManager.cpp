@@ -91,7 +91,6 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 		audioProcessor.setPendingTrackId(trackId);
 		audioProcessor.setPendingAudioFile(preprocessResult.success ? preprocessResult.stretchedFile
 		                                                            : response.audioData);
-		audioProcessor.setPendingDetectedBpm(response.detectedBpm);
 		audioProcessor.setPendingSnappedBpm(-1.0f);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
@@ -169,7 +168,6 @@ void GenerationManager::generateLoopLocal(const DjIaClient::LoopRequest &request
 		const juce::ScopedLock lock(apiLock);
 		audioProcessor.setPendingTrackId(trackId);
 		audioProcessor.setPendingAudioFile(preprocessResult.success ? preprocessResult.stretchedFile : tempFile);
-		audioProcessor.setPendingDetectedBpm(request.bpm);
 		audioProcessor.setPendingSnappedBpm(-1.0f);
 		audioProcessor.setHasPendingAudioData(true);
 		audioProcessor.setWaitingForMidiToLoad(true);
@@ -212,169 +210,6 @@ void GenerationManager::notifyGenerationComplete(const juce::String &trackId, co
 	if (TrackData *t = audioProcessor.getTrack(trackId))
 		audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackGenerate(t->slotIndex + 1),
 		                                                 MidiMapping::feedbackIdle);
-}
-
-void GenerationManager::generateSampleWithImage(const juce::String &trackId, const juce::String &base64Image,
-                                                const juce::StringArray &keywords)
-{
-	if (audioProcessor.getIsGenerating() || audioProcessor.getIsLoadingState())
-		return;
-
-	TrackData *track = audioProcessor.getTrack(trackId);
-	if (!track)
-		return;
-
-	track->stagingTargetPageIndex.store(track->currentPageIndex.load());
-
-	audioProcessor.setIsGenerating(true);
-	audioProcessor.setGeneratingTrackId(trackId);
-
-	juce::MessageManager::callAsync(
-	    [this, trackId]()
-	    {
-		    if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-		    {
-			    editor->uiGenerationManager->startGenerationUI(trackId);
-			    editor->statusLabel.setText("Analyzing image and generating audio...", juce::dontSendNotification);
-			    editor->uiStatusManager->updateLCD();
-		    }
-	    });
-
-	juce::Thread::launch(
-	    [this, trackId, base64Image, keywords]()
-	    {
-		    try
-		    {
-			    TrackData *track = audioProcessor.getTrack(trackId);
-			    if (!track)
-				    throw std::runtime_error("Track not found");
-
-			    DjIaClient::LoopRequest request;
-			    float hostBpm = static_cast<float>(audioProcessor.getHostBpm());
-			    float fallbackBpm = hostBpm > 0 ? hostBpm : 127.0f;
-
-			    auto &currentPage = track->getCurrentPage();
-			    request.model = currentPage.selectedModel;
-			    request.bpm = fallbackBpm;
-			    request.key =
-			        !currentPage.generationKey.isEmpty() ? currentPage.generationKey : audioProcessor.getGlobalKey();
-			    request.generationDuration = currentPage.generationDuration > 0
-			                                     ? (float)currentPage.generationDuration
-			                                     : static_cast<float>(audioProcessor.getGlobalDuration());
-
-			    if (request.model.isEmpty())
-				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1();
-
-			    if (request.bpm <= 0)
-				    request.bpm = 127.0f;
-			    if (request.key.isEmpty())
-				    request.key = "C Minor";
-			    if (request.generationDuration <= 0)
-				    request.generationDuration = 6.0f;
-
-			    request.prompt = "";
-			    request.useImage = true;
-			    request.imageBase64 = base64Image;
-			    request.keywords = keywords;
-
-			    generateLoopWithImage(request, trackId, 300000);
-		    }
-		    catch (const std::exception &e)
-		    {
-			    audioProcessor.setIsGenerating(false);
-			    audioProcessor.setGeneratingTrackId("");
-
-			    if (TrackData *track = audioProcessor.getTrack(trackId))
-			    {
-				    track->stagingTargetPageIndex.store(-1);
-			    }
-
-			    juce::String errorMessage = juce::String(e.what());
-
-			    juce::MessageManager::callAsync(
-			        [this, trackId, errorMessage]()
-			        {
-				        if (auto *editor = dynamic_cast<DjIaVstEditor *>(audioProcessor.getActiveEditor()))
-				        {
-					        editor->uiGenerationManager->stopGenerationUI(trackId, false, errorMessage);
-				        }
-			        });
-		    }
-	    });
-}
-
-void GenerationManager::generateLoopWithImage(const DjIaClient::LoopRequest &request, const juce::String &trackId,
-                                              int timeoutMS)
-{
-	auto response = audioProcessor.getApiClient().generateLoop(request, audioProcessor.getHostSampleRate(), timeoutMS);
-
-	try
-	{
-		if (!response.errorMessage.isEmpty())
-		{
-			audioProcessor.setIsGenerating(false);
-			audioProcessor.setGeneratingTrackId("");
-			reEnableCanvasGenerate();
-			notifyGenerationComplete(trackId, "ERROR: " + response.errorMessage);
-			return;
-		}
-
-		if (response.audioData.getFullPathName().isEmpty() || !response.audioData.exists() ||
-		    response.audioData.getSize() == 0)
-		{
-			audioProcessor.setIsGenerating(false);
-			audioProcessor.setGeneratingTrackId("");
-			reEnableCanvasGenerate();
-			notifyGenerationComplete(trackId, "Invalid response from API");
-			return;
-		}
-	}
-	catch (const std::exception & /*e*/)
-	{
-		audioProcessor.setIsGenerating(false);
-		audioProcessor.setGeneratingTrackId("");
-		notifyGenerationComplete(trackId, "Response validation failed");
-		return;
-	}
-
-	{
-		const juce::ScopedLock lock(apiLock);
-		audioProcessor.setPendingTrackId(trackId);
-		audioProcessor.setPendingAudioFile(response.audioData);
-		audioProcessor.setPendingDetectedBpm(response.detectedBpm);
-		audioProcessor.setPendingSnappedBpm(response.snappedBpm);
-		audioProcessor.setHasPendingAudioData(true);
-		audioProcessor.setWaitingForMidiToLoad(true);
-		audioProcessor.setTrackIdWaitingForLoad(trackId);
-		audioProcessor.setCorrectMidiNoteReceived(false);
-	}
-
-	if (TrackData *track = audioProcessor.getTrack(trackId))
-	{
-		juce::String generatedPrompt = "Generated from image";
-
-		auto &currentPage = track->getCurrentPage();
-		currentPage.prompt = generatedPrompt;
-		currentPage.generationPrompt = generatedPrompt;
-		currentPage.generationKey = response.key;
-	}
-
-	audioProcessor.setIsGenerating(false);
-	audioProcessor.setGeneratingTrackId("");
-	reEnableCanvasGenerate();
-
-	juce::String successMessage = "Audio generated from image! Press Play to listen.";
-
-	if (response.isUnlimitedKey)
-	{
-		successMessage += " - Unlimited API key";
-	}
-	else if (response.creditsRemaining >= 0)
-	{
-		successMessage += " - " + juce::String(response.creditsRemaining) + " credits remaining";
-	}
-
-	notifyGenerationComplete(trackId, successMessage);
 }
 
 void GenerationManager::reEnableCanvasGenerate()

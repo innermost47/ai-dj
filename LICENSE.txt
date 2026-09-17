@@ -1,0 +1,46 @@
+OBSIDIAN-Neural
+Copyright (C) 2026 Anthony Charretier (InnerMost47)
+
+
+1. LICENSE
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program (see the LICENSE file). If not, see
+<https://www.gnu.org/licenses/>.
+
+Source code: https://github.com/innermost47/ai-dj
+
+
+2. AI MODELS (THIRD-PARTY)
+
+OBSIDIAN-Neural uses AI models provided by third parties, including models from
+Stability AI (audio generation) and Google (Gemma, used as text encoder). These
+models are NOT distributed with this software and are NOT covered by the
+GNU AGPL. They are downloaded separately and are subject to their own license
+terms, which you must accept and comply with:
+
+  - Stability AI Community License: https://stability.ai/license
+  - Gemma Terms of Use: https://ai.google.dev/gemma/terms
+
+
+3. GENERATED AUDIO
+
+The GNU AGPL does not apply to audio you generate with OBSIDIAN-Neural. Your use
+of generated audio is subject only to the terms of the underlying AI model
+licenses (see Section 2).
+
+
+4. THIRD-PARTY COMPONENTS
+
+This software includes third-party open-source components, each governed by its
+own license. The full list of components and their licenses is provided in the
+THIRD-PARTY-LICENSES.txt file.

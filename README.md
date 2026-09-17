@@ -2,15 +2,12 @@
 
 ### Related Repositories
 
-| Repository                                                                              | Description                                  |
-| --------------------------------------------------------------------------------------- | -------------------------------------------- |
-| [obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)       | Central inference server                     |
-| [obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)     | Provider kit - run a GPU node on the network |
-| [obsidian-neural-frontend](https://github.com/innermost47/obsidian-neural-frontend)     | Storefront & dashboard                       |
-| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                   |
-| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                       |
-| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)    |
-| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                      |
+| Repository                                                                              | Description                                                        |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                                             |
+| [obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)       | Central inference server - **unmaintained, open to the community** |
+| [obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)     | GPU provider kit - **unmaintained, open to the community**         |
+| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                         |                                        |
 
 ## AI music generation for live performance - VST3, AU, Standalone
 
@@ -28,39 +25,46 @@
 
 ---
 
-## 🆕 Local Edition (CPU, 100% offline)
+## 🆓 OBSIDIAN Neural is now 100% free and open source
 
-A new **Local Edition** is on the way: **Stable Audio 3 Medium running entirely on your own CPU** — no GPU, no cloud, no internet required after a one-time setup. Pay once, play offline forever. The AI generates loops directly on your machine, and nothing ever leaves your computer.
+The whole plugin - including the local CPU engine - is now free and released under the **GNU AGPL v3.0**. No license key, no subscription, no credits, no account.
 
-It can also switch to server mode for the full 9-engine lineup (subscription or self-hosted).
-
-**🧪 Limited slots.**
-Beta testers get **free access** to the Local Edition. If you want in:
-
-→ **[Become a beta tester](https://obsidian-neural.com/local.php)**
+- **Stable Audio 3 Medium runs entirely on your own CPU.** No GPU, no cloud, no internet required after downloading the model once. Nothing ever leaves your computer.
+- **The hosted services are shut down.** The public inference server, the GPU provider network, the storefront/dashboard and obsidian-neural.com are discontinued.
 
 > ⚡ Runs on a standard CPU. Reference: ~11s per generation on a recent laptop CPU, alongside a full DAW session.
-> 🍎 macOS: Apple Silicon (M1+) only — Intel Macs not supported.
+> 🍎 macOS: Apple Silicon (M1+) only - Intel Macs not supported.
 
 ---
 
-## Two ways to run the AI
+## 🤝 Help wanted: bring the GPU engines back
 
-OBSIDIAN Neural is the same plugin, with two ways to generate audio:
+Out of the box, OBSIDIAN Neural generates locally with **Stable Audio 3 Medium**. The plugin was also designed to drive **9 specialized GPU engines** through a server - but with the hosted infrastructure gone, **those engines currently have no supported backend**.
 
-| Mode                    | How generation runs                                 | Internet        | Engines               |
-| ----------------------- | --------------------------------------------------- | --------------- | --------------------- |
-| **Local Edition** (new) | On your own CPU, fully offline                      | Once, for setup | Stable Audio 3 Medium |
-| **Cloud / Server**      | On a server (mine via subscription, or self-hosted) | Required        | All 9 engines         |
+I'm not planning to build or maintain a new inference server for now, nor to keep running the provider network. I may come back to it later, but I'd rather be honest: right now, this part belongs to whoever wants to pick it up.
 
-- **Local Edition** — a one-time purchase. The model runs on your machine, no subscription, no credits. Best for live performers and anyone who wants total autonomy. _(Currently in beta — see above.)_
-- **Cloud / Server** — the free open-source plugin runs in server mode. Start free with 20 credits, then generation requires a subscription — or self-host the whole stack yourself.
+**That's where you come in.** Everything needed to get started is already public:
+
+- **[obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)** contains the code of the former central inference server - a solid starting point for a self-hostable GPU backend.
+- **[obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)** contains the provider kit from the distributed GPU network, if you'd like to revive the idea of community-run nodes.
+- The plugin still has its **Server/API mode** (Settings → Server URL + API key), so a compatible server can be plugged in without touching the audio side.
+
+Ideas that would make a real difference:
+
+- A simple, self-hostable GPU server that runs one or several of the 9 engines
+- Local GPU inference directly in the plugin (CUDA, Metal, DirectML…)
+- More models exported to ONNX for the CPU engine
+- A community-run provider network, on your own terms
+
+You don't need permission to start: fork, experiment, open an issue to share your plan, send PRs. If you build something that works, it can be linked here so every user benefits.
+
+→ **[Start a discussion](https://github.com/innermost47/ai-dj/discussions)** · **[Open an issue](https://github.com/innermost47/ai-dj/issues)**
 
 ---
 
 ## What OBSIDIAN Neural does
 
-Type words → Get musical loops in ~30s. No stopping your creative flow.
+Type words → Get musical loops. No stopping your creative flow.
 
 ### Performance
 
@@ -95,17 +99,18 @@ Type words → Get musical loops in ~30s. No stopping your creative flow.
 
 ### AI generation
 
+- **Local CPU generation** with Stable Audio 3 Medium - fully offline
 - **Prompt bank with editor** - Build, organize and reuse your prompts with model-aware keywords (genres, elements, moods, negatives)
 - **Drag-and-drop prompts** - Drop a prompt on a track to assign both prompt and AI model in one gesture
 - **Sample bank with drag-and-drop** - Every generation is automatically saved and can be reused across tracks and projects
 - **Non-blocking generation** - No pre-recorded samples, renders in background
 
-### Multi-model engine
+### GPU engines (server mode - looking for a community backend)
 
-In **server mode**, OBSIDIAN Neural offers **9 specialized AI engines** - assign a different one to each track for its strengths:
+The plugin supports **9 specialized AI engines** in server mode. They are **not usable right now** since there is no public server anymore - see [Help wanted](#-help-wanted-bring-the-gpu-engines-back).
 
 1. **stable-audio-open-1.0** - Versatile foundation, drums and full-mix textures (80–160 BPM)
-2. **Stable Audio 3 Medium** - Next-gen flexible full tracks, isolated stems, FX (80–160 BPM) _(also the local engine)_
+2. **Stable Audio 3 Medium** - Next-gen flexible full tracks, isolated stems, FX (80–160 BPM) _(also the local CPU engine)_
 3. **Foundation-1** - Tag-based melodic and harmonic phrasing (100–150 BPM)
 4. **Audialab EDM Elements** - High-energy EDM leads, supersaws, plucks (100–150 BPM)
 5. **RC Infinite Pianos** - Grand and electric piano performances (100–150 BPM)
@@ -113,8 +118,6 @@ In **server mode**, OBSIDIAN Neural offers **9 specialized AI engines** - assign
 7. **SAO Instrumental** - Melodic trap, lofi jazz rap, indie stems (75–160 BPM)
 8. **StableBeaT** - Trap beats and 808 grooves (75–160 BPM)
 9. **gluten_v1** - Loopable melodic trap and wavy motifs (90–160 BPM)
-
-The **Local Edition** runs **Stable Audio 3 Medium** on your CPU. The other 8 engines are available in server mode.
 
 > ⚠️ AI generation can produce unexpected results. Feedback welcome on [Issues](https://github.com/innermost47/ai-dj/issues) or [Discussions](https://github.com/innermost47/ai-dj/discussions).
 
@@ -142,28 +145,10 @@ ASIO SDK (not redistributable).
 
 ## Quick Start
 
-Pick the mode that fits how you work:
-
-### 💻 Local Edition (beta) — runs on your CPU, offline
-
-1. [Become a beta tester](https://obsidian-neural.com/local.php) to get free access (limited slots)
-2. Receive your license key by email, download the installer
-3. Activate once + download the model — then it runs fully offline
-
-### ☁️ Cloud / Server mode — runs on a server
-
 1. Download the plugin from [Releases](https://github.com/innermost47/ai-dj/releases)
-2. Get your API key from [obsidian-neural.com](https://obsidian-neural.com)
-3. Load the VST in your DAW → Settings → Enter Server URL + API key
-
-**Cloud pricing:**
-
-| Plan    | Price        | Credits/month |
-| ------- | ------------ | ------------- |
-| Free    | -            | 20 samples    |
-| Base    | €7.99/month  | 150 samples   |
-| Starter | €11.99/month | 300 samples   |
-| Pro     | €14.99/month | 500 samples   |
+2. Load it in your DAW (or run the Standalone) → Settings → **Local Model**
+3. Accept the model licenses and download the model once
+4. Type a prompt and generate - fully offline from now on
 
 ---
 
@@ -183,52 +168,20 @@ Pick the mode that fits how you work:
 
 ---
 
-## How it works - The Distributed GPU Network
+## Contributing
 
-In **server mode**, OBSIDIAN Neural can run on a **distributed GPU provider network**. When you generate a loop, the request is routed to an available community provider. If none is available, the system falls back to a cloud inference service.
+Contributions of any size are welcome: bug fixes, new effects, UI improvements, documentation, and especially work on GPU inference (see [Help wanted](#-help-wanted-bring-the-gpu-engines-back)).
 
-```
-VST Plugin → Central server → Provider GPU pool → WAV returned to DAW
-                                    ↓ if unavailable
-                               Cloud inference fallback
-```
+💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
 
-**Revenue sharing - full transparency:**
-Subscription revenue is redistributed **strictly equally** among all eligible providers each month via Stripe Connect, after a 15% platform fee covering infrastructure costs. Redistribution history is public:
-
-**[obsidian-neural.com/public.php](https://obsidian-neural.com/public.php)**
-
-No authentication required. No data is ever deleted.
-
-**Provider eligibility:**
-
-- Uptime score ≥ 80% (based on random unpredictable pings)
-- At least 1 real job processed during the month
-
-**🚀 I'm looking for my first 10 GPU providers.**
-If you have a GPU and want to earn a share of the monthly revenue while supporting an open-source project: → **[Provider kit](https://github.com/innermost47/obsidian-neural-provider)**
-
-> Note: The Local Edition runs independently of this network — it generates on your own CPU and doesn't need any provider or server.
-
----
-
-## Community
-
-📧 [Contact](https://obsidian-neural.com/contact.php) · 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🌐 [obsidian-neural.com](https://obsidian-neural.com)
-
----
-
-## More Projects
-
-🥁 **[BeatCrafter](https://github.com/innermost47/beatcrafter)** - Intelligent MIDI drum pattern generator VST3
-🎛️ **[Randomizer](https://randomizer.anthony-charretier.fr/)** - Generative music studio
-🎵 **[YouTube](https://www.youtube.com/@innermost9675)** - Original compositions (electronic, ambient, metal, experimental)
 
 ---
 
 ## License
 
-🆓 **GNU Affero General Public License v3.0** - Stability AI Community License for the AI model.
+🆓 **GNU Affero General Public License v3.0** - see [LICENSE](LICENSE.txt).
+
+The AI models are not part of this repository and are not covered by the AGPL. They are downloaded separately and remain subject to their own terms: the [Stability AI Community License](https://stability.ai/license) and the [Gemma Terms of Use](https://ai.google.dev/gemma/terms).
 
 ---
 
@@ -236,12 +189,11 @@ If you have a GPU and want to earn a share of the monthly revenue while supporti
 
 **Developed by InnerMost47 (Anthony Charretier)**
 
-Special thanks to **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers.
+Special thanks to **Moteka** for the testimonial and early adoption, Stability AI, and all beta testers and early adopters.
 
 ---
 
 _Made with 🎵 in France_
 
-[![Website](https://img.shields.io/badge/Website-obsidian--neural.com-blue)](https://obsidian-neural.com)
-[![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE.txt)
 [![GitHub Stars](https://img.shields.io/github/stars/innermost47/ai-dj?style=social)](https://github.com/innermost47/ai-dj)

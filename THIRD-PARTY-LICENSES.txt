@@ -1,0 +1,265 @@
+OBSIDIAN-Neural — Third-Party Components and Licenses
+
+This software incorporates the third-party open-source components listed below.
+Each is the property of its respective authors and is used under the terms of
+its respective license. A separate section lists the AI models, which are NOT
+distributed with this software but downloaded by the user under their own terms.
+
+
+================================================================================
+SOFTWARE COMPONENTS
+================================================================================
+
+
+--------------------------------------------------------------------------------
+JUCE
+--------------------------------------------------------------------------------
+Copyright (c) Raw Material Software Limited.
+
+OBSIDIAN-Neural is built using the JUCE framework (https://juce.com), used under
+the terms of the JUCE license applicable to this product. JUCE is a registered
+trademark of Raw Material Software Limited.
+
+
+--------------------------------------------------------------------------------
+ONNX Runtime
+--------------------------------------------------------------------------------
+Copyright (c) Microsoft Corporation.
+Licensed under the MIT License.
+https://github.com/microsoft/onnxruntime
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------------
+BeatDetektor
+--------------------------------------------------------------------------------
+Copyright (c) 2009 Charles J. Cliffe.
+Licensed under the MIT License.
+http://opensource.org/licenses/MIT
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------------
+Airwindows (Console6)
+--------------------------------------------------------------------------------
+Copyright (c) Chris Johnson (Airwindows).
+Licensed under the MIT License.
+https://www.airwindows.com/
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------------
+nlohmann/json
+--------------------------------------------------------------------------------
+Copyright (c) 2013-2025 Niels Lohmann.
+Licensed under the MIT License.
+https://github.com/nlohmann/json
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------------
+Signalsmith Stretch
+--------------------------------------------------------------------------------
+Copyright (c) Signalsmith Audio Ltd.
+Licensed under the MIT License.
+https://github.com/Signalsmith-Audio/signalsmith-stretch
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+--------------------------------------------------------------------------------
+tokenizers-cpp
+--------------------------------------------------------------------------------
+Copyright (c) MLC AI / Apache TVM contributors.
+Licensed under the Apache License, Version 2.0.
+https://github.com/mlc-ai/tokenizers-cpp
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this component except in compliance with the License. You may obtain a copy of
+the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+
+--------------------------------------------------------------------------------
+libsamplerate
+--------------------------------------------------------------------------------
+Copyright (c) 2012-2021, Erik de Castro Lopo <erikd@mega-nerd.com>.
+Licensed under the BSD 2-Clause License.
+https://github.com/libsndfile/libsamplerate
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------------
+dr_wav (dr_libs)
+--------------------------------------------------------------------------------
+Copyright (c) David Reid.
+Released into the public domain (Unlicense), or alternatively licensed under the
+MIT-0 License, at your option.
+https://github.com/mackron/dr_libs
+
+
+--------------------------------------------------------------------------------
+Ableton Link
+--------------------------------------------------------------------------------
+Copyright (c) Ableton AG, Berlin.
+Used under a license granted by Ableton AG for incorporation into a proprietary 
+application.
+https://github.com/Ableton/link
+
+Ableton and Link are trademarks of Ableton AG.
+
+--------------------------------------------------------------------------------
+Monocypher
+--------------------------------------------------------------------------------
+Copyright (c) 2017-2019, Loup Vaillant.
+Copyright (c) 2017-2019, Michael Savage.
+Copyright (c) 2017-2023, Fabio Scotoni.
+Released into the public domain (Creative Commons CC0 1.0), or alternatively
+licensed under the BSD 2-Clause License, at your option.
+https://monocypher.org/
+
+This software uses Monocypher solely for Ed25519 signature verification.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+================================================================================
+AI MODELS (downloaded by the user — NOT distributed with this software)
+================================================================================
+
+The following AI models are not included in this software. They are downloaded
+by the user from Hugging Face, who must accept their respective license terms
+before download. InnerMost47 grants no rights to these models; use is governed
+solely by the licenses below.
+
+
+--------------------------------------------------------------------------------
+Stable Audio (Stability AI)
+--------------------------------------------------------------------------------
+Copyright (c) Stability AI Ltd.
+Used under the Stability AI Community License.
+https://stability.ai/license
+
+The audio generation model. Downloaded and used by the end user under the terms
+of the Stability AI Community License.
+
+
+--------------------------------------------------------------------------------
+T5Gemma (Google)
+--------------------------------------------------------------------------------
+Copyright (c) Google LLC.
+Used under the Gemma Terms of Use.
+https://ai.google.dev/gemma/terms
+
+The text encoder. Subject to Google's Gemma Terms of Use and Prohibited Use
+Policy, accepted by the end user when downloading the model.

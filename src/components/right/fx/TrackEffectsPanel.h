@@ -10,6 +10,7 @@ class LimiterComponent;
 class BitCrusherComponent;
 class FlangerComponent;
 class DistortionComponent;
+class GateComponent;
 class ChorusComponent;
 class PhaserComponent;
 class DjIaVstEditor;
@@ -22,10 +23,12 @@ class TrackEffectsPanel : public ObsidianComponent
 
 	void paint(juce::Graphics &g) override;
 	void resized() override;
-	void updateModelUI(const juce::String &trackId);
+	void updateModelUI();
 	void refresh();
 	void setupUI();
 	void addComponents(const juce::String &trackId);
+	void showTrack(const juce::String &trackId);
+	void showMaster();
 
 	int getPreferredHeight() const;
 
@@ -37,8 +40,6 @@ class TrackEffectsPanel : public ObsidianComponent
 
 	juce::String activeTrackId;
 
-	std::vector<std::unique_ptr<IconButtonSimple>> trackSelectors;
-
 	std::unique_ptr<FilterComponent> filterComponent;
 	std::unique_ptr<EqualizerComponent> equalizerComponent;
 	std::unique_ptr<CompressorComponent> compressorComponent;
@@ -48,6 +49,7 @@ class TrackEffectsPanel : public ObsidianComponent
 	std::unique_ptr<PhaserComponent> phaserComponent;
 	std::unique_ptr<FlangerComponent> flangerComponent;
 	std::unique_ptr<BitCrusherComponent> bitCrusherComponent;
+	std::unique_ptr<GateComponent> gateComponent;
 
 	void addComponents();
 	void resetComponents();

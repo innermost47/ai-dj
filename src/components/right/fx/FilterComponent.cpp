@@ -7,11 +7,25 @@ FilterComponent::FilterComponent(DjIaVstProcessor &processor, TrackData *trackDa
 	setTrackData(trackData);
 	setupUI();
 	wireParameters();
+
+	vBlankAttachment = std::make_unique<juce::VBlankAttachment>(this, [this]() { handleVBlank(); });
 }
 
 FilterComponent::~FilterComponent()
 {
 	markForDestruction();
+}
+
+void FilterComponent::handleVBlank()
+{
+	syncModulationRing(cutoffKnob, "Cutoff");
+	syncModulationRing(resonanceKnob, "Resonance");
+	syncModulationRing(driveKnob, "FilterDrive");
+
+	syncGlitchLock(GlitchEffectType::Filter, nullptr, &bypassFilterButton);
+
+	if (syncGlitchLedState(GlitchEffectType::Filter))
+		repaint();
 }
 
 void FilterComponent::paint(juce::Graphics &g)
@@ -20,7 +34,7 @@ void FilterComponent::paint(juce::Graphics &g)
 	if (!t)
 		return;
 	paintBaseRoundedBackground(g, ColourPalette::backgroundDeep);
-
+	paintGlitchLed(g, GlitchEffectType::Filter);
 	auto bounds = getLocalBounds().reduced(4);
 	auto bypassArea = bounds.removeFromLeft(16).removeFromTop(16);
 	bypassFilterButton.setBounds(bypassArea);

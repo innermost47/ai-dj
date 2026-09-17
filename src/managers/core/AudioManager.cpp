@@ -1,4 +1,5 @@
 ﻿#include "AudioManager.h"
+#include "ModulationPanel.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 #include "RightPanelWrapper.h"
@@ -337,6 +338,7 @@ void AudioManager::performAtomicSwap(TrackData *track, const juce::String &track
 	targetPage.sampleRate = track->stagingSampleRate.load();
 	targetPage.originalBpm = targetPage.stagingOriginalBpm;
 	targetPage.isLoaded.store(true);
+	targetPage.isLoading.store(false);
 
 	if (track->isVersionSwitch.load())
 	{
@@ -673,17 +675,12 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 		}
 
 		page.audioFilePath = genFiles.stretched.getFullPathName();
-		page.numSamples = track->stagingNumSamples.load();
-		page.sampleRate = track->stagingSampleRate.load();
-		page.originalBpm = page.stagingOriginalBpm;
-		page.isLoaded.store(true);
-		page.isLoading.store(false);
 
 		auto *bank = audioProcessor.getSampleBank();
 		auto *sampleEntry = bank->getSample(sampleId);
 		bank->addCacheFiles(sampleId, genFiles.stretched.getFullPathName(),
-		                    +track->nextHasOriginalVersion.load() ? genFiles.original.getFullPathName()
-		                                                          : juce::String());
+		                    track->nextHasOriginalVersion.load() ? genFiles.original.getFullPathName()
+		                                                         : juce::String());
 		if (sampleEntry)
 		{
 			page.prompt = sampleEntry->originalPrompt;
@@ -694,8 +691,19 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 
 		if (pageIndex == track->currentPageIndex.load())
 		{
-			track->hasStagingData.store(true);
-			track->swapRequested.store(true);
+			page.isLoading.store(true);
+			track->stagingTargetPageIndex.store(pageIndex);
+			track->hasStagingData.store(true, std::memory_order_release);
+			track->swapRequested.store(true, std::memory_order_release);
+		}
+		else
+		{
+			page.audioBuffer.makeCopyOf(track->stagingBuffer);
+			page.numSamples = track->stagingNumSamples.load();
+			page.sampleRate = track->stagingSampleRate.load();
+			page.originalBpm = page.stagingOriginalBpm;
+			page.isLoading.store(false);
+			page.isLoaded.store(true);
 		}
 
 		juce::MessageManager::callAsync(
@@ -721,13 +729,20 @@ void AudioManager::loadSampleToBankPage(const juce::String &trackId, int pageInd
 						    }
 					    }
 					    editor->mixerPanel->refreshChannel(trackId);
-					    editor->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI(trackId);
+					    if (editor->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel())
+						    editor->uiLayoutManager->getRightPanelWrapper()->getTrackEffectsPanel()->updateModelUI();
+					    if (editor->uiLayoutManager->getRightPanelWrapper()->getModulationPanel())
+						    editor->uiLayoutManager->getRightPanelWrapper()->getModulationPanel()->updateModelUI();
+					    if (editor->uiLayoutManager->getRightPanelWrapper()->getTrackSelectorBar())
+						    editor->uiLayoutManager->getRightPanelWrapper()->getTrackSelectorBar()->updateModelColour(
+						        trackId);
 				    }
 			    }
 		    });
 	}
 	catch (const std::exception & /*e*/)
 	{
+		page.isLoading.store(false);
 	}
 }
 

@@ -1,5 +1,4 @@
 #pragma once
-#include "DrawingCanvas.h"
 #include "MidiLearnableComponents.h"
 #include "ObsidianBaseMidiComponent.h"
 #include "TrackManager.h"
@@ -25,7 +24,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 	std::function<void(const juce::String &, const juce::String &)> onTrackRenamed;
 	std::function<void(const juce::String &, const juce::String &)> onTrackPromptChanged;
 	std::function<void(const juce::String &)> onStatusMessage;
-	std::function<void(const juce::String &, const juce::String &, const juce::StringArray &)> onGenerateWithImage;
 	std::function<void(const juce::String &)> onStopPreview;
 	std::function<void(const juce::String &trackId)> onModelChanged;
 	std::function<void(const juce::String &trackId)> onSampleDropped;
@@ -84,15 +82,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 	SequencerComponent *getSequencer() const
 	{
 		return sequencer.get();
-	}
-
-	void setCanvasGenerating(bool generating)
-	{
-		canvasIsGenerating = generating;
-		if (drawingCanvasPtr != nullptr)
-		{
-			drawingCanvasPtr->setGenerating(generating);
-		}
 	}
 
   private:
@@ -162,13 +151,10 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 
 	BorderOverlay borderOverlay;
 
-	juce::Component::SafePointer<DrawingCanvas> drawingCanvasPtr;
-
 	juce::StringArray promptPresets;
 
 	std::unique_ptr<WaveformDisplay> waveformDisplay;
 	std::unique_ptr<SequencerComponent> sequencer;
-	std::unique_ptr<DrawingCanvas> drawingCanvas;
 
 	MidiLearnableButton pageButtons[4];
 
@@ -234,7 +220,6 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 	void updateReverseButtonState();
 	void updateTransientScatterButtonState();
 	void updateRandomDurationButtonColor();
-	void openDrawingCanvas();
 	void updatePreviewButton();
 	void updateModelUI();
 	juce::Colour getCurrentModelColour() const;
@@ -267,6 +252,7 @@ class TrackComponent : public ObsidianBaseMidiComponent, public juce::DragAndDro
 	}
 
 	void onParameterChangedUI(const juce::String &paramSuffix, float newValue) override;
+	void syncPromptTooltip();
 
 	JUCE_DECLARE_WEAK_REFERENCEABLE(TrackComponent);
 };

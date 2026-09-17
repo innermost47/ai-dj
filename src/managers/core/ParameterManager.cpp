@@ -1,5 +1,6 @@
 ﻿#include "ParameterManager.h"
 #include "MidiMapping.h"
+#include "ModulationTypes.h"
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
 
@@ -168,6 +169,20 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 		slotBitCrusherMixParams[i] = apvts.getRawParameterValue(s + "BitCrusherMix");
 		slotBitCrusherBypassedParams[i] = apvts.getRawParameterValue(s + "BitCrusherBypassed");
 
+		slotGateBypassedParams[i] = apvts.getRawParameterValue(s + "GateBypassed");
+		slotGateRateParams[i] = apvts.getRawParameterValue(s + "GateRate");
+		slotGateDurationParams[i] = apvts.getRawParameterValue(s + "GateDuration");
+		slotGateDepthParams[i] = apvts.getRawParameterValue(s + "GateDepth");
+
+		for (int seq = 0; seq < 8; ++seq)
+		{
+			juce::String paramId = s + "GlitchSeq" + juce::String(seq + 1) + "Active";
+			slotGlitchSeqActiveParams[i][seq] = apvts.getRawParameterValue(paramId);
+			apvts.addParameterListener(paramId, listener);
+		}
+
+		slotGlitchChainActiveParams[i] = apvts.getRawParameterValue(s + "GlitchChainActive");
+
 		apvts.addParameterListener(s + "Generate", listener);
 		apvts.addParameterListener(s + "Pitch", listener);
 		apvts.addParameterListener(s + "Gain", listener);
@@ -249,6 +264,25 @@ void ParameterManager::resolveParameters(juce::AudioProcessorValueTreeState::Lis
 
 		apvts.addParameterListener(s + "ReverseActive", listener);
 		apvts.addParameterListener(s + "TransientScatterActive", listener);
+
+		apvts.addParameterListener(s + "GateBypassed", listener);
+		apvts.addParameterListener(s + "GateRate", listener);
+		apvts.addParameterListener(s + "GateDuration", listener);
+		apvts.addParameterListener(s + "GateDepth", listener);
+
+		apvts.addParameterListener(s + "GlitchChainActive", listener);
+
+		for (int m = 1; m <= kNumModSlots; ++m)
+		{
+			juce::String modId = s + "Mod" + juce::String(m);
+			apvts.addParameterListener(modId + "Active", listener);
+			apvts.addParameterListener(modId + "Target", listener);
+			apvts.addParameterListener(modId + "Shape", listener);
+			apvts.addParameterListener(modId + "Rate", listener);
+			apvts.addParameterListener(modId + "Depth", listener);
+			apvts.addParameterListener(modId + "Phase", listener);
+			apvts.addParameterListener(modId + "Bipolar", listener);
+		}
 
 		for (const char *page : {"PageA", "PageB", "PageC", "PageD"})
 			apvts.addParameterListener(s + page, listener);
@@ -399,6 +433,28 @@ void ParameterManager::removeAllListeners(juce::AudioProcessorValueTreeState::Li
 
 		apvts.removeParameterListener(s + "ReverseActive", listener);
 		apvts.removeParameterListener(s + "TransientScatterActive", listener);
+
+		apvts.removeParameterListener(s + "GateBypassed", listener);
+		apvts.removeParameterListener(s + "GateRate", listener);
+		apvts.removeParameterListener(s + "GateDuration", listener);
+		apvts.removeParameterListener(s + "GateDepth", listener);
+
+		apvts.removeParameterListener(s + "GlitchChainActive", listener);
+
+		for (int m = 1; m <= kNumModSlots; ++m)
+		{
+			juce::String modId = s + "Mod" + juce::String(m);
+			apvts.removeParameterListener(modId + "Active", listener);
+			apvts.removeParameterListener(modId + "Target", listener);
+			apvts.removeParameterListener(modId + "Shape", listener);
+			apvts.removeParameterListener(modId + "Rate", listener);
+			apvts.removeParameterListener(modId + "Depth", listener);
+			apvts.removeParameterListener(modId + "Phase", listener);
+			apvts.removeParameterListener(modId + "Bipolar", listener);
+		}
+
+		for (int seq = 1; seq <= 8; ++seq)
+			apvts.removeParameterListener(s + "GlitchSeq" + juce::String(seq) + "Active", listener);
 	}
 
 	for (int i = 1; i <= 4; ++i)
@@ -688,6 +744,54 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		    slotId + "BitCrusherMix", slotName + " Bitcrusher Mix", juce::NormalisableRange<float>(0.f, 1.f, 0.f),
 		    Obsidian::BITCRUSHER_MIX));
 
+		params.push_back(std::make_unique<juce::AudioParameterChoice>(
+		    slotId + "GateRate", slotName + " Gate Rate",
+		    juce::StringArray{"1/16", "1/8", "1/8.", "1/4", "1/4.", "1/2", "1 bar", "2 bars"}, 0));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(
+		    slotId + "GateDuration", slotName + " Gate Duration", juce::NormalisableRange<float>(0.01f, 1.0f, 0.f),
+		    Obsidian::GATE_DURATION));
+
+		params.push_back(std::make_unique<juce::AudioParameterFloat>(slotId + "GateDepth", slotName + " Gate Depth",
+		                                                             juce::NormalisableRange<float>(0.0f, 1.0f, 0.f),
+		                                                             Obsidian::GATE_DEPTH));
+
+		for (int m = 1; m <= kNumModSlots; ++m)
+		{
+			juce::String modId = slotId + "Mod" + juce::String(m);
+			juce::String modName = slotName + " Mod " + juce::String(m);
+
+			params.push_back(std::make_unique<juce::AudioParameterBool>(modId + "Active", modName + " Active", false));
+
+			params.push_back(std::make_unique<juce::AudioParameterChoice>(
+			    modId + "Target", modName + " Target", getModTargetNames(), kDefaultModTargets[m - 1],
+			    juce::AudioParameterChoiceAttributes().withAutomatable(false)));
+
+			params.push_back(std::make_unique<juce::AudioParameterChoice>(
+			    modId + "Shape", modName + " Shape", getModShapeNames(), 0,
+			    juce::AudioParameterChoiceAttributes().withAutomatable(false)));
+
+			params.push_back(std::make_unique<juce::AudioParameterChoice>(
+			    modId + "Rate", modName + " Rate", getModRateNames(), 2,
+			    juce::AudioParameterChoiceAttributes().withAutomatable(false)));
+
+			params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			    modId + "Depth", modName + " Depth", juce::NormalisableRange<float>(0.0f, 1.0f), 0.35f));
+
+			params.push_back(std::make_unique<juce::AudioParameterFloat>(
+			    modId + "Phase", modName + " Phase", juce::NormalisableRange<float>(0.0f, 1.0f), 0.0f));
+
+			params.push_back(std::make_unique<juce::AudioParameterBool>(modId + "Bipolar", modName + " Bipolar", true));
+		}
+
+		for (int seq = 1; seq <= 8; ++seq)
+			params.push_back(std::make_unique<juce::AudioParameterBool>(
+			    slotId + "GlitchSeq" + juce::String(seq) + "Active",
+			    slotName + " Glitch Sequence " + juce::String(seq) + " Active", false));
+
+		params.push_back(std::make_unique<juce::AudioParameterBool>(slotId + "GlitchChainActive",
+		                                                            slotName + " Glitch Chain Active", false));
+
 		params.push_back(makeTrigg(slotId + "DistortionBypassed", slotName + " Distortion Bypassed"));
 		params.push_back(makeTrigg(slotId + "CompressorBypassed", slotName + " Compressor Bypassed"));
 		params.push_back(makeTrigg(slotId + "LimiterBypassed", slotName + " Limiter Bypassed"));
@@ -697,6 +801,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout ParameterManager::createPara
 		params.push_back(makeTrigg(slotId + "PhaserBypassed", slotName + " Phaser Bypassed"));
 		params.push_back(makeTrigg(slotId + "FlangerBypassed", slotName + " Flanger Bypassed"));
 		params.push_back(makeTrigg(slotId + "BitCrusherBypassed", slotName + " Bitcrusher Bypassed"));
+		params.push_back(makeTrigg(slotId + "GateBypassed", slotName + " Gate Bypassed"));
 
 		params.push_back(makeTrigg(slotId + "Play", slotName + " Play"));
 		params.push_back(makeTrigg(slotId + "Stop", slotName + " Stop"));
@@ -878,7 +983,126 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 					    param->setValueNotifyingHost(0.0f);
 			    });
 		}
-		else if (parameterID.contains("Seq"))
+		else if (parameterID.contains("GlitchSeq") && parameterID.endsWith("Active"))
+		{
+			if (isApplyingGlitchSeq)
+				return;
+
+			if (!track->glitchMetaSequence.isBypassed())
+			{
+				const int activeIdx = track->currentGlitchSequenceIndex.load();
+				const int thisIdx = parameterID.fromFirstOccurrenceOf("GlitchSeq", false, false)
+				                        .upToFirstOccurrenceOf("Active", false, false)
+				                        .getIntValue() -
+				                    1;
+				const float expected = (thisIdx == activeIdx) ? 1.0f : 0.0f;
+
+				if (std::abs(newValue - expected) > 0.5f)
+				{
+					juce::ScopedValueSetter<bool> guard(isApplyingGlitchSeq, true);
+					juce::MessageManager::callAsync(
+					    [this, parameterID, expected]()
+					    {
+						    if (auto *p = getAPVTS().getParameter(parameterID))
+							    p->setValueNotifyingHost(expected);
+					    });
+				}
+				return;
+			}
+
+			int seqNumber = parameterID.fromFirstOccurrenceOf("GlitchSeq", false, false)
+			                    .upToFirstOccurrenceOf("Active", false, false)
+			                    .getIntValue();
+			int seqIdx = seqNumber - 1;
+			if (seqIdx < 0 || seqIdx >= 8)
+				return;
+
+			bool isEnabled = newValue > 0.5f;
+
+			if (isEnabled)
+			{
+				juce::ScopedValueSetter<bool> guard(isApplyingGlitchSeq, true);
+				track->currentGlitchSequenceIndex.store(seqIdx);
+				audioProcessor.getSequencerManager().getGlitchSequencerEngine().setSequencerActive(*track, true);
+
+				for (int i = 0; i < 8; ++i)
+				{
+					if (i == seqIdx)
+						continue;
+					juce::String otherId = "slot" + juce::String(slot) + "GlitchSeq" + juce::String(i + 1) + "Active";
+					if (auto *other = getAPVTS().getParameter(otherId))
+						if (other->getValue() > 0.5f)
+							other->setValueNotifyingHost(0.0f);
+				}
+			}
+			else
+			{
+				if (track->currentGlitchSequenceIndex.load() == seqIdx && track->glitchMetaSequence.isBypassed())
+					audioProcessor.getSequencerManager().getGlitchSequencerEngine().setSequencerActive(*track, false);
+			}
+		}
+		else if (parameterID.substring(5).startsWith("Mod"))
+		{
+			const int modIdx = parameterID.fromFirstOccurrenceOf("Mod", false, false).getIntValue() - 1;
+			if (modIdx < 0 || modIdx >= kNumModSlots)
+				return;
+
+			auto &mod = track->modulators[modIdx];
+
+			if (parameterID.endsWith("Active"))
+				mod.setActive(newValue > 0.5f);
+			else if (parameterID.endsWith("Target"))
+			{
+				if (isApplyingModTarget)
+					return;
+
+				const int requested = (int)newValue;
+
+				if (requested > 0)
+				{
+					bool takenByOther = false;
+					for (int m = 0; m < kNumModSlots; ++m)
+					{
+						if (m == modIdx)
+							continue;
+						if (track->modulators[m].getTarget() == requested)
+						{
+							takenByOther = true;
+							break;
+						}
+					}
+
+					if (takenByOther)
+					{
+						const int previous = mod.getTarget();
+						const int total = getNumModTargets();
+
+						juce::ScopedValueSetter<bool> guard(isApplyingModTarget, true);
+						juce::MessageManager::callAsync(
+						    [this, parameterID, previous, total]()
+						    {
+							    if (auto *p = getAPVTS().getParameter(parameterID))
+								    p->setValueNotifyingHost(total < 2 ? 0.0f : (float)previous / (float)(total - 1));
+						    });
+						return;
+					}
+				}
+
+				mod.reset();
+				mod.setTarget(requested);
+			}
+			else if (parameterID.endsWith("Shape"))
+				mod.setShape(static_cast<ModShape>((int)newValue));
+			else if (parameterID.endsWith("Rate"))
+				mod.setRate(static_cast<ModRate>((int)newValue));
+			else if (parameterID.endsWith("Depth"))
+				mod.setDepth(newValue);
+			else if (parameterID.endsWith("Phase"))
+				mod.setPhase(newValue);
+			else if (parameterID.endsWith("Bipolar"))
+				mod.setBipolar(newValue > 0.5f);
+		}
+		else if (parameterID.contains("Seq") && !parameterID.contains("GlitchSeq"))
 		{
 			if (auto *param = dynamic_cast<juce::AudioParameterInt *>(getAPVTS().getParameter(parameterID)))
 			{
@@ -916,14 +1140,18 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		}
 		else if (parameterID.endsWith("Pan"))
 		{
-			track->pan.store(newValue);
+			if (!isModulatedTarget(track, "Pan"))
+				track->pan.store(newValue);
 			audioProcessor.getMidiManager().sendMidiFeedback(MidiMapping::ccFeedbackPan(slot),
 			                                                 MidiMapping::panToMidi(getPan(slotIdx)));
 		}
 		else if (parameterID.endsWith("CompressorMakeUpGain"))
 			track->compressor.setMakeUpGain(newValue);
 		else if (parameterID.endsWith("DistortionPreGain"))
-			track->distortion.setPre(newValue);
+		{
+			if (!isModulatedTarget(track, "DistortionPreGain"))
+				track->distortion.setPre(newValue);
+		}
 		else if (parameterID.endsWith("DistortionPostGain"))
 			track->distortion.setPost(newValue);
 		else if (parameterID.endsWith("LimiterMakeUpGain"))
@@ -948,20 +1176,35 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 				                                                 MidiMapping::feedbackPending);
 		}
 		else if (parameterID.endsWith("DelaySend"))
-			track->delaySend.store(newValue);
+		{
+			if (!isModulatedTarget(track, "DelaySend"))
+				track->delaySend.store(newValue);
+		}
 		else if (parameterID.endsWith("ReverbSend"))
-			track->reverbSend.store(newValue);
+		{
+			if (!isModulatedTarget(track, "ReverbSend"))
+				track->reverbSend.store(newValue);
+		}
 		else if (parameterID.endsWith("FilterMode"))
 		{
 			auto mode = static_cast<juce::dsp::LadderFilterMode>((int)newValue);
 			track->filter.setMode(mode);
 		}
 		else if (parameterID.endsWith("FilterDrive"))
-			track->filter.setDrive(newValue);
+		{
+			if (!isModulatedTarget(track, "FilterDrive"))
+				track->filter.setDrive(newValue);
+		}
 		else if (parameterID.endsWith("Cutoff"))
-			track->filter.setCutoffFrequency(newValue);
+		{
+			if (!isModulatedTarget(track, "Cutoff"))
+				track->filter.setCutoffFrequency(newValue);
+		}
 		else if (parameterID.endsWith("Resonance"))
-			track->filter.setResonance(newValue);
+		{
+			if (!isModulatedTarget(track, "Resonance"))
+				track->filter.setResonance(newValue);
+		}
 		else if (parameterID.endsWith("EQGainSubBass"))
 			track->equalizer.updateGain(Obsidian::eqBands::subBass, newValue);
 		else if (parameterID.endsWith("EQGainBass"))
@@ -991,66 +1234,184 @@ void ParameterManager::parameterChanged(const juce::String &parameterID, float n
 		else if (parameterID.endsWith("LimiterRelease"))
 			track->limiter.setRelease(newValue);
 		else if (parameterID.endsWith("DistortionCut"))
-			track->distortion.setCut(newValue);
+		{
+			if (!isModulatedTarget(track, "DistortionCut"))
+				track->distortion.setCut(newValue);
+		}
 		else if (parameterID.endsWith("DistortionType"))
 		{
 			auto type = static_cast<Obsidian::distortionType>((int)newValue);
 			track->distortion.setType(type);
 		}
 		else if (parameterID.endsWith("ChorusRate"))
-			track->chorus.setRate(newValue);
+		{
+			if (!isModulatedTarget(track, "ChorusRate"))
+				track->chorus.setRate(newValue);
+		}
 		else if (parameterID.endsWith("ChorusDepth"))
-			track->chorus.setDepth(newValue);
+		{
+			if (!isModulatedTarget(track, "ChorusDepth"))
+				track->chorus.setDepth(newValue);
+		}
 		else if (parameterID.endsWith("ChorusCentre"))
-			track->chorus.setCentre(newValue);
+		{
+			if (!isModulatedTarget(track, "ChorusCentre"))
+				track->chorus.setCentre(newValue);
+		}
 		else if (parameterID.endsWith("ChorusFeedback"))
-			track->chorus.setFeedback(newValue);
+		{
+			if (!isModulatedTarget(track, "ChorusFeedback"))
+				track->chorus.setFeedback(newValue);
+		}
 		else if (parameterID.endsWith("ChorusMix"))
-			track->chorus.setMix(newValue);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Chorus))
+				track->chorus.setMix(newValue);
+		}
 		else if (parameterID.endsWith("PhaserRate"))
-			track->phaser.setRate(newValue);
+		{
+			if (!isModulatedTarget(track, "PhaserRate"))
+				track->phaser.setRate(newValue);
+		}
 		else if (parameterID.endsWith("PhaserDepth"))
-			track->phaser.setDepth(newValue);
+		{
+			if (!isModulatedTarget(track, "PhaserDepth"))
+				track->phaser.setDepth(newValue);
+		}
 		else if (parameterID.endsWith("PhaserCentre"))
-			track->phaser.setCentre(newValue);
+		{
+			if (!isModulatedTarget(track, "PhaserCentre"))
+				track->phaser.setCentre(newValue);
+		}
 		else if (parameterID.endsWith("PhaserFeedback"))
-			track->phaser.setFeedback(newValue);
+		{
+			if (!isModulatedTarget(track, "PhaserFeedback"))
+				track->phaser.setFeedback(newValue);
+		}
 		else if (parameterID.endsWith("PhaserMix"))
-			track->phaser.setMix(newValue);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Phaser))
+				track->phaser.setMix(newValue);
+		}
 		else if (parameterID.endsWith("FlangerRate"))
-			track->flanger.setRate(newValue);
+		{
+			if (!isModulatedTarget(track, "FlangerRate"))
+				track->flanger.setRate(newValue);
+		}
 		else if (parameterID.endsWith("FlangerDepth"))
-			track->flanger.setDepth(newValue);
+		{
+			if (!isModulatedTarget(track, "FlangerDepth"))
+				track->flanger.setDepth(newValue);
+		}
 		else if (parameterID.endsWith("FlangerCentre"))
-			track->flanger.setCentre(newValue);
+		{
+			if (!isModulatedTarget(track, "FlangerCentre"))
+				track->flanger.setCentre(newValue);
+		}
 		else if (parameterID.endsWith("FlangerFeedback"))
-			track->flanger.setFeedback(newValue);
+		{
+			if (!isModulatedTarget(track, "FlangerFeedback"))
+				track->flanger.setFeedback(newValue);
+		}
 		else if (parameterID.endsWith("FlangerMix"))
-			track->flanger.setMix(newValue);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Flanger))
+				track->flanger.setMix(newValue);
+		}
 		else if (parameterID.endsWith("BitCrusherBitDepth"))
-			track->bitCrusher.setBitDepth(newValue);
+		{
+			if (!isModulatedTarget(track, "BitCrusherBitDepth"))
+				track->bitCrusher.setBitDepth(newValue);
+		}
 		else if (parameterID.endsWith("BitCrusherRate"))
-			track->bitCrusher.setSampleRateReduction(newValue);
+		{
+			if (!isModulatedTarget(track, "BitCrusherRate"))
+				track->bitCrusher.setSampleRateReduction(newValue);
+		}
 		else if (parameterID.endsWith("BitCrusherMix"))
-			track->bitCrusher.setMix(newValue);
-		else if (parameterID.endsWith("DistortionBypassed"))
-			track->distortion.setBypassed(newValue < 0.5f);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::BitCrusher))
+				track->bitCrusher.setMix(newValue);
+		}
+		else if (parameterID.endsWith("GateRate"))
+			track->gate.setRate(static_cast<GateRateDivision>((int)newValue));
+		else if (parameterID.endsWith("GateDuration"))
+		{
+			if (!isModulatedTarget(track, "GateDuration"))
+				track->gate.setDuration(newValue);
+		}
+		else if (parameterID.endsWith("GateDepth"))
+		{
+			if (!isModulatedTarget(track, "GateDepth"))
+				track->gate.setDepth(newValue);
+		}
 		else if (parameterID.endsWith("EQBypassed"))
 			track->equalizer.setBypassed(newValue < 0.5f);
-		else if (parameterID.endsWith("FilterBypassed"))
-			track->filter.setBypassed(newValue < 0.5f);
-		else if (parameterID.endsWith("LimiterBypassed"))
-			track->limiter.setBypassed(newValue < 0.5f);
 		else if (parameterID.endsWith("CompressorBypassed"))
 			track->compressor.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("LimiterBypassed"))
+			track->limiter.setBypassed(newValue < 0.5f);
+		else if (parameterID.endsWith("FilterBypassed"))
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Filter))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::Filter, newValue > 0.5f);
+		}
 		else if (parameterID.endsWith("ChorusBypassed"))
-			track->chorus.setBypassed(newValue < 0.5f);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Chorus))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::Chorus, newValue > 0.5f);
+		}
 		else if (parameterID.endsWith("PhaserBypassed"))
-			track->phaser.setBypassed(newValue < 0.5f);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Phaser))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::Phaser, newValue > 0.5f);
+		}
 		else if (parameterID.endsWith("FlangerBypassed"))
-			track->flanger.setBypassed(newValue < 0.5f);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Flanger))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::Flanger, newValue > 0.5f);
+		}
 		else if (parameterID.endsWith("BitCrusherBypassed"))
-			track->bitCrusher.setBypassed(newValue < 0.5f);
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::BitCrusher))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::BitCrusher, newValue > 0.5f);
+		}
+		else if (parameterID.endsWith("DistortionBypassed"))
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Distortion))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::Distortion, newValue > 0.5f);
+		}
+		else if (parameterID.endsWith("GateBypassed"))
+		{
+			if (!isFxOwnedByGlitch(track, GlitchEffectType::Gate))
+				GlitchSequencerEngine::setUserFxEnabled(*track, GlitchEffectType::Gate, newValue > 0.5f);
+		}
+		else if (parameterID.endsWith("GlitchChainActive"))
+		{
+			const bool chainOn = newValue > 0.5f;
+			track->glitchMetaSequence.setBypassed(!chainOn);
+			track->metaCurrentStep.store(-1);
+			track->glitchCycleStartPpq.store(-1.0);
+
+			auto &engine = audioProcessor.getSequencerManager().getGlitchSequencerEngine();
+
+			if (chainOn)
+				engine.setSequencerActive(*track, true);
+			else
+			{
+				bool anySeqOn = false;
+				for (int i = 0; i < 8; ++i)
+					if (getGlitchSeqActive(track->slotIndex, i))
+					{
+						anySeqOn = true;
+						track->currentGlitchSequenceIndex.store(i);
+						break;
+					}
+
+				if (!anySeqOn)
+					engine.setSequencerActive(*track, false);
+			}
+		}
 		else if (parameterID.endsWith("Pitch"))
 		{
 			track->getCurrentPage().pitchSemitones.store(newValue);
@@ -1144,4 +1505,25 @@ void ParameterManager::handleSendsParams()
 	pushFloatIfChanged(lastFeedbackReverbMix, getReverbMix(), MidiMapping::ccFeedbackReverbMix);
 	pushIntIfChanged(lastFeedbackDelayDivision, getDelayDivisionIndex(), MidiMapping::ccFeedbackDelayDivision, 8);
 	pushIntIfChanged(lastFeedbackDelayMode, getDelayModeIndex(), MidiMapping::ccFeedbackDelayMode, 3);
+}
+
+bool ParameterManager::isModulatedTarget(TrackData *track, const juce::String &paramSuffix)
+{
+	const int mask = track->modulatedTargetsMask.load();
+	if (mask == 0)
+		return false;
+
+	for (int i = 1; i < getNumModTargets(); ++i)
+	{
+		if ((mask & ModulationEngine::targetBit(i)) == 0)
+			continue;
+		if (paramSuffix == getModTargets()[i].paramSuffix)
+			return true;
+	}
+	return false;
+}
+
+bool ParameterManager::isFxOwnedByGlitch(TrackData *track, GlitchEffectType type)
+{
+	return (track->glitchReservedMask.load() & GlitchSequencerEngine::effectBit(type)) != 0;
 }

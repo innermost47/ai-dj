@@ -21,13 +21,9 @@ void DjIaClient::setBaseUrl(const juce::String &newBaseUrl)
 {
 	std::lock_guard<std::mutex> lock(mutex);
 	if (newBaseUrl.endsWith("/"))
-	{
 		baseUrl = newBaseUrl.dropLastCharacters(1) + "/api/v1";
-	}
 	else
-	{
 		baseUrl = newBaseUrl + "/api/v1";
-	}
 }
 
 std::shared_ptr<juce::WebInputStream> DjIaClient::createTrackedStream(const juce::URL &url,
@@ -64,10 +60,8 @@ void DjIaClient::cancelPendingRequests()
 	cancelled.store(true);
 	std::lock_guard<std::mutex> lock(streamsMutex);
 	for (auto &weak : activeStreams)
-	{
 		if (auto s = weak.lock())
 			s->cancel();
-	}
 	activeStreams.clear();
 }
 
