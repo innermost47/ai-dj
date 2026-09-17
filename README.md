@@ -7,7 +7,9 @@
 | **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                                             |
 | [obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)       | Central inference server - **unmaintained, open to the community** |
 | [obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)     | GPU provider kit - **unmaintained, open to the community**         |
-| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                         |                                        |
+| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                         |
+| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)                          |
+| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                                            |
 
 ## AI music generation for live performance - VST3, AU, Standalone
 
@@ -84,6 +86,8 @@ Type words → Get musical loops. No stopping your creative flow.
 - **Per-track gain control** - Adjust each sample's level (-12 / +12 dB) before mixing, with visual waveform feedback
 - **Per-track reverse** - Instantly flip any page's playback direction for reversed textures and risers
 - **Per-track transient scatter** - Randomize and reposition transients for glitchy, stuttering rhythmic variations
+- **Per-track glitch sequencer** - Sequence glitch effects step by step for rhythmic, stuttering variations
+- **8 modulators per track** - Eight independent modulation sources on every track to bring movement to your sounds
 - **Per-track multi-mode filter** - LP/HP/BP with 12 or 24 dB slopes, drive, cutoff and resonance for sculpting each voice
 - **Per-track 8-band graphic EQ + master EQ** - Independent frequency shaping on every voice and global bus, from 40 Hz to 15 kHz
 - **Per-track compressor + master compressor** - Full dynamic control on each voice and on the master bus, with threshold, ratio, attack, release and makeup gain
@@ -173,7 +177,6 @@ ASIO SDK (not redistributable).
 Contributions of any size are welcome: bug fixes, new effects, UI improvements, documentation, and especially work on GPU inference (see [Help wanted](#-help-wanted-bring-the-gpu-engines-back)).
 
 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
-
 
 ---
 
