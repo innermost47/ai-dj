@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   build-windows:
+    name: Build Windows (VST3 + Standalone)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5.0.0
@@ -51,6 +52,8 @@ jobs:
   build-macos:
     name: Build macOS (arm64 - VST3 + AU + Standalone)
     runs-on: macos-latest
+    env:
+      IS_RELEASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v5.0.0
         with:
@@ -76,35 +79,109 @@ jobs:
           </plist>
           EOF
 
+      - name: Generate temporary keychain password
+        if: env.IS_RELEASE == 'true'
+        run: |
+          PWD_VALUE=$(openssl rand -hex 24)
+          echo "::add-mask::$PWD_VALUE"
+          echo "KEYCHAIN_PASSWORD=$PWD_VALUE" >> "$GITHUB_ENV"
+
       - name: Import Code Signing Certificates
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.IS_RELEASE == 'true'
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
           MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
           MACOS_INSTALLER_CERTIFICATE: ${{ secrets.MACOS_INSTALLER_CERTIFICATE }}
           MACOS_INSTALLER_CERTIFICATE_PWD: ${{ secrets.MACOS_INSTALLER_CERTIFICATE_PWD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          set -euo pipefail
           KEYCHAIN="build.keychain"
 
-          echo "$MACOS_CERTIFICATE" | base64 --decode > app_certificate.p12
-          echo "$MACOS_INSTALLER_CERTIFICATE" | base64 --decode > installer_certificate.p12
+          echo "=== Checking secrets ==="
+          for name in MACOS_CERTIFICATE MACOS_CERTIFICATE_PWD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Secret $name is empty or missing."
+              exit 1
+            fi
+          done
 
-          echo "=== Création du trousseau dédié build.keychain ==="
+          # tr -d strips newlines and spaces that may have been pasted into the secrets
+          printf '%s' "$MACOS_CERTIFICATE" | tr -d '\r\n ' | base64 --decode > app_certificate.p12
+
+          HAS_INSTALLER_CERT=false
+          if [ -n "${MACOS_INSTALLER_CERTIFICATE:-}" ] && [ -n "${MACOS_INSTALLER_CERTIFICATE_PWD:-}" ]; then
+            HAS_INSTALLER_CERT=true
+            printf '%s' "$MACOS_INSTALLER_CERTIFICATE" | tr -d '\r\n ' | base64 --decode > installer_certificate.p12
+          else
+            echo "::warning::No Developer ID Installer certificate: the .pkg will be UNSIGNED and NOT notarized."
+          fi
+          echo "HAS_INSTALLER_CERT=$HAS_INSTALLER_CERT" >> "$GITHUB_ENV"
+
+          echo "=== .p12 files diagnostic ==="
+          P12_FILES="app_certificate.p12"
+          [ "$HAS_INSTALLER_CERT" = true ] && P12_FILES="$P12_FILES installer_certificate.p12"
+          for f in $P12_FILES; do
+            size=$(wc -c < "$f" | tr -d ' ')
+            echo "$f: $size bytes"
+            if [ "$size" -eq 0 ]; then
+              echo "::error::$f is empty after base64 decoding."
+              exit 1
+            fi
+          done
+
+          check_p12() {
+            if openssl pkcs12 -info -in "$1" -nokeys -passin "pass:$2" > /dev/null 2>&1; then
+              echo "$1: readable (standard format)"
+            elif openssl pkcs12 -legacy -info -in "$1" -nokeys -passin "pass:$2" > /dev/null 2>&1; then
+              echo "$1: readable (legacy format)"
+            else
+              echo "::warning::$1 unreadable by openssl: corrupted base64, wrong password or non-standard format."
+            fi
+          }
+          check_p12 app_certificate.p12 "$MACOS_CERTIFICATE_PWD"
+          [ "$HAS_INSTALLER_CERT" = true ] && check_p12 installer_certificate.p12 "$MACOS_INSTALLER_CERTIFICATE_PWD"
+
+          echo "=== Creating dedicated keychain ==="
           security delete-keychain "$KEYCHAIN" 2>/dev/null || true
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
           security default-keychain -s "$KEYCHAIN"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
           security set-keychain-settings "$KEYCHAIN"
 
-          security import app_certificate.p12 -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PWD" -A -T /usr/bin/codesign
-          security import installer_certificate.p12 -k "$KEYCHAIN" -P "$MACOS_INSTALLER_CERTIFICATE_PWD" -A -T /usr/bin/productbuild -T /usr/bin/productsign
+          echo "=== Importing Application certificate ==="
+          security import app_certificate.p12 -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PWD" -f pkcs12 \
+            -T /usr/bin/codesign
 
-          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          if [ "$HAS_INSTALLER_CERT" = true ]; then
+            echo "=== Importing Installer certificate ==="
+            security import installer_certificate.p12 -k "$KEYCHAIN" -P "$MACOS_INSTALLER_CERTIFICATE_PWD" -f pkcs12 \
+              -T /usr/bin/productbuild -T /usr/bin/productsign
+          fi
+
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
           security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
-          security find-identity -v -p codesigning "$KEYCHAIN"
 
-          rm app_certificate.p12 installer_certificate.p12
+          rm -f app_certificate.p12 installer_certificate.p12
+
+          echo "=== Available identities ==="
+          security find-identity -v "$KEYCHAIN"
+
+          APP_ID=$(security find-identity -v "$KEYCHAIN" | grep -o '"Developer ID Application: [^"]*"' | head -n 1 | tr -d '"' || true)
+          INST_ID=$(security find-identity "$KEYCHAIN" | grep -o '"Developer ID Installer: [^"]*"' | head -n 1 | tr -d '"' || true)
+
+          if [ -z "$APP_ID" ]; then
+            echo "::error::No 'Developer ID Application' identity found in the keychain."
+            exit 1
+          fi
+          if [ "$HAS_INSTALLER_CERT" = true ] && [ -z "$INST_ID" ]; then
+            echo "::error::No 'Developer ID Installer' identity found in the keychain."
+            exit 1
+          fi
+
+          echo "Application identity: $APP_ID"
+          echo "Installer identity:   $INST_ID"
+          echo "CODE_SIGN_ID=$APP_ID" >> "$GITHUB_ENV"
+          echo "INSTALLER_SIGN_ID=$INST_ID" >> "$GITHUB_ENV"
 
       - name: Configure CMake
         run: |
@@ -121,35 +198,33 @@ jobs:
 
       - name: Verify build
         run: |
+          ARTEFACTS="build/ObsidianNeuralVST_artefacts/Release"
           echo "=== VST3 ==="
-          lipo -info build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural
+          lipo -info "$ARTEFACTS/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/OBSIDIAN-Neural"
           echo "=== AU ==="
-          lipo -info build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/OBSIDIAN-Neural
+          lipo -info "$ARTEFACTS/AU/OBSIDIAN-Neural.component/Contents/MacOS/OBSIDIAN-Neural"
           echo "=== Standalone ==="
-          lipo -info build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/OBSIDIAN-Neural
+          lipo -info "$ARTEFACTS/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/OBSIDIAN-Neural"
 
       - name: Fix macOS permissions
         run: |
-          chmod +x build/ObsidianNeuralVST_artefacts/Release/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/*
-          chmod +x build/ObsidianNeuralVST_artefacts/Release/AU/OBSIDIAN-Neural.component/Contents/MacOS/*
-          chmod +x build/ObsidianNeuralVST_artefacts/Release/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/*
+          ARTEFACTS="build/ObsidianNeuralVST_artefacts/Release"
+          chmod +x "$ARTEFACTS"/VST3/OBSIDIAN-Neural.vst3/Contents/MacOS/*
+          chmod +x "$ARTEFACTS"/AU/OBSIDIAN-Neural.component/Contents/MacOS/*
+          chmod +x "$ARTEFACTS"/Standalone/OBSIDIAN-Neural.app/Contents/MacOS/*
 
       - name: CPack staging (productbuild components)
         run: cpack --config build/CPackConfig.cmake -G productbuild -C Release -D CPACK_SET_DESTDIR=ON
 
       - name: Sign components (inside-out)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          MACOS_SIGNING_NAME: ${{ secrets.MACOS_SIGNING_NAME }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        if: env.IS_RELEASE == 'true'
         run: |
+          set -euo pipefail
           KEYCHAIN="build.keychain"
           ENTITLEMENTS="/tmp/obsidian_entitlements.plist"
-          CODE_SIGN_ID="Developer ID Application: $MACOS_SIGNING_NAME ($APPLE_TEAM_ID)"
 
           STAGING=$(find _CPack_Packages/Darwin/productbuild -maxdepth 1 -type d -name "OBSIDIAN-Neural-*-Darwin" | head -n 1)
-          echo "=== Dossier Staging configuré : $STAGING ==="
+          echo "=== Staging directory: $STAGING ==="
 
           sign_runtime() {
             security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
@@ -157,56 +232,47 @@ jobs:
               --timestamp --options runtime --entitlements "$ENTITLEMENTS" "$1"
           }
 
-          echo "=== Signature des composants (Code Signing) ==="
+          echo "-> ONNX dylibs"
+          find "$STAGING" -name "libonnxruntime*.dylib" | while read -r f; do echo "   $f"; sign_runtime "$f"; done
 
-          echo "-> Signature des dylibs ONNX (imbriqués)..."
-          find "$STAGING" -name "libonnxruntime*.dylib" | while read -r dylib; do
-            echo "   dylib : $dylib"
-            sign_runtime "$dylib"
-          done
+          echo "-> VST3"
+          find "$STAGING" -name "OBSIDIAN-Neural.vst3" | while read -r f; do echo "   $f"; sign_runtime "$f"; done
 
-          echo "-> Signature des VST3..."
-          find "$STAGING" -name "OBSIDIAN-Neural.vst3" | while read -r vst3; do
-            echo "   vst3 : $vst3"
-            sign_runtime "$vst3"
-          done
+          echo "-> Audio Units"
+          find "$STAGING" -name "OBSIDIAN-Neural.component" | while read -r f; do echo "   $f"; sign_runtime "$f"; done
 
-          echo "-> Signature des Audio Units..."
-          find "$STAGING" -name "OBSIDIAN-Neural.component" | while read -r au; do
-            echo "   au : $au"
-            sign_runtime "$au"
-          done
-
-          echo "-> Signature des applications Standalone..."
-          find "$STAGING" -name "OBSIDIAN-Neural.app" | while read -r app; do
-            echo "   app : $app"
-            sign_runtime "$app"
-          done
-
-          echo "=== Fin de la signature granulaire ==="
+          echo "-> Standalone"
+          find "$STAGING" -name "OBSIDIAN-Neural.app" | while read -r f; do echo "   $f"; sign_runtime "$f"; done
 
       - name: Verify signatures
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.IS_RELEASE == 'true'
         run: |
+          set -euo pipefail
           STAGING=$(find _CPack_Packages/Darwin/productbuild -maxdepth 1 -type d -name "OBSIDIAN-Neural-*-Darwin" | head -n 1)
+
+          echo "=== VST3 ==="
           codesign --verify --deep --strict --verbose=2 \
             "$STAGING/vst3/usr/local/Library/Audio/Plug-Ins/VST3/OBSIDIAN-Neural.vst3"
+
+          echo "=== AU ==="
+          codesign --verify --deep --strict --verbose=2 \
+            "$STAGING/au/usr/local/Library/Audio/Plug-Ins/Components/OBSIDIAN-Neural.component"
+
+          echo "=== Standalone ==="
           APP_STAGED="$STAGING/standalone/usr/local/Applications/OBSIDIAN-Neural.app"
           codesign --verify --deep --strict --verbose=2 "$APP_STAGED"
-          echo "-> rpath et dépendance ONNX du binaire standalone :"
+
+          echo "-> Standalone ONNX dependency and rpath:"
           otool -L "$APP_STAGED/Contents/MacOS/OBSIDIAN-Neural" | grep onnx || true
           otool -l "$APP_STAGED/Contents/MacOS/OBSIDIAN-Neural" | grep -A2 LC_RPATH || true
           ls -l "$APP_STAGED/Contents/Frameworks/" || true
 
       - name: Build & sign final pkg
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          MACOS_SIGNING_NAME: ${{ secrets.MACOS_SIGNING_NAME }}
+        if: env.IS_RELEASE == 'true'
         run: |
+          set -euo pipefail
           STAGING=$(find _CPack_Packages/Darwin/productbuild -maxdepth 1 -type d -name "OBSIDIAN-Neural-*-Darwin" | head -n 1)
           VERSION=$(echo "$STAGING" | sed -E 's/.*OBSIDIAN-Neural-(.*)-Darwin/\1/')
-          INSTALLER_SIGN_ID="Developer ID Installer: $MACOS_SIGNING_NAME ($APPLE_TEAM_ID)"
 
           mkdir -p installer /tmp/obsidian_pkgs
           rm -f /tmp/obsidian_pkgs/*.pkg installer/*.pkg
@@ -226,11 +292,16 @@ jobs:
             --version "$VERSION" --install-location "/Applications/OBSIDIAN-Neural.app" \
             /tmp/obsidian_pkgs/standalone.pkg
 
+          SIGN_ARGS=()
+          if [ "${HAS_INSTALLER_CERT:-false}" = true ]; then
+            SIGN_ARGS=(--sign "$INSTALLER_SIGN_ID" --timestamp)
+          fi
+
           productbuild \
             --package /tmp/obsidian_pkgs/vst3.pkg \
             --package /tmp/obsidian_pkgs/au.pkg \
             --package /tmp/obsidian_pkgs/standalone.pkg \
-            --sign "$INSTALLER_SIGN_ID" --timestamp \
+            ${SIGN_ARGS[@]+"${SIGN_ARGS[@]}"} \
             "installer/OBSIDIAN-Neural-${VERSION}-Darwin.pkg"
 
           echo "=== Payload check ==="
@@ -238,38 +309,43 @@ jobs:
           pkgutil --payload-files installer/*.pkg | head
 
       - name: Notarize & staple
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.IS_RELEASE == 'true' && env.HAS_INSTALLER_CERT == 'true'
         env:
-          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
-          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          echo "$NOTARY_KEY" | base64 --decode > notary_key.p8
+          set -euo pipefail
           PKG=$(ls installer/*.pkg | head -n 1)
           xcrun notarytool submit "$PKG" \
-            --key notary_key.p8 \
-            --key-id "$NOTARY_KEY_ID" \
-            --issuer "$NOTARY_ISSUER_ID" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
             --wait
           xcrun stapler staple "$PKG"
           xcrun stapler validate "$PKG"
-          rm notary_key.p8
 
       - name: Verify installer signature
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.IS_RELEASE == 'true' && env.HAS_INSTALLER_CERT == 'true'
         run: |
+          set -euo pipefail
           PKG=$(ls installer/*.pkg | head -n 1)
           pkgutil --check-signature "$PKG"
           spctl --assess --type install --verbose=2 "$PKG"
 
       - name: Upload macOS installer
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.IS_RELEASE == 'true'
         uses: actions/upload-artifact@v4.6.2
         with:
           name: ObsidianNeural-macOS-Installer
           path: installer/*.pkg
 
+      - name: Cleanup keychain
+        if: always() && env.IS_RELEASE == 'true'
+        run: security delete-keychain build.keychain 2>/dev/null || true
+
   build-linux:
+    name: Build Linux (VST3 + Standalone)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5.0.0
@@ -285,7 +361,12 @@ jobs:
             libgtk-3-dev libwebkit2gtk-4.1-dev libcurl4-openssl-dev
 
       - name: Configure CMake
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DGITHUB_BUILD_NUMBER=${{ github.run_number }} -DGITHUB_BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DGITHUB_BUILD_NUMBER=${{ github.run_number }} \
+            -DGITHUB_BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
 
       - name: Build
         run: cmake --build build --config Release
@@ -300,29 +381,43 @@ jobs:
           path: "OBSIDIAN-Neural-*.tar.gz"
 
   create-release:
-        needs: [build-windows, build-macos, build-linux]
-        runs-on: ubuntu-latest
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        steps:
-            - uses: actions/checkout@v5.0.0
+    name: Create GitHub Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v5.0.0
 
-            - name: Download all artifacts
-              uses: actions/download-artifact@v4.3.0
-              with:
-                merge-multiple: true
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4.3.0
+        with:
+          merge-multiple: true
 
-            - name: Create Release
-              uses: softprops/action-gh-release@v2
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                tag_name: v${{ github.run_number }}
-                name: "OBSIDIAN-Neural Local v${{ github.run_number }}"
-                body: |
-                  OBSIDIAN-Neural Local — build v${{ github.run_number }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "OBSIDIAN-Neural v${{ github.run_number }}"
+          body: |
+            OBSIDIAN-Neural — build v${{ github.run_number }}
 
-                Installers: Windows (.exe), macOS arm64 (.pkg), Linux (.tar.gz).
-                files: |
-                  *.exe
-                  *.pkg
-                  *.tar.gz
+            Free and open source (GNU AGPL v3.0). Runs Stable Audio 3 Medium locally on your CPU.
+
+            Installers: Windows (.exe), macOS arm64 (.pkg), Linux (.tar.gz).
+
+            ### macOS: installer not notarized (temporary)
+
+            The plugins and the app are signed, but the .pkg installer itself is not signed or notarized for now, so macOS will block it on double-click. To install:
+
+            1. Double-click the .pkg, then close the warning.
+            2. Open System Settings → Privacy & Security.
+            3. Scroll down and click "Open Anyway" next to the OBSIDIAN-Neural message.
+
+            On older macOS versions, right-click the .pkg → Open also works.
+          files: |
+            *.exe
+            *.pkg
+            *.tar.gz
+          fail_on_unmatched_files: true
