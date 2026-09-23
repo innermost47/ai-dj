@@ -55,7 +55,7 @@ class ModelCard : public ObsidianComponent
 		auto bounds = getLocalBounds().toFloat();
 		juce::Colour bg =
 		    selected ? colour.withAlpha(0.25f)
-		             : (hovered ? ColourPalette::backgroundDeep.brighter(0.05f) : ColourPalette::backgroundDeep);
+			         : (hovered ? ColourPalette::backgroundDeep.brighter(0.05f) : ColourPalette::backgroundDeep);
 		g.setColour(bg);
 		g.fillRoundedRectangle(bounds, Obsidian::CORNER);
 
@@ -779,9 +779,8 @@ void ObsidianAlertManager::showConfirm(juce::Component *parent, const juce::Stri
 }
 
 void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce::String &title,
-                                            const juce::String &serverUrl, const juce::String &apiKey,
-                                            bool currentUseLocal, int currentTimeoutMs, bool isFirstTime,
-                                            std::function<void(const ConfigDialogResult &)> callback)
+                                            const juce::String &serverUrl, bool currentUseLocal, int currentTimeoutMs,
+                                            bool isFirstTime, std::function<void(const ConfigDialogResult &)> callback)
 {
 	auto modal = std::make_unique<ObsidianModalWindow>(title, 480, 420);
 
@@ -789,10 +788,10 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 	{
 	  public:
 		juce::ComboBox modeCombo, timeoutCombo;
-		EscapableTextEditor urlEditor, keyEditor;
-		juce::Label modeLbl, urlLbl, keyLbl, timeoutLbl;
+		EscapableTextEditor urlEditor;
+		juce::Label modeLbl, urlLbl, timeoutLbl;
 
-		ConfigContent(bool useLocal, const juce::String &url, int timeout, bool firstTime)
+		ConfigContent(bool useLocal, const juce::String &url, int timeout)
 		{
 			auto styleEditor = [](EscapableTextEditor &te, const juce::String &text)
 			{
@@ -831,11 +830,6 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			styleEditor(urlEditor, url.isEmpty() ? "http://localhost:8000" : url);
 			addAndMakeVisible(urlEditor);
 
-			styleLabel(keyLbl, firstTime ? "API Key:" : "API Key (leave blank to keep current):");
-			styleEditor(keyEditor, "");
-			keyEditor.setPasswordCharacter('*');
-			addAndMakeVisible(keyEditor);
-
 			styleLabel(timeoutLbl, "Request Timeout:");
 			timeoutCombo.addItem("1 minute", 1);
 			timeoutCombo.addItem("2 minutes", 2);
@@ -867,8 +861,6 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 			bool local = isLocalMode();
 			urlLbl.setVisible(!local);
 			urlEditor.setVisible(!local);
-			keyLbl.setVisible(!local);
-			keyEditor.setVisible(!local);
 			timeoutLbl.setVisible(!local);
 			timeoutCombo.setVisible(!local);
 			resized();
@@ -890,18 +882,13 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 				urlEditor.setBounds(bounds.removeFromTop(rowH));
 				bounds.removeFromTop(spacing);
 
-				keyLbl.setBounds(bounds.removeFromTop(20));
-				keyEditor.setBounds(bounds.removeFromTop(rowH));
-				bounds.removeFromTop(spacing);
-
 				timeoutLbl.setBounds(bounds.removeFromTop(20));
 				timeoutCombo.setBounds(bounds.removeFromTop(rowH));
 			}
 		}
 	};
 
-	juce::ignoreUnused(apiKey);
-	auto formContent = std::make_unique<ConfigContent>(currentUseLocal, serverUrl, currentTimeoutMs, isFirstTime);
+	auto formContent = std::make_unique<ConfigContent>(currentUseLocal, serverUrl, currentTimeoutMs);
 	auto *formPtr = formContent.get();
 	modal->setContent(std::move(formContent));
 
@@ -912,7 +899,7 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 	overlay->modalWindow->addButton(isFirstTime ? "Skip for now" : "Cancel", crossSvg, ColourPalette::buttonInactive,
 	                                [overlay, callback]()
 	                                {
-		                                ConfigDialogResult res{false, false, "", "", 0};
+		                                ConfigDialogResult res{false, false, "", 0};
 		                                callback(res);
 		                                overlay->close();
 	                                });
@@ -924,7 +911,6 @@ void ObsidianAlertManager::showConfigDialog(juce::Component *parent, const juce:
 		                                res.confirmed = true;
 		                                res.useLocalModel = formPtr->isLocalMode();
 		                                res.serverUrl = formPtr->urlEditor.getText();
-		                                res.apiKey = formPtr->keyEditor.getText();
 		                                int tid = formPtr->timeoutCombo.getSelectedId();
 		                                if (tid == 1)
 			                                res.timeoutMs = 60000;
@@ -1181,8 +1167,8 @@ void ObsidianAlertManager::showAssetDownloader(juce::Component *parent, const ju
 				    safeCancel->setEnabled(false);
 
 			    juce::Timer::callAfterDelay(1500,
-			                                [safeOverlay, onComplete, parent]()
-			                                {
+				                            [safeOverlay, onComplete, parent]()
+				                            {
 				                                if (safeOverlay != nullptr)
 					                                safeOverlay->close();
 
@@ -1236,23 +1222,23 @@ void ObsidianAlertManager::showCredits(juce::Component *parent)
 	static const std::vector<CreditEntry> entries = {
 	    {"JUCE", "Copyright (c) Raw Material Software Limited.", "JUCE License", "https://juce.com"},
 	    {"ONNX Runtime", "Copyright (c) Microsoft Corporation.", "MIT License",
-	     "https://github.com/microsoft/onnxruntime"},
+		 "https://github.com/microsoft/onnxruntime"},
 	    {"BeatDetektor", "Copyright (c) 2009 Charles J. Cliffe.", "MIT License", "http://opensource.org/licenses/MIT"},
 	    {"Airwindows (Console6)", "Copyright (c) Chris Johnson (Airwindows).", "MIT License",
-	     "https://www.airwindows.com/"},
+		 "https://www.airwindows.com/"},
 	    {"nlohmann/json", "Copyright (c) 2013-2025 Niels Lohmann.", "MIT License", "https://github.com/nlohmann/json"},
 	    {"Signalsmith Stretch", "Copyright (c) Signalsmith Audio Ltd.", "MIT License",
-	     "https://github.com/Signalsmith-Audio/signalsmith-stretch"},
+		 "https://github.com/Signalsmith-Audio/signalsmith-stretch"},
 	    {"tokenizers-cpp", "Copyright (c) MLC AI / Apache TVM contributors.", "Apache License 2.0",
-	     "https://github.com/mlc-ai/tokenizers-cpp"},
+		 "https://github.com/mlc-ai/tokenizers-cpp"},
 	    {"libsamplerate", "Copyright (c) 2012-2021, Erik de Castro Lopo.", "BSD 2-Clause License",
-	     "https://github.com/libsndfile/libsamplerate"},
+		 "https://github.com/libsndfile/libsamplerate"},
 	    {"dr_wav (dr_libs)", "Copyright (c) David Reid.", "Public Domain / MIT-0",
-	     "https://github.com/mackron/dr_libs"},
+		 "https://github.com/mackron/dr_libs"},
 	    {"Ableton Link", "Copyright (c) Ableton AG, Berlin.", "Commercial License (Ableton AG)",
-	     "https://github.com/Ableton/link"},
+		 "https://github.com/Ableton/link"},
 	    {"Monocypher", "Copyright (c) 2017-2023 Loup Vaillant, Michael Savage, Fabio Scotoni.",
-	     "Public Domain (CC0) / BSD 2-Clause", "https://monocypher.org/"},
+		 "Public Domain (CC0) / BSD 2-Clause", "https://monocypher.org/"},
 	};
 
 	class CreditsContent : public ObsidianComponent

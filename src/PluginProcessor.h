@@ -252,10 +252,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		return serverUrl;
 	}
-	const juce::String &getApiKey() const
-	{
-		return apiKey;
-	}
 	const juce::String &getLastKey() const
 	{
 		return lastKey;
@@ -330,7 +326,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 		return requestTimeoutMS;
 	}
 	int getCrossfaderCurveMode() const;
-	int creditsRemaining = 0;
 
 	bool getOnboardingDone() const
 	{
@@ -538,15 +533,10 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	{
 		stateJustLoaded.store(v);
 	}
-	void setCreditsRemaining(int v)
-	{
-		creditsRemaining = v;
-	}
 	void setRequestTimeout(int ms)
 	{
 		requestTimeoutMS = ms;
 	}
-	void setApiKey(const juce::String &key);
 	void setServerUrl(const juce::String &url);
 	void setAutoLoadEnabled(bool enabled);
 	void setCrossfaderCurveMode(int mode);
@@ -837,7 +827,6 @@ class DjIaVstProcessor : public juce::AudioProcessor,
 	juce::String globalPrompt;
 	juce::String globalKey = "C Minor";
 	juce::String serverUrl;
-	juce::String apiKey;
 	juce::String lastPrompt;
 	juce::String lastKey = "C Minor";
 	juce::String generatingTrackId;

@@ -2,14 +2,13 @@
 
 ### Related Repositories
 
-| Repository                                                                              | Description                                                        |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                                             |
-| [obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)       | Central inference server - **unmaintained, open to the community** |
-| [obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)     | GPU provider kit - **unmaintained, open to the community**         |
-| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                         |
-| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)                          |
-| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                                            |
+| Repository                                                                              | Description                                                |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                                     |
+| [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) | Self-hosted GPU server for the 9 engines (Windows for now) |
+| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                 |
+| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)                  |
+| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                                    |
 
 ## AI music generation for live performance - VST3, AU, Standalone
 
@@ -32,33 +31,29 @@
 The whole plugin - including the local CPU engine - is now free and released under the **GNU AGPL v3.0**. No license key, no subscription, no credits, no account.
 
 - **Stable Audio 3 Medium runs entirely on your own CPU.** No GPU, no cloud, no internet required after downloading the model once. Nothing ever leaves your computer.
-- **The hosted services are shut down.** The public inference server, the GPU provider network, the storefront/dashboard and obsidian-neural.com are discontinued.
+- **The 9 GPU engines run on your own machine too.** With [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server), you host the inference server yourself on an NVIDIA GPU - no account, no API key.
 
 > ⚡ Runs on a standard CPU. Reference: ~11s per generation on a recent laptop CPU, alongside a full DAW session.
 > 🍎 macOS: Apple Silicon (M1+) only - Intel Macs not supported.
 
 ---
 
-## 🤝 Help wanted: bring the GPU engines back
+## 🖥️ GPU engines: run your own server
 
-Out of the box, OBSIDIAN Neural generates locally with **Stable Audio 3 Medium**. The plugin was also designed to drive **9 specialized GPU engines** through a server - but with the hosted infrastructure gone, **those engines currently have no supported backend**.
+Out of the box, OBSIDIAN Neural generates locally with **Stable Audio 3 Medium** on your CPU. To unlock the **9 specialized GPU engines**, run **[obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server)** on a machine with an NVIDIA GPU - the same computer as your DAW, or another one on your network.
 
-I'm not planning to build or maintain a new inference server for now, nor to keep running the provider network. I may come back to it later, but I'd rather be honest: right now, this part belongs to whoever wants to pick it up.
+> 🪟 The server currently supports **Windows** only.
 
-**That's where you come in.** Everything needed to get started is already public:
+1. Clone [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) and follow its README to install it and download the models
+2. Start the server
+3. In the plugin: Settings → **Server/API** → enter the server URL (e.g. `http://localhost:8000`)
+4. Pick one of the 9 engines and generate
 
-- **[obsidian-neural-central](https://github.com/innermost47/obsidian-neural-central)** contains the code of the former central inference server - a solid starting point for a self-hostable GPU backend.
-- **[obsidian-neural-provider](https://github.com/innermost47/obsidian-neural-provider)** contains the provider kit from the distributed GPU network, if you'd like to revive the idea of community-run nodes.
-- The plugin still has its **Server/API mode** (Settings → Server URL + API key), so a compatible server can be plugged in without touching the audio side.
+### Contributions welcome
 
-Ideas that would make a real difference:
-
-- A simple, self-hostable GPU server that runs one or several of the 9 engines
+- Linux and macOS support for the GPU server
 - Local GPU inference directly in the plugin (CUDA, Metal, DirectML…)
 - More models exported to ONNX for the CPU engine
-- A community-run provider network, on your own terms
-
-You don't need permission to start: fork, experiment, open an issue to share your plan, send PRs. If you build something that works, it can be linked here so every user benefits.
 
 → **[Start a discussion](https://github.com/innermost47/ai-dj/discussions)** · **[Open an issue](https://github.com/innermost47/ai-dj/issues)**
 
@@ -109,9 +104,9 @@ Type words → Get musical loops. No stopping your creative flow.
 - **Sample bank with drag-and-drop** - Every generation is automatically saved and can be reused across tracks and projects
 - **Non-blocking generation** - No pre-recorded samples, renders in background
 
-### GPU engines (server mode - looking for a community backend)
+### GPU engines (server mode)
 
-The plugin supports **9 specialized AI engines** in server mode. They are **not usable right now** since there is no public server anymore - see [Help wanted](#-help-wanted-bring-the-gpu-engines-back).
+The plugin supports **9 specialized AI engines** in server mode, powered by your own [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) - see [GPU engines: run your own server](#️-gpu-engines-run-your-own-server).
 
 1. **stable-audio-open-1.0** - Versatile foundation, drums and full-mix textures (80–160 BPM)
 2. **Stable Audio 3 Medium** - Next-gen flexible full tracks, isolated stems, FX (80–160 BPM) _(also the local CPU engine)_
@@ -154,6 +149,8 @@ ASIO SDK (not redistributable).
 3. Accept the model licenses and download the model once
 4. Type a prompt and generate - fully offline from now on
 
+Want the 9 GPU engines? See [GPU engines: run your own server](#️-gpu-engines-run-your-own-server).
+
 ---
 
 ## Download
@@ -174,7 +171,7 @@ ASIO SDK (not redistributable).
 
 ## Contributing
 
-Contributions of any size are welcome: bug fixes, new effects, UI improvements, documentation, and especially work on GPU inference (see [Help wanted](#-help-wanted-bring-the-gpu-engines-back)).
+Contributions of any size are welcome: bug fixes, new effects, UI improvements, documentation, and especially Linux/macOS support for the [GPU server](https://github.com/innermost47/obsidian-neural-gpu-server).
 
 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
 
