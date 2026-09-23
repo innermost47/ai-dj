@@ -41,8 +41,7 @@ void UIModalManager::showFirstTimeSetup()
 {
 	ObsidianAlertManager::showConfigDialog(
 	    &editor, "OBSIDIAN-Neural Configuration " + Version::VERSION, editor.audioProcessor.getServerUrl(),
-	    editor.audioProcessor.getApiKey(), editor.audioProcessor.getUseLocalModel(),
-	    editor.audioProcessor.getRequestTimeout(), true,
+	    editor.audioProcessor.getUseLocalModel(), editor.audioProcessor.getRequestTimeout(), true,
 	    [this](const ObsidianAlertManager::ConfigDialogResult &res)
 	    {
 		    if (res.confirmed)
@@ -52,7 +51,6 @@ void UIModalManager::showFirstTimeSetup()
 			    if (!res.useLocalModel)
 			    {
 				    editor.audioProcessor.setServerUrl(res.serverUrl);
-				    editor.audioProcessor.setApiKey(res.apiKey);
 			    }
 			    editor.audioProcessor.setRequestTimeout(res.timeoutMs);
 			    editor.audioProcessor.saveGlobalConfig();
@@ -61,8 +59,8 @@ void UIModalManager::showFirstTimeSetup()
 				    editor.uiLayoutManager->getLeftPanelWrapper()->getPromptBankPanel()->refreshList();
 		    }
 		    juce::Timer::callAfterDelay(400,
-		                                [this, useLocal = res.confirmed && res.useLocalModel]()
-		                                {
+			                            [this, useLocal = res.confirmed && res.useLocalModel]()
+			                            {
 			                                if (useLocal)
 				                                showModelDownloader([this]() { showOnboardingTour(); });
 			                                else
@@ -75,8 +73,7 @@ void UIModalManager::showConfigDialog()
 {
 	ObsidianAlertManager::showConfigDialog(
 	    &editor, "OBSIDIAN-Neural Configuration " + Version::VERSION, editor.audioProcessor.getServerUrl(),
-	    editor.audioProcessor.getApiKey(), editor.audioProcessor.getUseLocalModel(),
-	    editor.audioProcessor.getRequestTimeout(), false,
+	    editor.audioProcessor.getUseLocalModel(), editor.audioProcessor.getRequestTimeout(), false,
 	    [this](const ObsidianAlertManager::ConfigDialogResult &res)
 	    {
 		    if (!res.confirmed)
@@ -92,11 +89,7 @@ void UIModalManager::showConfigDialog()
 		    if (res.useLocalModel)
 			    editor.uiTrackManager->checkLocalModelsAndNotify();
 		    else
-		    {
 			    editor.audioProcessor.setServerUrl(res.serverUrl);
-			    if (res.apiKey.isNotEmpty())
-				    editor.audioProcessor.setApiKey(res.apiKey);
-		    }
 		    editor.audioProcessor.setRequestTimeout(res.timeoutMs);
 		    editor.audioProcessor.saveGlobalConfig();
 		    if (modeChanged)
@@ -167,10 +160,10 @@ void UIModalManager::checkForUpdates()
 		    juce::URL url(Obsidian::GITHUB_LATEST_RELEASE_API_URL());
 		    std::unique_ptr<juce::InputStream> stream(
 		        url.createInputStream(juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-		                                  .withExtraHeaders("User-Agent: OBSIDIAN-Neural\r\n"
-		                                                    "Accept: application/vnd.github+json")
-		                                  .withConnectionTimeoutMs(5000)
-		                                  .withStatusCode(&statusCode)));
+				                          .withExtraHeaders("User-Agent: OBSIDIAN-Neural\r\n"
+				                                            "Accept: application/vnd.github+json")
+				                          .withConnectionTimeoutMs(5000)
+				                          .withStatusCode(&statusCode)));
 
 		    if (stream == nullptr || statusCode != 200)
 			    return;
@@ -289,8 +282,8 @@ void UIModalManager::showModelDownloader(std::function<void()> onComplete)
 			                                           return;
 		                                           }
 		                                           ObsidianAlertManager::showAssetDownloader(&editor, stableAudioDir,
-		                                                                                     [onComplete](bool success)
-		                                                                                     {
+												                                             [onComplete](bool success)
+												                                             {
 			                                                                                     juce::ignoreUnused(
 			                                                                                         success);
 			                                                                                     if (onComplete)

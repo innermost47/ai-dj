@@ -116,14 +116,6 @@ void GenerationManager::generateLoopAPI(const DjIaClient::LoopRequest &request, 
 	reEnableCanvasGenerate();
 
 	juce::String successMessage = "Loop generated successfully! Press Play to listen.";
-	if (response.isUnlimitedKey)
-	{
-		successMessage += " - Unlimited API key";
-	}
-	else if (response.creditsRemaining >= 0)
-	{
-		successMessage += " - " + juce::String(response.creditsRemaining) + " credits remaining";
-	}
 
 	notifyGenerationComplete(trackId, successMessage);
 }
@@ -269,7 +261,7 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 				    request.prompt = currentPage.selectedPrompt;
 				    request.bpm = currentHostBpm;
 				    request.key = !currentPage.generationKey.isEmpty() ? currentPage.generationKey
-				                                                       : audioProcessor.getGlobalKey();
+					                                                   : audioProcessor.getGlobalKey();
 			    }
 			    else
 			    {
@@ -285,8 +277,8 @@ void GenerationManager::generateLoopFromMidi(const juce::String &trackId)
 				    request.model = Obsidian::STABLE_AUDIO_OPEN_V1();
 
 			    juce::String promptSource = !request.prompt.isEmpty()
-			                                    ? "track prompt: " + request.prompt.substring(0, 20) + "..."
-			                                    : "global prompt";
+				                                ? "track prompt: " + request.prompt.substring(0, 20) + "..."
+				                                : "global prompt";
 			    juce::MessageManager::callAsync(
 			        [this, promptSource]()
 			        {

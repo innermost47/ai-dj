@@ -12,7 +12,7 @@
 #endif
 
 DjIaVstProcessor::DjIaVstProcessor()
-    : AudioProcessor(createBusLayout()), apiClient("", "http://localhost:8000"), parameterManager(*this),
+    : AudioProcessor(createBusLayout()), apiClient("http://localhost:8000"), parameterManager(*this),
       trackManager(*this), stateManager(*this), generationManager(*this), sequencerManager(*this, trackManager),
       audioManager(*this, trackManager, generationManager), midiManager(*this, midiLearnManager),
       sampleBank(std::make_unique<SampleBank>()), autoLoadEnabled(true), modulationEngine(*this)
@@ -223,7 +223,6 @@ void DjIaVstProcessor::loadGlobalConfig()
 		auto configJson = juce::JSON::parse(configFile);
 		if (auto *object = configJson.getDynamicObject())
 		{
-			apiKey = object->getProperty("apiKey").toString();
 			serverUrl = object->getProperty("serverUrl").toString();
 			requestTimeoutMS = object->getProperty("requestTimeoutMS").toString().getIntValue();
 			onboardingDone = object->getProperty("onboardingDone").toString() == "true";
@@ -286,8 +285,6 @@ void DjIaVstProcessor::loadGlobalConfig()
 					userGlitchPresets.push_back(preset);
 				}
 			}
-
-			setApiKey(apiKey);
 			setServerUrl(serverUrl);
 		}
 	}
@@ -301,7 +298,6 @@ void DjIaVstProcessor::saveGlobalConfig()
 	configFile.getParentDirectory().createDirectory();
 
 	juce::DynamicObject::Ptr config = new juce::DynamicObject();
-	config->setProperty("apiKey", apiKey);
 	config->setProperty("serverUrl", serverUrl);
 	config->setProperty("requestTimeoutMS", requestTimeoutMS);
 	config->setProperty("useLocalModel", useLocalModel ? "true" : "false");
@@ -1017,12 +1013,6 @@ void DjIaVstProcessor::loadPendingSample()
 void DjIaVstProcessor::setAutoLoadEnabled(bool enabled)
 {
 	autoLoadEnabled.store(enabled);
-}
-
-void DjIaVstProcessor::setApiKey(const juce::String &key)
-{
-	apiKey = key;
-	apiClient.setApiKey(apiKey);
 }
 
 void DjIaVstProcessor::setServerUrl(const juce::String &url)

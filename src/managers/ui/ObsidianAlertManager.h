@@ -77,7 +77,6 @@ class ObsidianAlertManager
 		bool confirmed;
 		bool useLocalModel;
 		juce::String serverUrl;
-		juce::String apiKey;
 		int timeoutMs;
 	};
 
@@ -104,8 +103,8 @@ class ObsidianAlertManager
 	                        std::function<void(bool confirmed)> callback);
 
 	static void showConfigDialog(juce::Component *parent, const juce::String &title, const juce::String &serverUrl,
-	                             const juce::String &apiKey, bool currentUseLocal, int currentTimeoutMs,
-	                             bool isFirstTime, std::function<void(const ConfigDialogResult &)> callback);
+	                             bool currentUseLocal, int currentTimeoutMs, bool isFirstTime,
+	                             std::function<void(const ConfigDialogResult &)> callback);
 
 	static void showCategoryEditor(juce::Component *parent, const juce::String &sampleName,
 	                               const juce::String &currentCategory,
