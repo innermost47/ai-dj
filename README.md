@@ -2,13 +2,13 @@
 
 ### Related Repositories
 
-| Repository                                                                              | Description                                                |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                                     |
-| [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) | Self-hosted GPU server for the 9 engines (Windows for now) |
-| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                 |
-| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)                  |
-| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                                    |
+| Repository                                                                              | Description                                                                    |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **[ai-dj](https://github.com/innermost47/ai-dj)** ← you are here                        | VST3 / AU / Standalone                                                         |
+| [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) | Self-hosted GPU server for the 9 engines (Windows, Linux, macOS Apple Silicon) |
+| [obsidian-neural-controller](https://github.com/innermost47/obsidian-neural-controller) | Mobile MIDI controller app                                                     |
+| [raveMorph](https://github.com/innermost47/raveMorph)                                   | Neural sound morphing plugin (RAVE-based)                                      |
+| [beatcrafter](https://github.com/innermost47/beatcrafter)                               | MIDI drum sequencer VST                                                        |
 
 ## AI music generation for live performance - VST3, AU, Standalone
 
@@ -31,7 +31,7 @@
 The whole plugin - including the local CPU engine - is now free and released under the **GNU AGPL v3.0**. No license key, no subscription, no credits, no account.
 
 - **Stable Audio 3 Medium runs entirely on your own CPU.** No GPU, no cloud, no internet required after downloading the model once. Nothing ever leaves your computer.
-- **The 9 GPU engines run on your own machine too.** With [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server), you host the inference server yourself on an NVIDIA GPU - no account, no API key.
+- **The 9 GPU engines run on your own machine too.** With [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server), you host the inference server yourself on an NVIDIA GPU (Windows, Linux) or an Apple Silicon Mac - no account, no API key.
 
 > ⚡ Runs on a standard CPU. Reference: ~11s per generation on a recent laptop CPU, alongside a full DAW session.
 > 🍎 macOS: Apple Silicon (M1+) only - Intel Macs not supported.
@@ -40,18 +40,22 @@ The whole plugin - including the local CPU engine - is now free and released und
 
 ## 🖥️ GPU engines: run your own server
 
-Out of the box, OBSIDIAN Neural generates locally with **Stable Audio 3 Medium** on your CPU. To unlock the **9 specialized GPU engines**, run **[obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server)** on a machine with an NVIDIA GPU - the same computer as your DAW, or another one on your network.
+Out of the box, OBSIDIAN Neural generates locally with **Stable Audio 3 Medium** on your CPU. To unlock the **9 specialized GPU engines**, run **[obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server)** on a machine with a supported GPU - the same computer as your DAW, or another one on your network.
 
-> 🪟 The server currently supports **Windows** only.
+| Platform           | GPU                        | Status       |
+| ------------------ | -------------------------- | ------------ |
+| 🪟 Windows 10 / 11 | NVIDIA (CUDA)              | Supported    |
+| 🐧 Linux           | NVIDIA (CUDA)              | Supported    |
+| 🍎 macOS           | Apple Silicon (M1+, Metal) | Experimental |
 
-1. Clone [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) and follow its README to install it and download the models
+1. Clone [obsidian-neural-gpu-server](https://github.com/innermost47/obsidian-neural-gpu-server) and follow its README to install it and download the models (`install.bat` on Windows, `install.sh` on Linux and macOS)
 2. Start the server
 3. In the plugin: Settings → **Server/API** → enter the server URL (e.g. `http://localhost:8000`)
 4. Pick one of the 9 engines and generate
 
 ### Contributions welcome
 
-- Linux and macOS support for the GPU server
+- Testing and feedback on the Linux and macOS GPU server
 - Local GPU inference directly in the plugin (CUDA, Metal, DirectML…)
 - More models exported to ONNX for the CPU engine
 
@@ -180,7 +184,7 @@ It covers the whole interface step by step: prompt and sample banks, tracks and 
 
 ## Contributing
 
-Contributions of any size are welcome: bug fixes, new effects, UI improvements, documentation, and especially Linux/macOS support for the [GPU server](https://github.com/innermost47/obsidian-neural-gpu-server).
+Contributions of any size are welcome: bug fixes, new effects, UI improvements, documentation, and especially testing and feedback on the Linux and macOS versions of the [GPU server](https://github.com/innermost47/obsidian-neural-gpu-server).
 
 💬 [GitHub Discussions](https://github.com/innermost47/ai-dj/discussions) · 🐛 [Issues](https://github.com/innermost47/ai-dj/issues)
 
