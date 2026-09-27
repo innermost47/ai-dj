@@ -153,6 +153,15 @@ Want the 9 GPU engines? See [GPU engines: run your own server](#️-gpu-engines-
 
 ---
 
+## 📖 Tutorial
+
+New to OBSIDIAN Neural? Read the full walkthrough on KVR Audio:
+**[A New Kind of Sampler: Obsidian Neural, Explained by Its Developer](https://www.kvraudio.com/news/a-new-kind-of-sampler-obsidian-neural-explained-by-its-developer-68122)**
+
+It covers the whole interface step by step: prompt and sample banks, tracks and pages, the step sequencer, mixer channels and crossfaders, per-track effects, the glitch sequencer and its presets, modulators, delay/reverb sends and MIDI mapping.
+
+---
+
 ## Download
 
 | Platform           | Install path                            |
